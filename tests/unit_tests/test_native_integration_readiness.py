@@ -67,6 +67,20 @@ def lifecycle(request, monkeypatch, tmp_path):
 
     def run(_env, _name, command, *args, **_kwargs):
         calls.append(command)
+        if name == "conanexiles":
+            install = tmp_path / "server"
+            mods = install / "ConanSandbox/Mods"
+            logs = install / "ConanSandbox/Saved/Logs"
+            mods.mkdir(parents=True, exist_ok=True)
+            logs.mkdir(parents=True, exist_ok=True)
+            (mods / "modlist.txt").write_text("")
+            if command == "start":
+                text = "LogModManager: Starting mod runtime module.\n"
+                if calls.count("start") == 1:
+                    text += ("LogModManager: Mounting mod pak file: "
+                             "3733835102/StorageReachExpanded.pak\n"
+                             "[StorageReachExpanded] Active!\n")
+                (logs / "fixture.log").write_text(text)
         if command == "info":
             if args:
                 output = json.dumps(
@@ -116,6 +130,13 @@ def lifecycle(request, monkeypatch, tmp_path):
     monkeypatch.setattr(module, "wait_for_info_protocol", readiness, raising=False)
     monkeypatch.setattr(module, "wait_for_udp_closed", closed, raising=False)
     monkeypatch.setattr(module, "wait_for_generic_udp_closed", closed, raising=False)
+    if name == "conanexiles":
+        def native_log(directory, pattern, markers, *_args, **_kwargs):
+            text = next(directory.glob(pattern)).read_text()
+            assert any(marker in text for marker in markers)
+            calls.append("native-load")
+            return text
+        monkeypatch.setattr(module, "wait_for_glob_log_marker", native_log)
     for hook in ("wait_for_tcp_closed", "wait_for_runtime_log_marker", "wait_for_log_marker",
                  "wait_for_quake2_ready", "wait_for_quakeworld_ready", "wait_for_a2s_ready",
                  "wait_for_udp_open"):
@@ -141,7 +162,11 @@ def test_lifecycle_uses_native_readiness_and_matching_shutdown(lifecycle, tmp_pa
     module, _helpers, calls, _run = lifecycle
     monkeypatch.setenv("ALPHAGSM_TEST_RUNTIME_BACKEND", backend)
     monkeypatch.setattr(module, "runtime_backend", backend, raising=False)
-    next(value for key, value in vars(module).items() if key.startswith("test_"))(tmp_path)
+    callback = next(value for key, value in vars(module).items() if key.startswith("test_"))
+    if getattr(module, "module_name", "") == "conanexiles":
+        callback(tmp_path, backend)
+    else:
+        callback(tmp_path)
     assert calls.index("start") < calls.index("readiness") < calls.index("query")
     assert calls.index("query") < calls.index("stop") < calls.index("closed")
 
@@ -163,7 +188,11 @@ def test_readiness_error_survives_failed_cleanup(lifecycle, tmp_path, monkeypatc
     monkeypatch.setattr(module, "run_alphagsm", failing_stop, raising=False)
     monkeypatch.setattr(helpers, "run_alphagsm", failing_stop)
     with pytest.raises(pytest.fail.Exception) as failure:
-        next(value for key, value in vars(module).items() if key.startswith("test_"))(tmp_path)
+        callback = next(value for key, value in vars(module).items() if key.startswith("test_"))
+        if getattr(module, "module_name", "") == "conanexiles":
+            callback(tmp_path, "process")
+        else:
+            callback(tmp_path)
     assert failure.value is original
     assert calls[-1] == "stop"
 
@@ -180,5 +209,9 @@ def test_successful_readiness_cannot_hide_failed_stop(lifecycle, tmp_path, monke
     monkeypatch.setattr(module, "run_alphagsm", failing_stop, raising=False)
     monkeypatch.setattr(helpers, "run_alphagsm", failing_stop)
     with pytest.raises(AssertionError, match="shutdown failed"):
-        next(value for key, value in vars(module).items() if key.startswith("test_"))(tmp_path)
+        callback = next(value for key, value in vars(module).items() if key.startswith("test_"))
+        if getattr(module, "module_name", "") == "conanexiles":
+            callback(tmp_path, "process")
+        else:
+            callback(tmp_path)
     assert "closed" not in calls

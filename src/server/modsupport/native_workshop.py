@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+import re
 import tempfile
 from types import SimpleNamespace
 
@@ -53,6 +54,46 @@ def write_managed_text(server, relative, text):
         if temporary is not None and temporary.exists():
             temporary.unlink()
     return destination
+
+
+def apply_managed_workshop_list(server, relative, item_ids):
+    """Merge native subscription IDs while retaining operator lines and ownership.
+
+    Only canonical lines previously added here are removed. An operator who adds
+    a comment or changes whitespace on such a line takes ownership of that line.
+    Engine-downloaded caches are deliberately outside this configuration owner.
+    """
+    item_ids = list(dict.fromkeys(workshop.normalize_workshop_identifier(value) for value in item_ids))
+    destination = safe_server_path(server, relative)
+    if destination.exists() and (not destination.is_file() or destination.stat().st_size > 1024 * 1024):
+        raise ServerError('Workshop subscription list must be a regular file under 1 MiB')
+    original = destination.read_bytes().decode('utf-8') if destination.exists() else ''
+    owners = server.data.setdefault('mods', {}).setdefault('native_workshop_lists', {})
+    key = Path(relative).as_posix()
+    previous = owners.get(key, {})
+    owned_ids = set(previous.get('added_ids', []))
+    lines = [line for line in original.splitlines(keepends=True) if line.rstrip('\r\n') not in owned_ids]
+    existing_ids = set()
+    for line in lines:
+        match = re.fullmatch(r'\s*(\d+)\s*(?://[^\r\n]*|#[^\r\n]*)?', line.rstrip('\r\n'))
+        if match:
+            existing_ids.add(match.group(1))
+    additions = [item for item in item_ids if item not in existing_ids]
+    text = ''.join(lines)
+    if text and additions and not text.endswith(('\r', '\n')):
+        text += '\n'
+    text += ''.join(f'{item}\n' for item in additions)
+    created = previous.get('created', not destination.exists())
+    if text != original:
+        if not text and created:
+            safe_server_path(server, relative).unlink(missing_ok=True)
+        else:
+            write_managed_text(server, relative, text)
+    if additions:
+        owners[key] = {'added_ids': additions, 'created': created}
+    else:
+        owners.pop(key, None)
+    return [key] if destination.exists() else []
 
 
 def build_native_workshop_support(*, game_label, workshop_app_id, apply_callback):

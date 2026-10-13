@@ -163,4 +163,52 @@ alphagsm myserver set KEY VALUE
 - **Map directory**: Check game documentation
 - **Curated mod directories**: `tf/addons` and `tf/cfg`
 - **Curated mod examples**: `sourcemod`, `metamod`
-- **Workshop support**: Experimental desired-state support only; apply/download is not yet verified
+- **Workshop support**: Native multiplayer maps with verified anonymous process activation.
+
+
+## Native Workshop multiplayer maps
+
+```bash
+alphagsm mytf2 mod add workshop 454299390
+alphagsm mytf2 mod add workshop-collection YOUR_COLLECTION_ID
+alphagsm mytf2 mod apply
+alphagsm mytf2 set map workshop/454299390
+alphagsm mytf2 start
+```
+
+Official Steam Community item/collection URLs also work. AlphaGSM validates AppID
+`440` and map-mode metadata, then configures the engine's native
+`tf_workshop_map_sync` commands in `tf/cfg/alphagsm_workshop.cfg`. Cosmetic uploads
+are rejected. Native Workshop map names are `workshop/ITEM_ID`; the engine resolves
+the full map name and downloads the current map itself. No Steam account token
+or Workshop API key is supplied. The existing curated map and addon commands stay
+available. See [Valve's native map-loader update](https://www.teamfortress.com/post.php?id=17214).
+
+Apply while stopped. AlphaGSM refuses a preexisting unowned sync configuration
+and externally edited managed files. `mod cleanup` removes only its unchanged
+sync configuration; engine-managed Workshop caches and the operator's selected
+map setting remain. Choose an ordinary installed map before restarting after
+cleanup if you want to stop playing the Workshop map.
+
+The public [cp_orange_x3 fixture](https://steamcommunity.com/sharedfiles/filedetails/?id=454299390)
+was verified as AppID `440` on 2026-10-13. The complete process lifecycle passed on 2026-10-13 with real A2S and fresh native
+mount evidence. The normal stop-timeout fallback was used before shutdown
+verification; owned configuration cleanup also passed.
+Its opt-in check requires actual custom-map A2S responses and a fresh engine
+filesystem probe containing the selected item ID, with full CLI shutdown and
+configuration cleanup.
+
+```bash
+ALPHAGSM_WORK_DIR=/path/on/large/disk \
+ALPHAGSM_RUN_INTEGRATION=1 ALPHAGSM_RUN_STEAMCMD=1 \
+ALPHAGSM_RUN_TF2_WORKSHOP=1 \
+python3 -m pytest tests/integration_tests/test_tf2.py -k workshop
+
+ALPHAGSM_WORK_DIR=/path/on/large/disk TF2_WORKSHOP_ITEM=454299390 \
+make smoke-test SMOKE_TEST=run_tf2.sh
+```
+
+A collection override uses `ALPHAGSM_TF2_WORKSHOP_COLLECTION`; select its test map
+with `ALPHAGSM_TF2_WORKSHOP_LOAD_ITEM` and `ALPHAGSM_TF2_WORKSHOP_MAP`. Smoke accepts
+`TF2_WORKSHOP_COLLECTION`, `TF2_WORKSHOP_LOAD_ITEM`, and `TF2_WORKSHOP_MAP`.
+Docker validation remains pending an SSD-backed Docker endpoint.

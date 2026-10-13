@@ -106,4 +106,34 @@ alphagsm myserver set KEY VALUE
 
 - **Map directory**: Check game documentation
 - **Mod directory**: Check game documentation
-- **Workshop support**: No
+- **Workshop support**: anonymous stackable Linux gameplay-mod staging;
+  fresh process/Docker engine validation is pending.
+
+## Workshop gameplay mods
+
+```bash
+alphagsm myserver mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=2860800256
+alphagsm myserver mod add workshop-collection COLLECTION_ID
+alphagsm myserver mod apply
+alphagsm myserver start
+```
+
+AlphaGSM validates items against ARK: Survival Evolved game AppID `346110`,
+downloads anonymously, and validates native `mod.info` and `modmeta.info`.
+Stackable gameplay mods (`ModType=1`) with `LinuxNoEditor` content are supported;
+map mods, total conversions and Windows-only payloads are rejected.
+
+Compressed `.z` assets are decompressed with checked chunk sizes and bounded
+output. Native assets and a binary `.mod` descriptor are published under
+`ShooterGame/Content/Mods/`. The ordered `ActiveMods` setting in
+`ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini` preserves operator
+IDs and unrelated settings. Per-file decompression is limited to 1 GiB and
+each mod to 8 GiB of unpacked content.
+
+`mod remove workshop ID_OR_URL` followed by `mod apply` removes selected owned
+content and activation IDs. `mod cleanup` clears all desired Workshop items.
+Operator files remain present; modified owned files block replacement or cleanup.
+Removing a gameplay mod can affect world objects created by that mod. The
+[Meat Spoiler fixture](https://steamcommunity.com/sharedfiles/filedetails/?id=2860800256)
+is intended for a disposable validation world. Native file staging and
+`ActiveMods` alone do not establish a successful engine load.

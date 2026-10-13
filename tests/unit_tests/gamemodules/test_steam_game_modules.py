@@ -363,9 +363,14 @@ def test_tf2_runtime_wrappers_use_steamcmd_linux_family(tmp_path):
     assert requirements["ports"] == [
         {"host": 27015, "container": 27015, "protocol": "udp"},
         {"host": 27015, "container": 27015, "protocol": "tcp"},
+        {"host": 27016, "container": 27016, "protocol": "udp"},
+        {"host": 27020, "container": 27020, "protocol": "udp"},
     ]
     assert spec["working_dir"] == "/srv/server"
-    assert spec["command"][0] == "./srcds_run"
+    import shlex
+    assert spec['command'][:4] == ['/usr/bin/script', '--quiet', '--flush', '--return']
+    engine = shlex.split(spec['command'][spec['command'].index('--command') + 1])
+    assert engine[0] == './srcds_run'
 
 
 def test_csgo_runtime_wrappers_use_steamcmd_linux_family(tmp_path, monkeypatch):

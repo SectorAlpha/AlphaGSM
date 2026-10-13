@@ -15,6 +15,50 @@ process-backed by default unless you opt into the Docker backend.
 - Python packages from `requirements.txt`
 - A Linux host/runtime that can start the Unity dedicated server cleanly in headless mode
 
+## Native Workshop XML mods
+
+Public Workshop XML gameplay mods use anonymous SteamCMD access. Add an item ID
+or its Steam page URL; collections accept the same two forms:
+
+```bash
+alphagsm mystatione mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=3779655608
+alphagsm mystatione mod apply
+alphagsm mystatione mod list
+```
+
+AlphaGSM checks the consumer game ID (`544550`), `About/About.xml` identity,
+and native `GameData` XML. It enables managed local packages in `modconfig.xml`
+and preserves operator packages and settings. Code mods that need a separate
+plugin loader are refused. Files edited outside AlphaGSM are preserved and
+reported as a conflict.
+
+The public [Mars Abandoned Frontier world](https://steamcommunity.com/sharedfiles/filedetails/?id=3779655608)
+was downloaded anonymously and loaded through the process lifecycle on
+13 October 2026. Its native log confirmed package loading and construction of
+the `AbandonedMars` world; the engine-created save contains that world setting
+and its structures. Workshop Docker validation is pending the test host's
+SSD-backed Docker endpoint.
+
+For a **new save**, select its world before starting:
+
+```bash
+alphagsm mystatione set savename frontier
+alphagsm mystatione set worldname AbandonedMars
+alphagsm mystatione start
+```
+
+Changing `worldname` does not convert an existing save. Keep the mods required
+by saved worlds installed. After stopping, remove one desired item with
+`mod remove workshop 3779655608`, then `mod apply`; `mod cleanup` removes all
+AlphaGSM-owned activation and payload files and clears the desired list.
+Downloaded Workshop cache files remain available for later use.
+
+The smoke runner checks a fresh native log and reads the engine-created save
+archive. Its process or Docker run is selected with
+`ALPHAGSM_TEST_RUNTIME_BACKEND`; disposable integration installs can be reused
+only through the explicit `ALPHAGSM_STATIONEERSSERVER_TEST_INSTALL` opt-in under
+`ALPHAGSM_WORK_DIR`, with exclusive ownership by that test run.
+
 ## Quick Start
 
 Create the server:

@@ -8,6 +8,25 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-13
+- tModLoader: add public-release dedicated-server installation, contained world
+  configuration and native Workshop package activation, with Census command
+  execution verified through process and Docker lifecycle tests.
+- Workshop: add native map, package and mod adapters for additional anonymous
+  dedicated servers; record each game's actual runtime evidence and blockers
+  in docs/WORKSHOP_SUPPORT.md.
+- Mod installs: publish native assets transactionally, protect operator-owned
+  and edited files, and retain recovery backups if rollback itself fails.
+- Workshop safety: reject live Space Engineers/Wreckfest changes and preserve
+  edited Tripwire subscriptions. Reactive Drop stops before updates and honors
+  the selected native server configuration file.
+- Workshop: distinguish legacy collections from opaque item metadata using
+  Valve's collection response instead of relying on empty upload fields.
+- Downloads: extract ZIPs reliably from cache directories containing brackets
+  and allow unattended retries after partial extraction.
+- Docker: set Proton ownership in its installation layer to avoid copying the
+  complete runtime into a second layer during the Wine image build.
+- Squad: query live server population and loaded map/layer through native RCON
+  on the current EOS server, with bounded replies and private admin credentials.
 - Workshop: accept numeric IDs or Steam Community filedetails URLs for items
   and collections, including removal. Expose anonymous Workshop downloads on
   every anonymous SteamCMD module, checking the module or installed game AppID

@@ -704,7 +704,7 @@ def test_insserver_configure_seeds_mod_state_defaults(tmp_path):
 
     insserver.configure(server, ask=False, port=27015, dir=str(tmp_path))
 
-    assert server.data["mods"]["desired"] == {"curated": [], "url": [], "gamebanana": [], "moddb": []}
+    assert server.data["mods"]["desired"] == {"curated": [], "url": [], "gamebanana": [], "moddb": [], "workshop": []}
 
 
 def test_insserver_mod_apply_installs_direct_archive_url(tmp_path, monkeypatch):
@@ -792,9 +792,12 @@ def test_thin_source_wrappers_seed_shared_mod_state(tmp_path, module_name):
     module.configure(server, ask=False, port=27015, dir=str(tmp_path / module_name))
 
     assert "mod" in module.command_functions
-    assert server.data["mods"]["desired"] == {
+    expected = {
         "curated": [],
         "url": [],
         "gamebanana": [],
         "moddb": [],
     }
+    if hasattr(module, "workshop_app_id"):
+        expected["workshop"] = []
+    assert server.data["mods"]["desired"] == expected

@@ -127,6 +127,7 @@ Notes:
 - [x] stnserver
 - [x] svenserver
 - [x] terraria_tshock
+- [x] terraria_tmodloader
 - [x] terraria_vanilla
 - [x] terratechworldsserver
 - [x] tf2

@@ -99,4 +99,29 @@ create is still the live source of truth.
 
 - **Map directory**: Check game documentation
 - **Mod directory**: Check game documentation
-- **Workshop support**: No
+- **Workshop support**: anonymous native Unreal plugin staging; current engine
+  validation in process and Docker is pending.
+
+## Workshop plugins and maps
+
+```bash
+alphagsm myserver mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=2909251852
+alphagsm myserver mod add workshop-collection COLLECTION_ID
+alphagsm myserver mod apply
+alphagsm myserver start
+```
+
+AlphaGSM validates Workshop items against Squad 44's game AppID `736220`
+and downloads without Steam credentials. A complete Linux cooked content plugin,
+its `.uplugin` descriptor and matching `.mi` Workshop identity are required.
+PAK and IOStore files are staged under `PostScriptum/Plugins/Mods/<item-id>/`;
+Windows and macOS cooked assets are omitted.
+
+The engine discovers these plugins at startup. Select the appropriate mod layer
+using the game's normal layer rotation or admin commands. A downloaded plugin
+does not establish that the current server build can load its SDK version.
+
+`mod remove workshop ID_OR_URL` followed by `mod apply` removes selected owned
+files. `mod cleanup` clears the desired list and removes unchanged files owned
+by AlphaGSM. Operator plugins and files remain present. Edited owned files block
+replacement or cleanup instead of being overwritten.

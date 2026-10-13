@@ -12,6 +12,7 @@ Provides query strategies:
 * :func:`ts3_serverinfo` — TeamSpeak 3 ServerQuery (telnet on port 10011).
 * :func:`soldat_info` — classic Soldat file-server status query over TCP.
 * :func:`source_rcon_info` — authenticated Source RCON ``ListPlayers`` query.
+* :func:`squad_rcon_info` — Squad's native RCON ``ShowServerInfo`` JSON query.
 * :func:`http_json` — HTTP JSON endpoint query.
 * :func:`udp_ping` — generic UDP reachability probe for silent listeners.
 * :func:`tcp_ping` — TCP connect to prove a port is open.
@@ -20,7 +21,7 @@ Provides query strategies:
 Game modules may optionally define ``get_query_address(server)`` returning a
 ``(host, port, protocol)`` tuple where *protocol* is ``"a2s"``, ``"quake"``,
 ``"quakeworld"``, ``"quake2"``, ``"ut3"``, ``"bedrock"``, ``"ts3"``,
-``"soldat"``, ``"source_rcon"``, ``"http_status"``, ``"terraria"``,
+``"soldat"``, ``"source_rcon"``, ``"squad_rcon"``, ``"http_status"``, ``"terraria"``,
 ``"udp"``, or ``"tcp"``. When that hook is absent the caller falls back to a
 TCP ping on the main port.
 """
@@ -37,7 +38,7 @@ import urllib.error
 import urllib.request
 
 __all__ = ["QueryError", "a2s_info", "parse_a2s_info", "quake_status", "quakeworld_status", "quake2_status", "ut3_status", "bedrock_info", "slp_info", "udp_ping", "tcp_ping", "terraria_info",
-           "ts3_serverinfo", "soldat_info", "source_rcon_info", "http_json"]
+           "ts3_serverinfo", "soldat_info", "source_rcon_info", "squad_rcon_info", "http_json"]
 
 # Source/Steam A2S_INFO request payload and response headers.
 _A2S_PAYLOAD = b"\x54Source Engine Query\x00"
@@ -119,14 +120,12 @@ def soldat_info(host, port, timeout=5.0):
     return result
 
 
-def _source_rcon_info_once(host, port, password, timeout):
+def _source_rcon_command_once(host, port, password, timeout, command):
     """Run one bounded Source RCON authentication and command exchange.
 
-    ARK: Survival Ascended exposes RCON rather than the Steam A2S endpoint used
-    by Survival Evolved.  The response body is intentionally reduced to a
-    count so player names and the configured password never reach manager
-    output or diagnostic JSON. ASA omits the standard multipart sentinel, so
-    fragments are collected until a short quiet window inside one deadline.
+    Responses remain private to protocol-specific parsers, which expose only
+    approved public metadata. Fragments are collected until a short quiet
+    window inside one deadline for engines without the multipart sentinel.
     """
 
     if not password:
@@ -186,7 +185,7 @@ def _source_rcon_info_once(host, port, password, timeout):
                 raise QueryError("Source RCON did not confirm authentication")
 
             sock.settimeout(remaining_time())
-            sock.sendall(packet(2, 2, "ListPlayers"))
+            sock.sendall(packet(2, 2, command))
             response_parts = []
             response_size = 0
             for _ in range(4096):
@@ -218,10 +217,55 @@ def _source_rcon_info_once(host, port, password, timeout):
     except OSError as exc:
         raise QueryError("Source RCON query failed: " + str(exc)) from exc
 
+    return body
+
+
+def _source_rcon_info_once(host, port, password, timeout):
+    """Reduce ARK's native ListPlayers response to a public player count."""
+    body = _source_rcon_command_once(host, port, password, timeout, 'ListPlayers')
     if "no players connected" in body.lower():
         return {"players": 0}
     players = len(re.findall(r"(?m)^\s*\d+\.\s+", body))
     return {"players": players if players else None}
+
+
+def squad_rcon_info(host, port, password, timeout=5.0):
+    """Read real Squad game state while discarding credentials and other fields."""
+    deadline = time.monotonic() + timeout
+    body = _source_rcon_command_once(host, port, password, timeout, 'ShowServerInfo')
+    try:
+        record = json.loads(body)
+        if not isinstance(record, dict):
+            raise ValueError('Expected an object')
+        values = [record['PlayerCount_I'], record['MaxPlayers']]
+        if any(isinstance(value, bool) or not re.fullmatch(r'[0-9]{1,4}', str(value))
+               for value in values):
+            raise ValueError('Invalid population')
+        players, maximum = map(int, values)
+        if not 0 <= players <= maximum <= 1000 or maximum == 0:
+            raise ValueError('Invalid population bounds')
+        result = {'players': players, 'max_players': maximum}
+        for native, public in [('MapName_s', 'map'), ('ServerName_s', 'name'),
+                               ('GameMode_s', 'gamemode'), ('GameVersion_s', 'version')]:
+            value = record.get(native)
+            if value is not None:
+                if not isinstance(value, str) or len(value) > 1024:
+                    raise ValueError('Invalid text metadata')
+                result[public] = ''.join(character for character in value if ord(character) >= 32)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise QueryError('Squad RCON returned invalid server metadata') from exc
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise QueryError('Squad RCON query timed out')
+    current = _source_rcon_command_once(host, port, password, remaining, 'ShowCurrentMap')
+    match = re.fullmatch(r'Current level is ([^,\r\n]{1,256}), layer is ([^,\r\n]{1,256}), factions [^\r\n]{1,512}',
+                         current.strip())
+    if not match or any(not value.strip() or value.strip().lower() == 'unknown'
+                        or any(ord(character) < 32 for character in value)
+                        for value in match.groups()):
+        raise QueryError('Squad RCON did not confirm a loaded map and layer')
+    result.update(map=match[1].strip(), layer=match[2].strip())
+    return result
 
 
 def source_rcon_info(

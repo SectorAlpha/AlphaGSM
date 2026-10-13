@@ -8,9 +8,12 @@ from server import ServerError
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
+from server.modsupport.native_workshop import build_native_workshop_support
+from .workshop import configure_workshop
 
 steam_app_id = 746200
 steam_anonymous_login_possible = True
+workshop_app_id = 736220
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -22,6 +25,17 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Restart the Squad 44 dedicated server.",
 )
 command_functions = {}
+_mod_support = build_native_workshop_support(
+    game_label="Squad 44", workshop_app_id=workshop_app_id,
+    apply_callback=configure_workshop,
+)
+commands += _mod_support.commands
+command_args.update(_mod_support.command_args)
+command_descriptions.update(_mod_support.command_descriptions)
+command_functions.update(_mod_support.command_functions)
+ensure_mod_state = _mod_support.ensure_mod_state
+apply_configured_mods = _mod_support.apply_configured_mods
+cleanup_configured_mods = _mod_support.cleanup_configured_mods
 max_stop_wait = 1
 
 
@@ -47,6 +61,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="PostScriptumServer.
         prompt="Please specify the port to use for this server:",
     )
     server.data.setdefault("queryport", str(server.data["port"] + 1))
+    server.data.setdefault("beaconport", str(server.data["port"] + 10))
     gamemodule_common.configure_install_dir(
         server,
         ask,
@@ -57,12 +72,16 @@ def configure(server, ask, port=None, dir=None, *, exe_name="PostScriptumServer.
     return gamemodule_common.finalize_configure(server)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
+_install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
 )
-install.__doc__ = "Download the Squad 44 server files via SteamCMD."
+def install(server):
+    """Install the server and publish desired native Workshop plugins."""
+    _install(server)
+    if ensure_mod_state(server).get("autoapply", True):
+        apply_configured_mods(server)
 
 
 update = gamemodule_common.make_steamcmd_update_hook(
@@ -77,6 +96,12 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Squad 44 server."
 
 
+def prestart(server):
+    """Reconcile native Workshop plugins before the engine discovers them."""
+    if ensure_mod_state(server).get("autoapply", True):
+        apply_configured_mods(server)
+
+
 def get_start_command(server):
     """Build the command used to launch a Squad 44 dedicated server."""
 
@@ -88,6 +113,7 @@ def get_start_command(server):
             "./" + server.data["exe_name"],
             "Port=%s" % (server.data["port"],),
             "QueryPort=%s" % (server.data["queryport"],),
+            "beaconport=%s" % (server.data.get("beaconport", 15000),),
             "FIXEDMAXPLAYERS=%s" % (server.data["fixedmaxplayers"],),
         ],
         server.data["dir"],
@@ -103,6 +129,11 @@ def do_stop(server, j):
     """Stop Squad 44 by interrupting the foreground server process."""
 
     runtime_module.send_to_server(server, "\003")
+
+
+def get_info_address(server):
+    """Require the same native A2S endpoint as the query command."""
+    return get_query_address(server)
 
 
 def status(server, verbose):
@@ -128,20 +159,32 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port", "queryport", "fixedmaxplayers"),
+        int_keys=("port", "queryport", "beaconport", "fixedmaxplayers"),
         str_keys=("exe_name", "dir"),
     )
 
-get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        extra={"run_as_host_user": True, "container_home": "/home/alphagsm"},
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
+_PORT_DEFINITIONS = (
+    {"key": "port", "protocol": "udp"},
+    {"key": "port", "protocol": "tcp"},
+    {"key": "queryport", "protocol": "udp"},
+    {"key": "queryport", "protocol": "tcp"},
+    {"key": "beaconport", "protocol": "udp", "default": 15000},
 )
+port_claim_definitions = _PORT_DEFINITIONS
+_RUNTIME_EXTRA = {"run_as_host_user": True, "container_home": "/home/alphagsm"}
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
-        extra={"run_as_host_user": True, "container_home": "/home/alphagsm"},
-        get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}),
-        stdin_open=True,
-)
+
+def get_runtime_requirements(server):
+    """Declare native Linux execution and the complete claimed port set."""
+    return runtime_module.build_runtime_requirements(
+        server, family="steamcmd-linux", port_definitions=_PORT_DEFINITIONS,
+        extra=_RUNTIME_EXTRA,
+    )
+
+
+def get_container_spec(server):
+    """Launch the native server as the owner of the disposable install."""
+    return runtime_module.build_container_spec(
+        server, family="steamcmd-linux", get_start_command=get_start_command,
+        port_definitions=_PORT_DEFINITIONS, extra=_RUNTIME_EXTRA, stdin_open=True,
+    )

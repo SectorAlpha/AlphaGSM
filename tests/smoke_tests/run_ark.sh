@@ -107,13 +107,34 @@ run_create_or_skip_disabled "$SERVER_NAME" create ark
 run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
 run_alphagsm "$SERVER_NAME" set queryport "$QUERY_PORT"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+run_alphagsm "$SERVER_NAME" mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=2860800256
+run_alphagsm "$SERVER_NAME" mod apply
+cat >> "$INSTALL_DIR/ShooterGame/Saved/Config/LinuxServer/Engine.ini" <<'EOF'
+[Core.Log]
+LogLinker=Verbose
+LogStreaming=Verbose
+LogUObjectGlobals=Verbose
+EOF
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+run_alphagsm "$SERVER_NAME" send "getall PrimalGameData_BP_Spoilers_C"
+"$PYTHON_BIN" - "$INSTALL_DIR" <<'PY'
+from pathlib import Path
+import re
+import sys
+logs = Path(sys.argv[1]) / "ShooterGame/Saved/Logs"
+pattern = (r"Log(?:Linker|Streaming|UObjectGlobals|ConsoleResponse):.*"
+           r"(?:Loaded|Created|Loading|Serialize|Linker|PrimalGameData_BP_Spoilers_C).*"
+           r"PrimalGameData_BP_Spoilers")
+assert any(re.search(pattern, path.read_text(errors="replace")) for path in logs.glob("*.log")), \
+    "Fresh engine log did not prove native Workshop blueprint loading"
+PY
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info
 run_alphagsm "$SERVER_NAME" info --json
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
+run_alphagsm "$SERVER_NAME" mod cleanup
 run_alphagsm "$SERVER_NAME" status

@@ -1067,7 +1067,7 @@ class Server(object):
         ``"ts3"`` (TeamSpeak 3 ServerQuery),
         ``"udp"`` (generic UDP reachability),
         ``"soldat"`` (classic Soldat TCP file query), ``"source_rcon"``
-        (authenticated Source RCON),
+        (authenticated Source RCON), ``"squad_rcon"`` (native Squad game state),
         ``"http_status"`` (JSON ``/status`` endpoint), ``"terraria"``
         (native framed connection handshake), or ``"tcp"``.
         """
@@ -1250,6 +1250,17 @@ class Server(object):
             except query_utils.QueryError as exc:
                 raise ServerError("Server does not appear to be responding: " + str(exc))
 
+        if protocol == "squad_rcon":
+            try:
+                result = query_utils.squad_rcon_info(
+                    host, port, self.data.get("adminpassword", ""), timeout=30.0)
+                print("Server is responding (Squad RCON on port {}): "
+                      "players={}/{}  layer={}".format(
+                          port, result["players"], result["max_players"], result["layer"]))
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Server does not appear to be responding: " + str(exc))
+
         if protocol == "source_rcon":
             try:
                 result = query_utils.source_rcon_info(
@@ -1373,7 +1384,7 @@ class Server(object):
         ``"ut3"`` (Unreal3/GameSpy4 UDP),
         ``"ts3"`` (TeamSpeak 3 ServerQuery),
         ``"soldat"`` (classic Soldat TCP file query), ``"source_rcon"``
-        (authenticated Source RCON),
+        (authenticated Source RCON), ``"squad_rcon"`` (native Squad game state),
         ``"udp"`` (generic UDP reachability), ``"http_status"`` (JSON
         ``/status`` endpoint), ``"terraria"`` (native framed connection
         handshake), or ``"tcp"`` (TCP ping only).  When the hook is absent the method
@@ -1572,6 +1583,22 @@ class Server(object):
                 )
                 if parsed.get("gamemode"):
                     print("  Gamemode    : " + parsed["gamemode"])
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
+
+        if protocol == "squad_rcon":
+            try:
+                result = query_utils.squad_rcon_info(
+                    host, port, self.data.get("adminpassword", ""), timeout=30.0)
+                if as_json:
+                    print(json.dumps({"protocol": "squad_rcon", "port": port, **result}))
+                    return
+                print("Server info (Squad RCON on port {}):\n"
+                      "  Name        : {}\n  Map         : {}\n"
+                      "  Layer       : {}\n  Players     : {}/{}".format(
+                          port, result.get("name", "unknown"), result["map"],
+                          result["layer"], result["players"], result["max_players"]))
                 return
             except query_utils.QueryError as exc:
                 raise ServerError("Info query failed: " + str(exc))

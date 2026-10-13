@@ -43,7 +43,9 @@ trap cleanup EXIT
 require_cmd "$PYTHON_BIN"
 require_cmd screen
 
-WORK_DIR="$(mktemp -d)"
+SMOKE_WORK_ROOT="${ALPHAGSM_WORK_DIR:-${TMPDIR:-/tmp}}"
+mkdir -p "$SMOKE_WORK_ROOT"
+WORK_DIR="$(mktemp -d "$SMOKE_WORK_ROOT/insserver-smoke-XXXXXX")"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/insserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-insserver.conf"
@@ -51,7 +53,7 @@ LOG_PATH="$HOME_DIR/logs/AlphaGSM-insserver-IT#$SERVER_NAME.log"
 
 mkdir -p "$HOME_DIR"
 
-PORT="$(pick_free_port)" 
+PORT="$(pick_free_port_group 3)"
 
 cat > "$CONFIG_PATH" <<EOF
 [core]
@@ -61,6 +63,9 @@ userconf = $HOME_DIR
 [downloader]
 db_path = $HOME_DIR/downloads/downloads.txt
 target_path = $HOME_DIR/downloads/downloads
+
+[downloader.steamcmd]
+steamcmd_path = $WORK_DIR/steamcmd
 
 [server]
 datapath = $HOME_DIR/conf
@@ -79,11 +84,69 @@ echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create insserver
+run_alphagsm "$SERVER_NAME" set clientport "$((PORT + 1))"
+run_alphagsm "$SERVER_NAME" set sourcetvport "$((PORT + 2))"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+
+
+WORKSHOP_IDS=""
+if [[ -n "${INS_WORKSHOP_COLLECTION:-}" ]]; then
+  run_alphagsm "$SERVER_NAME" mod add workshop-collection "$INS_WORKSHOP_COLLECTION"
+elif [[ -n "${INS_WORKSHOP_ITEM:-}" ]]; then
+  run_alphagsm "$SERVER_NAME" mod add workshop "$INS_WORKSHOP_ITEM"
+fi
+if [[ -n "${INS_WORKSHOP_COLLECTION:-}${INS_WORKSHOP_ITEM:-}" ]]; then
+  run_alphagsm "$SERVER_NAME" mod apply
+  WORKSHOP_IDS="$("$PYTHON_BIN" - "$HOME_DIR/conf/$SERVER_NAME.json" <<'PYIDS'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as handle:
+    data = json.load(handle)
+print(" ".join(entry["workshop_id"] for entry in data["mods"]["desired"]["workshop"]))
+PYIDS
+)"
+fi
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+
+if [[ -n "${WORKSHOP_IDS:-}" ]]; then
+  read -r -a WORKSHOP_ID_ARGS <<< "$WORKSHOP_IDS"
+  WORKSHOP_MOUNTED=0
+  for (( attempt=0; attempt<120; attempt++ )); do
+    PROBE_TOKEN="AlphaGSM-INS-$("$PYTHON_BIN" -c 'import uuid; print(uuid.uuid4().hex)')"
+    run_alphagsm "$SERVER_NAME" send "echo BEGIN-$PROBE_TOKEN; path; echo END-$PROBE_TOKEN"
+    sleep 2
+    run_alphagsm "$SERVER_NAME" logs -n 20000 > "$WORK_DIR/workshop-probe.log"
+    if "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/nwi_workshop.py" "$WORK_DIR/workshop-probe.log" 222880 "$PROBE_TOKEN" "${WORKSHOP_ID_ARGS[@]}"; then
+      WORKSHOP_MOUNTED=1
+      break
+    fi
+  done
+  [[ "$WORKSHOP_MOUNTED" == "1" ]] || { cat "$WORK_DIR/workshop-probe.log"; exit 1; }
+  WORKSHOP_MAP="${INS_WORKSHOP_MAP:-amber_spirits_coop}"
+  WORKSHOP_MODE="${INS_WORKSHOP_MODE:-checkpoint}"
+  [[ "$WORKSHOP_MAP" =~ ^[a-zA-Z0-9_/-]+$ && "$WORKSHOP_MODE" =~ ^[a-zA-Z0-9_]+$ ]] || exit 1
+  run_alphagsm "$SERVER_NAME" send "changelevel $WORKSHOP_MAP $WORKSHOP_MODE"
+  WORKSHOP_MAP_LOADED=0
+  for (( attempt=0; attempt<90; attempt++ )); do
+    if run_alphagsm "$SERVER_NAME" info --json > "$WORK_DIR/workshop-info.json"; then
+      if "$PYTHON_BIN" - "$WORK_DIR/workshop-info.json" "$WORKSHOP_MAP" <<'PYMAP'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as handle:
+    data = json.load(handle)
+assert data["protocol"] == "a2s" and data["map"] == sys.argv[2], data
+PYMAP
+      then
+        WORKSHOP_MAP_LOADED=1
+        break
+      fi
+    fi
+    sleep 2
+  done
+  [[ "$WORKSHOP_MAP_LOADED" == "1" ]] || { run_alphagsm "$SERVER_NAME" logs -n 20000; exit 1; }
+fi
+
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info
 run_alphagsm "$SERVER_NAME" info --json
@@ -93,3 +156,7 @@ run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 
 run_alphagsm "$SERVER_NAME" status
+
+if [[ -n "${WORKSHOP_IDS:-}" ]]; then
+  run_alphagsm "$SERVER_NAME" mod cleanup
+fi

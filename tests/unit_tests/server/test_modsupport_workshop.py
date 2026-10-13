@@ -63,6 +63,27 @@ def test_legacy_collection_metadata_without_file_type_is_supported(monkeypatch):
     assert provider.resolve_workshop_collection("1", 550) == ["10"]
 
 
+def test_legacy_zero_size_collection_with_nonzero_content_handle(monkeypatch):
+    record = detail('552903640', app_id=222880, file_type=None)
+    record.update(filename='', file_url='', file_size='0',
+                  hcontent_file='395550145287562115')
+    provider, calls = fake_api(monkeypatch, {
+        '552903640': record, '498253639': detail('498253639', app_id=222880)},
+        {'552903640': ['498253639']})
+    assert provider.resolve_workshop_collection('552903640', 222880) == ['498253639']
+    assert any('GetCollectionDetails' in url for url, _params in calls)
+    with pytest.raises(ModSupportError, match='collection'):
+        provider.resolve_workshop_item('552903640', 222880)
+
+
+def test_opaque_zero_size_item_is_not_misclassified_as_collection(monkeypatch):
+    record = detail('710060895', app_id=346330, file_type=None)
+    record.update(filename='', file_url='', file_size='0', hcontent_file='123456')
+    provider, calls = fake_api(monkeypatch, {'710060895': record})
+    assert provider.resolve_workshop_item('710060895', 346330)['workshop_id'] == '710060895'
+    assert any('GetCollectionDetails' in url for url, _params in calls)
+
+
 @pytest.mark.parametrize('filename', ['steamworkshop/collection/1_collection_branding.jpg', ''])
 def test_legacy_collection_branding_image_is_not_a_downloadable_mod(monkeypatch, filename):
     record = detail(1, app_id=550, file_type=None)
@@ -82,6 +103,28 @@ def test_batch_item_validation_shares_request_budget(monkeypatch):
     monkeypatch.setattr(provider, "MAX_WORKSHOP_REQUESTS", 2)
     with pytest.raises(ModSupportError, match="limit"):
         provider.resolve_workshop_items(ids, 730)
+
+
+def test_item_details_preserve_game_metadata_and_order_under_one_budget(monkeypatch):
+    first = detail(10, app_id=440)
+    first.update(title='Server Map', tags=[{'tag': 'Map'}], time_updated=123)
+    provider, calls = fake_api(monkeypatch, {'10': first, '11': detail(11, app_id=440)})
+    records = provider.resolve_workshop_item_details([
+        'https://steamcommunity.com/sharedfiles/filedetails/?id=10', '11', '10'], 440)
+    assert list(records) == ['10', '11']
+    assert records['10']['tags'] == [{'tag': 'Map'}]
+    assert records['10']['title'] == 'Server Map'
+    assert records['10']['time_updated'] == 123
+    assert len(calls) == 1
+    assert provider.resolve_workshop_items(['10'], 440) == [{
+        'workshop_id': '10', 'source_type': 'workshop', 'resolved_id': 'workshop.10'}]
+
+
+@pytest.mark.parametrize('record', [detail(11, app_id=730), detail(11, app_id=440, file_type=2)])
+def test_item_details_reject_wrong_game_or_collection_before_returning(monkeypatch, record):
+    provider, _calls = fake_api(monkeypatch, {'10': detail(10, app_id=440), '11': record})
+    with pytest.raises(ModSupportError):
+        provider.resolve_workshop_item_details(['10', '11'], 440)
 
 
 @pytest.mark.parametrize("record", [detail(10, result=9), detail(10, file_type=2),

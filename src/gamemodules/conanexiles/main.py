@@ -11,9 +11,12 @@ from server.settable_keys import SettingSpec
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
+from server.modsupport.native_workshop import build_native_workshop_support
+from .workshop import configure_workshop
 
 steam_app_id = 443030
 steam_anonymous_login_possible = True
+workshop_app_id = 440900
 NATIVE_EXECUTABLE = (
     "ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping"
 )
@@ -37,6 +40,17 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Restart the Conan Exiles dedicated server.",
 )
 command_functions = {}
+_mod_support = build_native_workshop_support(
+    game_label="Conan Exiles", workshop_app_id=workshop_app_id,
+    apply_callback=configure_workshop,
+)
+commands += _mod_support.commands
+command_args.update(_mod_support.command_args)
+command_descriptions.update(_mod_support.command_descriptions)
+command_functions.update(_mod_support.command_functions)
+ensure_mod_state = _mod_support.ensure_mod_state
+apply_configured_mods = _mod_support.apply_configured_mods
+cleanup_configured_mods = _mod_support.cleanup_configured_mods
 max_stop_wait = 1
 setting_schema = {
     "map": SettingSpec(
@@ -254,24 +268,30 @@ def sync_server_config(server):
             server_settings.write(handle, space_around_delimiters=False)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
+_install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_platform": "linux"},
     sync_server_config=sync_server_config,
 )
-install.__doc__ = "Download the Conan Exiles server files via SteamCMD."
+def install(server):
+    """Install the native server and apply desired Workshop content."""
+    _install(server)
+    if ensure_mod_state(server).get("autoapply", True):
+        apply_configured_mods(server)
 
 
-update = gamemodule_common.make_steamcmd_update_hook(
+_update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_platform": "linux"},
     sync_server_config=sync_server_config,
 )
-update.__doc__ = "Update the Conan Exiles server files and optionally restart the server."
+def update(server, *args, **kwargs):
+    """Update the native server; prestart reconciles desired Workshop content."""
+    return _update(server, *args, **kwargs)
 
 
 restart = gamemodule_common.make_restart_hook()
@@ -282,6 +302,8 @@ def prestart(server):
     """Refresh the managed Conan Exiles config files before launch."""
 
     sync_server_config(server)
+    if ensure_mod_state(server).get("autoapply", True):
+        apply_configured_mods(server)
 
 
 def get_query_address(server):

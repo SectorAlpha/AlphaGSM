@@ -12,6 +12,27 @@ defines `-path` as the directory used to load configuration and store server
 files. In Docker, this directory maps to the AlphaGSM installation on the host,
 so configuration, saves, and logs remain accessible there.
 
+## Workshop validation checkpoint
+
+Native Workshop support is under validation as of 13 October 2026. Anonymous
+downloads succeeded for consumer app `244850`, including the public
+[Modular Encounters Systems server framework](https://steamcommunity.com/sharedfiles/filedetails/?id=1521905890)
+(31,485,392 bytes). This proves content access; a complete modded lifecycle
+has not passed yet.
+
+The adapter manages Steam mod references in the configured world's
+`Sandbox.sbc` and `Sandbox_config.sbc`, preserving operator entries. A missing
+default world is seeded from the dedicated server's own Empty World template;
+existing saves are preserved. Native world paths must stay inside the
+installation.
+
+The first process launch failed in Wine Mono's console output with an
+`Invalid handle` exception. Linux launch now uses the vendor-supported
+`-noconsole` option; fresh engine mod execution, query/info, and complete
+shutdown still need validation. Workshop Docker checks are pending the test
+host's SSD-backed Docker endpoint. The prior baseline classification above
+does not establish Workshop lifecycle support.
+
 ## Requirements
 
 - Docker

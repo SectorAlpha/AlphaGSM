@@ -9,9 +9,12 @@ from server.settable_keys import SettingSpec, build_launch_arg_values
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
+from server.modsupport.native_workshop import build_native_workshop_support
+from .workshop import configure_workshop, validate_installed_map
 
 steam_app_id = 232130
 steam_anonymous_login_possible = True
+workshop_app_id = 232090
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -23,6 +26,17 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Restart the Killing Floor 2 dedicated server.",
 )
 command_functions = {}
+_mod_support = build_native_workshop_support(
+    game_label="Killing Floor 2", workshop_app_id=workshop_app_id,
+    apply_callback=configure_workshop,
+)
+commands += _mod_support.commands
+command_args.update(_mod_support.command_args)
+command_descriptions.update(_mod_support.command_descriptions)
+command_functions.update(_mod_support.command_functions)
+ensure_mod_state = _mod_support.ensure_mod_state
+apply_configured_mods = _mod_support.apply_configured_mods
+cleanup_configured_mods = _mod_support.cleanup_configured_mods
 max_stop_wait = 1
 setting_schema = {
     "port": SettingSpec(
@@ -85,12 +99,24 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Win64/KFGa
     return gamemodule_common.finalize_configure(server)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
+_install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
 )
-install.__doc__ = "Download the Killing Floor 2 server files via SteamCMD."
+
+
+def install(server):
+    """Download the dedicated server and reconcile native Workshop subscriptions."""
+    _install(server)
+    if ensure_mod_state(server).get("autoapply", True):
+        apply_configured_mods(server)
+
+
+def prestart(server):
+    """Configure native downloads and client delivery while the server is stopped."""
+    if ensure_mod_state(server).get("autoapply", True):
+        apply_configured_mods(server)
 
 
 update = gamemodule_common.make_steamcmd_update_hook(
@@ -168,6 +194,9 @@ def backup(server, profile=None):
 def checkvalue(server, key, *value):
     """Validate supported Killing Floor 2 datastore edits."""
 
+    if key == ["startmap"]:
+        return validate_installed_map(server, " ".join(value), game_dir="KFGame",
+                                      suffix=".kfm", stock="KF-BioticsLab")
     return gamemodule_common.handle_setting_schema_checkvalue(
         server,
         key,
@@ -178,14 +207,25 @@ def checkvalue(server, key, *value):
         backup_module=backup_utils,
     )
 
-get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
-        family='steamcmd-linux',
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}),
+_PORT_DEFINITIONS = (
+    {"key": "port", "protocol": "udp"},
+    {"key": "port", "protocol": "tcp"},
+    {"key": "queryport", "protocol": "udp"},
+    {"key": "port", "offset": 12783, "protocol": "udp"},
 )
+port_claim_definitions = _PORT_DEFINITIONS
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
-        get_start_command=get_start_command,
-        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}),
-        stdin_open=True,
-)
+
+def get_runtime_requirements(server):
+    """Declare native Linux execution and its managed gameplay and query ports."""
+    return runtime_module.build_runtime_requirements(
+        server, family="steamcmd-linux", port_definitions=_PORT_DEFINITIONS,
+    )
+
+
+def get_container_spec(server):
+    """Launch the native dedicated server through the shared runtime family."""
+    return runtime_module.build_container_spec(
+        server, family="steamcmd-linux", get_start_command=get_start_command,
+        port_definitions=_PORT_DEFINITIONS, stdin_open=True,
+    )

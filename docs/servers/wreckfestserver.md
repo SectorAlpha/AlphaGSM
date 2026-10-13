@@ -4,6 +4,26 @@ This guide covers the `wreckfestserver` module in AlphaGSM.
 
 Status: `PASSED` on 2026-05-31.
 
+## Workshop validation checkpoint
+
+Native Workshop support remains under validation as of 13 October 2026.
+Anonymous consumer-app `228380` downloads succeeded, and the actual engine's
+`tracks` command registered the public
+[Crazy 2025 track pack](https://steamcommunity.com/sharedfiles/filedetails/?id=3428792631),
+including `crazy_2000_classic`, its reversed event, and its deathloop event.
+The adapter preserves operator mod folders and config entries while managing
+its own native `mods=` entries.
+
+The complete modded process lifecycle still fails at genuine Steam A2S
+query/info readiness, including with query ports in the vendor's LAN discovery
+range. AlphaGSM now checks that native query port; a listening Docker TCP proxy
+cannot establish server health. A diagnostic native Windows console probe
+proved track registration, but no console query fallback is exposed yet.
+Linux process launch now uses Xvfb consistently with Docker; owned Wine-child
+shutdown remains part of final verification. Workshop Docker checks are
+pending the test host's SSD-backed Docker endpoint. The historical baseline
+status above does not establish Workshop lifecycle support.
+
 ## Requirements
 
 - Docker

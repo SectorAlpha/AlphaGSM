@@ -51,7 +51,8 @@ command. The TF2 smoke runner uses this same add-then-apply order.
 | `manifest` | a family name (`sourcemod`, `metamod`, `prophunt`) | You want AlphaGSM's known, reproducible entry |
 | `gamebanana` | a numeric item id | The addon is hosted on GameBanana |
 | `moddb` | a Mod DB download or addon page URL | The file is a supported zip/tar archive |
-| `workshop` | a numeric Workshop id | Experimental desired-state only; apply is not a supported TF2 install path yet |
+| `workshop` | a Workshop item id or official URL | You want a multiplayer map loaded by TF2's native Workshop loader |
+| `workshop-collection` | a collection id or official URL | You want all validated multiplayer maps in a collection |
 
 ```bash
 alphagsm mytf2 mod add gamebanana 12345
@@ -137,8 +138,9 @@ does not guarantee that its publisher permits anonymous Workshop downloads.
 L4D2 accepts one bare `.vpk` per Workshop item and installs it under
 `left4dead2/addons/workshop/<item-id>.vpk`. It applies enabled desired addons
 before starting. CS2 retains its addon/config-tree installer; it does not
-automatically install arbitrary Workshop map packages. TF2 Workshop apply
-remains experimental; use its checked-in manifest for supported installs.
+automatically install arbitrary Workshop map packages. TF2 uses native map sync
+commands; after apply, select a map with `set map workshop/ITEM_ID`. Cosmetic
+uploads are rejected. Its process load test passed; Docker validation is pending.
 
 The native loaders use the same commands but activate content according to the game:
 
@@ -147,6 +149,17 @@ The native loaders use the same commands but activate content according to the g
 | Garry's Mod | `4000` | Validated GMA contents extracted into owned addon directories |
 | Unturned | `304930` | Owned IDs in `WorkshopDownloadConfig.json`; select the installed map with the native `Map` command in `Commands.dat` |
 | Project Zomboid | `108600` | Download and inspect `mod.info`, then maintain `WorkshopItems` and `Mods` in the server profile |
+| Barotrauma | `602960` | Validate the content package and enable its native package entry |
+| Avorion | `445220` | Validate Lua mod metadata and add owned declarations to `modconfig.lua` |
+| Insurgency / Day of Infamy | `222880` / `447820` | Maintain owned `subscribed_file_ids.txt` entries and enable native Workshop map loading |
+| No More Room in Hell | `224260` | Validate map assets and stage them in native game content directories |
+| BrainBread 2 | `346330` | Validate map assets and use the game's existing per-item Workshop search path |
+| Conan Exiles | `440900` | Stage owned PAK files and ordered `modlist.txt` entries |
+| Terraria tModLoader | `1281930` | Validate compatible `.tmod` packages and preserve operator entries in `Mods/enabled.json` |
+
+The [Workshop support matrix](WORKSHOP_SUPPORT.md) records actual engine-load
+evidence, separately for process and Docker, including current blockers.
+Anonymous download success alone is insufficient to mark a native loader passed.
 
 These adapters preserve existing operator configuration. Their `mod list` reports
 configured desired state; the live tests require engine evidence before claiming
@@ -186,5 +199,5 @@ installer today.
 
 - It will not fetch client-only or single-player mods.
 - It will not write files outside the approved addon/plugin directories.
-- Workshop apply for TF2 is still experimental; prefer `manifest`.
+- TF2 Workshop activation accepts multiplayer maps, with map-mode metadata.
 - `mod add` without `mod apply` does not install anything yet.

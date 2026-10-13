@@ -134,7 +134,8 @@ def test_conan_exiles_smoke_uses_native_linux_runtime_and_reserves_pinger_port()
     assert "ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX" in text
     assert "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON" not in text
     assert 'PORT="$(pick_free_port_group 2)"' in text
-    assert "backend = docker" in text
+    assert 'RUNTIME_BACKEND="${ALPHAGSM_TEST_RUNTIME_BACKEND:-docker}"' in text
+    assert "backend = $RUNTIME_BACKEND" in text
 
 
 def test_return_to_moria_smoke_supports_current_and_legacy_status_paths():

@@ -10,9 +10,12 @@ import server.runtime as runtime_module
 from server.settable_keys import SettingSpec
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
+from server.modsupport.native_workshop import build_native_workshop_support
+from .workshop import configure_workshop, configured_workshop_ids
 
 steam_app_id = 376030
 steam_anonymous_login_possible = True
+workshop_app_id = 346110
 CONTAINER_STEAMCMD_DIR = "/opt/alphagsm-steamcmd"
 
 commands = ("update", "restart")
@@ -25,7 +28,24 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Restart the ARK: Survival Evolved dedicated server.",
 )
 command_functions = {}
+_mod_support = build_native_workshop_support(
+    game_label="ARK: Survival Evolved", workshop_app_id=workshop_app_id,
+    apply_callback=configure_workshop,
+)
+commands += _mod_support.commands
+command_args.update(_mod_support.command_args)
+command_descriptions.update(_mod_support.command_descriptions)
+command_functions.update(_mod_support.command_functions)
+ensure_mod_state = _mod_support.ensure_mod_state
+apply_configured_mods = _mod_support.apply_configured_mods
+cleanup_configured_mods = _mod_support.cleanup_configured_mods
 setting_schema = {
+    "rconenabled": SettingSpec(canonical_key="rconenabled", value_type="boolean",
+                               description="Enable native RCON after setting a private admin password.",
+                               apply_to=("datastore", "launch_args")),
+    "rconport": SettingSpec(canonical_key="rconport", value_type="integer",
+                            description="Native RCON TCP port.",
+                            apply_to=("datastore", "launch_args")),
     "adminpassword": SettingSpec(
         canonical_key="adminpassword",
         description="Server admin password.",
@@ -38,6 +58,15 @@ setting_schema = {
     ),
 }
 max_stop_wait = 1
+_PORT_DEFINITIONS = (
+    {"key": "queryport", "protocol": "udp"},
+    {"key": "queryport", "protocol": "tcp"},
+    {"key": "port", "protocol": "udp"},
+    {"key": "port", "protocol": "tcp"},
+    {"key": "port", "offset": 1, "protocol": "udp"},
+    {"key": "rconport", "protocol": "tcp"},
+)
+port_claim_definitions = _PORT_DEFINITIONS
 
 
 def _launch_session_name(server):
@@ -84,6 +113,8 @@ def configure(
         default_port=7777,
         prompt="Please specify the port to use for this server:",
     )
+    server.data.setdefault("rconenabled", False)
+    server.data.setdefault("rconport", str(server.data["port"] + 2))
     gamemodule_common.configure_install_dir(
         server,
         ask,
@@ -94,12 +125,16 @@ def configure(
     return gamemodule_common.finalize_configure(server)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
+_install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
 )
-install.__doc__ = "Download the ARK server files via SteamCMD."
+def install(server):
+    """Install ARK and reconcile desired native Workshop gameplay mods."""
+    _install(server)
+    if ensure_mod_state(server).get("autoapply", True):
+        apply_configured_mods(server)
 
 
 update = gamemodule_common.make_steamcmd_update_hook(
@@ -112,6 +147,12 @@ update.__doc__ = "Update the ARK server files and optionally restart the server.
 
 restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the ARK server."
+
+
+def prestart(server):
+    """Reconcile native descriptors, decompressed assets and ActiveMods before start."""
+    if ensure_mod_state(server).get("autoapply", True):
+        apply_configured_mods(server)
 
 
 def get_start_command(server):
@@ -135,6 +176,12 @@ def get_start_command(server):
     )
     if server.data["serverpassword"]:
         map_args += "?ServerPassword=%s" % (server.data["serverpassword"],)
+    workshop_ids = configured_workshop_ids(server)
+    if workshop_ids:
+        map_args += "?GameModIds=" + ",".join(workshop_ids)
+    if server.data.get("rconenabled", False):
+        _rcon_enabled(server, "true")
+        map_args += "?RCONEnabled=True?RCONPort=" + str(int(server.data["rconport"]))
     return (
         ["./" + launcher_relpath, map_args, "-server", "-log"],
         working_dir,
@@ -186,9 +233,21 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port", "queryport", "maxplayers"),
+        int_keys=("port", "queryport", "rconport", "maxplayers"),
+        custom_handlers={"rconenabled": _rcon_enabled},
         str_keys=("map", "sessionname", "adminpassword", "serverpassword", "exe_name", "dir"),
     )
+
+
+def _rcon_enabled(server, value):
+    """Keep local native RCON opt-in and require a private password."""
+    lowered = str(value).lower()
+    if lowered not in ("true", "false", "1", "0", "yes", "no"):
+        raise ServerError("rconenabled must be true or false")
+    enabled = lowered in ("true", "1", "yes")
+    if enabled and server.data.get("adminpassword", "") in ("", "alphagsm"):
+        raise ServerError("Set a private adminpassword before enabling RCON")
+    return enabled
 
 def get_runtime_requirements(server):
     """Return ARK's native Linux Docker runtime contract."""
@@ -211,12 +270,7 @@ def get_runtime_requirements(server):
     return runtime_module.build_runtime_requirements(
         server,
         family="steamcmd-linux",
-        port_definitions=(
-            {"key": "queryport", "protocol": "udp"},
-            {"key": "queryport", "protocol": "tcp"},
-            {"key": "port", "protocol": "udp"},
-            {"key": "port", "protocol": "tcp"},
-        ),
+        port_definitions=_PORT_DEFINITIONS,
         mounts=mounts,
     )
 

@@ -23,6 +23,7 @@ from utils.valve_server import (
 from utils.gamemodules import common as gamemodule_common
 from .maps import apply_configured_maps, ensure_map_state, tf2_map_command
 from .mods import TF2_WORKSHOP_APP_ID, apply_configured_mods, ensure_mod_state, tf2_mod_command
+from utils.source_console import build_source_container_start_command
 
 workshop_app_id = TF2_WORKSHOP_APP_ID
 
@@ -224,6 +225,10 @@ restart.__doc__ = "Restart the server by stopping it and then starting it again.
 
 def prestart(server, *args, **kwargs):
     """Perform TF2-specific setup immediately before the server is started."""
+    mods = ensure_mod_state(server)
+    has_content = any(mods['desired'].values()) or mods['installed'] or mods.get('owned_payloads', {}).get('tf2_native_workshop')
+    if mods.get('autoapply', True) and has_content:
+        _package_override('apply_configured_mods', apply_configured_mods)(server)
     steamclient_src = os.path.join(steamcmd.STEAMCMD_DIR, "linux64", "steamclient.so")
     steamclient_dst = _package_override("STEAMCLIENT_DST", STEAMCLIENT_DST)
     steamclient_dir = os.path.dirname(steamclient_dst)
@@ -286,7 +291,7 @@ def get_start_command(server):
         require_explicit_tokens=True,
     )
 
-    return [
+    command = [
         exe_name,
         "-game",
         "tf",
@@ -302,7 +307,11 @@ def get_start_command(server):
         "+servercfgfile",
         "server.cfg",
         *launch_args[4:6],
-    ], server.data["dir"]
+    ]
+    mods = server.data.get('mods', {})
+    if mods.get('enabled', True) and mods.get('desired', {}).get('workshop'):
+        command.extend(['+exec', 'alphagsm_workshop.cfg'])
+    return command, server.data['dir']
 
 
 def do_stop(server, j):
@@ -457,6 +466,18 @@ def status(server, verbose):
         print("Map apply errors: " + "; ".join(map_error_messages))
 
 
+def _validate_tf2_map(server, value):
+    """Permit native Workshop shorthand only for managed same-game item IDs."""
+    name = str(value)
+    if name.startswith('workshop/'):
+        item = name.removeprefix('workshop/')
+        desired = server.data.get('mods', {}).get('desired', {}).get('workshop', [])
+        if not re.fullmatch(r'[1-9][0-9]*', item) or item not in {entry['workshop_id'] for entry in desired}:
+            raise ServerError('Add the TF2 Workshop map ID to desired state before selecting it')
+        return name
+    return validate_source_startmap(server, 'tf', name)
+
+
 def checkvalue(server, key, *value):
     """Validate supported TF2 datastore edits."""
 
@@ -469,11 +490,11 @@ def checkvalue(server, key, *value):
         raw_int_keys=("port",),
         raw_str_keys=("dir", "exe_name"),
         resolved_handlers={
-            "map": lambda server_obj, raw_value: validate_source_startmap(server_obj, "tf", raw_value),
+            "map": _validate_tf2_map,
         },
         raw_handlers={
             "maxplayers": lambda _server_obj, raw_value: str(int(raw_value)),
-            "startmap": lambda server_obj, raw_value: validate_source_startmap(server_obj, "tf", raw_value),
+            "startmap": _validate_tf2_map,
         },
     )
 
@@ -531,12 +552,20 @@ wake_a2s_query = wake_source_server_for_a2s
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
     family="steamcmd-linux",
-    port_definitions=({"key": "port", "protocol": "udp"}, {"key": "port", "protocol": "tcp"}),
+    port_definitions=({"key": "port", "protocol": "udp"}, {"key": "port", "protocol": "tcp"},
+                      {"key": "port", "offset": 1, "protocol": "udp"},
+                      {"key": "port", "offset": 5, "protocol": "udp"}),
 )
+
+def _get_container_start_command(server):
+    return build_source_container_start_command(server, get_start_command)
+
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
     family="steamcmd-linux",
-    get_start_command=get_start_command,
-    port_definitions=({"key": "port", "protocol": "udp"}, {"key": "port", "protocol": "tcp"}),
+    get_start_command=_get_container_start_command,
+    port_definitions=({"key": "port", "protocol": "udp"}, {"key": "port", "protocol": "tcp"},
+                      {"key": "port", "offset": 1, "protocol": "udp"},
+                      {"key": "port", "offset": 5, "protocol": "udp"}),
     stdin_open=True,
 )

@@ -2,11 +2,19 @@
 
 import json
 import os
+from pathlib import Path
+import shutil
+import sys
 
 import pytest
 
 from conftest import (
     alphagsm_env,
+    effective_runtime_backend,
+    require_command_for_runtime,
+    require_proton,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
     log_command_result,
     pick_free_udp_port,
     require_command,
@@ -17,10 +25,12 @@ from conftest import (
     run_and_assert_ok,
     run_setup_with_port_retry,
     wait_for_info_protocol,
+    wait_for_runtime_log_marker,
     wait_for_tcp_closed,
     write_config,
 )
 from gamemodules.wreckfestserver import steam_app_id
+from tests.smoke_tests.wreckfestserver_workshop import FIXTURE_ID, TRACK, assert_workshop_loaded
 
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 900
@@ -32,14 +42,27 @@ PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:
 
 
 @pytest.mark.timeout(TEST_TIMEOUT)
-def test_wreckfestserver_lifecycle(tmp_path):
+def test_wreckfestserver_lifecycle(tmp_path, runtime_backend="auto", workshop_fixture=False):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("docker")
+    backend = effective_runtime_backend(runtime_backend, module_name="wreckfestserver")
+    if backend == "docker":
+        require_command("docker")
+    else:
+        require_command_for_runtime("screen", runtime_backend=runtime_backend, module_name="wreckfestserver")
+        require_proton()
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
+    reusable_install = os.environ.get("ALPHAGSM_WRECKFESTSERVER_TEST_INSTALL")
+    if reusable_install:
+        work_root = Path(os.environ["ALPHAGSM_WORK_DIR"]).resolve()
+        install_dir = Path(reusable_install).expanduser().resolve()
+        assert install_dir.is_relative_to(work_root), "Reusable test install must be owned by this work root"
+        assert (install_dir / "Wreckfest_x64.exe").is_file()
+        # This opt-in path is exclusively for this test's stopped disposable install.
+        (install_dir / "log.txt").unlink(missing_ok=True)
     config_path = tmp_path / "alphagsm.conf"
     server_name = ("itwreck" + tmp_path.name.replace("_", "")[-8:])[:15]
     image = resolve_runtime_image(
@@ -53,7 +76,7 @@ def test_wreckfestserver_lifecycle(tmp_path):
         home_dir,
         session_tag="AlphaGSM-IT#",
         backend="subprocess",
-        runtime_backend="auto",
+        runtime_backend=runtime_backend,
         module_name="wreckfestserver",
     )
     env = alphagsm_env(config_path)
@@ -65,11 +88,19 @@ def test_wreckfestserver_lifecycle(tmp_path):
     while steamport in {port, queryport}:
         steamport = pick_free_udp_port()
     run_and_assert_ok(env, server_name, "create", "wreckfestserver")
-    run_and_assert_ok(env, server_name, "set", "image", image)
+    if backend == "docker":
+        run_and_assert_ok(env, server_name, "set", "image", image)
+    run_and_assert_ok(env, server_name, "set", "wineprefix", str(install_dir / ".alphagsm-wineprefix"))
     run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
     run_and_assert_ok(env, server_name, "set", "steamport", str(steamport))
     run_and_assert_ok(env, server_name, "set", "servername", "AlphaGSM Wreckfest IT")
     run_and_assert_ok(env, server_name, "set", "maxplayers", "16")
+    cache = os.environ.get("ALPHAGSM_WRECKFESTSERVER_TEST_CACHE")
+    if cache and not reusable_install:
+        source = Path(cache).expanduser().resolve()
+        assert (source / "Wreckfest_x64.exe").is_file()
+        shutil.copytree(source, install_dir, ignore=shutil.ignore_patterns(
+            ".alphagsm", ".alphagsm-wineprefix", "mods", "server_config.cfg", "log.txt"))
 
     result, port = run_setup_with_port_retry(
         env,
@@ -84,32 +115,57 @@ def test_wreckfestserver_lifecycle(tmp_path):
             f"{result.stdout}\n{result.stderr}"
         )
 
+    if workshop_fixture:
+        run_and_assert_ok(env, server_name, "mod", "add", "workshop", FIXTURE_ID)
+        run_and_assert_ok(env, server_name, "mod", "apply")
+        run_and_assert_ok(env, server_name, "set", "track", TRACK)
     run_and_assert_ok(env, server_name, "start")
 
     try:
-        wait_for_info_protocol(env, server_name, "tcp", START_TIMEOUT)
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
 
         run_and_assert_ok(env, server_name, "status")
+        if workshop_fixture:
+            run_and_assert_ok(env, server_name, "send", "tracks")
+            evidence = wait_for_runtime_log_marker(env, server_name, [TRACK], 90)
+            assert_workshop_loaded(evidence)
+            if os.environ.get("ALPHAGSM_WORK_DIR"):
+                target = Path(os.environ["ALPHAGSM_WORK_DIR"]) / "evidence"
+                target.mkdir(exist_ok=True)
+                (target / f"wreckfestserver-{backend}.log").write_text(evidence)
 
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert "TCP ping on port" in query_result.stdout, (
+        assert "Steam" in query_result.stdout or "A2S" in query_result.stdout, (
             f"Unexpected query output: {query_result.stdout!r}"
         )
 
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert "No further details available." in info_result.stdout, (
+        assert "AlphaGSM Wreckfest IT" in info_result.stdout, (
             f"Unexpected info output: {info_result.stdout!r}"
         )
 
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         info_data = json.loads(info_json_result.stdout.strip())
-        assert info_data["protocol"] == "tcp", (
-            f"Expected tcp protocol in info JSON: {info_data!r}"
+        assert info_data["protocol"] == "a2s", (
+            f"Expected a2s protocol in info JSON: {info_data!r}"
         )
-        assert info_data["port"] == port, (
-            f"Expected reported info port {port}: {info_data!r}"
+        assert info_data["port"] == queryport, (
+            f"Expected reported info port {queryport}: {info_data!r}"
         )
     finally:
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(env, server_name, sys.exc_info()[1], timeout=90)
+    assert_alphagsm_result_ok(stop_result)
 
     wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    status = run_and_assert_ok(env, server_name, "status")
+    assert "isn't running" in status.stdout
+    if workshop_fixture:
+        run_and_assert_ok(env, server_name, "mod", "cleanup")
+        assert "alphagsm-" + FIXTURE_ID not in (install_dir / "server_config.cfg").read_text()
+
+
+@pytest.mark.skipif(os.environ.get("ALPHAGSM_RUN_WORKSHOP") != "1",
+                    reason="Set ALPHAGSM_RUN_WORKSHOP=1 for native public Workshop checks")
+@pytest.mark.parametrize("runtime_backend", ["process", "docker"])
+def test_wreckfestserver_native_workshop(tmp_path, runtime_backend):
+    test_wreckfestserver_lifecycle(tmp_path, runtime_backend, workshop_fixture=True)

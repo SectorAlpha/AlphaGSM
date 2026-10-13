@@ -355,7 +355,9 @@ Curated server-side mod support now has a shared core under
   any additions. Collection provenance is stored on ordinary desired Workshop
   entries; imports are snapshots and do not remove previously requested items.
   Legacy metadata without `file_type` uses content fields to identify items
-  and verified collection details to identify collections. Collection branding
+  and verified collection details to identify collections. Opaque zero-size
+  entries with a content handle probe collection identity: only a validated
+  result 9 permits item fallback; transport failures remain errors. Collection branding
   image URLs are not downloadable item payloads.
 - `source_addons.py` revalidates desired Workshop metadata on apply, including
   legacy/manual entries, in batches under one resolver's request budget.
@@ -380,12 +382,28 @@ Curated server-side mod support now has a shared core under
   symlinks are checked before SteamCMD runs. This shared path stages content;
   module adapters own activation.
 - `native_workshop.py` shares game-validated item/collection intake and native
-  configuration state for Unturned and Project Zomboid. Adapters receive
+  configuration state across game-specific adapters. Adapters receive
   a completely validated ordered ID list; `native_workshop.status=configured`
   describes declarations, not engine load evidence. Contained nonsymlink paths
   and atomic text publication protect native configs. Cleanup calls the adapter
   with an empty list before clearing desired entries. Module callbacks own
   preservation/removal of operator config and multi-file rollback.
+- `owned_payloads.py` publishes contained native files as a transaction with
+  SHA-256 ownership records. It rejects operator files, edited owned files,
+  symlinks and overlapping paths before publication. Failed publication restores
+  previous assets and ownership; failed rollback retains original backups and a
+  recovery manifest. Adapters also restore their native config and metadata if
+  publication fails. Cleanup preserves unowned files and download caches.
+- Each native loader's live fixture and process/Docker status is recorded in
+  [the Workshop support matrix](docs/WORKSHOP_SUPPORT.md). Require fresh engine
+  mount, map, registry or mod execution evidence in addition to query/info and
+  shutdown; configured desired state is not engine load proof.
+- Current Squad uses `squad_rcon` for health and info: authenticated native
+  `ShowServerInfo` and `ShowCurrentMap` exchanges share one overall deadline.
+  The parser exposes only public metadata, validates population bounds and
+  requires a confirmed map/layer rather than trusting the JSON's `Unknown`
+  map placeholder. The module owns local RCON configuration and port claims;
+  no provider account is needed for this read-only health protocol.
 - `utils.source_console.build_source_container_start_command` relays the runtime console FIFO through
   `bsdutils` script so Garry's Mod and L4D2 see a real input terminal. Process
   commands keep their ordinary launch path.

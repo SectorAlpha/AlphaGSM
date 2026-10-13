@@ -63,6 +63,15 @@ alphagsm mycolserve backup
 
 ## Notes
 
+Workshop activation is not currently advertised for this module. On 13 October
+2026, anonymous server installation with SteamCMD app `748090` succeeded, but
+anonymous Workshop downloads using game app `366090` failed for Chisel
+(`2904408335`), Colony Commands (`1923512334`) and Area Builder (`3708370627`).
+Steam's Workshop diagnostics reported `Missing decryption key` for the first two
+items. The anonymous command in the community wiki therefore does not establish
+a working current content path. This does not change the validated baseline
+server installation or hosting support.
+
 - Module name: `colserver`
 - Validated Linux path: Docker `steamcmd-linux` runtime
 - Default game port: `27005`

@@ -45,7 +45,7 @@ def normalize_workshop_identifier(value):
         raise ModSupportError("Expected a Workshop ID or Steam Community filedetails URL") from exc
 
 
-def _post_details(method, ids, result_key):
+def _post_details(method, ids, result_key, *, allow_not_found=False):
     """Read bounded public Valve metadata with finite transport retries."""
     count_key = "collectioncount" if method == "GetCollectionDetails" else "itemcount"
     fields = {count_key: len(ids), **{f"publishedfileids[{i}]": value for i, value in enumerate(ids)}}
@@ -62,7 +62,8 @@ def _post_details(method, ids, result_key):
             by_id = {validate_workshop_identifier(record["publishedfileid"]): record for record in records}
             if len(by_id) != len(records) or set(by_id) != set(ids):
                 raise ValueError("Missing or unexpected Workshop IDs")
-            if any(record.get("result") != 1 for record in records):
+            allowed_results = (1, 9) if allow_not_found else (1,)
+            if any(record.get("result") not in allowed_results for record in records):
                 raise ModSupportError("Steam Workshop item or collection is unavailable or inaccessible")
             return by_id
         except (KeyError, TypeError, ValueError, UnicodeError) as exc:
@@ -87,11 +88,13 @@ class _WorkshopResolver:
         self.collections = {}
         self.requests = 0
 
-    def request(self, method, ids, result_key):
+    def request(self, method, ids, result_key, *, allow_not_found=False):
         """Account for each bounded metadata request."""
         self.requests += 1
         if self.requests > MAX_WORKSHOP_REQUESTS:
             raise ModSupportError("Steam Workshop collection exceeds the request limit")
+        if allow_not_found:
+            return _post_details(method, ids, result_key, allow_not_found=True)
         return _post_details(method, ids, result_key)
 
     def load(self, ids):
@@ -114,12 +117,23 @@ class _WorkshopResolver:
                     branding = (str(record.get("filename", "")).startswith("steamworkshop/collection/")
                                 or urlsplit(str(record.get("file_url", ""))).hostname
                                 == "images.steamusercontent.com")
-                    if not branding and (record.get("file_url") or record.get("hcontent_file") not in (None, "", 0, "0")):
+                    opaque = (not record.get("filename") and not record.get("file_url")
+                              and str(record.get("file_size")) == "0")
+                    has_content = bool(record.get("file_url") or
+                                       record.get("hcontent_file") not in (None, "", 0, "0"))
+                    if not branding and has_content and not opaque:
                         record["file_type"] = 0
                     else:
-                        collection = self.request("GetCollectionDetails", [item_id], "collectiondetails")[item_id]
-                        self.collections[item_id] = collection
-                        record["file_type"] = 2
+                        # Modern items and legacy collections can both expose a
+                        # zero size and opaque content handle. Probe collection
+                        # identity; only a validated not-found permits item fallback.
+                        collection = self.request("GetCollectionDetails", [item_id], "collectiondetails",
+                                                  allow_not_found=opaque and has_content and not branding)[item_id]
+                        if collection['result'] == 1:
+                            self.collections[item_id] = collection
+                            record["file_type"] = 2
+                        else:
+                            record["file_type"] = 0
                 if record.get("file_type") not in (0, 2):
                     raise ModSupportError(f"Steam Workshop ID {item_id} is not a downloadable item or collection")
             self.metadata.update(records)
@@ -147,15 +161,25 @@ def resolve_workshop_item(item_id, app_id):
 
 def resolve_workshop_items(item_ids, app_id):
     """Validate a batch of items under one shared node/request budget."""
+    records = resolve_workshop_item_details(item_ids, app_id)
+    return [{"workshop_id": item_id, "source_type": "workshop", "resolved_id": f"workshop.{item_id}"}
+            for item_id in records]
+
+
+def resolve_workshop_item_details(item_ids, app_id):
+    """Return ordered same-game item metadata under one node/request budget.
+
+    Adapters can inspect native content tags without bypassing shared identity
+    and collection checks. Provider fields remain untrusted metadata; games
+    must still validate downloaded payloads before activating them.
+    """
     item_ids = list(dict.fromkeys(normalize_workshop_identifier(value) for value in item_ids))
     resolver = _WorkshopResolver(app_id)
     resolver.load(item_ids)
-    entries = []
     for item_id in item_ids:
         if resolver.metadata[item_id]["file_type"] != 0:
             raise ModSupportError(f"Steam Workshop ID {item_id} is a collection; use workshop-collection")
-        entries.append({"workshop_id": item_id, "source_type": "workshop", "resolved_id": f"workshop.{item_id}"})
-    return entries
+    return {item_id: resolver.metadata[item_id] for item_id in item_ids}
 
 
 def resolve_workshop_collection(collection_id, app_id):

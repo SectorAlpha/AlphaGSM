@@ -64,6 +64,35 @@ alphagsm mykf2serve backup
 - Default Steam query port: 27015
 - `query` and `info` use the configured A2S query port. Docker publishes this
   UDP listener separately from the gameplay port.
+- The native Steam UDP listener uses the game port plus `12783`; AlphaGSM
+  claims and publishes this port too.
+
+## Workshop content
+
+The native Workshop adapter accepts a public item or collection ID or Steam
+Community URL, checks that it belongs to Killing Floor 2 (AppID `232090`),
+and manages native server subscriptions and client downloads:
+
+```bash
+alphagsm mykf2serve stop
+alphagsm mykf2serve mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=1208883070
+alphagsm mykf2serve mod apply
+alphagsm mykf2serve start
+```
+
+Start on the stock map first so the engine can download Workshop maps. Once a
+map exists in the native cache, stop the server and select it with
+`set startmap MAP_NAME`. The adapter uses `KFGame/Config/LinuxServer-KFEngine.ini`
+on Linux and `PCServer-KFEngine.ini` on Windows. It preserves operator
+subscriptions and unrelated settings, and refuses config changes while the
+server runs. `mod cleanup` removes AlphaGSM's subscriptions and download-manager
+entry; engine-generated cache files remain available on disk.
+
+The public `KF-Corridor` fixture (`1208883070`) passed anonymous SteamCMD access
+and the Linux engine's own Workshop download on 2026-10-13. The stock-map
+AlphaGSM process run answered real A2S with `KF-BIOTICSLAB` and six slots.
+Custom-map world loading and the complete Workshop smoke/integration lifecycle
+are still pending; Workshop Docker validation is also pending.
 
 <!-- alphagsm-server-variables:start -->
 
@@ -107,4 +136,4 @@ alphagsm myserver set KEY VALUE
 
 - **Map directory**: Check game documentation
 - **Mod directory**: Check game documentation
-- **Workshop support**: No
+- **Workshop support**: Native subscription adapter; complete native load validation pending.

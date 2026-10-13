@@ -307,8 +307,10 @@ Workshop-capable installers also accept `mod add workshop-collection COLLECTION_
 Item and collection IDs can both be replaced by Steam Community Workshop URLs.
 AlphaGSM checks that the collection and all its items belong to the server's
 game before saving them. SteamCMD supports anonymous downloads where Steam
-permits them. L4D2 installs VPK addons, Garry's Mod extracts GMA addons, and
-Unturned and Project Zomboid configure their native Workshop loaders. TF2 Workshop apply remains experimental. See [Installing Mods](docs/installing-mods.md) for the details.
+permits them. Game-specific installers activate maps, addons and mods through
+their native loaders. See the [Workshop support matrix](docs/WORKSHOP_SUPPORT.md)
+for each game's verified runtimes and restrictions, and
+[Installing Mods](docs/installing-mods.md) for the commands.
 
 Examples:
 

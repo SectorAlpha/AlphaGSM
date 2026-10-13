@@ -74,13 +74,13 @@ RUN GITHUB_TOKEN=${GITHUB_TOKEN:-} \
     PROTON_GE_DIR=/opt/proton-ge \
     bash /tmp/install_proton.sh proton \
     && ln -s /opt/proton-ge /opt/proton \
+    && chown -R root:root /opt/proton-ge /opt/proton \
     && rm -f /tmp/install_proton.sh /tmp/select_proton_asset.py
 
 COPY docker/wine-proton/entrypoint.sh /usr/local/bin/alphagsm-wine-proton-entrypoint
 
 RUN chmod +x /usr/local/bin/alphagsm-wine-proton-entrypoint \
-    && mkdir -p /srv/server \
-    && chown -R root:root /opt/proton-ge /opt/proton /opt/wine
+    && mkdir -p /srv/server
 
 WORKDIR /srv/server
 

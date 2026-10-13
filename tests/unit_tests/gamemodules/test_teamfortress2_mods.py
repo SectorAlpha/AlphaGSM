@@ -141,7 +141,7 @@ def test_mod_add_workshop_rejects_duplicate_id(tmp_path):
 
     tf2.command_functions["mod"](server, "add", "workshop", "1234567890")
 
-    with pytest.raises(ServerError, match="already present in desired state"):
+    with pytest.raises(ServerError, match="already in desired state"):
         tf2.command_functions["mod"](server, "add", "workshop", "1234567890")
 
 
@@ -268,27 +268,16 @@ def test_mod_apply_installs_curated_entry_from_override_registry(tmp_path, monke
     assert server.data["mods"]["installed"][0]["resolved_id"] == "sourcemod.stable"
 
 
-def test_mod_apply_installs_workshop_entry_from_downloaded_item(tmp_path, monkeypatch):
+def test_mod_apply_configures_native_workshop_map_without_copying_addon_payload(tmp_path, monkeypatch):
     server = DummyServer()
     tf2.configure(server, ask=False, port=27015, dir=str(tmp_path))
-    workshop_root = tmp_path / "workshop-cache" / "steamapps" / "workshop" / "content" / "440" / "1234567890"
-    payload = workshop_root / "addons" / "sourcemod" / "plugins"
-    payload.mkdir(parents=True)
-    (payload / "from_workshop.smx").write_text("plugin", encoding="utf-8")
-    monkeypatch.setattr(
-        tf2_mods.steamcmd,
-        "download_workshop_item",
-        lambda path, workshop_app_id, workshop_item_id, steam_anonymous_login_possible: str(
-            workshop_root
-        ),
-    )
-
-    tf2.command_functions["mod"](server, "add", "workshop", "1234567890")
-    tf2.command_functions["mod"](server, "apply")
-
-    installed_file = Path(server.data["dir"]) / "tf" / "addons" / "sourcemod" / "plugins" / "from_workshop.smx"
-    assert installed_file.exists()
-    assert server.data["mods"]["installed"][0]["resolved_id"] == "workshop.1234567890"
+    monkeypatch.setattr(tf2_mods.workshop_provider, 'resolve_workshop_item_details',
+                        lambda ids, app: {item: {'tags': [{'tag': 'Control Point'}]} for item in ids})
+    tf2.command_functions['mod'](server, 'add', 'workshop', '1234567890')
+    tf2.command_functions['mod'](server, 'apply')
+    cfg = Path(server.data['dir']) / 'tf/cfg/alphagsm_workshop.cfg'
+    assert cfg.read_text() == 'tf_workshop_map_sync 1234567890\n'
+    assert not (Path(server.data['dir']) / 'tf/addons').exists()
 
 
 def test_mod_apply_clears_previous_errors_after_success(tmp_path, monkeypatch):

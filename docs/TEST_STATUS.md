@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-09-09
+Last updated: 2026-10-13
 
 ## Summary
 
@@ -11,7 +11,7 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 | Status   | Count |
 |----------|-------|
-| PASSED | 139 |
+| PASSED | 140 |
 | ENABLED (AUTH) | 49 |
 | ENABLED (BYO) | 45 |
 | DISABLED | 4 |
@@ -43,6 +43,14 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- Alien Swarm: Reactive Drop (`asrdserver`) has a new anonymous-install module,
+  native Workshop configuration and CLI lifecycle tests. Its first live probe
+  exposed config execution and bind-address issues; those corrections have unit
+  coverage, but the corrected full process lifecycle is still pending. Docker
+  validation awaits an SSD-backed endpoint. It has not been promoted to PASSED.
+- The anonymous Workshop expansion is tracked per game and runtime in
+  [WORKSHOP_SUPPORT.md](WORKSHOP_SUPPORT.md). Existing baseline server status
+  does not imply its new Workshop loader has passed live validation.
 - Conan Exiles now installs the official native Linux depot and runs through
   the shared `steamcmd-linux` family. The previous Windows server reached
   startup under Wine but crashed in `xaudio2_9.dll` even with `-nosound`.
@@ -179,7 +187,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | ark | Docker runtime (SteamCMD Linux) — PASSED 2026-06-01; fresh formal integration now proves the old size-based disabled note is no longer the real blocker: anonymous SteamCMD setup for app `376030` completes on the shared `steamcmd-linux` runtime, AlphaGSM launches `ShooterGame/Binaries/Linux/ShooterGameServer` from its real working directory inside the Docker lane as a non-root user with the shared Steam bootstrap mounted into `~/.steam/sdk64/steamclient.so`, and validates real A2S `query`, `info`, and `info --json` on the managed `queryport` instead of the older stale host-process / generic-TCP assumptions |
 | arksurvivalascended | Docker runtime (Wine/Proton) — PASSED 2026-05-30; the current correction replaces the deprecated Steam query-port assumption with authenticated Source RCON `ListPlayers` on managed TCP `rconport`. The runtime contract claims and publishes game UDP and RCON TCP; launch enables RCON and keeps the admin password out of query output. Replacement CI validation is pending; this does not record a new pass. |
 | armarserver | SteamCMD |
-| avserver | SteamCMD |
+| avserver | SteamCMD — anonymous AzimuthLib Workshop activation passed process and branch-local Docker lifecycles on 2026-10-13, including live Lua execution and native query/info/shutdown. |
 | archive_backed_installs | Archive |
 | bb2server | SteamCMD (Source) — PASSED; process and Docker readiness uses AlphaGSM's real A2S `info --json` response because Docker console logs can omit the traditional Source startup markers |
 | btlserver | SteamCMD — Docker runtime uses the shared non-root host-user contract required by the Unreal payload; the current GitHub matrix validates both process and Docker lanes |
@@ -190,7 +198,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | ccserver | SteamCMD (Source) |
 | citadelserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; anonymous SteamCMD app `489650` and the native Linux payload remain supported, with the validated health contract now declared honestly as generic TCP on the managed game port because the configured queryport did not answer A2S in replacement CI validation. |
 | colserver | Docker runtime (SteamCMD Linux) — PASSED; CI keeps the validated Docker lifecycle after the forced host-process recheck stayed alive without opening Colony Survival's managed UDP query surface. |
-| conanexiles | Docker runtime (SteamCMD Linux) — the official native Linux depot replaces the Wine path that crashed in `xaudio2_9.dll` during current CI. AlphaGSM launches `ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping` as the invoking host user because the binary refuses root, syncs settings under `ConanSandbox/Saved/Config/LinuxServer/`, claims the hardcoded pinger at game port plus one, and retains A2S on the managed `queryport`. Replacement CI validation is pending; this does not record a new pass. |
+| conanexiles | SteamCMD Linux — PASSED 2026-10-13 in process and branch-local Docker: anonymous Workshop PAK mounting and Blueprint execution, A2S query/info, owned cleanup and fresh unmodded restart. The official Linux depot replaces the crashing Wine path, runs as the invoking host user, syncs LinuxServer configuration and claims the game-port-plus-one pinger. Existing stop timeout required forced termination; graceful saving is not established. |
 | counterstrike2 | SteamCMD (Source 2) — PASSED 2026-04-08 |
 | csczserver | SteamCMD (GoldSrc) |
 | csserver | SteamCMD (GoldSrc) |
@@ -273,12 +281,13 @@ support-state tables and do not change the summary counts or record a new pass.
 | solserver | SteamCMD |
 | subsistenceserver | Docker runtime (Wine/Proton) — PASSED 2026-06-03; fresh focused integration plus smoke now prove the earlier DirectX-only disabled note was stale. Anonymous SteamCMD setup for app `1362640` installs the full Windows dedicated payload, AlphaGSM launches the upstream `Binaries/Win64/UDK.exe` dedicated host inside the shared `wine-proton` runtime, hands Docker the bare Windows command so the shared entrypoint can seed the Wine prefix and Xvfb correctly, syncs the real UDK config layer so the managed `queryport` becomes authoritative before start, and validates `query`, `info`, and `info --json` over A2S on the managed query port |
 | squad44server | SteamCMD |
-| squadserver | SteamCMD |
-| stationeersserver | SteamCMD — PASSED 2026-05-29; smoke and focused integration now both pass on the post-September-2025 Linux dedicated-server contract (`rocketstation_DedicatedServer.x86_64 -file start ... -logFile ./server.log -settings ... UseSteamP2P false LocalIpAddress 0.0.0.0`), with the shared setup port-retry helper covering the colliding default `updateport` and generic `udp` `query` / `info` on the managed game port |
+| squadserver | SteamCMD — anonymous Workshop process lifecycle PASSED 2026-10-13 with native PAK/IoStore mount, serialization and layer registration, real Squad RCON population/map/layer queries, cleanup and fresh unmodded restart. Workshop Docker validation awaits the SSD endpoint; existing forced-stop fallback does not prove graceful saving. |
+| stationeersserver | SteamCMD — PASSED 2026-05-29; smoke and focused integration now both pass on the post-September-2025 Linux dedicated-server contract (`rocketstation_DedicatedServer.x86_64 -file start ... -logFile ./server.log -settings ... UseSteamP2P false LocalIpAddress 0.0.0.0`), with the shared setup port-retry helper covering the colliding default `updateport` and generic `udp` `query` / `info` on the managed game port. Anonymous Workshop process validation also passed 2026-10-13: the Mars Abandoned Frontier fixture produced a fresh native save with its exact custom world ID and Structure prefabs; CLI shutdown and owned-mod cleanup passed. Workshop Docker validation awaits an SSD-backed endpoint. |
 | starruptureserver | Docker runtime (Wine/Proton) — PASSED 2026-06-01; fresh focused integration plus follow-up smoke validation now prove the old timeout-only skip was stale: anonymous SteamCMD setup for app `3809400` installs the real Windows dedicated payload, AlphaGSM launches `StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe` inside the shared `wine-proton` runtime, stages root `DSSettings.txt` from the checked-in template before launch, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed main game port |
 | stnserver | SteamCMD |
 | svenserver | SteamCMD (GoldSrc) |
 | terraria_tshock | Direct download — PASSED 2026-05-28; smoke and focused integration both pass on the Docker-backed lifecycle once the shared `steamcmd-linux` runtime image includes the required `.NET` runtimes, and CI now builds that image from the branch before validation |
+| terraria_tmodloader | Direct official release download — PASSED 2026-10-13; process and branch-local Docker baseline/Workshop lifecycles passed on v2026.08.3.0, including native Census TownProgress execution, framed Terraria query/info and shutdown verification. |
 | terraria_vanilla | Direct download |
 | terratechworldsserver | Wine/Proton — PASSED 2026-05-28; the Linux lane now launches `TT2/Binaries/Win64/TT2Server-Win64-Shipping.exe` directly under `xvfb-run` + Wine, syncs AlphaGSM's managed port into `dedicated_server_config.json`, reaches `Created socket for bind address`, `IpNetDriver listening on port`, and `Bringing World` in `TT2/Saved/Logs/TT2.log`, and passes the full AlphaGSM lifecycle on the generic `udp` contract instead of A2S |
 | tf2 | SteamCMD (Source) |

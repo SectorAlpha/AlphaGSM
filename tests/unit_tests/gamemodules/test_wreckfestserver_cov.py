@@ -132,8 +132,8 @@ def test_get_query_address_uses_queryport():
     server.data["port"] = "33540"
     server.data["queryport"] = "27016"
     with patch.object(mod.runtime_module, "resolve_query_host", return_value="127.0.0.1"):
-        assert mod.get_query_address(server) == ("127.0.0.1", 33540, "tcp")
-        assert mod.get_info_address(server) == ("127.0.0.1", 33540, "tcp")
+        assert mod.get_query_address(server) == ("127.0.0.1", 27016, "a2s")
+        assert mod.get_info_address(server) == ("127.0.0.1", 27016, "a2s")
 
 
 def test_get_start_command_wraps_windows_payload_on_linux(tmp_path):
@@ -149,11 +149,13 @@ def test_get_start_command_wraps_windows_payload_on_linux(tmp_path):
     (tmp_path / "Wreckfest_x64.exe").write_text("", encoding="utf-8")
     (tmp_path / "server_config.cfg").write_text("game_port=33540\n", encoding="utf-8")
 
-    with patch.object(mod.proton, "wrap_command", return_value=["wrapped"]) as wrap_command:
+    with patch.object(mod.proton, "wrap_command",
+                      side_effect=lambda command, **_: ["wrapped", *command]) as wrap_command:
         cmd, cwd = mod.get_start_command(server)
 
     wrap_command.assert_called_once()
-    assert cmd == ["wrapped"]
+    assert cmd[:2] == ["xvfb-run", "-a"]
+    assert "wrapped" in cmd
     assert cwd == str(tmp_path)
 
 

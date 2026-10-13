@@ -63,6 +63,10 @@ MODULE_ALIASES = {
     "tf2server": ["teamfortress2"],
 }
 PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = (
+    # This historical name selects CI lanes, not the current support state.
+    # Live validation results remain in docs/TEST_STATUS.md and WORKSHOP_SUPPORT.md.
+    "tests/integration_tests/test_asrdserver.py",
+    "tests/integration_tests/test_terraria_tmodloader.py",
     "tests/integration_tests/test_aloftserver.py",
     "tests/integration_tests/test_ahlserver.py",
     "tests/integration_tests/test_ahl2server.py",
