@@ -308,8 +308,7 @@ Item and collection IDs can both be replaced by Steam Community Workshop URLs.
 AlphaGSM checks that the collection and all its items belong to the server's
 game before saving them. SteamCMD supports anonymous downloads where Steam
 permits them. L4D2 installs VPK addons, Garry's Mod extracts GMA addons, and
-Unturned, Project Zomboid, and Don't Starve Together configure their native
-Workshop loaders. TF2 Workshop apply remains experimental. See [Installing Mods](docs/installing-mods.md) for the details.
+Unturned and Project Zomboid configure their native Workshop loaders. TF2 Workshop apply remains experimental. See [Installing Mods](docs/installing-mods.md) for the details.
 
 Examples:
 

@@ -12,8 +12,8 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 | Status   | Count |
 |----------|-------|
 | PASSED | 139 |
-| ENABLED (AUTH) | 50 |
-| ENABLED (BYO) | 44 |
+| ENABLED (AUTH) | 49 |
+| ENABLED (BYO) | 45 |
 | DISABLED | 4 |
 | SKIPPED | 0 |
 
@@ -315,7 +315,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | inssserver | Smoke re-enabled: PASSED 2026-03-28; smoke now waits for startup markers and `info --json` protocol `a2s` on the Sandstorm query path |
 | ts3server | Smoke re-enabled: Direct download — PASSED 2026-03-28; smoke now waits for `ServerQuery created` and `info --json` protocol `ts3` |
 
-## ENABLED (AUTH) (50)
+## ENABLED (AUTH) (49)
 
 These supported rows require provider-managed authentication, credentials,
 tokens, licenses, or provisioning before setup/start can fully succeed.
@@ -372,9 +372,7 @@ tokens, licenses, or provisioning before setup/start can fully succeed.
 | iosserver | authenticated Steam/SteamCMD access to IOSoccer Dedicated Server app `673990` branch `iosoccer2025` or `beta`; anonymous SteamCMD fails to set those sdk2013 branches and the public branch still crashes on Linux |
 | zpsserver | authenticated Steam client session alongside Zombie Panic! Dedicated Server app `4523420`; even with the SteamDB-advertised `-steam -secure` launch flags, HLDS still reports `SteamAPI_IsSteamRunning()` missing under the anonymous Docker lane |
 
-| dstserver | Klei cluster token plus disposable cluster/shard config; native Workshop declarations and process/Docker load-test harness added 2026-10-13. Live load remains pending: no Klei cluster supplied. `ALPHAGSM_DST_CLUSTER_SOURCE` enables the explicit credentialed test. |
-
-## ENABLED (BYO) (44)
+## ENABLED (BYO) (45)
 
 These supported rows are intentionally explicit about the blocker class:
 owned assets, exported client files, external services, or direct archive
@@ -395,6 +393,7 @@ URLs.
 | cod4server | owned base-game assets |
 | codserver | owned multiplayer map content; the public dedicated archive ships the server payload and base PK3 files but no `maps/mp/*.bsp` map data |
 | coduoserver | owned base multiplayer assets |
+| dstserver | cluster token plus staged cluster config |
 | etlegacyserver | owned base-game assets |
 | ets2server | owned exported client packages/settings |
 | foundryserver | staged native FOUNDRY dedicated server tree |

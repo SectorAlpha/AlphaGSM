@@ -97,7 +97,7 @@ def test_get_start_command(tmp_path):
     server.data["shard"] = "test"
     cluster_root = tmp_path / "test" / "test"
     (cluster_root / "test").mkdir(parents=True)
-    (cluster_root / "cluster_token.txt").write_text("test-cluster-token")
+    (cluster_root / "cluster_token.txt").write_text("")
     (cluster_root / "cluster.ini").write_text("")
     (cluster_root / "test" / "server.ini").write_text("")
     cmd, cwd = mod.get_start_command(server)
@@ -114,7 +114,7 @@ def test_get_start_command_requires_cluster_config(tmp_path):
     server.data["cluster"] = "test"
     server.data["confdir"] = "test"
     server.data["shard"] = "Master"
-    with pytest.raises(ServerError, match="ENABLED \\(AUTH\\): dstserver"):
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\): dstserver"):
         mod.get_start_command(server)
 
 

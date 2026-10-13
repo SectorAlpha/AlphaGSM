@@ -85,8 +85,7 @@ Checked-in map families currently include competitive maps such as
 
 ### Steam Workshop items and collections
 
-L4D2, Garry's Mod, Unturned, Project Zomboid, Don't Starve Together, CS2,
-and TF2 accept `workshop` items and `workshop-collection`
+L4D2, Garry's Mod, Unturned, Project Zomboid, CS2 and TF2 accept `workshop` items and `workshop-collection`
 collections using either numeric IDs or Steam Community Workshop URLs.
 AlphaGSM checks Steam's game AppID for the item or collection
 and every nested child before saving anything. Unavailable, private, wrong-game,
@@ -148,12 +147,11 @@ The native loaders use the same commands but activate content according to the g
 | Garry's Mod | `4000` | Validated GMA contents extracted into owned addon directories |
 | Unturned | `304930` | Owned IDs in `WorkshopDownloadConfig.json`; select the installed map with the native `Map` command in `Commands.dat` |
 | Project Zomboid | `108600` | Download and inspect `mod.info`, then maintain `WorkshopItems` and `Mods` in the server profile |
-| Don't Starve Together | `322330` | `ServerModSetup` declarations and per-shard `modoverrides.lua`; a Klei token is still required to host |
 
 These adapters preserve existing operator configuration. Their `mod list` reports
 configured desired state; the live tests require engine evidence before claiming
 that content loaded. Use `mod remove workshop ID_OR_URL`, then `mod apply` to
-remove an owned entry. For Unturned, Project Zomboid and DST, `mod cleanup`
+remove an owned entry. For Unturned and Project Zomboid, `mod cleanup`
 clears managed native declarations and desired entries, retaining download caches.
 Source addon cleanup removes tracked files, clears desired entries, and removes
 its addon cache. See each server guide for payload restrictions and runtime

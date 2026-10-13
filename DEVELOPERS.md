@@ -380,7 +380,7 @@ Curated server-side mod support now has a shared core under
   symlinks are checked before SteamCMD runs. This shared path stages content;
   module adapters own activation.
 - `native_workshop.py` shares game-validated item/collection intake and native
-  configuration state for Unturned, Project Zomboid and DST. Adapters receive
+  configuration state for Unturned and Project Zomboid. Adapters receive
   a completely validated ordered ID list; `native_workshop.status=configured`
   describes declarations, not engine load evidence. Contained nonsymlink paths
   and atomic text publication protect native configs. Cleanup calls the adapter
@@ -392,8 +392,7 @@ Curated server-side mod support now has a shared core under
 - Garry's Mod validates GMAD tables, paths, sizes and CRCs before extracting
   GMA payloads into owned addon trees. Unturned preserves existing File_IDs;
   Project Zomboid inspects multiplayer mod metadata and preserves unowned
-  WorkshopItems/Mods entries. DST snapshots operator Lua and refuses to overwrite
-  later external edits; cleanup restores originals, including prior shard files.
+  WorkshopItems/Mods entries.
 - `download_workshop_items` exposes the verified staged downloader to native
   adapters, checking anonymous capability, game identity and complete item
   metadata before SteamCMD. SteamCMD legacy success paths may name a file inside
