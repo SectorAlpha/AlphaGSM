@@ -545,3 +545,6 @@ start, stop and restart it permits. Local AlphaGSM works without a connection.
 See [the connection guide](docs/sector-alpha-agent.md). The open source project’s
 home is https://alphagsm.sector-alpha.net/; the gaming community and server
 directory belong on https://sector-alpha.net/.
+
+Use the owner dashboard and `alphagsm agent replace-credential reporting` or
+`management` for independent key rotation; enter secrets only at hidden prompts.

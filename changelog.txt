@@ -17,6 +17,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
 - Public query interface: reviewed A2S_INFO and Minecraft Java SLP profiles with
   pinned numerical destinations, total deadlines, bounded fragments/decompression
   and JSON framing, and scalar observations without player names or credentials.
+- Credential rotation: independently replace reporting or management keys through
+  hidden local prompts, retaining existing bindings and capability opt-ins.
 - Lifecycle: POSIX port checks ignore closed TCP connections in TIME_WAIT while
   continuing to reject active listeners; Windows keeps exclusive port probes.
 - Packaging/lint/coverage include the new agent package. Agent credential storage
