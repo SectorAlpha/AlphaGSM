@@ -22,6 +22,7 @@ from tests.integration_tests.squad44_sdk_diagnostics import sdk_metadata_from_co
 from tests.smoke_tests.squad44server_workshop import (
     FIXTURE_ID, staged_plugin_name, select_workshop_layer, configure_workshop_layer,
     wait_for_native_map, assert_workshop_map_info,
+    assert_native_plugin_loaded,
 )
 
 pytestmark = pytest.mark.integration
@@ -71,8 +72,8 @@ def test_squad44server_lifecycle(tmp_path, *, runtime_backend=None, workshop=Non
             path.rename(path.with_suffix(".previous"))
     try:
         run_and_assert_ok(env, server_name, "start")
-        wait_for_runtime_log_marker(env, server_name, ["LogPakFile", "LogPluginManager"],
-                                    START_TIMEOUT)
+        startup_log = wait_for_runtime_log_marker(env, server_name, ["LogPakFile", "LogPluginManager"],
+                                                  START_TIMEOUT)
         native_log = wait_for_glob_log_marker(
             log_dir, "*.log", ["LogLoad: (Engine Initialization)"], START_TIMEOUT,
             env=env, server_name=server_name)
@@ -87,12 +88,12 @@ def test_squad44server_lifecycle(tmp_path, *, runtime_backend=None, workshop=Non
                 print("[native-startup]", line)
         wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=port + 1)
         if workshop:
-            plugin = re.escape(workshop[1])
-            native_log = wait_for_glob_log_marker(
-                log_dir, "*.log", [workshop[1]], START_TIMEOUT, env=env, server_name=server_name)
-            assert re.search(r"LogPakFile:.*Mounted Pak file.*" + plugin + r".*\.pak", native_log), native_log[-8000:]
-            assert re.search(r"LogModdingRuntimeModule:.*(?:[Mm]ounted|[Ss]eriali[sz]ed).*" + plugin,
-                             native_log), native_log[-8000:]
+            runtime_log = startup_log + "\n" + run_and_assert_ok(env, server_name, "logs", "-n", "20000").stdout
+            for line in (runtime_log + "\n" + native_log).splitlines():
+                if any(marker in line for marker in ("LogPakFile:", "LogModdingRuntimeModule:",
+                                                     "LogLoad: Took", "LogWorld: Bringing World")):
+                    print("[native-workshop]", line)
+            assert_native_plugin_loaded(runtime_log, native_log, workshop[1])
         run_and_assert_ok(env, server_name, "status")
         query_result = run_and_assert_ok(env, server_name, "query")
         assert "Server is responding" in query_result.stdout

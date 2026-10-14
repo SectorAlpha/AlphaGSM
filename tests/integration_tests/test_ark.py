@@ -3,7 +3,7 @@
 import json
 import os
 from pathlib import Path
-import re
+import subprocess
 import sys
 import time
 
@@ -16,7 +16,7 @@ from conftest import (
     default_runtime_backend, effective_runtime_backend, require_command,
     pick_free_tcp_port_group, pick_free_udp_port, require_integration_opt_in,
     require_steamcmd_opt_in, resolve_steamcmd_linux_runtime_image, run_and_assert_ok,
-    run_setup_with_port_retry, wait_for_glob_log_marker, wait_for_info_protocol,
+    run_setup_with_port_retry, wait_for_info_protocol,
     wait_for_udp_closed, write_config,
 )
 
@@ -24,6 +24,15 @@ pytestmark = pytest.mark.integration
 SETUP_TIMEOUT = 3600
 START_TIMEOUT = 1800
 STOP_TIMEOUT = 90
+WORKSHOP_PROBE = Path(__file__).resolve().parents[1] / "smoke_tests/ark_workshop.py"
+
+
+def _workshop_probe(env, server_name, action):
+    """Keep native RCON secrets inside the configured AlphaGSM secret store."""
+    result = subprocess.run([sys.executable, str(WORKSHOP_PROBE), action, server_name],
+                            env=env, text=True, capture_output=True, timeout=180, check=False)
+    assert_alphagsm_result_ok(result)
+    print(result.stdout)
 
 
 @pytest.mark.timeout(SETUP_TIMEOUT + START_TIMEOUT + 600)
@@ -63,9 +72,11 @@ def _run_ark_lifecycle(tmp_path, *, runtime_backend, workshop=False):
         run_and_assert_ok(env, server_name, "mod", "add", "workshop",
                           "https://steamcommunity.com/sharedfiles/filedetails/?id=2860800256")
         run_and_assert_ok(env, server_name, "mod", "apply")
+        _workshop_probe(env, server_name, "prepare")
         engine = install_dir / "ShooterGame/Saved/Config/LinuxServer/Engine.ini"
         with engine.open("a", encoding="utf-8") as handle:
-            handle.write("\n[Core.Log]\nLogLinker=Verbose\nLogStreaming=Verbose\nLogUObjectGlobals=Verbose\n")
+            handle.write("\n[Core.Log]\nLogObj=Log\nLogLinker=Verbose\n"
+                         "LogStreaming=Verbose\nLogUObjectGlobals=Verbose\n")
     log_dir = install_dir / "ShooterGame/Saved/Logs"
     if log_dir.exists():
         for path in log_dir.glob("*.log"):
@@ -79,16 +90,7 @@ def _run_ark_lifecycle(tmp_path, *, runtime_backend, workshop=False):
                 env, server_name, "a2s", remaining, expected_port=query_port),
             START_TIMEOUT - (time.monotonic() - readiness_started))
         if workshop:
-            run_and_assert_ok(env, server_name, "send", "getall PrimalGameData_BP_Spoilers_C")
-            native_log = wait_for_glob_log_marker(
-                log_dir, "*.log", ["PrimalGameData_BP_Spoilers"], START_TIMEOUT,
-                env=env, server_name=server_name)
-            assert re.search(
-                r"Log(?:Linker|Streaming|UObjectGlobals|ConsoleResponse):.*"
-                r"(?:Loaded|Created|Loading|Serialize|Linker|PrimalGameData_BP_Spoilers_C).*"
-                r"PrimalGameData_BP_Spoilers", native_log), native_log[-8000:]
-            assert not re.search(r"(?:Failed|Can't find|Unable).*PrimalGameData_BP_Spoilers",
-                                 native_log), native_log[-8000:]
+            _workshop_probe(env, server_name, "check")
         run_and_assert_ok(env, server_name, "status")
         query_result = run_and_assert_ok(env, server_name, "query")
         assert "Server is responding" in query_result.stdout

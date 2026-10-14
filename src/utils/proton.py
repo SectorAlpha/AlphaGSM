@@ -18,7 +18,9 @@ Usage example in a game module::
 """
 
 import os
+import shlex
 import shutil
+from pathlib import Path
 
 CONTAINER_SERVER_DIR = "/srv/server"
 CONTAINER_WINEPREFIX_DIR = "/srv/wineprefix"
@@ -99,6 +101,45 @@ def xvfb_host_dependency():
     """Return the shared Linux xvfb-run host dependency metadata."""
 
     return dict(XVFB_RUN_HOST_DEPENDENCY)
+
+
+def console_host_dependency():
+    """Declare the Unix PTY relay used by Windows interactive consoles."""
+    return {
+        "id": "script", "display_name": "script", "command": "script",
+        "platforms": ("linux",),
+        "install_hints": {"linux": "Install 'bsdutils' (util-linux script) for native console I/O."},
+    }
+
+
+def wrap_console_command(command):
+    """Relay native Windows console I/O through a real Unix pseudoterminal.
+
+    Wine only connects its console to the terminal when the launcher has a
+    terminal. The process supervisor and Docker console FIFO otherwise supply
+    pipes, causing native console output to disappear into a GUI conhost.
+    script invokes a shell, so quote each argument rather than joining raw text.
+    """
+    return ["script", "-qefc", shlex.join(command), "/dev/null"]
+
+
+def prepare_wineprefix(wineprefix, *, template=None):
+    """Seed a fresh Wine prefix with image-installed runtime prerequisites.
+
+    Existing prefixes, including Proton compatibility directories, belong to
+    the operator and are never overlaid. Docker's entrypoint prepares its own
+    prefix; process modules can opt into this same prepared Wine template.
+    """
+    source = Path(template or os.environ.get("ALPHAGSM_WINEPREFIX_TEMPLATE", "/opt/wine"))
+    target = Path(wineprefix)
+    if target.is_symlink():
+        raise RuntimeError("Refusing to seed a symlink Wine prefix")
+    if target.exists() and (not target.is_dir() or any(target.iterdir())):
+        return False
+    if not (source / "system.reg").is_file():
+        return False
+    shutil.copytree(source, target, symlinks=True, dirs_exist_ok=True)
+    return True
 
 
 # ---------------------------------------------------------------------------

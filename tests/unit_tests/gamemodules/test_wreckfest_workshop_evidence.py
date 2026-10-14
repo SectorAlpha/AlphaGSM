@@ -9,8 +9,34 @@ import pytest
 
 from tests.smoke_tests import wreckfestserver_workshop as module
 from tests.smoke_tests.wreckfestserver_workshop import (
-    assert_workshop_loaded, wait_for_workshop_loaded,
+    assert_workshop_loaded, capture_workshop_registry, wait_for_workshop_loaded,
 )
+
+
+def test_capture_excludes_previous_registry_and_unrelated_startup_errors():
+    stale = "Failed to read /etc/machine-id, error Invalid argument.\nTracks:\n  crazy_2000_classic (OLD)\n"
+    fresh = "Tracks:\n  crazy_2000_classic (CRAZY 2000)\n"
+    outputs = iter([stale, stale + fresh])
+    commands = []
+    evidence = capture_workshop_registry(lambda _remaining: next(outputs),
+                                        lambda: commands.append("tracks"), timeout_seconds=2)
+    assert evidence == fresh
+    assert commands == ["tracks"]
+
+
+def test_capture_does_not_accept_stale_registry_without_new_native_output():
+    stale = "Tracks:\n  crazy_2000_classic (OLD)\n"
+    elapsed = [0.0]
+    def fetch(_remaining):
+        elapsed[0] += 0.6
+        return stale
+    with pytest.raises(AssertionError, match="Timed out"):
+        capture_workshop_registry(fetch, lambda: None, timeout_seconds=1,
+                                  clock=lambda: elapsed[0], sleep=lambda _: None)
+
+
+def test_native_tracks_section_accepts_ansi_terminal_formatting():
+    assert_workshop_loaded("\x1b[0mTracks:\r\n\x1b[32m  crazy_2000_classic (CRAZY 2000)\x1b[0m\r\n")
 
 
 def test_native_tracks_section_accepts_exact_event_with_display_name():
@@ -128,7 +154,7 @@ def test_cli_server_mode_fetches_bounded_alphagsm_logs_then_writes_evidence(tmp_
 
     def run(command, **kwargs):
         calls.append((command, kwargs))
-        return SimpleNamespace(stdout=native)
+        return SimpleNamespace(stdout="startup\n" + (native if len(calls) > 2 else ""))
 
     monkeypatch.setattr(sys, "argv", ["workshop", str(evidence), "--server", "itwreck", "--timeout", "4"])
     monkeypatch.setattr(module.subprocess, "run", run)
@@ -138,6 +164,7 @@ def test_cli_server_mode_fetches_bounded_alphagsm_logs_then_writes_evidence(tmp_
                        "itwreck", "logs", "-n", "2000"]
     assert 0 < options["timeout"] <= 4
     assert options["capture_output"] and options["text"] and options["check"]
+    assert calls[1][0][-3:] == ["itwreck", "send", "tracks"]
     assert evidence.read_text(encoding="utf-8") == native
 
 

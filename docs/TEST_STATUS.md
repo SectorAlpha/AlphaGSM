@@ -43,6 +43,12 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- Full PR run `38582006699` completed with ten persistent integration failures
+  across ARK Workshop, NS2 Docker Workshop, Space Engineers process, Squad 44
+  Workshop, TF2 Docker Workshop and Wreckfest Workshop; JC3 recovered on recheck.
+  The earlier shared Source SteamCMD section corrections removed their setup
+  failures. Replacement corrections use remote diagnostics only and keep native
+  content execution, protocol health and complete shutdown requirements.
 - Required anonymous Workshop campaign `38558175692` completed on 2026-10-14:
   20 initial integration failures, one recovered recheck, 19 persistent failures,
   and three failed smoke scenarios. Earlier native-load evidence in the Workshop

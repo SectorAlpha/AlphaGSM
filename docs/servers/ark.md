@@ -148,3 +148,16 @@ The separate, currently unverified Workshop case requires
 assertion and surfaces its failure normally. Native activation IDs are snapshotted
 before start so inspecting or stopping the live container does not reopen an
 engine-private INI.
+
+The Workshop case creates a disposable local RCON password in AlphaGSM's secret
+store and allocates its own RCON port. It authenticates against the configured
+runtime host, including the published-port gateway for sibling Docker containers,
+then runs `getall PrimalGameData_BP_Spoilers_C ModName SHOWDEFAULTS`. A numbered
+native object record must name that Blueprint and its nonempty Meat Spoiler
+`ModName` property. Command receipts and launch/config IDs do not count as proof.
+The class default object is included because ARK loads stackable Blueprint game
+data before merging it into the world. The server flushes native logging to files
+and stdout; the probe also accepts the authenticated RCON property response.
+This replaces stdin command delivery, which can succeed without ARK executing the
+command, and the old property-less `getall` probe. Fresh CI must still confirm
+that the shipped native server exposes this property through RCON.

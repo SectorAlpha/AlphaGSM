@@ -1,6 +1,7 @@
 """Native Wreckfest activation, payload ownership and rollback contracts."""
 
 from copy import deepcopy
+import shlex
 from types import SimpleNamespace
 
 import pytest
@@ -164,7 +165,8 @@ def test_linux_console_inherits_cmd_console_and_refuses_shell_metacharacters(ser
     monkeypatch.setattr(module, "IS_LINUX", True)
     monkeypatch.setattr(module.proton, "wrap_command", lambda command, **_: command)
     command, directory = module.get_start_command(server)
-    assert command[-5:-2] == ["cmd.exe", "/c", "Wreckfest_x64.exe"]
+    assert command[:2] == ["script", "-qefc"]
+    assert shlex.split(command[2])[-5:-2] == ["cmd.exe", "/c", "Wreckfest_x64.exe"]
     assert directory == str(tmp_path)
     server.data["configfile"] = "config&other.cfg"
     with pytest.raises(ServerError, match="console"):
@@ -178,6 +180,8 @@ def test_linux_process_has_same_xvfb_drivers_as_docker(server, tmp_path, monkeyp
     monkeypatch.setattr(module.proton, "wrap_command", lambda command, **_: [
         "env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "wine", *command])
     command, _ = module.get_start_command(server)
+    assert command[:2] == ["script", "-qefc"]
+    command = shlex.split(command[2])
     assert command[:2] == ["xvfb-run", "-a"]
     assert "WINEDLLOVERRIDES=winex11.drv=" not in command
     assert "DISPLAY=" not in command
@@ -191,10 +195,17 @@ def test_native_container_command_resolves_windows_builtin_cmd(server, tmp_path,
     monkeypatch.setattr(module, "IS_LINUX", True)
     monkeypatch.setattr(module.proton, "wrap_command", lambda command, **_: ["wine", *command])
     spec = module.get_container_spec(server)
-    assert spec["command"] == [
+    assert spec["command"][:2] == ["script", "-qefc"]
+    assert shlex.split(spec["command"][2]) == [
+        "/usr/local/bin/alphagsm-wine-proton-entrypoint",
         "cmd.exe", "/c", "Wreckfest_x64.exe", "-s", "server_config=server_config.cfg",
     ]
     assert spec["working_dir"] == "/srv/server"
+    assert spec["stdin_open"] and spec["stop_mode"] == "exec-console"
+    assert spec["env"]["ALPHAGSM_XVFB"] == "1"
+    requirements = module.get_runtime_requirements(server)
+    assert requirements["stdin_open"] and requirements["stop_mode"] == "exec-console"
+    assert any(item["id"] == "script" for item in requirements["host_dependencies"])
 
 
 @pytest.mark.parametrize("desired", [["456"], []])

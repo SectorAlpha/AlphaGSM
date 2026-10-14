@@ -304,8 +304,8 @@ def get_info_address(server):
     return get_query_address(server)
 
 
-def get_start_command(server):
-    """Build the command used to launch a Wreckfest dedicated server."""
+def _native_start_command(server):
+    """Build the Windows command independently of host Wine availability."""
 
     exe_name = _resolve_executable_name(server)
     _ensure_server_config(server)
@@ -319,8 +319,15 @@ def get_start_command(server):
         if not all(re.fullmatch(r"[A-Za-z0-9_. /=-]+", token) for token in cmd):
             raise ServerError("Wreckfest console launch does not support shell metacharacters")
         cmd = ["cmd.exe", "/c", *cmd]
-        cmd = _wrap_linux_command(cmd, server.data.get("wineprefix"))
     return cmd, server.data["dir"]
+
+
+def get_start_command(server):
+    """Launch the native console on a captured terminal rather than a pipe."""
+    command, directory = _native_start_command(server)
+    if IS_LINUX:
+        command = proton.wrap_console_command(_wrap_linux_command(command, server.data.get("wineprefix")))
+    return command, directory
 
 
 def _wrap_linux_command(command, wineprefix=None):
@@ -405,11 +412,14 @@ get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_bu
         {"key": "port", "protocol": "tcp"},
     ),
     extra_env=_container_runtime_env,
-    extra_host_dependencies=(proton.xvfb_host_dependency(),),
+    extra_host_dependencies=(proton.xvfb_host_dependency(), proton.console_host_dependency()),
+    stop_mode="exec-console",
+    stdin_open=True,
 )
 
-get_container_spec = gamemodule_common.make_proton_container_spec_builder(
-    get_start_command=get_start_command,
+
+_build_container_spec = gamemodule_common.make_proton_container_spec_builder(
+    get_start_command=_native_start_command,
     port_definitions=(
         {"key": "steamport", "protocol": "udp"},
         {"key": "steamport", "protocol": "tcp"},
@@ -419,4 +429,19 @@ get_container_spec = gamemodule_common.make_proton_container_spec_builder(
         {"key": "port", "protocol": "tcp"},
     ),
     extra_env=_container_runtime_env,
+    stop_mode="exec-console",
+    stdin_open=True,
 )
+
+
+def get_container_spec(server):
+    """Give Wine a PTY while retaining the managed FIFO for console input.
+
+    The image entrypoint execs script before bootstrapping Wine. The inner
+    entrypoint then starts Xvfb and Wine once, with the newly allocated PTY.
+    """
+    spec = _build_container_spec(server)
+    spec["command"] = proton.wrap_console_command([
+        "/usr/local/bin/alphagsm-wine-proton-entrypoint", *spec["command"],
+    ])
+    return spec

@@ -133,6 +133,7 @@ alphagsm myserver set KEY VALUE
 - **Key settings**:
   - `port` — Game port (default: `27015`)
   - `httpport` — Web admin port (default: `8080`)
+  - `webdomain` — Optional web admin bind address (engine default: `localhost`)
   - `modserverport` — Mod server port (default: `27031`)
   - `maxplayers` — Maximum players (default: `20`)
   - `maxspectators` — Maximum spectators (default: `5`)
@@ -172,6 +173,12 @@ The native mod file server can need an explicit local interface behind NAT:
 `modserverport`; the public IP is not necessarily a bindable local address.
 The validation uses loopback for this local-only download endpoint; remote-client
 content delivery has not been verified.
+
+Web admin also listens on `localhost` by default. A Docker port publication
+requires an explicit bind address inside the container, for example
+`alphagsm myns2 set webdomain 0.0.0.0`. Configure private credentials and restrict
+access to that published admin port. The disposable Docker Workshop check sets
+this binding to reach the engine API through the published port.
 
 The opt-in check downloads public [ns2_Jambi](https://steamcommunity.com/sharedfiles/filedetails/?id=129599221),
 starts on a stock map, waits for the real engine web API, requests the custom map

@@ -1,6 +1,7 @@
 """Focused coverage tests for wreckfestserver."""
 
 from pathlib import Path
+import shlex
 import sys
 from unittest.mock import MagicMock, patch
 
@@ -160,6 +161,8 @@ def test_get_start_command_wraps_windows_payload_on_linux(tmp_path):
         cmd, cwd = mod.get_start_command(server)
 
     wrap_command.assert_called_once()
+    assert cmd[:2] == ["script", "-qefc"]
+    cmd = shlex.split(cmd[2])
     assert cmd[:2] == ["xvfb-run", "-a"]
     assert "wrapped" in cmd
     assert cwd == str(tmp_path)

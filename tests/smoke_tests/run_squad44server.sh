@@ -92,19 +92,11 @@ SERVER_STARTED=1
 run_alphagsm "$SERVER_NAME" start
 wait_for_info_protocol "$SERVER_NAME" a2s "$START_TIMEOUT_SECONDS"
 if [[ "$WORKSHOP_ENABLED" == "1" ]]; then
+  run_alphagsm "$SERVER_NAME" logs -n 20000 > "$WORK_DIR/workshop-runtime.log"
   PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" \
     "$REPO_ROOT/tests/smoke_tests/squad44server_workshop.py" "$INSTALL_DIR" \
     "$WORKSHOP_ID" --plugin "$WORKSHOP_PLUGIN" --layer "$WORKSHOP_LAYER" \
-    --wait-for-map "$START_TIMEOUT_SECONDS"
-  "$PYTHON_BIN" - "$INSTALL_DIR" "$WORKSHOP_PLUGIN" <<'PY'
-from pathlib import Path
-import re
-import sys
-logs = Path(sys.argv[1]) / "PostScriptum/Saved/Logs"
-plugin = re.escape(sys.argv[2])
-assert any(re.search(r"LogPakFile:.*Mounted Pak file.*" + plugin + r".*\.pak", path.read_text(errors="replace"))
-           for path in logs.glob("*.log")), "Fresh engine log did not prove native Workshop PAK mounting"
-PY
+    --wait-for-map "$START_TIMEOUT_SECONDS" --runtime-log "$WORK_DIR/workshop-runtime.log"
 fi
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query

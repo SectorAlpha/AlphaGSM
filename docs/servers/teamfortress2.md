@@ -104,15 +104,13 @@ alphagsm myteamfort mod list
 still accepted as an alias for `manifest`. Files land under `tf/addons/` and
 `tf/cfg/`. `mod cleanup` removes only AlphaGSM-owned addon files.
 
-GameBanana and Mod DB ids/URLs are also accepted. Workshop `mod add` records a
-desired item, but Workshop apply is still experimental for TF2 — prefer
-`manifest`.
+GameBanana and Mod DB ids/URLs are also accepted. Workshop maps use the engine's
+native loader described below.
 
 `mod add workshop-collection COLLECTION_ID` also imports a collection snapshot.
 Both item and collection identifiers accept Steam Community Workshop URLs.
 Steam metadata must identify every item and nested collection as TF2 (AppID
-`440`) before AlphaGSM saves additions. This filter does not lift TF2's
-experimental Workshop apply limitation.
+`440`) before AlphaGSM saves additions.
 
 ## Notes
 
@@ -183,6 +181,9 @@ are rejected. Native Workshop map names are `workshop/ITEM_ID`; the engine resol
 the full map name and downloads the current map itself. No Steam account token
 or Workshop API key is supplied. The existing curated map and addon commands stay
 available. See [Valve's native map-loader update](https://www.teamfortress.com/post.php?id=17214).
+AlphaGSM supplies `-ugcpath steamapps/workshop` while native Workshop maps are
+enabled so the engine initializes a dedicated-server download library inside the
+install directory, including when that directory is mounted into Docker.
 
 Apply while stopped. AlphaGSM refuses a preexisting unowned sync configuration
 and externally edited managed files. `mod cleanup` removes only its unchanged
@@ -194,9 +195,13 @@ The public [cp_orange_x3 fixture](https://steamcommunity.com/sharedfiles/filedet
 was verified as AppID `440` on 2026-10-13. The complete process lifecycle passed on 2026-10-13 with real A2S and fresh native
 mount evidence. The normal stop-timeout fallback was used before shutdown
 verification; owned configuration cleanup also passed.
-Its opt-in check requires actual custom-map A2S responses and a fresh engine
-filesystem probe containing the selected item ID, with full CLI shutdown and
-configuration cleanup.
+Its opt-in check requires actual custom-map A2S responses together with a fresh
+`tf_workshop_map_status` row marking the exact item and canonical `.ugcITEM_ID`
+map ready, and a fresh console `status` showing that same canonical map running.
+A pending `workshop/ITEM_ID` advertisement cannot satisfy it. TF2 resolves its
+Workshop BSP through Steam's native item-install API rather than requiring the
+item directory in the engine's search paths. The check also requires full CLI
+shutdown and configuration cleanup.
 
 ```bash
 ALPHAGSM_WORK_DIR=/path/on/large/disk \

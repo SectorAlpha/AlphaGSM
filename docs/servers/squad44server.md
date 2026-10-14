@@ -146,8 +146,10 @@ Override `ALPHAGSM_SQUAD44_WORKSHOP_ID` (ID or URL) and optionally
 `ALPHAGSM_SQUAD44_WORKSHOP_PLUGIN` (exact staged plugin name). A different item
 also requires `ALPHAGSM_SQUAD44_WORKSHOP_LAYER` with its documented native layer.
 The default test selects `Ramelle_Offensive_01` as the sole entry in the disposable
-server's `MapRotation.cfg`. Beyond mounting and serialization, it requires fresh
-native world construction and completed `LoadMap` evidence for that layer, plus
+server's `MapRotation.cfg`. Native mounting and registration are checked across
+the managed runtime output and the engine log: early startup output can precede
+the opening of the engine log file. The test also requires fresh native world
+construction and completed `LoadMap` evidence for that layer, plus
 the same layer reported by real A2S metadata. Startup and query timeouts remain
 failures. CI enables this check automatically; replacement-fixture results remain
 pending.

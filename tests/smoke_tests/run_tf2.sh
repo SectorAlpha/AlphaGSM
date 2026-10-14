@@ -122,35 +122,31 @@ if [[ -n "${WORKSHOP_IDS:-}" ]]; then
   [[ "$WORKSHOP_ITEM" =~ ^[0-9]+$ ]] || exit 1
   [[ "$WORKSHOP_MAP" =~ ^[a-zA-Z0-9_-]+$ ]] || exit 1
   run_alphagsm "$SERVER_NAME" send "changelevel workshop/$WORKSHOP_ITEM"
+  PROBE_TOKEN="AlphaGSM-TF2-$("$PYTHON_BIN" -c 'import uuid; print(uuid.uuid4().hex)')"
   WORKSHOP_MAP_LOADED=0
-  for (( attempt=0; attempt<90; attempt++ )); do
+  for (( attempt=0; attempt<300; attempt++ )); do
     if run_alphagsm "$SERVER_NAME" info --json > "$WORK_DIR/workshop-info.json"; then
-      if "$PYTHON_BIN" - "$WORK_DIR/workshop-info.json" "$WORKSHOP_MAP" <<'PYMAP'
+      if "$PYTHON_BIN" - "$WORK_DIR/workshop-info.json" "$WORKSHOP_MAP" "$WORKSHOP_ITEM" "$PORT" <<'PYMAP'
 import json, sys
 with open(sys.argv[1], encoding="utf-8") as handle:
     data = json.load(handle)
-assert data["protocol"] == "a2s" and data["map"] == sys.argv[2], data
+canonical = f"workshop/{sys.argv[2]}.ugc{sys.argv[3]}"
+assert data["protocol"] == "a2s" and data["port"] == int(sys.argv[4]), data
+assert data["map"] in (sys.argv[2], canonical, canonical.removeprefix("workshop/")), data
 PYMAP
       then
-        WORKSHOP_MAP_LOADED=1
-        break
+        run_alphagsm "$SERVER_NAME" send "echo BEGIN-$PROBE_TOKEN; tf_workshop_map_status; status; echo END-$PROBE_TOKEN"
+        sleep 1
+        run_alphagsm "$SERVER_NAME" logs -n 20000 > "$WORK_DIR/workshop-path.log"
+        if "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/tf2_workshop.py" "$WORK_DIR/workshop-path.log" "$WORKSHOP_ITEM" "$WORKSHOP_MAP" "$PROBE_TOKEN"; then
+          WORKSHOP_MAP_LOADED=1
+          break
+        fi
       fi
     fi
     sleep 2
   done
   [[ "$WORKSHOP_MAP_LOADED" == "1" ]] || { run_alphagsm "$SERVER_NAME" logs -n 20000; exit 1; }
-  PROBE_TOKEN="AlphaGSM-TF2-$("$PYTHON_BIN" -c 'import uuid; print(uuid.uuid4().hex)')"
-  run_alphagsm "$SERVER_NAME" send "echo BEGIN-$PROBE_TOKEN; path; echo END-$PROBE_TOKEN"
-  WORKSHOP_MOUNTED=0
-  for (( attempt=0; attempt<30; attempt++ )); do
-    sleep 2
-    run_alphagsm "$SERVER_NAME" logs -n 20000 > "$WORK_DIR/workshop-path.log"
-    if "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/nwi_workshop.py" "$WORK_DIR/workshop-path.log" 440 "$PROBE_TOKEN" "$WORKSHOP_ITEM"; then
-      WORKSHOP_MOUNTED=1
-      break
-    fi
-  done
-  [[ "$WORKSHOP_MOUNTED" == "1" ]] || { cat "$WORK_DIR/workshop-path.log"; exit 1; }
 fi
 
 run_alphagsm "$SERVER_NAME" query

@@ -11,6 +11,9 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-600}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itseserver}"
 SERVER_STARTED=0
+WORKSHOP_CONFIGURED=0
+RUNTIME_BACKEND="${ALPHAGSM_TEST_RUNTIME_BACKEND:-docker}"
+if [[ "$RUNTIME_BACKEND" == auto ]]; then RUNTIME_BACKEND=docker; fi
 LOCAL_WINE_PROTON_IMAGE="${LOCAL_WINE_PROTON_IMAGE:-alphagsm-wine-proton-runtime:local}"
 PUBLISHED_WINE_PROTON_IMAGE="${PUBLISHED_WINE_PROTON_IMAGE:-ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest}"
 
@@ -50,20 +53,28 @@ cleanup() {
     capture_runtime_diagnostics "$SERVER_NAME"
   fi
   if [[ "${SERVER_STARTED:-0}" == "1" ]] && [[ -n "${CONFIG_PATH:-}" && -f "${CONFIG_PATH:-}" ]]; then
-    ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" stop
+    if run_alphagsm "$SERVER_NAME" stop && [[ "$WORKSHOP_CONFIGURED" == 1 ]]; then
+      run_alphagsm "$SERVER_NAME" mod cleanup
+    fi
   fi
 }
 
 trap cleanup EXIT
 
 require_cmd "$PYTHON_BIN"
-require_cmd docker
+case "$RUNTIME_BACKEND" in
+  docker) require_cmd docker ;;
+  process) require_cmd wine ;;
+  *) echo "ALPHAGSM_TEST_RUNTIME_BACKEND must be process, docker, or auto" >&2; exit 1 ;;
+esac
 
-WORK_DIR="$(mktemp -d)"
+WORK_ROOT="$(resolve_work_root)"
+WORK_DIR="$(mktemp -d -p "$WORK_ROOT" seserver-smoke.XXXXXX)"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/seserver-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-seserver.conf"
-IMAGE="$(resolve_runtime_image)"
+IMAGE=""
+if [[ "$RUNTIME_BACKEND" == docker ]]; then IMAGE="$(resolve_runtime_image)"; fi
 
 mkdir -p "$HOME_DIR"
 PORT="$(pick_free_port)"
@@ -81,7 +92,10 @@ target_path = $HOME_DIR/downloads/downloads
 datapath = $HOME_DIR/conf
 
 [runtime]
-backend = docker
+backend = $RUNTIME_BACKEND
+
+[process]
+backend = subprocess
 
 [docker]
 image_wine_proton = $IMAGE
@@ -92,9 +106,23 @@ echo "Using port: $PORT"
 echo "Using image: $IMAGE"
 
 run_create_or_skip_disabled "$SERVER_NAME" create seserver
+run_alphagsm "$SERVER_NAME" set wineprefix "$INSTALL_DIR/.alphagsm-wineprefix"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
-run_start_with_port_retry "$SERVER_NAME"
+if [[ "${ALPHAGSM_RUN_WORKSHOP:-0}" == 1 ]]; then
+  WORKSHOP_CONFIGURED=1
+  run_alphagsm "$SERVER_NAME" mod add workshop 1521905890
+  run_alphagsm "$SERVER_NAME" mod apply
+fi
+for previous_log in "$INSTALL_DIR"/SpaceEngineersDedicated_*.log; do
+  [[ ! -L "$previous_log" ]]
+  rm -f -- "$previous_log"
+done
 SERVER_STARTED=1
+run_start_with_port_retry "$SERVER_NAME"
+wait_for_glob_ready_strict "$INSTALL_DIR/SpaceEngineersDedicated_*.log" "$START_TIMEOUT_SECONDS" "Game ready"
+if [[ "$WORKSHOP_CONFIGURED" == 1 ]]; then
+  "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/seserver_workshop.py" "$INSTALL_DIR"
+fi
 wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query
@@ -106,6 +134,10 @@ if ! run_alphagsm "$SERVER_NAME" info --json; then
   wait_for_info_protocol "$SERVER_NAME" "udp" 120
   run_alphagsm "$SERVER_NAME" info --json
 fi
-run_stop_or_skip "$SERVER_NAME"
+run_alphagsm "$SERVER_NAME" stop
 SERVER_STARTED=0
+if [[ "$WORKSHOP_CONFIGURED" == 1 ]]; then
+  run_alphagsm "$SERVER_NAME" mod cleanup
+  WORKSHOP_CONFIGURED=0
+fi
 run_alphagsm "$SERVER_NAME" status

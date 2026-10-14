@@ -19,6 +19,8 @@ def assert_workshop_loaded(log_text):
     it cannot establish when arbitrary supplied text was produced.
     """
     assert len(log_text) <= 1024 * 1024, "Native track response exceeds 1 MiB"
+    # Wine's real terminal emits ANSI styling around the native response.
+    log_text = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", log_text)
     assert not re.search(r"(?i)\b(?:unknown command|error|failed to load|not found)\b", log_text), (
         "Native track capture contains a command or load error")
     header = None
@@ -36,6 +38,21 @@ def assert_workshop_loaded(log_text):
         if row.group(1) == TRACK and row.group(2).strip():
             found = True
     assert found, "Native track registry did not list the exact Workshop event"
+
+
+def capture_workshop_registry(fetch_output, send_command, timeout_seconds=90, *,
+                              clock=time.monotonic, sleep=time.sleep):
+    """Issue tracks and accept only output appended after that fresh request."""
+    deadline = clock() + timeout_seconds
+    before = fetch_output(timeout_seconds)
+    send_command()
+
+    def fresh_output(remaining):
+        output = fetch_output(remaining)
+        assert output.startswith(before), "Native console capture rotated during the Tracks request"
+        return output[len(before):]
+
+    return wait_for_workshop_loaded(fresh_output, max(0, deadline - clock()), clock=clock, sleep=sleep)
 
 
 def wait_for_workshop_loaded(fetch_output, timeout_seconds=90, *,
@@ -67,14 +84,17 @@ def main():
     parser.add_argument("--timeout", type=float, default=90)
     args = parser.parse_args()
     if args.server:
+        command = [sys.executable, str(Path(__file__).resolve().parents[2] / "alphagsm"), args.server]
         def fetch(remaining):
             result = subprocess.run(
-                [sys.executable, str(Path(__file__).resolve().parents[2] / "alphagsm"),
-                 args.server, "logs", "-n", "2000"],
+                [*command, "logs", "-n", "2000"],
                 capture_output=True, text=True, check=True, timeout=min(15, remaining),
             )
             return result.stdout
-        output = wait_for_workshop_loaded(fetch, timeout_seconds=args.timeout)
+        def send():
+            subprocess.run([*command, "send", "tracks"], capture_output=True, text=True,
+                           check=True, timeout=min(15, args.timeout))
+        output = capture_workshop_registry(fetch, send, timeout_seconds=args.timeout)
         args.log.write_text(output, encoding="utf-8")
     else:
         assert_workshop_loaded(args.log.read_text(errors="replace"))

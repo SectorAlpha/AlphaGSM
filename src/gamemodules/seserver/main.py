@@ -161,6 +161,25 @@ def prestart(server):
     """Revalidate native world activation before launching the engine."""
     sync_server_config(server)
     apply_automatic_mods(server)
+    if (IS_LINUX and proton.find_wine()
+            and runtime_module.resolve_runtime_metadata(server).get("runtime") == "process"):
+        proton.prepare_wineprefix(_wineprefix(server))
+
+
+def _wineprefix(server):
+    """Use a private Wine prefix for each managed dedicated server."""
+    return server.data.get("wineprefix") or os.path.join(server.data["dir"], ".alphagsm-wineprefix")
+
+
+def _wine_launch_options(server):
+    """Keep an existing Proton compatibility directory on its original layout."""
+    prefix = _wineprefix(server)
+    native_prefix = os.path.join(prefix, "pfx")
+    if os.path.isfile(os.path.join(native_prefix, "system.reg")):
+        if proton.find_proton():
+            return {"wineprefix": prefix, "prefer_proton": True}
+        return {"wineprefix": native_prefix, "prefer_proton": False}
+    return {"wineprefix": prefix, "prefer_proton": False}
 
 
 def get_start_command(server):
@@ -181,8 +200,7 @@ def get_start_command(server):
     if IS_LINUX:
         cmd = proton.wrap_command(
             cmd,
-            wineprefix=server.data.get("wineprefix"),
-            prefer_proton=True,
+            **_wine_launch_options(server),
         )
     return cmd, working_dir
 

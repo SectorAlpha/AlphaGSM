@@ -27,15 +27,22 @@ Stock process and Docker integrations plus Docker smoke passed these checks.
 Workshop checks still require fresh native track-registry output beyond the
 baseline connectivity check. Automated capture and the complete modded lifecycle
 remain unverified; download, configuration and old console snapshots do not
-satisfy that requirement. Linux process launch uses Xvfb consistently with
-Docker. Shutdown checks include owned Wine processes and TCP/UDP port closure.
+satisfy that requirement. Linux launches now give Wine a real terminal through
+`script`, so native console output can reach AlphaGSM logs. Docker enables the
+managed console input FIFO, with Xvfb and Wine launched once inside that
+terminal. Capture snapshots the logs before sending `tracks` and accepts only
+the newly appended native registry response, including its exact
+`crazy_2000_classic` row. This correction still needs CI validation. Shutdown
+checks include owned Wine processes and TCP/UDP port closure.
 
 ## Requirements
 
 - Docker and AlphaGSM's `wine-proton` image for the Docker runtime on Linux
 - SteamCMD access for app `361580` with anonymous login
 
-For the process runtime on Linux, use Wine or Proton-GE and `xvfb-run`.
+For the process runtime on Linux, use Wine or Proton-GE, `xvfb-run`, and
+`script` from the `bsdutils`/util-linux package. The runtime image includes
+these tools for Docker.
 The baseline integration case honors `ALPHAGSM_TEST_RUNTIME_BACKEND` from CI;
 the smoke runner accepts `process`, `docker`, or `auto` through the same
 variable. It defaults to Docker in GitHub Actions or when a runtime image is
@@ -117,10 +124,9 @@ AlphaGSM keeps these upstream config keys in sync inside `server_config.cfg`:
 
 - Module name: `wreckfestserver`
 - Main game port default: `33540`
-- Query/info requires an actual Steam A2S response on the configured query port.
-- Wine console input/output remains a validation limitation: the native
-  Windows console can register the Workshop track, while ordinary AlphaGSM
-  stdin/log capture has not yet supplied that native command response.
+- Linux query/info uses the limited UDP reachability surface described above.
+- Native console capture corrections remain under validation: Workshop tests
+  still require the fresh engine track registry from an AlphaGSM console command.
   Neither a config echo nor an open TCP port satisfies the Workshop check.
 
 <!-- alphagsm-server-variables:start -->

@@ -72,6 +72,12 @@ setting_schema = {
         apply_to=("datastore", "launch_args"),
         launch_arg_tokens=("-webport",),
     ),
+    "webdomain": SettingSpec(
+        canonical_key="webdomain",
+        description="Optional local interface for the web admin listener (engine default: localhost).",
+        apply_to=("datastore", "launch_args"),
+        launch_arg_tokens=("-webdomain",),
+    ),
     "modserverport": SettingSpec(
         canonical_key="modserverport",
         description="Mod server port.",
@@ -322,7 +328,7 @@ def checkvalue(server, key, *value):
         *value,
         setting_schema=setting_schema,
         resolved_int_keys=("port", "httpport", "modserverport", "maxplayers", "maxspectators"),
-        resolved_str_keys=("servername", "httpuser", "httppassword", "startmap", "modserveraddress", "exe_name", "dir"),
+        resolved_str_keys=("servername", "httpuser", "httppassword", "webdomain", "startmap", "modserveraddress", "exe_name", "dir"),
         backup_module=backup_utils,
     )
 

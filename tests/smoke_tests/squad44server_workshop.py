@@ -59,6 +59,19 @@ def assert_workshop_map_info(info, layer):
         f"A2S did not report selected Workshop layer {layer}: {info.get('map')!r}")
 
 
+def assert_native_plugin_loaded(runtime_text, native_text, plugin):
+    """Retain early engine stdout emitted before the native log file opens."""
+    assert re.fullmatch(r"[A-Za-z0-9_-]+", plugin), "Invalid native plugin name"
+    text = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", runtime_text + "\n" + native_text).replace("\r", "")
+    prefix = r"^(?:\[[^\]\r\n]*\])*"
+    identity = r"(?<![A-Za-z0-9_-])" + re.escape(plugin) + r"(?![A-Za-z0-9_-])"
+    plugin_path = r"[/\\]" + re.escape(plugin) + r"[/\\]"
+    assert re.search(prefix + r"LogPakFile:.*\bMounted Pak file\b.*" + plugin_path + r".*\.pak\b",
+                     text, re.MULTILINE | re.IGNORECASE), "No native Workshop PAK mount"
+    assert re.search(prefix + r"LogModdingRuntimeModule:.*\b(?:mounted|seriali[sz]ed)\b.*" + identity,
+                     text, re.MULTILINE | re.IGNORECASE), "No native Workshop plugin registration"
+
+
 def wait_for_native_map(log_dir, layer, timeout):
     """Wait for fresh native world completion; caller rotates logs before launch."""
     deadline = time.monotonic() + timeout
@@ -113,13 +126,20 @@ def main():
     parser.add_argument("--configure-layer", action="store_true")
     parser.add_argument("--wait-for-map", type=int)
     parser.add_argument("--info-json", type=Path)
+    parser.add_argument("--runtime-log", type=Path)
     args = parser.parse_args()
     plugin = staged_plugin_name(args.install_dir, args.item_id, args.plugin)
     layer = select_workshop_layer(args.item_id, args.layer)
     if args.configure_layer:
         configure_workshop_layer(args.install_dir, layer)
+    native_log = ""
     if args.wait_for_map is not None:
-        wait_for_native_map(args.install_dir / "PostScriptum/Saved/Logs", layer, args.wait_for_map)
+        native_log = wait_for_native_map(args.install_dir / "PostScriptum/Saved/Logs", layer, args.wait_for_map)
+    if args.runtime_log is not None:
+        if not native_log:
+            native_log = "\n".join(path.read_text(errors="replace")
+                                   for path in (args.install_dir / "PostScriptum/Saved/Logs").glob("*.log"))
+        assert_native_plugin_loaded(args.runtime_log.read_text(errors="replace"), native_log, plugin)
     if args.info_json is not None:
         assert_workshop_map_info(json.loads(args.info_json.read_text()), layer)
     print(plugin)

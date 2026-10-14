@@ -8,6 +8,19 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-14
+- Workshop validation: use authenticated ARK RCON for the complete native
+  Blueprint property probe instead of treating stdin delivery as execution.
+  Flush native startup logs and bound the response wait.
+- TF2: initialize the dedicated-server UGC library in the installation and
+  verify its exact ready item/current canonical map before accepting A2S.
+- NS2: expose an optional web-admin bind address so Docker validation can
+  reach the native API without changing the default localhost binding.
+- Space Engineers: seed fresh private process Wine prefixes from the prepared
+  runtime template and require the MES script's own initialization evidence.
+- Wreckfest: relay native console I/O through a real terminal and enable the
+  Docker console FIFO; require track output appended after the current request.
+- Squad 44 validation: retain early runtime output for native PAK mounting
+  and registration while still requiring fresh custom-world and A2S evidence.
 - CI: cancel superseded runs on new pushes while keeping the latest commit's
   complete game matrices running after individual failures. Always produce the
   required summary; missing or malformed recheck output remains a blocking

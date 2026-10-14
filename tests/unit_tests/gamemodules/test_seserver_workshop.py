@@ -150,6 +150,57 @@ def test_linux_headless_uses_supported_no_console_mode(server, tmp_path, monkeyp
     assert '-noconsole' in command and '-console' not in command
 
 
+def test_process_launch_uses_prepared_wine_prefix_instead_of_empty_proton_prefix(server, tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(module, 'IS_LINUX', True)
+    monkeypatch.setattr(module, 'sync_server_config', lambda _: None)
+    monkeypatch.setattr(module, 'apply_automatic_mods', lambda _: None)
+    monkeypatch.setattr(module.runtime_module, 'resolve_runtime_metadata', lambda _: {'runtime': 'process'})
+    monkeypatch.setattr(module.proton, 'find_wine', lambda: '/usr/bin/wine')
+    monkeypatch.setattr(module.proton, 'prepare_wineprefix', lambda prefix: calls.append(prefix))
+    module.prestart(server)
+    assert calls == [str(tmp_path / '.alphagsm-wineprefix')]
+    executable = tmp_path / 'DedicatedServer64/SpaceEngineersDedicated.exe'
+    executable.parent.mkdir()
+    executable.write_bytes(b'fixture')
+    server.data['port'] = 27016
+    monkeypatch.setattr(module.proton, 'wrap_command', lambda command, **kwargs: calls.append(kwargs) or command)
+    module.get_start_command(server)
+    assert calls[-1] == {'wineprefix': str(tmp_path / '.alphagsm-wineprefix'), 'prefer_proton': False}
+
+
+def test_container_prestart_does_not_create_a_host_wine_prefix(server, monkeypatch):
+    monkeypatch.setattr(module, 'IS_LINUX', True)
+    monkeypatch.setattr(module, 'sync_server_config', lambda _: None)
+    monkeypatch.setattr(module, 'apply_automatic_mods', lambda _: None)
+    monkeypatch.setattr(module.runtime_module, 'resolve_runtime_metadata', lambda _: {'runtime': 'docker'})
+    monkeypatch.setattr(module.proton, 'prepare_wineprefix', lambda _: pytest.fail('Container prepares its own prefix'))
+    module.prestart(server)
+
+
+@pytest.mark.parametrize("proton_available", [True, False])
+def test_existing_proton_layout_uses_its_original_prefix(server, tmp_path, monkeypatch, proton_available):
+    prefix = tmp_path / 'operator-compat'
+    native_prefix = prefix / 'pfx'
+    native_prefix.mkdir(parents=True)
+    (native_prefix / 'system.reg').write_text('operator runtime registry')
+    (prefix / 'version').write_text('operator Proton version')
+    executable = tmp_path / 'DedicatedServer64/SpaceEngineersDedicated.exe'
+    executable.parent.mkdir()
+    executable.write_bytes(b'fixture')
+    server.data.update(wineprefix=str(prefix), port=27016)
+    monkeypatch.setattr(module, 'IS_LINUX', True)
+    monkeypatch.setattr(module.proton, 'find_proton', lambda: '/opt/proton/proton' if proton_available else None)
+    options = []
+    monkeypatch.setattr(module.proton, 'wrap_command', lambda command, **kwargs: options.append(kwargs) or command)
+    before = {path.relative_to(prefix): path.read_bytes() for path in prefix.rglob('*') if path.is_file()}
+    module.get_start_command(server)
+    assert options == [{'wineprefix': str(prefix if proton_available else native_prefix),
+                        'prefer_proton': proton_available}]
+    assert {path.relative_to(prefix): path.read_bytes() for path in prefix.rglob('*') if path.is_file()} == before
+    assert not (prefix / 'system.reg').exists()
+
+
 @pytest.mark.parametrize("desired", [["456"], []])
 def test_running_server_refuses_apply_and_cleanup_before_io(server, tmp_path, monkeypatch, desired):
     ws = adapter()

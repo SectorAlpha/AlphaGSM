@@ -1,3 +1,5 @@
+import shlex
+
 import gamemodules.thefrontserver as thefrontserver
 import gamemodules.wreckfestserver as wreckfestserver
 
@@ -73,6 +75,8 @@ def test_wreckfestserver_get_start_command_builds_expected_args(tmp_path, monkey
     )
 
     cmd, cwd = wreckfestserver.get_start_command(server)
+    if cmd[:2] == ["script", "-qefc"]:
+        cmd = shlex.split(cmd[2])
 
     assert "-s" in cmd
     assert "server_config=server_config.cfg" in cmd

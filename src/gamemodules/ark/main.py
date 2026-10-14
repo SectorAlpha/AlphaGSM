@@ -182,7 +182,8 @@ def get_start_command(server):
         _rcon_enabled(server, "true")
         map_args += "?RCONEnabled=True?RCONPort=" + str(int(server.data["rconport"]))
     return (
-        ["./" + launcher_relpath, map_args, "-server", "-log"],
+        ["./" + launcher_relpath, map_args, "-server", "-log", "-stdout",
+         "-FullStdOutLogOutput", "-forcelogflush"],
         working_dir,
     )
 

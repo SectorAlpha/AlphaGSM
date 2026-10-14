@@ -310,6 +310,9 @@ def get_start_command(server):
     ]
     mods = server.data.get('mods', {})
     if mods.get('enabled', True) and mods.get('desired', {}).get('workshop'):
+        # Initialize Steam's dedicated-server UGC library inside the mounted install.
+        # Without -ugcpath the native download may wait on a nonexistent Steam library.
+        command.extend(['-ugcpath', 'steamapps/workshop'])
         command.extend(['+exec', 'alphagsm_workshop.cfg'])
     return command, server.data['dir']
 

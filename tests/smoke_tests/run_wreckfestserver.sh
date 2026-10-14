@@ -199,7 +199,6 @@ wait_for_glob_ready "$INSTALL_DIR/log.txt" "$START_TIMEOUT_SECONDS" "Server conn
 # UDP silence counts as reachable; fresh native startup and runtime status are required.
 wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS" "$QUERY_PORT"
 if [[ "$WORKSHOP_CONFIGURED" == 1 ]]; then
-  run_alphagsm "$SERVER_NAME" send tracks
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
     "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/wreckfestserver_workshop.py" \
     "$WORK_DIR/workshop-engine.log" --server "$SERVER_NAME" --timeout 90

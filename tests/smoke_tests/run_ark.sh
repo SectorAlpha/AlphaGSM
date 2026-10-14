@@ -110,8 +110,11 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 if [[ "${ALPHAGSM_RUN_ARK_WORKSHOP:-0}" == "1" ]]; then
   run_alphagsm "$SERVER_NAME" mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=2860800256
   run_alphagsm "$SERVER_NAME" mod apply
+  ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
+    "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/ark_workshop.py" prepare "$SERVER_NAME"
   cat >> "$INSTALL_DIR/ShooterGame/Saved/Config/LinuxServer/Engine.ini" <<'EOF'
 [Core.Log]
+LogObj=Log
 LogLinker=Verbose
 LogStreaming=Verbose
 LogUObjectGlobals=Verbose
@@ -141,18 +144,8 @@ else:
     raise SystemExit("ARK never confirmed a loaded native world with positive capacity")
 PY
 if [[ "${ALPHAGSM_RUN_ARK_WORKSHOP:-0}" == "1" ]]; then
-  run_alphagsm "$SERVER_NAME" send "getall PrimalGameData_BP_Spoilers_C"
-  "$PYTHON_BIN" - "$INSTALL_DIR" <<'PY'
-from pathlib import Path
-import re
-import sys
-logs = Path(sys.argv[1]) / "ShooterGame/Saved/Logs"
-pattern = (r"Log(?:Linker|Streaming|UObjectGlobals|ConsoleResponse):.*"
-           r"(?:Loaded|Created|Loading|Serialize|Linker|PrimalGameData_BP_Spoilers_C).*"
-           r"PrimalGameData_BP_Spoilers")
-assert any(re.search(pattern, path.read_text(errors="replace")) for path in logs.glob("*.log")), \
-    "Fresh engine log did not prove native Workshop blueprint loading"
-PY
+  ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
+    "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/ark_workshop.py" check "$SERVER_NAME"
 fi
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query

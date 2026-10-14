@@ -29,6 +29,7 @@ def test_rcon_remains_disabled_until_explicitly_enabled_with_private_password(tm
     server.data["rconport"] = module.checkvalue(server, ["rconport"], "28312")
     command, _directory = module.get_start_command(server)
     assert "?RCONEnabled=True?RCONPort=28312" in command[1]
+    assert {"-stdout", "-FullStdOutLogOutput", "-forcelogflush"}.issubset(command)
     assert any(item["key"] == "rconport" and item["protocol"] == "tcp"
                for item in module.port_claim_definitions)
     assert any(item["host"] == 28312 and item["protocol"] == "tcp"

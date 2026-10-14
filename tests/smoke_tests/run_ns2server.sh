@@ -79,6 +79,7 @@ echo "Using port: $PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create ns2server
 run_alphagsm "$SERVER_NAME" set httpport "$((PORT + 2))"
+run_alphagsm "$SERVER_NAME" set webdomain "127.0.0.1"
 run_alphagsm "$SERVER_NAME" set modserverport "$((PORT + 3))"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 

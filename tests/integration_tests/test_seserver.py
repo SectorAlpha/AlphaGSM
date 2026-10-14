@@ -31,6 +31,7 @@ from conftest import (
     write_config,
 )
 from gamemodules.seserver import steam_app_id
+from tests.smoke_tests.seserver_workshop import FIXTURE_ID, assert_workshop_executed
 
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 600
@@ -99,16 +100,19 @@ def test_seserver_lifecycle(tmp_path, runtime_backend=None, workshop_fixture=Fal
         )
 
     if workshop_fixture:
-        run_and_assert_ok(env, server_name, "mod", "add", "workshop", "1521905890")
+        run_and_assert_ok(env, server_name, "mod", "add", "workshop", FIXTURE_ID)
         run_and_assert_ok(env, server_name, "mod", "apply")
     for previous_log in install_dir.glob("SpaceEngineersDedicated_*.log"):
         previous_log.unlink()  # Fresh/exclusive disposable install; keep captured failure evidence elsewhere.
-    run_and_assert_ok(env, server_name, "start")
-
     try:
+        run_and_assert_ok(env, server_name, "start")
         evidence = wait_for_glob_log_marker(install_dir, "SpaceEngineersDedicated_*.log", ["Game ready"], START_TIMEOUT, env=env, server_name=server_name)
         if workshop_fixture:
-            assert "Modular" in evidence or "1521905890" in evidence, "Engine did not load the native Workshop package"
+            assert_workshop_executed(evidence)
+            if os.environ.get("ALPHAGSM_WORK_DIR"):
+                target = Path(os.environ["ALPHAGSM_WORK_DIR"]) / "evidence"
+                target.mkdir(exist_ok=True)
+                (target / f"seserver-{backend}.log").write_text(evidence)
         wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT)
 
         run_and_assert_ok(env, server_name, "status")
@@ -134,7 +138,7 @@ def test_seserver_lifecycle(tmp_path, runtime_backend=None, workshop_fixture=Fal
     finally:
         original_error = sys.exc_info()[1]
         stopped = capture_alphagsm_stop(env, server_name, original_error, timeout=90)
-        if workshop_fixture:
+        if workshop_fixture and stopped is not None and stopped.returncode == 0:
             cleaned = run_alphagsm(env, server_name, "mod", "cleanup")
             log_command_result("alphagsm mod cleanup", cleaned)
             if original_error is None:

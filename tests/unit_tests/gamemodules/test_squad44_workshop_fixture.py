@@ -5,6 +5,7 @@ import pytest
 from tests.smoke_tests.squad44server_workshop import (
     staged_plugin_name, select_workshop_layer, configure_workshop_layer,
     assert_native_map_loaded, assert_workshop_map_info,
+    assert_native_plugin_loaded,
 )
 
 
@@ -13,6 +14,36 @@ LOADED = (
     "LogWorld: Bringing World /Ramelle/Maps/Ramelle_Offensive_01.Ramelle_Offensive_01 up for play\n"
     "LogLoad: Took 2.50 seconds to LoadMap(/Ramelle/Maps/Ramelle_Offensive_01)\n"
 )
+MOUNTED = (
+    '[2026.10.14-16.52.44:001][  0]LogPakFile: Display: Mounted Pak file '
+    '../../../PostScriptum/Plugins/Mods/2387944294/Ramelle/Content/Paks/ramelle-linuxserver.pak\n'
+    '[2026.10.14-16.52.44:002][  0]LogModdingRuntimeModule: Serialized mod Ramelle\n'
+)
+
+
+def test_plugin_mount_before_native_log_file_opens_is_retained_from_runtime():
+    assert_native_plugin_loaded(MOUNTED, LOADED, 'Ramelle')
+    assert_native_map_loaded(LOADED, LAYER)
+    assert_workshop_map_info({'protocol': 'a2s', 'map': 'Ramelle Offensive 01'}, LAYER)
+
+
+def test_plugin_mount_from_colored_runtime_output_is_preserved():
+    assert_native_plugin_loaded('\x1b[32m' + MOUNTED.replace('\n', '\x1b[0m\r\n\x1b[32m'),
+                                LOADED, 'Ramelle')
+
+
+@pytest.mark.parametrize('runtime,native', [
+    ('', LOADED),
+    (MOUNTED.replace('/Ramelle/', '/Stock/').replace('ramelle-linuxserver.pak', 'stock-linuxserver.pak'), LOADED),
+    (MOUNTED.replace('Serialized mod Ramelle', 'Serialized mod Stock'), LOADED),
+    (MOUNTED.replace('Ramelle', 'Not-Ramelle').replace('ramelle', 'not-ramelle'), LOADED),
+    (MOUNTED.replace('Serialized mod Ramelle', 'Unserialized mod Ramelle'), LOADED),
+    (MOUNTED.replace('Mounted Pak file', 'Unmounted Pak file'), LOADED),
+    ('echo ' + MOUNTED.replace('\n', '\necho '), LOADED),
+])
+def test_plugin_mount_proof_rejects_missing_wrong_or_echoed_engine_records(runtime, native):
+    with pytest.raises(AssertionError):
+        assert_native_plugin_loaded(runtime, native, 'Ramelle')
 
 
 def test_default_ramelle_layer_and_explicit_override_fixture():

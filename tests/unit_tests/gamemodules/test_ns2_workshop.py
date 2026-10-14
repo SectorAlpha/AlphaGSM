@@ -122,3 +122,13 @@ def test_native_web_admin_map_change_rejects_console_injection_before_request(mo
     from tests.smoke_tests import ns2_workshop
     monkeypatch.setattr(ns2_workshop, '_request_engine', lambda *args: pytest.fail('unsafe map reached native API'))
     with pytest.raises(ValueError): ns2_workshop.change_map('127.0.0.1',8080,'admin','private','ns2_jambi;quit')
+
+
+def test_web_admin_binding_is_explicit_and_survives_container_launch(adapter):
+    command, _ = module.get_start_command(adapter)
+    assert '-webdomain' not in command
+    adapter.data['webdomain'] = module.checkvalue(adapter, ['webdomain'], '0.0.0.0')
+    command, _ = module.get_start_command(adapter)
+    assert command[command.index('-webdomain') + 1] == '0.0.0.0'
+    spec = module.get_container_spec(adapter)
+    assert spec['command'][spec['command'].index('-webdomain') + 1] == '0.0.0.0'

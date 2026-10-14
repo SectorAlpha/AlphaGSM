@@ -26,17 +26,33 @@ default world is seeded from the dedicated server's own Empty World template;
 existing saves are preserved. Native world paths must stay inside the
 installation.
 
-The first process launch failed in Wine Mono's console output with an
-`Invalid handle` exception. Linux launch now uses the vendor-supported
-`-noconsole` option; fresh engine mod execution, query/info, and complete
-shutdown still need validation. Workshop Docker checks are pending the test
-host's SSD-backed Docker endpoint. The prior baseline classification above
-does not establish Workshop lifecycle support.
+Process CI on 14 October reached the engine but stopped with a missing
+Visual C++ 2015–2019 x64 runtime message. Its fresh Proton prefix had bypassed
+the prepared Wine prefix in the runtime image. Process startup now prefers
+Wine and seeds only a fresh private prefix from `/opt/wine` when available;
+existing operator prefixes are preserved. Linux uses the vendor-supported
+`-noconsole` option. The correction still needs a fresh CI lifecycle pass.
+Existing Proton compatibility directories keep Proton when available; Wine
+fallback opens their existing inner `pfx` directory.
+
+Workshop integration and opt-in smoke require both `Game ready` and the MES
+script's own `MES Spawner / Startup: Active Debug ...` initialization message.
+An item ID, mod name, download, or world configuration alone does not prove
+engine execution. Process and Docker Workshop completion remain unverified.
+The prior baseline classification above does not establish Workshop support.
 
 ## Requirements
 
 - Docker
 - Python packages from `requirements.txt`
+
+For a Linux process server, install Wine and the upstream Visual C++ runtime
+prerequisites in its private prefix. The AlphaGSM runtime image already
+prepares these prerequisites in `/opt/wine`; another prepared template may be
+selected with `ALPHAGSM_WINEPREFIX_TEMPLATE`. Existing prefixes are not changed
+by template seeding. Integration and smoke honor
+`ALPHAGSM_TEST_RUNTIME_BACKEND=process|docker`; public Workshop validation
+additionally requires `ALPHAGSM_RUN_WORKSHOP=1`.
 
 ## Quick Start
 
@@ -125,7 +141,7 @@ create is still the live source of truth.
 The validated Linux support path runs through AlphaGSM's Docker-backed
 `wine-proton` runtime image rather than a host `screen` session. The current
 checked-in integration and smoke coverage launch the Windows dedicated server
-from its required `DedicatedServer64` working directory with `-console`,
+from its required `DedicatedServer64` working directory with `-noconsole` on Linux,
 `-path`, and `-port`, then validate the live contract on the managed main
 game port: `query`, `info`, and `info --json` all succeed as generic `udp`.
 
@@ -138,4 +154,4 @@ game port: `query`, `info`, and `info --json` all succeed as generic `udp`.
 
 - **Map directory**: Check game documentation
 - **Mod directory**: Check game documentation
-- **Workshop support**: No
+- **Workshop support**: Native world activation is implemented; live lifecycle validation is pending.

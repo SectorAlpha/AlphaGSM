@@ -1,11 +1,51 @@
 """Unit tests for utils.proton – Wine/Proton wrapping helpers."""
 
 import os
+import shlex
 import types
 
 import pytest
 
 import utils.proton as proton_module
+
+
+def test_console_wrapper_quotes_arguments_without_executing_them():
+    command = ["env", "VALUE=space and $(literal)", "/path with spaces/wine", "cmd.exe", "/c", "server.exe"]
+    wrapped = proton_module.wrap_console_command(command)
+    assert wrapped[:2] == ["script", "-qefc"]
+    assert wrapped[-1] == "/dev/null"
+    assert shlex.split(wrapped[2]) == command
+
+
+def test_prepare_wineprefix_copies_runtime_template_into_fresh_prefix(tmp_path):
+    template = tmp_path / "prepared"
+    template.mkdir()
+    (template / "system.reg").write_text("installed C++ runtime")
+    (template / "drive_c/windows/system32").mkdir(parents=True)
+    (template / "drive_c/windows/system32/vcruntime140.dll").write_bytes(b"native runtime")
+    prefix = tmp_path / "server/prefix"
+    assert proton_module.prepare_wineprefix(prefix, template=template)
+    assert (prefix / "system.reg").read_text() == "installed C++ runtime"
+    assert (prefix / "drive_c/windows/system32/vcruntime140.dll").read_bytes() == b"native runtime"
+
+
+@pytest.mark.parametrize("existing", ["system.reg", "operator.txt", "pfx/system.reg"])
+def test_prepare_wineprefix_preserves_existing_wine_or_proton_prefix(tmp_path, existing):
+    template, prefix = tmp_path / "prepared", tmp_path / "prefix"
+    template.mkdir()
+    (template / "system.reg").write_text("template")
+    target = prefix / existing
+    target.parent.mkdir(parents=True)
+    target.write_text("operator")
+    assert not proton_module.prepare_wineprefix(prefix, template=template)
+    assert target.read_text() == "operator"
+    assert sorted(path.relative_to(prefix).as_posix() for path in prefix.rglob("*") if path.is_file()) == [existing]
+
+
+def test_prepare_wineprefix_without_template_does_not_create_empty_prefix(tmp_path):
+    prefix = tmp_path / "new-prefix"
+    assert not proton_module.prepare_wineprefix(prefix, template=tmp_path / "missing")
+    assert not prefix.exists()
 
 
 class DummyServer:

@@ -5,7 +5,7 @@ import os
 import time
 import uuid
 
-from tests.smoke_tests.nwi_workshop import assert_native_mounts
+from tests.smoke_tests.tf2_workshop import assert_native_map
 
 import pytest
 
@@ -243,11 +243,13 @@ def test_tf2_native_workshop_loads(tmp_path, runtime_backend):
 
 
 def _verify_native_workshop_map(env, server_name, item_ids, port):
-    """Execute a native Workshop map and require A2S plus fresh engine path evidence."""
+    """Require the ready native ID, actual current canonical map, and exact A2S."""
     item = os.environ.get('ALPHAGSM_TF2_WORKSHOP_LOAD_ITEM', item_ids[0])
     expected_map = os.environ.get('ALPHAGSM_TF2_WORKSHOP_MAP', 'cp_orange_x3')
     assert item in item_ids and item.isdigit()
     run_and_assert_ok(env, server_name, 'send', f'changelevel workshop/{item}')
+    token = 'AlphaGSM-TF2-' + uuid.uuid4().hex
+    error, output = None, ''
     deadline = time.monotonic() + 600
     while time.monotonic() < deadline:
         response = run_alphagsm(env, server_name, 'info', '--json')
@@ -255,24 +257,20 @@ def _verify_native_workshop_map(env, server_name, item_ids, port):
             try:
                 data = json.loads(response.stdout.strip())
                 name = data.get('map', '')
-                if data.get('protocol') == 'a2s' and data.get('port') == port and (name.endswith('.ugc' + item) or name == 'workshop/' + item or name == expected_map):
-                    break
-            except ValueError:
-                pass
+                canonical = f'workshop/{expected_map}.ugc{item}'
+                assert data.get('protocol') == 'a2s' and data.get('port') == port, data
+                assert name in (expected_map, canonical, canonical.removeprefix('workshop/')), data
+                # A2S can advertise a map before its load finishes. Refresh the
+                # native frame on every candidate so an earlier pending frame expires.
+                run_and_assert_ok(env, server_name, 'send',
+                                  f'echo BEGIN-{token}; tf_workshop_map_status; status; echo END-{token}')
+                time.sleep(1)
+                output = run_and_assert_ok(env, server_name, 'logs', '-n', '20000').stdout
+                assert_native_map(output, item, expected_map, token)
+                print(f'ENGINE_WORKSHOP_MAP_LOADED {name} app=440 item={item} native_map={canonical}')
+                return name
+            except (ValueError, AssertionError) as exc:
+                error = exc
         time.sleep(2)
-    else:
-        output = run_and_assert_ok(env, server_name, 'logs', '-n', '20000').stdout
-        pytest.fail(f'TF2 engine did not execute native Workshop map {item}\n{output[-20000:]}')
-    token = 'AlphaGSM-TF2-' + uuid.uuid4().hex
-    run_and_assert_ok(env, server_name, 'send', f'echo BEGIN-{token}; path; echo END-{token}')
-    deadline = time.monotonic() + 60
-    while time.monotonic() < deadline:
-        output = run_and_assert_ok(env, server_name, 'logs', '-n', '20000').stdout
-        try:
-            assert_native_mounts(output, 440, [item], token)
-            print(f'ENGINE_WORKSHOP_MAP_LOADED {name} app=440 item={item}')
-            return name
-        except AssertionError as exc:
-            error = exc
-        time.sleep(2)
-    pytest.fail(f'TF2 native Workshop filesystem evidence missing: {error}\n{output[-20000:]}')
+    output = run_and_assert_ok(env, server_name, 'logs', '-n', '20000').stdout
+    pytest.fail(f'TF2 native Workshop map execution evidence missing: {error}\n{output[-20000:]}')

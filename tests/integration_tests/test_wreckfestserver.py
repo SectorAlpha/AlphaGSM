@@ -33,7 +33,7 @@ from conftest import (
     write_config,
 )
 from gamemodules.wreckfestserver import steam_app_id
-from tests.smoke_tests.wreckfestserver_workshop import FIXTURE_ID, TRACK, wait_for_workshop_loaded
+from tests.smoke_tests.wreckfestserver_workshop import FIXTURE_ID, TRACK, capture_workshop_registry
 from tests.smoke_tests.wreckfestserver_diagnostics import collect_remote_diagnostics
 
 pytestmark = [pytest.mark.integration]
@@ -172,10 +172,10 @@ def _run_wreckfestserver_lifecycle(tmp_path, *, runtime_backend, workshop_fixtur
         status = run_and_assert_ok(env, server_name, "status")
         assert "Server is running" in status.stdout
         if workshop_fixture:
-            run_and_assert_ok(env, server_name, "send", "tracks")
-            evidence = wait_for_workshop_loaded(
+            evidence = capture_workshop_registry(
                 lambda remaining: run_and_assert_ok(
                     env, server_name, "logs", "-n", "2000", timeout=min(15, remaining)).stdout,
+                lambda: run_and_assert_ok(env, server_name, "send", "tracks", timeout=15),
                 timeout_seconds=90,
             )
             if os.environ.get("ALPHAGSM_WORK_DIR"):

@@ -214,6 +214,8 @@ def _run_ns2_workshop_lifecycle(tmp_path, workshop_source, workshop_identifier, 
     item_ids = []
     if effective_runtime_backend(runtime_backend, module_name=module_name) == 'docker':
         run_and_assert_ok(env, server_name, 'set', 'image', resolve_steamcmd_linux_runtime_image())
+        # Docker publishes the container interface, not its private loopback listener.
+        run_and_assert_ok(env, server_name, 'set', 'webdomain', '0.0.0.0')
     if workshop_source:
         run_and_assert_ok(env, server_name, 'mod', 'add', workshop_source, workshop_identifier)
         run_and_assert_ok(env, server_name, 'mod', 'apply')
