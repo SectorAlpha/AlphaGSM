@@ -17,6 +17,7 @@ release, or mutate the owning development branch.
 | Operations: manage a named server | Explicit tag/config and desired state | Resolves context, loads only relevant specialists, finishes with evidence |
 | Development: fix a query failure and open PR | Checkout and failing diagnostics | Isolates work, uses lifecycle proof, includes release/docs closure |
 | Preflight: can this host run the selected game? | Platform/runtime/storage findings | Distinguishes host readiness from provisioning and exact missing inputs |
+| Assessment: Docker wrapper with missing/stale manager | Wrapper source, config and manager state | Uses existing-manager or static inspection; no manager recreation, image acquisition or unsolicited install |
 | Requirements: Minecraft with no Java; TF2 with no SteamCMD | Exact versions, configured paths, module hooks and helper source | Separates installer/game dependencies; approved managed bootstrap proceeds |
 | Docker: installed or missing host engine | Host/config, wrapper/Compose and image overrides | Uses existing Docker without consent gate; asks before installing missing external host software |
 | Docker image: default absent, cached unknown or third-party override | Runtime/manager specs, Dockerfiles and publishing workflow | Uses repository images and automatic builds without extra approval |

@@ -47,6 +47,11 @@ only for genuinely new software outside that managed scope. Docker use,
 repository image builds and managed helpers have no separate approval gate.
 Keep independent inspection moving while an installation or intent reply is pending.
 
+For inspection-only tasks, check wrapper routing before forwarding diagnostics.
+Do not start/recreate the manager or acquire images to make a read-only check
+possible. Use an already running manager's verified diagnostic path or inspect
+source/config and state which live checks were unavailable.
+
 For temporary validation, use unique tags and backend session/container names,
 disposable install/config directories, free claim sets and a cleanup path that
 stops only the owned server. A different config directory does not isolate a
