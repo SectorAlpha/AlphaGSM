@@ -36,6 +36,8 @@ discovery requires working directory links. See
 - “Back up mymc and tell me which archive was created and what it includes.”
 - “Install MetaMod and SourceMod on mytf2, then verify that the server loads
   them and answers queries.”
+- “If this checkout supports Workshop, apply this TF2 multiplayer map and verify
+  that the running game loads it. Report process and Docker evidence separately.”
 - “Update first and second, keep them running afterward, and report each result.”
 - “Enable mymc on reboot, but leave it stopped today.”
 - “Use alphagsm-agent-development. Fix this integration failure and open a PR
@@ -100,6 +102,12 @@ For a code change, it follows the repository's lifecycle, runtime and support
 contracts, updates tests/docs/changelog as needed, and includes executed
 validation in the requested PR. Preparing a release is a separate request from
 publishing it.
+
+On a Workshop-capable version, the agent distinguishes downloading an item from
+activating it through a native game loader. It checks the matching game's support
+matrix and validates fresh load evidence; a downloaded file or stock-server pass
+does not prove mod loading. An older checkout uses only its advertised commands.
+Public Workshop visibility does not guarantee anonymous download permission.
 
 Some games require your provider login, token or license (**ENABLED (AUTH)**).
 Others need owned assets, exported files, a download URL or a local service

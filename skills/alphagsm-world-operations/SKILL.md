@@ -9,7 +9,8 @@ Follow the [installation and request policy](../alphagsm-server-requirements/ref
 
 Read [world management](../../docs/world-management.md) and the selected module's help/settings. Resolve the configured world and exact existing save paths. `reset-world`/`wipe` take no world-name argument and have no dry-run flag. A request to reset a different named world cannot be fulfilled by blindly deleting the currently configured one.
 
-For first-world creation on Terraria/TShock/Necesse:
+For first-world creation on Terraria/TShock/Necesse, and on
+`terraria.tmodloader` when that module is available:
 
 ```bash
 alphagsm myserver start --autocreate
