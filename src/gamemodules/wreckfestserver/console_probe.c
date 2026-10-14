@@ -1,8 +1,12 @@
 /* Capture a fresh native Wreckfest Tracks response in a private Wine prefix.
  * Build for Windows; this observer never starts or stops the game server.
  */
-#define UNICODE
-#define _UNICODE
+#ifndef UNICODE
+#define UNICODE 1
+#endif
+#ifndef _UNICODE
+#define _UNICODE 1
+#endif
 #define WIN32_LEAN_AND_MEAN
 #define _WIN32_WINNT 0x0601
 #include <windows.h>
