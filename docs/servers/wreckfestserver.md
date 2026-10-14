@@ -27,13 +27,14 @@ Stock process and Docker integrations plus Docker smoke passed these checks.
 Workshop checks still require fresh native track-registry output beyond the
 baseline connectivity check. Automated capture and the complete modded lifecycle
 remain unverified; download, configuration and old console snapshots do not
-satisfy that requirement. Linux launches now give Wine a real terminal through
-`script`, so native console output can reach AlphaGSM logs. Docker enables the
-managed console input FIFO, with Xvfb and Wine launched once inside that
-terminal. Capture snapshots the logs before sending `tracks` and accepts only
-the newly appended native registry response, including its exact
-`crazy_2000_classic` row. This correction still needs CI validation. Shutdown
-checks include owned Wine processes and TCP/UDP port closure.
+satisfy that requirement. A Unix terminal and Docker console FIFO alone did
+not expose Wreckfest's separately allocated Win32 console in CI. Native
+Workshop validation now attaches a small Windows probe to the exact running
+server executable inside its private Wine prefix. The probe clears old display
+contents, sends only `tracks`, and writes newly produced console rows to a
+unique evidence file. Validation still requires the exact
+`crazy_2000_classic` registry row. This capture correction needs CI validation.
+Shutdown checks include owned Wine processes and TCP/UDP port closure.
 
 ## Requirements
 
@@ -43,6 +44,13 @@ checks include owned Wine processes and TCP/UDP port closure.
 For the process runtime on Linux, use Wine or Proton-GE, `xvfb-run`, and
 `script` from the `bsdutils`/util-linux package. The runtime image includes
 these tools for Docker.
+Native Workshop validation also needs the compiled
+`wreckfest-console-probe.exe`, supplied at
+`/usr/local/lib/alphagsm/wreckfest-console-probe.exe` in the runtime and CI
+images. A host process validation run may set
+`ALPHAGSM_WRECKFEST_CONSOLE_PROBE` to its compiled copy of
+`src/gamemodules/wreckfestserver/console_probe.c`. The helper observes the
+running server; AlphaGSM still performs its complete lifecycle.
 The baseline integration case honors `ALPHAGSM_TEST_RUNTIME_BACKEND` from CI;
 the smoke runner accepts `process`, `docker`, or `auto` through the same
 variable. It defaults to Docker in GitHub Actions or when a runtime image is

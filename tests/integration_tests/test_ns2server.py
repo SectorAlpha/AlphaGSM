@@ -3,15 +3,17 @@
 import configparser
 import json
 import os
+import subprocess
 import sys
 import time
 
-from tests.smoke_tests.ns2_workshop import assert_map_origin, read_map_origins, change_map
+from tests.smoke_tests.ns2_workshop import (
+    assert_map_origin, read_map_origins, change_map, managed_container_name,
+)
 
 import pytest
 
 from conftest import (
-    _runtime_probe_hosts,
     workshop_runtime_backends,
     alphagsm_env,
     capture_alphagsm_stop,
@@ -214,8 +216,6 @@ def _run_ns2_workshop_lifecycle(tmp_path, workshop_source, workshop_identifier, 
     item_ids = []
     if effective_runtime_backend(runtime_backend, module_name=module_name) == 'docker':
         run_and_assert_ok(env, server_name, 'set', 'image', resolve_steamcmd_linux_runtime_image())
-        # Docker publishes the container interface, not its private loopback listener.
-        run_and_assert_ok(env, server_name, 'set', 'webdomain', '0.0.0.0')
     if workshop_source:
         run_and_assert_ok(env, server_name, 'mod', 'add', workshop_source, workshop_identifier)
         run_and_assert_ok(env, server_name, 'mod', 'apply')
@@ -243,8 +243,12 @@ def _run_ns2_workshop_lifecycle(tmp_path, workshop_source, workshop_identifier, 
         )
 
         if item_ids:
+            container_name = None
+            if effective_runtime_backend(runtime_backend, module_name=module_name) == 'docker':
+                container_name = managed_container_name(env, server_name)
+                assert container_name, 'Docker admin proof requires its managed container identity'
             _verify_workshop_execution(env, server_name, item_ids, query_port, port + 2,
-                                       host=_workshop_admin_host(runtime_backend))
+                                       host='127.0.0.1', container_name=container_name)
 
         run_and_assert_ok(
             env,
@@ -306,38 +310,33 @@ def test_ns2server_workshop_loads(tmp_path, runtime_backend):
     _run_ns2_workshop_lifecycle(tmp_path, source, identifier, runtime_backend)
 
 
-def _workshop_admin_host(runtime_backend):
-    """Use the published sibling endpoint when pytest runs in a manager container."""
-    if effective_runtime_backend(runtime_backend, module_name='ns2server') == 'docker':
-        return _runtime_probe_hosts('127.0.0.1')[-1]
-    return '127.0.0.1'
-
-
-def _verify_workshop_execution(env, server_name, item_ids, query_port, http_port, *, host):
+def _verify_workshop_execution(env, server_name, item_ids, query_port, http_port, *, host,
+                               container_name=None):
     """Require actual custom map execution and native engine attribution to its mod."""
     item = os.environ.get('ALPHAGSM_NS2SERVER_WORKSHOP_LOAD_ITEM', item_ids[0])
     map_name = os.environ.get('ALPHAGSM_NS2SERVER_WORKSHOP_MAP', 'ns2_jambi')
     assert item in item_ids and map_name and all(char.isalnum() or char in '_-' for char in map_name)
     deadline, error, selected = time.monotonic() + 300, None, False
+    transport = {'container_name': container_name} if container_name is not None else {}
     while time.monotonic() < deadline:
         try:
-            origins = read_map_origins(host, http_port, 'admin', 'CHANGE_ME')
+            origins = read_map_origins(host, http_port, 'admin', 'CHANGE_ME', **transport)
             assert_map_origin(origins, map_name, item)
             if not selected:
-                change_map(host, http_port, 'admin', 'CHANGE_ME', map_name)
+                change_map(host, http_port, 'admin', 'CHANGE_ME', map_name, **transport)
                 selected = True
-        except (ValueError, OSError, AssertionError) as exc:
+        except (ValueError, OSError, AssertionError, subprocess.SubprocessError) as exc:
             error = exc
         result = run_alphagsm(env, server_name, 'info', '--json')
         if result.returncode == 0:
             try:
                 data = json.loads(result.stdout.strip())
                 if data.get('protocol') == 'a2s' and data.get('port') == query_port and data.get('map', '').lower() == map_name.lower():
-                    origins = read_map_origins(host, http_port, 'admin', 'CHANGE_ME')
+                    origins = read_map_origins(host, http_port, 'admin', 'CHANGE_ME', **transport)
                     assert_map_origin(origins, map_name, item)
                     print(f'ENGINE_WORKSHOP_MAP_LOADED {map_name} app=4920 item={item} native_map_origin={origins}')
                     return
-            except (ValueError, OSError, AssertionError) as exc:
+            except (ValueError, OSError, AssertionError, subprocess.SubprocessError) as exc:
                 error = exc
         time.sleep(2)
     output = run_and_assert_ok(env, server_name, 'logs', '-n', '20000').stdout

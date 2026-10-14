@@ -201,7 +201,7 @@ wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS" "$QUERY_POR
 if [[ "$WORKSHOP_CONFIGURED" == 1 ]]; then
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
     "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/wreckfestserver_workshop.py" \
-    "$WORK_DIR/workshop-engine.log" --server "$SERVER_NAME" --timeout 90
+    "$WORK_DIR/workshop-engine.log" --server "$SERVER_NAME" --install "$INSTALL_DIR"
 fi
 STATUS_OUTPUT="$(run_alphagsm "$SERVER_NAME" status)"
 printf '%s\n' "$STATUS_OUTPUT"

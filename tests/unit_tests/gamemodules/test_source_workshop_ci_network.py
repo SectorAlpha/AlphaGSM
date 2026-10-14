@@ -65,7 +65,7 @@ def test_source_workshop_lifecycles_reach_create_with_one_steamcmd_section(
         getattr(module, entrypoint)(tmp_path, 'workshop', '123', backend)
 
 
-@pytest.mark.parametrize('name', ['asrdserver', 'ns2server'])
+@pytest.mark.parametrize('name', ['asrdserver'])
 @pytest.mark.parametrize('backend,hosts,expected', [
     ('process', ('127.0.0.1', '172.17.0.1'), '127.0.0.1'),
     ('docker', ('127.0.0.1', '172.17.0.1'), '172.17.0.1'),
@@ -97,22 +97,25 @@ def test_asrd_native_mapping_change_and_post_load_probe_use_resolved_host(monkey
                             ('maps', '172.17.0.1', 27015, 'private')]
 
 
-def test_ns2_native_origin_change_and_post_load_probe_use_resolved_host(monkeypatch):
+@pytest.mark.parametrize('container_name', [None, 'owned-ns2-container'])
+def test_ns2_native_origin_change_and_post_load_probe_use_resolved_transport(monkeypatch, container_name):
     module = integration_module('ns2server', monkeypatch)
     monkeypatch.setenv('ALPHAGSM_NS2SERVER_WORKSHOP_LOAD_ITEM', '123')
     monkeypatch.setenv('ALPHAGSM_NS2SERVER_WORKSHOP_MAP', 'ns2_fixture')
     observations = []
-    def origins(host, port, user, password):
-        observations.append(('origins', host, port, user, password))
+    def origins(host, port, user, password, **transport):
+        observations.append(('origins', host, port, user, password, transport))
         return [{'name': 'ns2_fixture', 'modId': 123}]
     monkeypatch.setattr(module, 'read_map_origins', origins)
-    monkeypatch.setattr(module, 'change_map', lambda *args: observations.append(('change', *args)))
+    monkeypatch.setattr(module, 'change_map', lambda *args, **transport: observations.append(('change', *args, transport)))
     monkeypatch.setattr(module, 'run_alphagsm', lambda *_args: SimpleNamespace(
         returncode=0, stdout=json.dumps({'protocol': 'a2s', 'port': 27016, 'map': 'ns2_fixture'})))
-    module._verify_workshop_execution({}, 'ns2', ['123'], 27016, 27017, host='172.17.0.1')
-    assert observations == [('origins', '172.17.0.1', 27017, 'admin', 'CHANGE_ME'),
-                            ('change', '172.17.0.1', 27017, 'admin', 'CHANGE_ME', 'ns2_fixture'),
-                            ('origins', '172.17.0.1', 27017, 'admin', 'CHANGE_ME')]
+    module._verify_workshop_execution({}, 'ns2', ['123'], 27016, 27017, host='127.0.0.1',
+                                      container_name=container_name)
+    transport = {'container_name': container_name} if container_name else {}
+    assert observations == [('origins', '127.0.0.1', 27017, 'admin', 'CHANGE_ME', transport),
+                            ('change', '127.0.0.1', 27017, 'admin', 'CHANGE_ME', 'ns2_fixture', transport),
+                            ('origins', '127.0.0.1', 27017, 'admin', 'CHANGE_ME', transport)]
 
 
 @pytest.mark.parametrize('shared_work_dir', [False, True])

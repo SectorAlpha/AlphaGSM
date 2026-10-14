@@ -105,23 +105,26 @@ wait_for_info_protocol "$SERVER_NAME" "$EXPECTED_PROTOCOL" "$START_TIMEOUT_SECON
 if [[ -n "${WORKSHOP_IDS:-}" ]]; then
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src:$REPO_ROOT" \
     "$PYTHON_BIN" - "$ALPHAGSM_SCRIPT" "$SERVER_NAME" "$((PORT + 2))" "${NS2_WORKSHOP_MAP:-ns2_jambi}" "${NS2_WORKSHOP_LOAD_ITEM:-${WORKSHOP_IDS%% *}}" <<'PYLOAD'
-import json, subprocess, sys, time
-from tests.smoke_tests.ns2_workshop import read_map_origins, assert_map_origin, change_map
+import json, os, subprocess, sys, time
+from tests.smoke_tests.ns2_workshop import read_map_origins, assert_map_origin, change_map, managed_container_name
 script, server, port, map_name, item = sys.argv[1:]
+container_name = managed_container_name(os.environ, server)
+transport = {'container_name': container_name} if container_name else {}
 deadline, selected, error = time.monotonic() + 300, False, None
 while time.monotonic() < deadline:
     try:
-        assert_map_origin(read_map_origins('127.0.0.1', int(port), 'admin', 'CHANGE_ME'), map_name, item)
+        assert_map_origin(read_map_origins('127.0.0.1', int(port), 'admin', 'CHANGE_ME', **transport), map_name, item)
         if not selected:
-            change_map('127.0.0.1', int(port), 'admin', 'CHANGE_ME', map_name)
+            change_map('127.0.0.1', int(port), 'admin', 'CHANGE_ME', map_name, **transport)
             selected = True
         result = subprocess.run([sys.executable, script, server, 'info', '--json'], capture_output=True, text=True, timeout=30)
         if result.returncode == 0:
             data = json.loads(result.stdout)
             if data.get('protocol') == 'a2s' and data.get('map', '').lower() == map_name.lower():
+                assert_map_origin(read_map_origins('127.0.0.1', int(port), 'admin', 'CHANGE_ME', **transport), map_name, item)
                 print(f'Engine executes {map_name} from native Workshop item {item}')
                 break
-    except (OSError, ValueError, AssertionError) as exc:
+    except (OSError, ValueError, AssertionError, subprocess.SubprocessError) as exc:
         error = exc
     time.sleep(2)
 else:

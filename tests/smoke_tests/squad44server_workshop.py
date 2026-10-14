@@ -64,15 +64,23 @@ def assert_native_plugin_loaded(runtime_text, native_text, plugin):
     assert re.fullmatch(r"[A-Za-z0-9_-]+", plugin), "Invalid native plugin name"
     text = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", runtime_text + "\n" + native_text).replace("\r", "")
     prefix = r"^(?:\[[^\]\r\n]*\])*"
-    identity = r"(?<![A-Za-z0-9_-])" + re.escape(plugin) + r"(?![A-Za-z0-9_-])"
     plugin_path = r"[/\\]" + re.escape(plugin) + r"[/\\]"
     evidence = "\n".join(line for line in text.splitlines() if any(
         marker in line for marker in ("LogPakFile:", "LogModdingRuntimeModule:",
                                       "LogLoad: Took", "LogWorld: Bringing World")))
-    assert re.search(prefix + r"LogPakFile:.*\bMounted Pak file\b.*" + plugin_path + r".*\.pak\b",
-                     text, re.MULTILINE | re.IGNORECASE), "No native Workshop PAK mount\n" + evidence[-20000:]
-    assert re.search(prefix + r"LogModdingRuntimeModule:.*\b(?:mounted|seriali[sz]ed)\b.*" + identity,
-                     text, re.MULTILINE | re.IGNORECASE), "No native Workshop plugin registration\n" + evidence[-20000:]
+    flags = re.MULTILINE | re.IGNORECASE
+    mounted = re.search(prefix + r"LogPakFile:.*\bMounted Pak file\b.*" + plugin_path + r".*\.pak\b",
+                        text, flags)
+    # Squad 44's direct plugin mount logs PAK precacher registration instead of
+    # the generic UE 'Mounted Pak file' row. Require that exact native record,
+    # the separate successful mod registration, and the constructed world/A2S.
+    indexed = re.search(prefix + r"LogPakFile:\s*(?:Display:\s*)?New pak file [^\r\n]*"
+                        + plugin_path + r"[^\r\n]*\.pak added to pak precacher\.\s*$", text, flags)
+    assert mounted or indexed, "No native Workshop PAK registration\n" + evidence[-20000:]
+    registration = (prefix + r"LogModdingRuntimeModule:\s*(?:Display:\s*)?"
+                    r"(?:Successfully mounted and seriali[sz]ed mod:\s*|Seriali[sz]ed mod\s+)"
+                    + re.escape(plugin) + r"\s*$")
+    assert re.search(registration, text, flags), "No native Workshop plugin registration\n" + evidence[-20000:]
 
 
 def wait_for_native_map(log_dir, layer, timeout):

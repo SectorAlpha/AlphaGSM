@@ -2,6 +2,8 @@
 
 import argparse
 import json
+import subprocess
+import sys
 from urllib.parse import urlencode
 from urllib.request import (Request, HTTPPasswordMgrWithDefaultRealm,
                             HTTPDigestAuthHandler, HTTPBasicAuthHandler, build_opener)
@@ -41,15 +43,59 @@ def _request_engine(host, port, user, password, actions):
     return json.loads(raw)
 
 
-def read_map_origins(host, port, user, password):
-    return _request_engine(host, port, user, password, {'request': 'getmaplist'})
+def managed_container_name(env, server_name):
+    """Resolve a managed Docker name, or None for a process server."""
+    code = ('import sys; from server import Server; import server.runtime as runtime; '
+            'metadata=runtime.resolve_runtime_metadata(Server(sys.argv[1])); '
+            'print(metadata["container_name"] if metadata["runtime"]=="docker" else "")')
+    result = subprocess.run([sys.executable, '-c', code, server_name], env=env,
+                            check=True, capture_output=True, text=True, timeout=15)
+    name = result.stdout.strip()
+    if not name:
+        return None
+    if any(character.isspace() for character in name):
+        raise ValueError('AlphaGSM did not resolve a single managed container name')
+    return name
 
 
-def change_map(host, port, user, password, map_name):
+def _request_container_engine(container_name, port, user, password, actions):
+    """Use the image's Python for authenticated native loopback HTTP, without publishing admin."""
+    code = '''import json, sys
+from urllib.parse import urlencode
+from urllib.request import (Request, HTTPPasswordMgrWithDefaultRealm,
+    HTTPDigestAuthHandler, HTTPBasicAuthHandler, ProxyHandler, build_opener)
+port, user, password, actions = json.load(sys.stdin)
+base = f'http://127.0.0.1:{int(port)}/'
+credentials = HTTPPasswordMgrWithDefaultRealm()
+credentials.add_password(None, base, user, password)
+opener = build_opener(ProxyHandler({}), HTTPDigestAuthHandler(credentials), HTTPBasicAuthHandler(credentials))
+request = Request(f'{base}?{urlencode(actions)}', headers={'Cache-Control': 'no-cache'})
+with opener.open(request, timeout=10) as response:
+    raw = response.read(1024 * 1024 + 1)
+if len(raw) > 1024 * 1024:
+    raise ValueError('NS2 native map API exceeded size limit')
+print(json.dumps(json.loads(raw)))
+'''
+    result = subprocess.run(['docker', 'exec', '-i', container_name, 'python3', '-c', code],
+                            input=json.dumps([port, user, password, actions]),
+                            check=True, capture_output=True, text=True, timeout=20)
+    return json.loads(result.stdout)
+
+
+def read_map_origins(host, port, user, password, *, container_name=None):
+    actions = {'request': 'getmaplist'}
+    if container_name is not None:
+        return _request_container_engine(container_name, port, user, password, actions)
+    return _request_engine(host, port, user, password, actions)
+
+
+def change_map(host, port, user, password, map_name, *, container_name=None):
     if not map_name or not all(char.isalnum() or char in '_-' for char in map_name):
         raise ValueError('Unsafe NS2 map name')
-    return _request_engine(host, port, user, password,
-                           {'command': '1', 'rcon': f'sv_changemap {map_name}'})
+    actions = {'command': '1', 'rcon': f'sv_changemap {map_name}'}
+    if container_name is not None:
+        return _request_container_engine(container_name, port, user, password, actions)
+    return _request_engine(host, port, user, password, actions)
 
 
 def main():

@@ -19,6 +19,13 @@ MOUNTED = (
     '../../../PostScriptum/Plugins/Mods/2387944294/Ramelle/Content/Paks/ramelle-linuxserver.pak\n'
     '[2026.10.14-16.52.44:002][  0]LogModdingRuntimeModule: Serialized mod Ramelle\n'
 )
+PRECACHED = (
+    '[2026.10.14-23.17.21:666][  0]LogPakFile: New pak file '
+    '/srv/server/PostScriptum/Plugins/Mods/2387944294/Ramelle/Content/Paks/LinuxNoEditor/'
+    'Ramellepakchunk0-LinuxNoEditor.pak added to pak precacher.\n'
+    '[2026.10.14-23.17.15:304][  0]LogModdingRuntimeModule: Display: '
+    'Successfully mounted and serialised mod: Ramelle\n'
+)
 
 
 def test_plugin_mount_before_native_log_file_opens_is_retained_from_runtime():
@@ -30,6 +37,24 @@ def test_plugin_mount_before_native_log_file_opens_is_retained_from_runtime():
 def test_plugin_mount_from_colored_runtime_output_is_preserved():
     assert_native_plugin_loaded('\x1b[32m' + MOUNTED.replace('\n', '\x1b[0m\r\n\x1b[32m'),
                                 LOADED, 'Ramelle')
+
+
+def test_direct_plugin_mount_uses_observed_native_pak_precacher_and_mod_records():
+    assert_native_plugin_loaded(PRECACHED, LOADED, 'Ramelle')
+    assert_native_map_loaded(LOADED, LAYER)
+    assert_workshop_map_info({'protocol': 'a2s', 'map': 'Ramelle Offensive 01'}, LAYER)
+
+
+@pytest.mark.parametrize('records', [
+    PRECACHED.replace('/Ramelle/', '/Not-Ramelle/'),
+    PRECACHED.replace('added to pak precacher.', 'attempting to mount.'),
+    PRECACHED.replace('Successfully mounted and serialised mod: Ramelle', 'Mod metadata found: Ramelle'),
+    PRECACHED.replace('Successfully mounted and serialised mod: Ramelle', 'Failed to verify mounted mod: Ramelle'),
+    '\n'.join('echo ' + line for line in PRECACHED.splitlines()),
+])
+def test_pak_precacher_alone_wrong_plugin_and_echoes_do_not_establish_mount(records):
+    with pytest.raises(AssertionError):
+        assert_native_plugin_loaded(records, LOADED, 'Ramelle')
 
 
 @pytest.mark.parametrize('runtime,native', [

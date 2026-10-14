@@ -215,6 +215,7 @@ def test_proton_image_cache_keys_include_architecture_asset_selector():
         text = workflow.read_text(encoding="utf-8")
 
         assert "scripts/select_proton_asset.py" in text
+        assert "src/gamemodules/wreckfestserver/console_probe.c" in text
 
 
 def test_wine_proton_entrypoint_defaults_to_ci_proton_path():

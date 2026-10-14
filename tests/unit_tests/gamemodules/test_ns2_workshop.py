@@ -122,13 +122,53 @@ def test_native_web_admin_map_change_rejects_console_injection_before_request(mo
     from tests.smoke_tests import ns2_workshop
     monkeypatch.setattr(ns2_workshop, '_request_engine', lambda *args: pytest.fail('unsafe map reached native API'))
     with pytest.raises(ValueError): ns2_workshop.change_map('127.0.0.1',8080,'admin','private','ns2_jambi;quit')
+    with pytest.raises(ValueError):
+        ns2_workshop.change_map('127.0.0.1',8080,'admin','private','ns2_jambi;quit', container_name='managed-ns2')
 
 
 def test_web_admin_binding_is_explicit_and_survives_container_launch(adapter):
     command, _ = module.get_start_command(adapter)
     assert '-webdomain' not in command
-    adapter.data['webdomain'] = module.checkvalue(adapter, ['webdomain'], '0.0.0.0')
+    adapter.data['webdomain'] = module.checkvalue(adapter, ['webdomain'], '127.0.0.1')
     command, _ = module.get_start_command(adapter)
-    assert command[command.index('-webdomain') + 1] == '0.0.0.0'
+    assert command[command.index('-webdomain') + 1] == '127.0.0.1'
     spec = module.get_container_spec(adapter)
-    assert spec['command'][spec['command'].index('-webdomain') + 1] == '0.0.0.0'
+    assert spec['command'][spec['command'].index('-webdomain') + 1] == '127.0.0.1'
+
+
+def test_container_native_api_uses_managed_identity_loopback_and_private_credentials(monkeypatch):
+    from tests.smoke_tests import ns2_workshop
+    calls = []
+    payload = [{'name': 'ns2_jambi', 'modId': 129599221}]
+    def request(command, **options):
+        calls.append((command, options))
+        return SimpleNamespace(stdout=json.dumps(payload))
+    monkeypatch.setattr(ns2_workshop.subprocess, 'run', request)
+    origins = ns2_workshop.read_map_origins('172.17.0.1', 21314, 'admin', 'private-password',
+                                           container_name='operator-managed-ns2')
+    ns2_workshop.assert_map_origin(origins, 'ns2_jambi', '129599221')
+    ns2_workshop.change_map('172.17.0.1', 21314, 'admin', 'private-password', 'ns2_jambi',
+                            container_name='operator-managed-ns2')
+    for command, options in calls:
+        assert command[:5] == ['docker', 'exec', '-i', 'operator-managed-ns2', 'python3']
+        assert command[5] == '-c' and 'http://127.0.0.1:' in command[6]
+        assert 'private-password' not in ' '.join(command)
+        assert options['timeout'] == 20 and options['check'] and options['capture_output']
+        assert json.loads(options['input'])[:3] == [21314, 'admin', 'private-password']
+    assert json.loads(calls[0][1]['input'])[3] == {'request': 'getmaplist'}
+    assert json.loads(calls[1][1]['input'])[3] == {'command': '1', 'rcon': 'sv_changemap ns2_jambi'}
+
+
+@pytest.mark.parametrize('output,expected', [('operator-owned-name\n', 'operator-owned-name'), ('\n', None)])
+def test_admin_transport_resolves_identity_from_exact_alphagsm_configuration(monkeypatch, output, expected):
+    from tests.smoke_tests import ns2_workshop
+    calls = []
+    environment = {'ALPHAGSM_CONFIG_LOCATION': '/owned/test.conf'}
+    def resolve(command, **options):
+        calls.append((command, options))
+        return SimpleNamespace(stdout=output)
+    monkeypatch.setattr(ns2_workshop.subprocess, 'run', resolve)
+    assert ns2_workshop.managed_container_name(environment, 'ns2-datastore') == expected
+    command, options = calls[0]
+    assert command[-1] == 'ns2-datastore' and 'resolve_runtime_metadata' in command[2]
+    assert options['env'] is environment and options['check'] and options['timeout'] == 15

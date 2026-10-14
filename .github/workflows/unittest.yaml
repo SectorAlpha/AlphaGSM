@@ -676,6 +676,7 @@ jobs:
             sha256sum \
               docker/wine-proton/Dockerfile \
               docker/wine-proton/entrypoint.sh \
+              src/gamemodules/wreckfestserver/console_probe.c \
               scripts/install_proton.sh \
               scripts/select_proton_asset.py \
             | sha256sum | cut -c1-12

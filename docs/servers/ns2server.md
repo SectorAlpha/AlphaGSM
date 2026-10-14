@@ -174,17 +174,18 @@ The native mod file server can need an explicit local interface behind NAT:
 The validation uses loopback for this local-only download endpoint; remote-client
 content delivery has not been verified.
 
-Web admin also listens on `localhost` by default. A Docker port publication
-requires an explicit bind address inside the container, for example
-`alphagsm myns2 set webdomain 0.0.0.0`. Configure private credentials and restrict
-access to that published admin port. The disposable Docker Workshop check sets
-this binding to reach the engine API through the published port.
+Web admin also listens on `localhost` by default. `webdomain` accepts an owned
+local interface IP; Spark rejects the wildcard `0.0.0.0`. The Docker Workshop
+check reads the same authenticated native API on loopback inside AlphaGSM's
+managed container, using its installed Python. It keeps admin on loopback and
+still requires exact native map origin, map-change execution and external A2S.
 
 The opt-in check downloads public [ns2_Jambi](https://steamcommunity.com/sharedfiles/filedetails/?id=129599221),
 starts on a stock map, waits for the real engine web API, requests the custom map
 through web admin, and requires both custom-map A2S and `Server.GetMapModId`
 attribution through `getmaplist`. File existence alone cannot satisfy it.
-Process validation is in progress; Docker validation awaits an SSD-backed endpoint.
+The native Workshop process lifecycle passed in GitHub CI on 2026-10-14.
+The Docker loopback API transport awaits CI validation.
 
 ```bash
 ALPHAGSM_WORK_DIR=/path/on/large/disk \

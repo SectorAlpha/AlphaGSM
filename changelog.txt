@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-14
+- Squad 44 validation: recognize its direct native PAK precacher registration
+  and exact successful mod serialization before checking the custom world and A2S.
 - Workshop diagnostics: retain bounded native PAK/plugin rows and escaped
   console response bytes when Squad 44 or Wreckfest load assertions fail in CI.
 - Workshop smoke CI: supply public fixtures for the eight runners whose
@@ -18,12 +20,13 @@ Historical detail lives in git history. Keep this file focused on release-facing
   startup logs and real A2S map identity; command receipt is not mod execution.
 - TF2: initialize the dedicated-server UGC library in the installation and
   verify its exact ready item/current canonical map before accepting A2S.
-- NS2: expose an optional web-admin bind address so Docker validation can
-  reach the native API without changing the default localhost binding.
+- NS2: expose an optional owned-IP web-admin binding. Keep Docker validation
+  on authenticated container loopback because Spark rejects wildcard addresses.
 - Space Engineers: seed fresh private process Wine prefixes from the prepared
   runtime template and require the MES script's own initialization evidence.
-- Wreckfest: relay native console I/O through a real terminal and enable the
-  Docker console FIFO; require track output appended after the current request.
+- Wreckfest validation: capture a fresh native Win32 Tracks response in the
+  selected private Wine prefix; build the bounded observer in the runtime image
+  and include its source in both image cache keys. Keep lifecycle commands managed.
 - Squad 44 validation: retain early runtime output for native PAK mounting
   and registration while still requiring fresh custom-world and A2S evidence.
 - CI: cancel superseded runs on new pushes while keeping the latest commit's
