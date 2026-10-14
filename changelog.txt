@@ -8,6 +8,15 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-14
+- CI: require all existing public anonymous Workshop scenarios in smoke, process/Docker
+  integration and isolated rechecks; skipped required cases now fail validation.
+  Run the four native Windows unit cases on Windows and require their evidence
+  in the final summary. ARK and Space Engineers get explicit runtime lanes.
+- Squad 44 tests: select the public Ramelle Linux fixture by default, derive its
+  plugin name from staged metadata and require the current SDK identity before
+  checking native map execution and A2S identity. Live load validation is pending.
+- Workshop CI: avoid duplicate NS2 SteamCMD test configuration and direct NS2
+  and Reactive Drop admin probes to the published Docker endpoint.
 - ARK: run containers with the manager's UID/GID and retain launch mod IDs
   before startup so live console and stop commands do not reopen private INIs.
 - Lifecycle tests: fix Reactive Drop's duplicate SteamCMD configuration and

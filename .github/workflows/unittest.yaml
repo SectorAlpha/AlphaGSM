@@ -89,7 +89,7 @@ jobs:
         run: |
           python3 scripts/generate_game_server_support_tracker.py --check
       - name: AlphaGSM Unit Tests
-        run: pytest tests/unit_tests -n auto
+        run: pytest tests/unit_tests -n auto -m "not native_windows"
 
   coverage:
     runs-on: ubuntu-latest
@@ -110,7 +110,7 @@ jobs:
           pip install -r requirements.txt
       - name: AlphaGSM Coverage Report
         run: |
-          pytest tests/unit_tests \
+          pytest tests/unit_tests -m "not native_windows" \
             --cov=core \
             --cov=downloader \
             --cov=downloadermodules \
@@ -126,6 +126,10 @@ jobs:
     uses: ./.github/workflows/binary.yml
     with:
       version: ci-${{ github.sha }}
+
+  windows-native-unit:
+    needs: build
+    uses: ./.github/workflows/windows-native-unit.yaml
 
   classify-changes:
     runs-on: ubuntu-latest
@@ -261,7 +265,7 @@ jobs:
             echo "========================================"
             echo "Running: $script"
             echo "========================================"
-            if bash "./$script"; then
+            if python3 scripts/run_ci_workshop_tests.py bash "./$script"; then
               echo "PASSED: $script" | tee -a smoke-results.txt
               passed=$((passed + 1))
             else
@@ -378,7 +382,7 @@ jobs:
             echo "========================================"
             echo "Running: $script"
             echo "========================================"
-            if bash "./$script"; then
+            if python3 scripts/run_ci_workshop_tests.py bash "./$script"; then
               echo "PASSED: $script" | tee -a smoke-results.txt
               passed=$((passed + 1))
             else
@@ -778,7 +782,7 @@ jobs:
             export SDL_VIDEODRIVER=offscreen
             export SDL_AUDIODRIVER=dummy
             export DISPLAY=
-            python3 scripts/run_integration_batch_with_retry.py \
+            python3 scripts/run_ci_workshop_tests.py python3 scripts/run_integration_batch_with_retry.py \
               --no-retry \
               --results-file results.xml \
               ${{ matrix.files }}
@@ -873,7 +877,7 @@ jobs:
             export SDL_VIDEODRIVER=offscreen
             export SDL_AUDIODRIVER=dummy
             export DISPLAY=
-            python3 scripts/run_integration_batch_with_retry.py \
+            python3 scripts/run_ci_workshop_tests.py python3 scripts/run_integration_batch_with_retry.py \
               --no-retry \
               --results-file results.xml \
               ${{ matrix.files }}
@@ -1191,7 +1195,7 @@ jobs:
             export SDL_VIDEODRIVER=offscreen
             export SDL_AUDIODRIVER=dummy
             export DISPLAY=
-            python3 -m pytest -rs -o junit_logging=all \
+            python3 scripts/run_ci_workshop_tests.py python3 -m pytest -rs -o junit_logging=all \
               --junit-xml=recheck-results.xml \
               \"\$ALPHAGSM_RECHECK_NODEID\"
           "
@@ -1212,7 +1216,7 @@ jobs:
 
   summarize-tests:
     runs-on: ubuntu-latest
-    needs: [build, lint, unit-test, coverage, binary-build-smoke, classify-changes, discover-smoke-tests, discover-integration-tests, build-integration-image, build-java-runtime, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime, smoke-test-standard, smoke-test-heavy, integration-test-standard, integration-test-heavy, backend-smoke-test, backend-integration-test, windows-minecraft-integration, macos-minecraft-integration, collect-integration-rechecks, integration-flake-recheck]
+    needs: [build, lint, unit-test, windows-native-unit, coverage, binary-build-smoke, classify-changes, discover-smoke-tests, discover-integration-tests, build-integration-image, build-java-runtime, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime, smoke-test-standard, smoke-test-heavy, integration-test-standard, integration-test-heavy, backend-smoke-test, backend-integration-test, windows-minecraft-integration, macos-minecraft-integration, collect-integration-rechecks, integration-flake-recheck]
     if: always()
     steps:
       - name: Checkout AlphaGSM code

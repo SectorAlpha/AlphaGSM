@@ -10,6 +10,7 @@ from tests.smoke_tests.gmod_workshop import assert_workshop_mounts, write_probe
 import pytest
 
 from conftest import (
+    workshop_runtime_backends,
     default_runtime_backend,
     effective_runtime_backend,
     resolve_steamcmd_linux_runtime_image,
@@ -201,7 +202,7 @@ def test_gmodserver_lifecycle(tmp_path, workshop_source=None, workshop_identifie
 
 @pytest.mark.skipif(os.environ.get("ALPHAGSM_RUN_GMOD_WORKSHOP") != "1",
                     reason="Set ALPHAGSM_RUN_GMOD_WORKSHOP=1 for external Workshop load validation")
-@pytest.mark.parametrize("runtime_backend", ["process", "docker"])
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
 def test_gmodserver_workshop_item_loads(tmp_path, runtime_backend):
     """Install official ULib and require a fresh running-engine mount report."""
     test_gmodserver_lifecycle(
@@ -213,7 +214,7 @@ def test_gmodserver_workshop_item_loads(tmp_path, runtime_backend):
 @pytest.mark.skipif(not os.environ.get("ALPHAGSM_GMOD_WORKSHOP_COLLECTION")
                     and os.environ.get("ALPHAGSM_RUN_GMOD_WORKSHOP") != "1",
                     reason="Set ALPHAGSM_GMOD_WORKSHOP_COLLECTION for an external collection lifecycle")
-@pytest.mark.parametrize("runtime_backend", ["process", "docker"])
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
 def test_gmodserver_workshop_collection_loads(tmp_path, runtime_backend):
     """Require every imported collection item to be mounted by the running engine."""
     test_gmodserver_lifecycle(

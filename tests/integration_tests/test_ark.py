@@ -11,6 +11,7 @@ import pytest
 from ark_workshop_helpers import wait_for_loaded_world
 
 from conftest import (
+    workshop_runtime_backends,
     alphagsm_env, assert_alphagsm_result_ok, capture_alphagsm_stop,
     default_runtime_backend, effective_runtime_backend, require_command,
     pick_free_tcp_port_group, pick_free_udp_port, require_integration_opt_in,
@@ -107,7 +108,7 @@ def _run_ark_lifecycle(tmp_path, *, runtime_backend, workshop=False):
 
 
 @pytest.mark.timeout(SETUP_TIMEOUT + 2 * START_TIMEOUT + 600)
-@pytest.mark.parametrize("runtime_backend", ["process", "docker"])
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
 def test_ark_native_workshop(tmp_path, runtime_backend):
     """Keep the unverified native Blueprint fixture separate from baseline health."""
     if os.environ.get("ALPHAGSM_RUN_ARK_WORKSHOP") != "1":

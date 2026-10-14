@@ -8,6 +8,7 @@ import sys
 import pytest
 
 from conftest import (
+    workshop_runtime_backends,
     default_runtime_backend,
     effective_runtime_backend,
     require_integration_opt_in,
@@ -145,6 +146,6 @@ def test_avserver_lifecycle(tmp_path, runtime_backend=None, workshop_fixture=Fal
 
 @pytest.mark.skipif(os.environ.get("ALPHAGSM_RUN_WORKSHOP") != "1",
                     reason="Set ALPHAGSM_RUN_WORKSHOP=1 for public Workshop load checks")
-@pytest.mark.parametrize("runtime_backend", ["process", "docker"])
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
 def test_avserver_native_workshop(tmp_path, runtime_backend):
     test_avserver_lifecycle(tmp_path, runtime_backend, workshop_fixture=True)

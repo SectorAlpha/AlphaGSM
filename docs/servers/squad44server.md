@@ -133,14 +133,21 @@ files. `mod cleanup` clears the desired list and removes unchanged files owned
 by AlphaGSM. Operator plugins and files remain present. Edited owned files block
 replacement or cleanup instead of being overwritten.
 
-Baseline smoke and integration runs do not install Workshop content. The previous
+CI smoke and integration runs now require Workshop content. The previous
 SquidBots fixture (`2909251852`) was rejected by the engine: its `.mi` declares
-`Engine=4.27.2`, while current SDK fixtures use `4.27.2.SQ44`. Recent small
-fixtures examined so far shipped only Windows cooks. A compatible public Linux
-fixture and process/Docker native-load proof are still pending.
+`Engine=4.27.2`, while current SDK fixtures use `4.27.2.SQ44`. The default fixture
+is Ramelle (`2387944294`), whose author advertises Linux support. The test derives
+its plugin name from staged metadata and requires the matching Workshop ID and
+current SDK identity before engine checks. Anonymous access and process/Docker
+native-load proof for this replacement fixture are still pending.
 
-To exercise a selected current fixture explicitly, set
-`ALPHAGSM_RUN_SQUAD44_WORKSHOP=1`, `ALPHAGSM_SQUAD44_WORKSHOP_ID` (ID or URL),
-and `ALPHAGSM_SQUAD44_WORKSHOP_PLUGIN` (native plugin name). The separate
-Workshop test keeps engine mounting and serialization assertions; startup and
-query timeouts remain failures. This does not replace the baseline CI check.
+For an explicitly requested local run, set `ALPHAGSM_RUN_SQUAD44_WORKSHOP=1`.
+Override `ALPHAGSM_SQUAD44_WORKSHOP_ID` (ID or URL) and optionally
+`ALPHAGSM_SQUAD44_WORKSHOP_PLUGIN` (exact staged plugin name). A different item
+also requires `ALPHAGSM_SQUAD44_WORKSHOP_LAYER` with its documented native layer.
+The default test selects `Ramelle_Offensive_01` as the sole entry in the disposable
+server's `MapRotation.cfg`. Beyond mounting and serialization, it requires fresh
+native world construction and completed `LoadMap` evidence for that layer, plus
+the same layer reported by real A2S metadata. Startup and query timeouts remain
+failures. CI enables this check automatically; replacement-fixture results remain
+pending.

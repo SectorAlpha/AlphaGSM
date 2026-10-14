@@ -9,6 +9,7 @@ import sys
 import pytest
 
 from conftest import (
+    workshop_runtime_backends,
     alphagsm_env, assert_alphagsm_result_ok, capture_alphagsm_stop,
     default_runtime_backend,
     pick_free_tcp_port, pick_free_tcp_port_group, pick_free_udp_port,
@@ -25,7 +26,7 @@ SETUP_TIMEOUT = 3600
 
 
 @pytest.mark.timeout(SETUP_TIMEOUT + START_TIMEOUT + 600)
-@pytest.mark.parametrize("runtime_backend", ["process", "docker"])
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
 def test_squadserver_lifecycle(tmp_path, runtime_backend):
     """Require exact native mod mounts plus real RCON health and complete shutdown."""
     require_integration_opt_in()

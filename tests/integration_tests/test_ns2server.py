@@ -1,5 +1,6 @@
 """Integration test for ns2server."""
 
+import configparser
 import json
 import os
 import sys
@@ -10,6 +11,8 @@ from tests.smoke_tests.ns2_workshop import assert_map_origin, read_map_origins, 
 import pytest
 
 from conftest import (
+    _runtime_probe_hosts,
+    workshop_runtime_backends,
     alphagsm_env,
     capture_alphagsm_stop,
     default_runtime_backend,
@@ -171,8 +174,13 @@ def _run_ns2_workshop_lifecycle(tmp_path, workshop_source, workshop_identifier, 
     )
     if workshop_source:
         steamcmd_path = os.environ.get('ALPHAGSM_NS2SERVER_STEAMCMD_PATH', str(tmp_path / 'steamcmd'))
-        with config_path.open('a') as handle:
-            handle.write(f'\n[downloader.steamcmd]\nsteamcmd_path = {steamcmd_path}\n')
+        parser = configparser.ConfigParser(interpolation=None)
+        parser.read(config_path, encoding='utf-8')
+        if not parser.has_section('downloader.steamcmd'):
+            parser.add_section('downloader.steamcmd')
+        parser.set('downloader.steamcmd', 'steamcmd_path', steamcmd_path)
+        with config_path.open('w', encoding='utf-8') as handle:
+            parser.write(handle)
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port_group(4)
     query_port = port + 1
@@ -217,14 +225,13 @@ def _run_ns2_workshop_lifecycle(tmp_path, workshop_source, workshop_identifier, 
         cycle.write_text(json.dumps(operator, indent=2))
         run_and_assert_ok(env, server_name, 'set', 'modserveraddress', '127.0.0.1')
 
-    run_and_assert_ok(
-        env,
-        server_name,
-        "start",
-        allow_known_steamcmd_skip=False,
-    )
-
     try:
+        run_and_assert_ok(
+            env,
+            server_name,
+            "start",
+            allow_known_steamcmd_skip=False,
+        )
         wait_for_info_protocol(
             env,
             server_name,
@@ -234,7 +241,8 @@ def _run_ns2_workshop_lifecycle(tmp_path, workshop_source, workshop_identifier, 
         )
 
         if item_ids:
-            _verify_workshop_execution(env, server_name, item_ids, query_port, port + 2)
+            _verify_workshop_execution(env, server_name, item_ids, query_port, port + 2,
+                                       host=_workshop_admin_host(runtime_backend))
 
         run_and_assert_ok(
             env,
@@ -288,7 +296,7 @@ def _run_ns2_workshop_lifecycle(tmp_path, workshop_source, workshop_identifier, 
 
 @pytest.mark.skipif(os.environ.get('ALPHAGSM_RUN_NS2SERVER_WORKSHOP') != '1',
                     reason='Opt in to external native NS2 Workshop lifecycle validation')
-@pytest.mark.parametrize('runtime_backend', ['process', 'docker'])
+@pytest.mark.parametrize('runtime_backend', workshop_runtime_backends())
 def test_ns2server_workshop_loads(tmp_path, runtime_backend):
     identifier = os.environ.get('ALPHAGSM_NS2SERVER_WORKSHOP_COLLECTION')
     source = 'workshop-collection' if identifier else 'workshop'
@@ -296,7 +304,14 @@ def test_ns2server_workshop_loads(tmp_path, runtime_backend):
     _run_ns2_workshop_lifecycle(tmp_path, source, identifier, runtime_backend)
 
 
-def _verify_workshop_execution(env, server_name, item_ids, query_port, http_port):
+def _workshop_admin_host(runtime_backend):
+    """Use the published sibling endpoint when pytest runs in a manager container."""
+    if effective_runtime_backend(runtime_backend, module_name='ns2server') == 'docker':
+        return _runtime_probe_hosts('127.0.0.1')[-1]
+    return '127.0.0.1'
+
+
+def _verify_workshop_execution(env, server_name, item_ids, query_port, http_port, *, host):
     """Require actual custom map execution and native engine attribution to its mod."""
     item = os.environ.get('ALPHAGSM_NS2SERVER_WORKSHOP_LOAD_ITEM', item_ids[0])
     map_name = os.environ.get('ALPHAGSM_NS2SERVER_WORKSHOP_MAP', 'ns2_jambi')
@@ -304,10 +319,10 @@ def _verify_workshop_execution(env, server_name, item_ids, query_port, http_port
     deadline, error, selected = time.monotonic() + 300, None, False
     while time.monotonic() < deadline:
         try:
-            origins = read_map_origins('127.0.0.1', http_port, 'admin', 'CHANGE_ME')
+            origins = read_map_origins(host, http_port, 'admin', 'CHANGE_ME')
             assert_map_origin(origins, map_name, item)
             if not selected:
-                change_map('127.0.0.1', http_port, 'admin', 'CHANGE_ME', map_name)
+                change_map(host, http_port, 'admin', 'CHANGE_ME', map_name)
                 selected = True
         except (ValueError, OSError, AssertionError) as exc:
             error = exc
@@ -316,7 +331,7 @@ def _verify_workshop_execution(env, server_name, item_ids, query_port, http_port
             try:
                 data = json.loads(result.stdout.strip())
                 if data.get('protocol') == 'a2s' and data.get('port') == query_port and data.get('map', '').lower() == map_name.lower():
-                    origins = read_map_origins('127.0.0.1', http_port, 'admin', 'CHANGE_ME')
+                    origins = read_map_origins(host, http_port, 'admin', 'CHANGE_ME')
                     assert_map_origin(origins, map_name, item)
                     print(f'ENGINE_WORKSHOP_MAP_LOADED {map_name} app=4920 item={item} native_map_origin={origins}')
                     return

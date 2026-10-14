@@ -10,6 +10,7 @@ from tests.smoke_tests.nwi_workshop import assert_native_mounts
 import pytest
 
 from conftest import (
+    workshop_runtime_backends,
     default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
@@ -233,7 +234,7 @@ def test_tf2_download_install_and_start(tmp_path, workshop_source=None, workshop
 
 @pytest.mark.skipif(os.environ.get('ALPHAGSM_RUN_TF2_WORKSHOP') != '1',
                     reason='Opt in to external native TF2 Workshop map validation')
-@pytest.mark.parametrize('runtime_backend', ['process', 'docker'])
+@pytest.mark.parametrize('runtime_backend', workshop_runtime_backends())
 def test_tf2_native_workshop_loads(tmp_path, runtime_backend):
     identifier = os.environ.get('ALPHAGSM_TF2_WORKSHOP_COLLECTION')
     source = 'workshop-collection' if identifier else 'workshop'

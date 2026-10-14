@@ -67,6 +67,8 @@ PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = (
     # This historical name selects CI lanes, not the current support state.
     # Live validation results remain in docs/TEST_STATUS.md and WORKSHOP_SUPPORT.md.
     "tests/integration_tests/test_asrdserver.py",
+    "tests/integration_tests/test_ark.py",
+    "tests/integration_tests/test_seserver.py",
     "tests/integration_tests/test_terraria_tmodloader.py",
     "tests/integration_tests/test_aloftserver.py",
     "tests/integration_tests/test_ahlserver.py",
@@ -273,7 +275,6 @@ PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = (
 SOURCE_FAMILY_BACKLOG = set()
 DOCKER_DEFAULT_RUNTIME_TESTS = {
     "tests/integration_tests/test_archive_backed_installs.py",
-    "tests/integration_tests/test_ark.py",
     "tests/integration_tests/test_arksurvivalascended.py",
     "tests/integration_tests/test_astroneerserver.py",
     "tests/integration_tests/test_atlasserver.py",
@@ -308,7 +309,6 @@ DOCKER_DEFAULT_RUNTIME_TESTS = {
     "tests/integration_tests/test_rs2server.py",
     "tests/integration_tests/test_saleblazersserver.py",
     "tests/integration_tests/test_scumserver.py",
-    "tests/integration_tests/test_seserver.py",
     "tests/integration_tests/test_sniperelite4server.py",
     "tests/integration_tests/test_soulmask.py",
     "tests/integration_tests/test_sonsoftheforestserver.py",

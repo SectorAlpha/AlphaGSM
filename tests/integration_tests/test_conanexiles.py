@@ -9,6 +9,7 @@ import sys
 import pytest
 
 from conftest import (
+    workshop_runtime_backends,
     alphagsm_env,
     default_runtime_backend,
     pick_free_tcp_port_group,
@@ -41,7 +42,7 @@ PUBLISHED_STEAMCMD_LINUX_IMAGE = (
 
 
 @pytest.mark.timeout(TEST_TIMEOUT)
-@pytest.mark.parametrize("runtime_backend", ["process", "docker"])
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
 def test_conanexiles_lifecycle(tmp_path, runtime_backend):
     require_integration_opt_in()
     require_steamcmd_opt_in()

@@ -7,6 +7,7 @@ import sys
 import pytest
 
 from conftest import (
+    workshop_runtime_backends,
     default_runtime_backend,
     require_integration_opt_in,
     require_steamcmd_opt_in,
@@ -115,7 +116,7 @@ def test_unturned_lifecycle(tmp_path):
     os.environ.get("ALPHAGSM_RUN_WORKSHOP") != "1",
     reason="Set ALPHAGSM_RUN_WORKSHOP=1 for public Workshop download/load validation",
 )
-@pytest.mark.parametrize("workshop_runtime_backend", ["process", "docker"])
+@pytest.mark.parametrize("workshop_runtime_backend", workshop_runtime_backends())
 def test_unturned_workshop_map_lifecycle(tmp_path, workshop_runtime_backend):
     """The fresh running engine must report a Workshop-only map through A2S."""
     require_integration_opt_in()

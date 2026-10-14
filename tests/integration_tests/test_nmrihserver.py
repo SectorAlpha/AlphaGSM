@@ -7,6 +7,7 @@ import time
 import pytest
 
 from conftest import (
+    workshop_runtime_backends,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     default_runtime_backend,
@@ -149,7 +150,7 @@ def test_nmrihserver_lifecycle(tmp_path, workshop_source=None, workshop_identifi
 
 @pytest.mark.skipif(os.environ.get("ALPHAGSM_RUN_NMRIHSERVER_WORKSHOP") != "1",
                     reason="Opt in to external native Workshop lifecycle validation")
-@pytest.mark.parametrize("runtime_backend", ["process", "docker"])
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
 def test_nmrihserver_workshop_loads(tmp_path, runtime_backend):
     identifier = os.environ.get("ALPHAGSM_NMRIHSERVER_WORKSHOP_COLLECTION")
     source = "workshop-collection" if identifier else "workshop"

@@ -12,6 +12,8 @@ import pytest
 
 from tests.smoke_tests.asrd_workshop import change_map, query_native_maps
 from conftest import (
+    _runtime_probe_hosts,
+    workshop_runtime_backends,
     alphagsm_env, capture_alphagsm_stop, default_runtime_backend,
     effective_runtime_backend, pick_free_tcp_port_group, require_command_for_runtime,
     require_integration_opt_in, require_steamcmd_opt_in, run_alphagsm,
@@ -71,7 +73,8 @@ def test_asrdserver_lifecycle(tmp_path, workshop_source=None, workshop_identifie
         run_and_assert_ok(env, name, 'start', allow_known_steamcmd_skip=False)
         wait_for_info_protocol(env, name, 'a2s', START_TIMEOUT, expected_port=port)
         if items:
-            _verify_workshop_execution(env, name, items, port, password)
+            _verify_workshop_execution(env, name, items, port, password,
+                                       host=_workshop_admin_host(runtime_backend))
         run_and_assert_ok(env, name, 'status')
         assert 'Server is responding' in run_and_assert_ok(env, name, 'query').stdout
         assert 'Protocol' in run_and_assert_ok(env, name, 'info').stdout
@@ -88,26 +91,33 @@ def test_asrdserver_lifecycle(tmp_path, workshop_source=None, workshop_identifie
         assert workshop_config.read_text() == '// AlphaGSM test-owned operator comment\n'
 
 
-def _verify_workshop_execution(env, name, items, port, password):
+def _workshop_admin_host(runtime_backend):
+    """Use the published sibling endpoint when pytest runs in a manager container."""
+    if effective_runtime_backend(runtime_backend, module_name='asrdserver') == 'docker':
+        return _runtime_probe_hosts('127.0.0.1')[-1]
+    return '127.0.0.1'
+
+
+def _verify_workshop_execution(env, name, items, port, password, *, host):
     item = os.environ.get('ALPHAGSM_ASRDSERVER_WORKSHOP_LOAD_ITEM', items[0])
     assert item in items
     map_name = os.environ.get('ALPHAGSM_ASRDSERVER_WORKSHOP_MAP')
     deadline, error, selected = time.monotonic() + 300, None, False
     while time.monotonic() < deadline:
         try:
-            owners = query_native_maps('127.0.0.1', port, password)
+            owners = query_native_maps(host, port, password)
             if not map_name:
                 map_name = next((name for name, owner in owners.items() if owner == item), None)
             if map_name and owners.get(map_name) == item:
                 if not selected:
-                    change_map('127.0.0.1', port, password, map_name)
+                    change_map(host, port, password, map_name)
                     selected = True
                 result = run_alphagsm(env, name, 'info', '--json')
                 if result.returncode == 0:
                     data = json.loads(result.stdout.strip())
                     if data.get('protocol') == 'a2s' and data.get('map', '').lower() == map_name.lower():
                         # Re-query the running engine after level execution to exclude stale mappings.
-                        assert query_native_maps('127.0.0.1', port, password).get(map_name) == item
+                        assert query_native_maps(host, port, password).get(map_name) == item
                         print(f'ENGINE_WORKSHOP_MAP_LOADED {map_name} app=563560 item={item} native_mapping={owners}')
                         return
         except (ValueError, OSError, RuntimeError, AssertionError) as exc:
@@ -119,7 +129,7 @@ def _verify_workshop_execution(env, name, items, port, password):
 
 @pytest.mark.skipif(os.environ.get('ALPHAGSM_RUN_ASRDSERVER_WORKSHOP') != '1',
                     reason='Opt in to external anonymous Reactive Drop Workshop lifecycle')
-@pytest.mark.parametrize('runtime_backend', ['process', 'docker'])
+@pytest.mark.parametrize('runtime_backend', workshop_runtime_backends())
 def test_asrdserver_workshop_loads(tmp_path, runtime_backend):
     identifier = os.environ.get('ALPHAGSM_ASRDSERVER_WORKSHOP_COLLECTION')
     source = 'workshop-collection' if identifier else 'workshop'

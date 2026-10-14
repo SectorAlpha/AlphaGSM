@@ -15,9 +15,14 @@ from conftest import (
     require_steamcmd_opt_in, resolve_steamcmd_linux_runtime_image, run_and_assert_ok,
     run_setup_with_port_retry, wait_for_glob_log_marker, wait_for_info_protocol,
     wait_for_udp_closed, wait_for_runtime_log_marker, write_config,
+    workshop_runtime_backends,
 )
 from server.modsupport.workshop import normalize_workshop_identifier
 from tests.integration_tests.squad44_sdk_diagnostics import sdk_metadata_from_config
+from tests.smoke_tests.squad44server_workshop import (
+    FIXTURE_ID, staged_plugin_name, select_workshop_layer, configure_workshop_layer,
+    wait_for_native_map, assert_workshop_map_info,
+)
 
 pytestmark = pytest.mark.integration
 START_TIMEOUT = 900
@@ -57,6 +62,9 @@ def test_squad44server_lifecycle(tmp_path, *, runtime_backend=None, workshop=Non
     if workshop:
         run_and_assert_ok(env, server_name, "mod", "add", "workshop", workshop[0])
         run_and_assert_ok(env, server_name, "mod", "apply")
+        workshop = (workshop[0], staged_plugin_name(install_dir, workshop[0], workshop[1]))
+        layer = select_workshop_layer(workshop[0], os.environ.get("ALPHAGSM_SQUAD44_WORKSHOP_LAYER", ""))
+        configure_workshop_layer(install_dir, layer)
     log_dir = install_dir / "PostScriptum/Saved/Logs"
     if log_dir.exists():
         for path in log_dir.glob("*.log"):
@@ -68,7 +76,10 @@ def test_squad44server_lifecycle(tmp_path, *, runtime_backend=None, workshop=Non
         native_log = wait_for_glob_log_marker(
             log_dir, "*.log", ["LogLoad: (Engine Initialization)"], START_TIMEOUT,
             env=env, server_name=server_name)
-        assert re.search(r"LogLoad: Took .*LoadMap\(/Game/", native_log), native_log[-8000:]
+        if workshop:
+            native_log = wait_for_native_map(log_dir, layer, START_TIMEOUT)
+        else:
+            assert re.search(r"LogLoad: Took .*LoadMap\(/Game/", native_log), native_log[-8000:]
         # Preserve initialization evidence that falls outside the usual timeout tail.
         for line in native_log.splitlines():
             if any(marker in line for marker in ("LogOnline:", "STEAM:", "SteamGameServer",
@@ -90,6 +101,8 @@ def test_squad44server_lifecycle(tmp_path, *, runtime_backend=None, workshop=Non
         info_json = run_and_assert_ok(env, server_name, "info", "--json")
         info = json.loads(info_json.stdout.strip())
         assert info["protocol"] == "a2s" and info["port"] == port + 1
+        if workshop:
+            assert_workshop_map_info(info, layer)
     finally:
         stop = capture_alphagsm_stop(env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT)
         if workshop and stop is not None and stop.returncode == 0:
@@ -101,16 +114,16 @@ def test_squad44server_lifecycle(tmp_path, *, runtime_backend=None, workshop=Non
 
 
 @pytest.mark.timeout(SETUP_TIMEOUT + START_TIMEOUT + 600)
-@pytest.mark.parametrize("runtime_backend", ["process", "docker"])
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
 def test_squad44server_native_workshop(tmp_path, runtime_backend):
-    """A current Linux fixture is required explicitly until one is engine-validated."""
-    if os.environ.get("ALPHAGSM_RUN_SQUAD44_WORKSHOP") != "1":
-        pytest.skip("Squad 44 compatible Linux Workshop fixture pending; opt in with ALPHAGSM_RUN_SQUAD44_WORKSHOP=1")
-    item = os.environ.get("ALPHAGSM_SQUAD44_WORKSHOP_ID", "")
+    """Require anonymous Linux content, native plugin loading and actual A2S health."""
+    if (os.environ.get("ALPHAGSM_RUN_SQUAD44_WORKSHOP") != "1"
+            and os.environ.get("ALPHAGSM_CI_WORKSHOP") != "1"):
+        pytest.skip("Set ALPHAGSM_RUN_SQUAD44_WORKSHOP=1 for native public Workshop checks")
+    item = os.environ.get("ALPHAGSM_SQUAD44_WORKSHOP_ID", FIXTURE_ID)
     plugin = os.environ.get("ALPHAGSM_SQUAD44_WORKSHOP_PLUGIN", "")
-    assert item and re.fullmatch(r"[A-Za-z0-9_-]+", plugin), (
-        "Set a current public Linux fixture ID/URL and its native plugin name via "
-        "ALPHAGSM_SQUAD44_WORKSHOP_ID and ALPHAGSM_SQUAD44_WORKSHOP_PLUGIN")
+    assert item and (not plugin or re.fullmatch(r"[A-Za-z0-9_-]+", plugin)), (
+        "Set a public Linux fixture ID/URL and optional exact staged plugin name")
     item = normalize_workshop_identifier(item)
     assert item != "2909251852", "SquidBots has obsolete Engine=4.27.2; the current SDK uses 4.27.2.SQ44"
     test_squad44server_lifecycle(tmp_path, runtime_backend=runtime_backend, workshop=(item, plugin))

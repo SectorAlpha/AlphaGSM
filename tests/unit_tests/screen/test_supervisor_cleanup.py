@@ -51,6 +51,7 @@ def test_endpoint_cleanup_contention_is_bounded_and_recorded(tmp_path, monkeypat
     assert "endpoint is still open" in stopped["endpoint_cleanup_error"]
 
 
+@pytest.mark.native_windows
 @pytest.mark.skipif(sys.platform != "win32", reason="requires Windows file sharing semantics")
 def test_native_windows_endpoint_reader_can_finish_during_cleanup(tmp_path, monkeypatch):
     endpoint = tmp_path / "endpoint.json"

@@ -10,6 +10,7 @@ from uuid import uuid4
 import pytest
 
 from conftest import (
+    workshop_runtime_backends,
     default_runtime_backend,
     effective_runtime_backend,
     resolve_steamcmd_linux_runtime_image,
@@ -161,7 +162,7 @@ def test_l4d2server_lifecycle(tmp_path, collection_id=None, runtime_backend=None
     wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
 
 
-@pytest.mark.parametrize("runtime_backend", ["process", "docker"])
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
 def test_l4d2server_workshop_collection_loads(tmp_path, runtime_backend):
     """Load a popular public campaign collection and independent server addon."""
     require_integration_opt_in()

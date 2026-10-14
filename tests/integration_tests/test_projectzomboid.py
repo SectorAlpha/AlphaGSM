@@ -8,6 +8,7 @@ import sys
 import pytest
 
 from conftest import (
+    workshop_runtime_backends,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     default_runtime_backend,
@@ -157,7 +158,7 @@ def test_projectzomboid_lifecycle(tmp_path, runtime_backend=None, workshop_fixtu
 
 @pytest.mark.skipif(os.environ.get("ALPHAGSM_RUN_WORKSHOP") != "1",
                     reason="Set ALPHAGSM_RUN_WORKSHOP=1 for public Workshop load validation")
-@pytest.mark.parametrize("runtime_backend", ["process", "docker"])
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
 @pytest.mark.timeout(3600)
 def test_projectzomboid_workshop_lifecycle(tmp_path, runtime_backend):
     test_projectzomboid_lifecycle(tmp_path, runtime_backend, workshop_fixture=True)

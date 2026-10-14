@@ -4,6 +4,12 @@ This matrix tracks game-specific Workshop activation through AlphaGSM. Anonymous
 
 Items and collections use numeric IDs or official Steam Community Workshop URLs. Every member must belong to the server's game AppID. Only public, dedicated-server-compatible content is in this campaign's scope; operator credentials and owned-assets hosting paths are excluded.
 
+CI now enables all 21 existing public anonymous Workshop integration suites,
+their smoke scenarios and isolated rechecks. Required cases must run: a skip
+fails CI. Each integration suite selects its explicit process or Docker lane;
+local runs retain download opt-ins. This scheduling change does not promote
+pending native-load results in the matrix below.
+
 | Game | Workshop AppID | Anonymous content access | Process load | Docker load |
 | --- | ---: | --- | --- | --- |
 | Left 4 Dead 2 | 550 | Verified | Passed | Passed |
@@ -35,7 +41,7 @@ Items and collections use numeric IDs or official Steam Community Workshop URLs.
 ## Fixture evidence and limitations
 
 - Wreckfest's stock process and Docker integrations plus Docker smoke passed in CI run `38545270577` on 2026-10-14. These require fresh native startup, runtime liveness, limited UDP reachability and complete shutdown; they do not establish game metadata or Workshop loading. Its Workshop row remains in progress until fresh native registry capture passes the stricter fixture check.
-- Squad 44's stock process and Docker integrations plus Docker smoke passed in CI run `38537399526` on 2026-10-14, with real A2S and shutdown checks after depot-SDK launch preference was added. The loaded SDK hash was not retained in successful captured output; this does not prove the previous timeout's cause. Stop retains its existing forced-stop fallback. A compatible public Linux Workshop fixture and native plugin-load proof remain pending, so its Workshop load row is unchanged.
+- Squad 44's stock process and Docker integrations plus Docker smoke passed in CI run `38537399526` on 2026-10-14, with real A2S and shutdown checks after depot-SDK launch preference was added. The loaded SDK hash was not retained in successful captured output; this does not prove the previous timeout's cause. Stop retains its existing forced-stop fallback. CI now selects Ramelle `2387944294`, whose author advertises Linux content, and checks the staged plugin's exact Workshop and current SDK identity. Anonymous access and native plugin-load proof for this fixture remain pending, so its Workshop load row is unchanged.
 - Reactive Drop's anonymous stock baseline passed process and Docker integrations plus Docker smoke in CI on 2026-10-14. This validates the server and terminal correction; its Workshop load row remains pending actual item execution.
 - L4D2: Back To School collection `121115793` and Admin System `214630948`; fresh engine load order enumerates all 11 VPKs, and Admin System execution was observed. Unavailable original collection `3819008159` is not a passing fixture.
 - Garry's Mod: ULib/ULX collection `2886432224`; fresh native VFS CRCs and both live Lua APIs.
@@ -57,6 +63,10 @@ Items and collections use numeric IDs or official Steam Community Workshop URLs.
 
 Lifecycle success and port closure do not by themselves establish graceful save completion. Existing timeout/kill fallbacks occurred in some validated runs, including Conan Exiles and the Insurgency/Day of Infamy cases. Match each server guide's recorded limitations.
 
-Remaining Docker validation is held until an SSD-backed Docker endpoint is available. The attempted host rootless daemon requires the missing `newuidmap` and `newgidmap` helpers from the `uidmap` system package. Large server files, Workshop caches and test logs already use the SSD. No pending Docker row represents a passing load result.
+Remaining Docker validation runs in GitHub CI. No local Docker testing is
+required: the local rootless daemon lacks the `newuidmap` and `newgidmap`
+helpers, and large local Docker writes remain excluded. Matrix entries that
+mention the earlier SSD endpoint blocker record historical results until
+replacement CI provides native-load evidence.
 
 DST, Arma 3, DayZ, Starbound and Stormworks remain outside this no-auth campaign. CS2 public hosting has an account-bound GSLT requirement; its existing generic staging commands do not establish no-credential public hosting or arbitrary Workshop-map activation.

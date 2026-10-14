@@ -9,15 +9,23 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from collect_integration_rechecks import collect_failed_rechecks, pytest_nodeid_from_testcase
+from run_ci_workshop_tests import WORKSHOP_SMOKE_FILES, WORKSHOP_TEST_FILES
 
 
 REQUIRED_JOBS = (
-    'build lint unit-test coverage binary-build-smoke classify-changes '
+    'build lint unit-test windows-native-unit coverage binary-build-smoke classify-changes '
     'discover-smoke-tests discover-integration-tests build-integration-image '
     'build-java-runtime build-simple-tcp-runtime build-steamcmd-linux-runtime '
     'build-wine-proton-runtime backend-smoke-test backend-integration-test '
     'windows-minecraft-integration macos-minecraft-integration collect-integration-rechecks'
 ).split()
+WINDOWS_NATIVE_CASES = {
+    'tests/unit_tests/core/test_binary_update.py::test_wait_for_real_windows_process_exit',
+    'tests/unit_tests/screen/test_supervisor_cleanup.py::'
+    'test_native_windows_endpoint_reader_can_finish_during_cleanup',
+    'tests/unit_tests/screen/test_managed_subprocess.py::test_windows_job_cleans_descendant_after_parent_exits',
+    'tests/unit_tests/screen/test_managed_subprocess.py::test_windows_console_break_reaches_server',
+}
 
 
 def read_report(path: Path) -> dict[str, str]:
@@ -104,6 +112,9 @@ def summarize(artifacts: Path, needs: dict) -> list[str]:
                         if set(records) != set(row['scripts'].split()):
                             raise ValueError('Missing or unexpected smoke results')
                         errors.extend(f'{artifact}: FAILED {name}' for name, status in records.items() if status == 'FAILED')
+                        errors.extend(f'{artifact}: required Workshop smoke skipped: {name}'
+                                      for name, status in records.items()
+                                      if status == 'SKIPPED' and name in WORKSHOP_SMOKE_FILES)
                     except (OSError, ValueError) as exc:
                         errors.append(f'{path}: {exc}')
                     continue
@@ -111,6 +122,9 @@ def summarize(artifacts: Path, needs: dict) -> list[str]:
                 represented = {nodeid.split('::')[0] for nodeid in results}
                 if represented != set(row['files'].split()):
                     errors.append(f'{artifact}: missing or unexpected integration test files')
+                errors.extend(f'{artifact}: required Workshop integration skipped: {nodeid}'
+                              for nodeid, status in results.items()
+                              if status == 'skipped' and nodeid.split('::')[0] in WORKSHOP_TEST_FILES)
                 failed = {nodeid for nodeid, status in results.items() if status == 'failed'}
                 initial_failures.update((artifact, nodeid) for nodeid in failed)
                 exit_path = artifacts / artifact / 'exit-code.txt'
@@ -125,6 +139,10 @@ def summarize(artifacts: Path, needs: dict) -> list[str]:
     for filename in ('backend-process-results.xml', 'backend-docker-results.xml'):
         results = read('backend-integration-results-linux', filename)
         errors.extend(f'{filename}: FAILED {nodeid}' for nodeid, status in results.items() if status == 'failed')
+
+    windows = read('windows-native-unit-results-windows', 'windows-native-unit-results.xml')
+    if set(windows) != WINDOWS_NATIVE_CASES or any(status != 'passed' for status in windows.values()):
+        errors.append('windows-native-unit: expected exactly the four native Windows cases passed without skips')
 
     outputs = needs.get('collect-integration-rechecks', {}).get('outputs', {})
     rechecks = json.loads(outputs['matrix'])['include']

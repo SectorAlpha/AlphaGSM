@@ -378,6 +378,22 @@ def default_runtime_backend():
     return "auto" if os.environ.get("GITHUB_ACTIONS") == "true" else "process"
 
 
+def workshop_runtime_backends():
+    """Collect both Workshop runtimes locally or exactly the explicit CI lane.
+
+    Workshop cases cover both declared runtime families. An explicit selection
+    must identify one concrete backend; ``auto`` cannot identify a unique lane.
+    """
+    selected = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND")
+    if selected is None:
+        return ("process", "docker")
+    if selected not in {"process", "docker"}:
+        raise ValueError(
+            "ALPHAGSM_TEST_RUNTIME_BACKEND must be process or docker for Workshop integration cases"
+        )
+    return (selected,)
+
+
 def effective_runtime_backend(
     runtime_backend="process",
     *,

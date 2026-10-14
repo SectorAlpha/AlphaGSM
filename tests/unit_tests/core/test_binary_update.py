@@ -191,6 +191,7 @@ def test_windows_wait_handles_missing_or_inaccessible_parent(monkeypatch, error,
     kernel.CloseHandle.assert_not_called()
 
 
+@pytest.mark.native_windows
 @pytest.mark.skipif(__import__("sys").platform != "win32", reason="requires native Windows process handles")
 def test_wait_for_real_windows_process_exit():
     import subprocess

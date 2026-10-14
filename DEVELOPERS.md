@@ -851,6 +851,22 @@ merge groups, manual dispatch and reusable release validation. Its current gates
   used by the relevant lifecycle jobs
 - backend process smoke/integration coverage plus backend Docker integration
 - representative Minecraft backend integration on Windows and macOS
+- four native Windows unit cases, with exact passing JUnit evidence required
+  by the final summary; Linux unit and coverage jobs deselect those cases
+
+Smoke, integration and isolated recheck commands run through
+`scripts/run_ci_workshop_tests.py`. It enables every public anonymous Workshop
+opt-in in the supported CI set and installs the required-case pytest plugin.
+Keep this wrapper inside the `su` command after switching to `gsmuser`, so the
+login shell cannot drop the flags. A required Workshop skip is a failure;
+unrelated provider-authentication and BYO skips keep their prerequisite gates.
+Local runs retain explicit opt-ins for the large content downloads.
+
+Workshop integration parametrization uses `workshop_runtime_backends()` to
+collect exactly the explicit process or Docker matrix lane. An ambiguous
+`auto` selection is rejected. ARK and Space Engineers therefore have explicit
+process and Docker lanes alongside the other native Workshop cases. Without
+an explicit backend, local collection includes both runtimes.
 
 Ubuntu 24.04 is the full game-server lifecycle baseline. The Windows and macOS
 jobs currently validate representative Minecraft backend paths only; broader

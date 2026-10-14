@@ -8,6 +8,7 @@ import sys
 import pytest
 
 from conftest import (
+    workshop_runtime_backends,
     default_runtime_backend,
     effective_runtime_backend,
     resolve_steamcmd_linux_runtime_image,
@@ -170,6 +171,6 @@ def test_stationeersserver_lifecycle(tmp_path, runtime_backend=None, workshop_fi
 
 @pytest.mark.skipif(os.environ.get("ALPHAGSM_RUN_WORKSHOP") != "1",
                     reason="Set ALPHAGSM_RUN_WORKSHOP=1 for native public Workshop checks")
-@pytest.mark.parametrize("runtime_backend", ["process", "docker"])
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
 def test_stationeersserver_native_workshop(tmp_path, runtime_backend):
     test_stationeersserver_lifecycle(tmp_path, runtime_backend, workshop_fixture=True)

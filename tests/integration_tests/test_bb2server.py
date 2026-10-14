@@ -10,6 +10,7 @@ from tests.smoke_tests.nwi_workshop import assert_native_mounts
 import pytest
 
 from conftest import (
+    workshop_runtime_backends,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     default_runtime_backend,
@@ -152,7 +153,7 @@ def test_bb2server_lifecycle(tmp_path, workshop_source=None, workshop_identifier
 
 @pytest.mark.skipif(os.environ.get("ALPHAGSM_RUN_BB2SERVER_WORKSHOP") != "1",
                     reason="Opt in to external native Workshop lifecycle validation")
-@pytest.mark.parametrize("runtime_backend", ["process", "docker"])
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
 def test_bb2server_workshop_loads(tmp_path, runtime_backend):
     identifier = os.environ.get("ALPHAGSM_BB2SERVER_WORKSHOP_COLLECTION")
     source = "workshop-collection" if identifier else "workshop"

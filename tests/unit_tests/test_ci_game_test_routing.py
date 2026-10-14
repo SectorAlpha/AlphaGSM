@@ -3335,7 +3335,6 @@ def test_manual_game_selection_rejects_non_game_or_missing_paths(path):
         "pixarkserver",
         "primalcarnageextinctionserver",
         "saleblazersserver",
-        "seserver",
         "sniperelite4server",
         "soulmask",
         "starruptureserver",
@@ -3362,3 +3361,14 @@ def test_docker_validated_servers_do_not_repeat_unproven_process_lanes(test_name
             "label": test_name,
         }
     ]
+
+
+@pytest.mark.parametrize("test_name", ["ark", "seserver"])
+def test_required_workshop_servers_collect_both_native_runtime_lanes(test_name):
+    routing = load_routing_module()
+    test_path = f"tests/integration_tests/test_{test_name}.py"
+    matrix = routing.build_integration_matrix([test_path], repo_root=Path("."))
+    assert [(entry["files"], entry["runtime_backend"]) for entry in matrix["include"]] == [
+        (test_path, "process"), (test_path, "docker"),
+    ]
+    assert test_path not in routing.DOCKER_DEFAULT_RUNTIME_TESTS

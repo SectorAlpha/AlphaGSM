@@ -9,6 +9,7 @@ import pytest
 from tests.smoke_tests.tmodloader_workshop import assert_census_loaded
 
 from conftest import (
+    workshop_runtime_backends,
     alphagsm_env, assert_alphagsm_result_ok, capture_alphagsm_stop,
     default_runtime_backend,
     pick_free_tcp_port, require_command_for_runtime, require_integration_opt_in,
@@ -84,7 +85,7 @@ def test_tmodloader_lifecycle(tmp_path, backend):
 
 @pytest.mark.skipif(os.environ.get('ALPHAGSM_RUN_WORKSHOP') != '1',
                     reason='Set ALPHAGSM_RUN_WORKSHOP=1 for anonymous mod execution checks')
-@pytest.mark.parametrize('backend', BACKENDS)
+@pytest.mark.parametrize('backend', workshop_runtime_backends())
 def test_tmodloader_workshop_lifecycle(tmp_path, backend):
     """Census must execute its own console command inside the fresh game engine."""
     _lifecycle(tmp_path, backend, True)

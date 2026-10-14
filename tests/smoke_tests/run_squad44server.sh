@@ -10,13 +10,15 @@ STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itsquad44server}"
 SERVER_STARTED=0
 WORKSHOP_ENABLED="${ALPHAGSM_RUN_SQUAD44_WORKSHOP:-0}"
+if [[ "${ALPHAGSM_CI_WORKSHOP:-0}" == "1" ]]; then WORKSHOP_ENABLED=1; fi
+WORKSHOP_ID="${ALPHAGSM_SQUAD44_WORKSHOP_ID:-2387944294}"
+WORKSHOP_PLUGIN="${ALPHAGSM_SQUAD44_WORKSHOP_PLUGIN:-}"
+WORKSHOP_LAYER="${ALPHAGSM_SQUAD44_WORKSHOP_LAYER:-}"
 RUNTIME_BACKEND="${ALPHAGSM_TEST_RUNTIME_BACKEND:-docker}"
 ALPHAGSM_WORK_DIR="${ALPHAGSM_WORK_DIR:-$REPO_ROOT/build/workshop-validation/squad44server}"
 export ALPHAGSM_WORK_DIR
 if [[ "$WORKSHOP_ENABLED" == "1" ]]; then
-  : "${ALPHAGSM_SQUAD44_WORKSHOP_ID:?Select a current public Linux Workshop fixture ID or URL}"
-  : "${ALPHAGSM_SQUAD44_WORKSHOP_PLUGIN:?Set its native plugin name}"
-  if [[ "$ALPHAGSM_SQUAD44_WORKSHOP_ID" == *2909251852* ]]; then
+  if [[ "$WORKSHOP_ID" == *2909251852* ]]; then
     echo "SquidBots uses an obsolete SDK; select a current Linux fixture" >&2
     exit 1
   fi
@@ -73,14 +75,28 @@ if [[ -n "${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX:-}" ]]; then
 fi
 run_alphagsm "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 if [[ "$WORKSHOP_ENABLED" == "1" ]]; then
-  run_alphagsm "$SERVER_NAME" mod add workshop "$ALPHAGSM_SQUAD44_WORKSHOP_ID"
+  run_alphagsm "$SERVER_NAME" mod add workshop "$WORKSHOP_ID"
   run_alphagsm "$SERVER_NAME" mod apply
+  WORKSHOP_PLUGIN="$(PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" \
+    "$REPO_ROOT/tests/smoke_tests/squad44server_workshop.py" "$INSTALL_DIR" \
+    "$WORKSHOP_ID" --plugin "$WORKSHOP_PLUGIN" --layer "$WORKSHOP_LAYER" --configure-layer)"
 fi
-run_alphagsm "$SERVER_NAME" start
+# Rotate only this disposable install's native logs before launch.
+shopt -s nullglob
+for native_log in "$INSTALL_DIR/PostScriptum/Saved/Logs/"*.log; do
+  [[ ! -L "$native_log" ]]
+  mv -- "$native_log" "$native_log.previous"
+done
+shopt -u nullglob
 SERVER_STARTED=1
+run_alphagsm "$SERVER_NAME" start
 wait_for_info_protocol "$SERVER_NAME" a2s "$START_TIMEOUT_SECONDS"
 if [[ "$WORKSHOP_ENABLED" == "1" ]]; then
-  "$PYTHON_BIN" - "$INSTALL_DIR" "$ALPHAGSM_SQUAD44_WORKSHOP_PLUGIN" <<'PY'
+  PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" \
+    "$REPO_ROOT/tests/smoke_tests/squad44server_workshop.py" "$INSTALL_DIR" \
+    "$WORKSHOP_ID" --plugin "$WORKSHOP_PLUGIN" --layer "$WORKSHOP_LAYER" \
+    --wait-for-map "$START_TIMEOUT_SECONDS"
+  "$PYTHON_BIN" - "$INSTALL_DIR" "$WORKSHOP_PLUGIN" <<'PY'
 from pathlib import Path
 import re
 import sys
@@ -93,7 +109,15 @@ fi
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info
-run_alphagsm "$SERVER_NAME" info --json
+if [[ "$WORKSHOP_ENABLED" == "1" ]]; then
+  run_alphagsm "$SERVER_NAME" info --json | tee "$WORK_DIR/workshop-info.json"
+  PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" \
+    "$REPO_ROOT/tests/smoke_tests/squad44server_workshop.py" "$INSTALL_DIR" \
+    "$WORKSHOP_ID" --plugin "$WORKSHOP_PLUGIN" --layer "$WORKSHOP_LAYER" \
+    --info-json "$WORK_DIR/workshop-info.json"
+else
+  run_alphagsm "$SERVER_NAME" info --json
+fi
 run_alphagsm "$SERVER_NAME" stop
 SERVER_STARTED=0
 "$PYTHON_BIN" - "$QUERY_PORT" "$STOP_TIMEOUT_SECONDS" <<'PY'
