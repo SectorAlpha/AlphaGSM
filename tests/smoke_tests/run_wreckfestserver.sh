@@ -49,9 +49,25 @@ run_alphagsm() {
 # shellcheck source=smoke_tests/steamcmd_helpers.sh
 source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
+diagnose_wreckfest() {
+  local container=""
+  local -a observation_args=("$QUERY_PORT" "$INSTALL_DIR")
+  if [[ "${1:-}" == quick ]]; then observation_args+=(--quick); fi
+  if [[ "$RUNTIME_BACKEND" == docker ]]; then
+    local doctor_json
+    doctor_json="$(ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
+      "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" doctor --json)"
+    container="$("$PYTHON_BIN" -c 'import json,sys; print(json.load(sys.stdin).get("runtime", {}).get("container_name", ""))' <<< "$doctor_json")"
+    if [[ -n "$container" ]]; then observation_args+=(--container "$container"); fi
+  fi
+  "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/wreckfestserver_diagnostics.py" "${observation_args[@]}"
+}
+
 cleanup() {
+  local original_status=$?
   set +e
   if [[ "${SERVER_STARTED:-0}" == "1" ]] && [[ -n "${CONFIG_PATH:-}" && -f "${CONFIG_PATH:-}" ]]; then
+    if [[ "$original_status" != 0 ]]; then diagnose_wreckfest; fi
     if ! run_alphagsm "$SERVER_NAME" stop; then
       echo "Wreckfest cleanup could not stop the server; retaining active payloads" >&2
       return 1
@@ -144,6 +160,7 @@ if [[ "${ALPHAGSM_RUN_WORKSHOP:-0}" == 1 ]]; then
 fi
 SERVER_STARTED=1
 run_alphagsm "$SERVER_NAME" start
+diagnose_wreckfest quick || true
 wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
 if [[ "$WORKSHOP_CONFIGURED" == 1 ]]; then
   run_alphagsm "$SERVER_NAME" send tracks

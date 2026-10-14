@@ -32,6 +32,7 @@ from conftest import (
 )
 from gamemodules.wreckfestserver import steam_app_id
 from tests.smoke_tests.wreckfestserver_workshop import FIXTURE_ID, TRACK, assert_workshop_loaded
+from tests.smoke_tests.wreckfestserver_diagnostics import collect_remote_diagnostics
 
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 900
@@ -63,6 +64,20 @@ def _cleanup_wreckfest(env, server_name, workshop_fixture, original_error):
             print(f"[diagnostic] Workshop cleanup raised {type(error).__name__}; preserving lifecycle failure")
     if original_error is None:
         assert_alphagsm_result_ok(stopped)
+
+
+def _diagnose_wreckfest(env, server_name, queryport, install_dir, backend, quick=False):
+    """Observe the still-running failed server without replacing its failure."""
+    try:
+        container = None
+        if backend == "docker":
+            doctor = run_alphagsm(env, server_name, "doctor", "--json", timeout=15,
+                                  capture_diagnostics=False)
+            if doctor.returncode == 0:
+                container = json.loads(doctor.stdout).get("runtime", {}).get("container_name")
+        collect_remote_diagnostics(queryport, install_dir, container, quick=quick)
+    except Exception as error:
+        print(f"[diagnostic] Wreckfest observation failed: {type(error).__name__}: {error}")
 
 
 def _run_wreckfestserver_lifecycle(tmp_path, *, runtime_backend, workshop_fixture=False):
@@ -144,6 +159,7 @@ def _run_wreckfestserver_lifecycle(tmp_path, *, runtime_backend, workshop_fixtur
             run_and_assert_ok(env, server_name, "mod", "apply")
             run_and_assert_ok(env, server_name, "set", "track", TRACK)
         run_and_assert_ok(env, server_name, "start")
+        _diagnose_wreckfest(env, server_name, queryport, install_dir, backend, quick=True)
         wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
 
         run_and_assert_ok(env, server_name, "status")
@@ -174,6 +190,9 @@ def _run_wreckfestserver_lifecycle(tmp_path, *, runtime_backend, workshop_fixtur
         assert info_data["port"] == queryport, (
             f"Expected reported info port {queryport}: {info_data!r}"
         )
+    except BaseException:
+        _diagnose_wreckfest(env, server_name, queryport, install_dir, backend)
+        raise
     finally:
         _cleanup_wreckfest(env, server_name, workshop_fixture, sys.exc_info()[1])
 
