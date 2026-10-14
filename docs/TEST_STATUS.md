@@ -47,7 +47,10 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
   Drop duplicate SteamCMD configuration and host-Wine prerequisite failures,
   Wreckfest's incorrect `./cmd.exe` launch and runtime selection, and Squad 44
   query/obsolete Workshop fixture failures. Corrections are awaiting replacement
-  CI; no local retests were run. Stock ARK and Squad 44 lifecycle tests retain
+  CI; no local retests were run. ARK's corrected Docker smoke and integration
+  passed in run `38531765158`, and Reactive Drop's process lifecycle passed.
+  Reactive Drop's newly exposed Docker console-input failure has a terminal
+  correction awaiting CI. Stock ARK and Squad 44 lifecycle tests retain
   actual A2S readiness, while their unverified Workshop cases remain explicit
   opt-ins. Wreckfest's current A2S contract supersedes the historical TCP result
   below; a successful Windows launch alone does not establish health.

@@ -6,7 +6,7 @@ This guide covers the `ark` module in AlphaGSM.
 The checked-in GitHub validation path for this server is Docker-first through
 the shared `steamcmd-linux` runtime, with the real Linux dedicated server
 answering A2S `query`, `info`, and `info --json` on the managed `queryport`.
-The current CI permission fix is pending validation: Docker now uses the
+The CI permission fix passed Docker smoke and integration on 2026-10-14: Docker uses the
 manager's user/group IDs, a private writable home and read-only Steam SDK
 mounts. It does not recursively widen game-file permissions.
 
