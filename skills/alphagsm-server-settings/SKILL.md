@@ -5,6 +5,8 @@ description: "Use when changing AlphaGSM game settings, secrets, map selection o
 
 # Change server settings
 
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
+
 Inputs: exact tag/config, requested key/value, intended running state. Discover the module's schema instead of assuming generic game keys:
 
 ```bash

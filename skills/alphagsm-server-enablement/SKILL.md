@@ -5,6 +5,8 @@ description: "Use when fixing disabled or skipped game servers and closing Alpha
 
 # Enable a server
 
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
+
 Read [disabled-server-gate](../disabled-server-gate/SKILL.md), [TEST_STATUS](../../docs/TEST_STATUS.md), [public support tracker](../../docs/game-server-support.md), matching guide and integration test. Identify canonical id/aliases and the evidence behind the current disabled/skip state. Record any local campaign checklist so it can be closed in the same change.
 
 Reproduce the failing AlphaGSM lifecycle. Read diagnostic log tail, last query error, actual runtime/config/start flags, download/provisioning and query address. Search official upstream docs/issues before accepting that a game cannot run. Use [test-triage](../alphagsm-test-triage/SKILL.md) for timeouts; never disable a game to hide slow startup or a readiness failure.
