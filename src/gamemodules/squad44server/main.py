@@ -122,7 +122,10 @@ def _native_start_command(server):
 
 def _vendor_sdk_directory(server):
     """Return the installed redistributable directory when the depot provides it."""
-    directory = os.path.abspath(os.path.join(server.data["dir"], "linux64"))
+    install_dir = server.data.get("dir")
+    if not install_dir:
+        return None
+    directory = os.path.abspath(os.path.join(install_dir, "linux64"))
     return directory if os.path.isfile(os.path.join(directory, "steamclient.so")) else None
 
 

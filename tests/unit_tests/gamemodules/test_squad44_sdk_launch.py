@@ -80,3 +80,13 @@ def test_runtime_requirements_declare_same_container_sdk_selection(tmp_path, mon
                         lambda _server, **kwargs: kwargs)
     requirements = module.get_runtime_requirements(server)
     assert requirements["env"] == ({"LD_LIBRARY_PATH": "/srv/server/linux64"} if sdk else {})
+
+
+@pytest.mark.parametrize("data", [{}, {"module": "squad44server"}, {"dir": ""}])
+def test_runtime_metadata_before_configuration_needs_no_install_directory(monkeypatch, data):
+    server = SimpleNamespace(data=data)
+    monkeypatch.setattr(module.runtime_module, "build_runtime_requirements",
+                        lambda _server, **kwargs: kwargs)
+    requirements = module.get_runtime_requirements(server)
+    assert requirements["family"] == "steamcmd-linux"
+    assert requirements["env"] == {}
