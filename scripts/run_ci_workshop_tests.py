@@ -35,6 +35,16 @@ WORKSHOP_SMOKE_FILES = frozenset(
     for path in WORKSHOP_TEST_FILES
 )
 PYTEST_PLUGIN = "tests.integration_tests.workshop_ci_plugin"
+SMOKE_FIXTURES = {
+    "ASRD": ("ITEM", "848331447"),
+    "BB2": ("ITEM", "710060895"),
+    "DOI": ("ITEM", "823752012"),
+    "GMOD": ("COLLECTION", "2886432224"),
+    "INS": ("ITEM", "498253639"),
+    "NMRIH": ("ITEM", "3514998402"),
+    "NS2": ("ITEM", "129599221"),
+    "TF2": ("ITEM", "454299390"),
+}
 
 
 def _required_workshop_smoke(command):
@@ -60,6 +70,12 @@ def main(argv=None):
     environment = os.environ.copy()
     environment.update({flag: "1" for flag in WORKSHOP_FLAGS})
     environment["ALPHAGSM_CI_WORKSHOP"] = "1"
+    if _required_workshop_smoke(command):
+        # These smoke runners accept explicit fixtures rather than opt-in flags.
+        # A successful stock lifecycle must not stand in for their Workshop path.
+        for prefix, (kind, identifier) in SMOKE_FIXTURES.items():
+            if not any(environment.get(f"{prefix}_WORKSHOP_{key}") for key in ("ITEM", "COLLECTION")):
+                environment[f"{prefix}_WORKSHOP_{kind}"] = identifier
     existing_options = environment.get("PYTEST_ADDOPTS", "").strip()
     environment["PYTEST_ADDOPTS"] = " ".join(
         part for part in (existing_options, f"-p {PYTEST_PLUGIN}") if part

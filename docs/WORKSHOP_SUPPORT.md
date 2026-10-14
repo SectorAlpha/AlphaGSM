@@ -10,6 +10,12 @@ fails CI. Each integration suite selects its explicit process or Docker lane;
 local runs retain download opt-ins. This scheduling change does not promote
 pending native-load results in the matrix below.
 
+The CI wrapper also supplies the existing public fixtures for Reactive Drop,
+BrainBread 2, Day of Infamy, Garry's Mod, Insurgency, No More Room in Hell,
+Natural Selection 2 and TF2 smoke runners, whose item/collection variables are
+separate from their opt-in flags. Explicit fixture overrides are preserved.
+Earlier stock-only smoke results for those runners are not Workshop evidence.
+
 | Game | Workshop AppID | Anonymous content access | Process load | Docker load |
 | --- | ---: | --- | --- | --- |
 | Left 4 Dead 2 | 550 | Verified | Passed | Passed |

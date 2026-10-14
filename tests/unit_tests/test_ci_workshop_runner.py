@@ -48,6 +48,47 @@ def test_runner_requires_a_command_without_starting_anything(monkeypatch, capsys
     assert "Usage:" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("prefix,kind,identifier", [
+    ("ASRD", "ITEM", "848331447"), ("BB2", "ITEM", "710060895"),
+    ("DOI", "ITEM", "823752012"), ("GMOD", "COLLECTION", "2886432224"),
+    ("INS", "ITEM", "498253639"), ("NMRIH", "ITEM", "3514998402"),
+    ("NS2", "ITEM", "129599221"), ("TF2", "ITEM", "454299390"),
+])
+def test_required_smoke_selects_public_fixture_without_changing_caller(
+        monkeypatch, prefix, kind, identifier):
+    for key in ("ITEM", "COLLECTION"):
+        monkeypatch.delenv(f"{prefix}_WORKSHOP_{key}", raising=False)
+    invoke = Mock(return_value=SimpleNamespace(returncode=0))
+    monkeypatch.setattr(runner.subprocess, "run", invoke)
+    assert runner.main(["bash", str(runner.REPO_ROOT / "tests/smoke_tests/run_ns2server.sh")]) == 0
+    assert invoke.call_args.kwargs["env"][f"{prefix}_WORKSHOP_{kind}"] == identifier
+    assert f"{prefix}_WORKSHOP_{kind}" not in os.environ
+
+
+@pytest.mark.parametrize("prefix", ["ASRD", "BB2", "DOI", "GMOD", "INS", "NMRIH", "NS2", "TF2"])
+@pytest.mark.parametrize("kind", ["ITEM", "COLLECTION"])
+def test_required_smoke_preserves_explicit_fixture_and_does_not_add_default(
+        monkeypatch, prefix, kind):
+    other = "ITEM" if kind == "COLLECTION" else "COLLECTION"
+    monkeypatch.setenv(f"{prefix}_WORKSHOP_{kind}", "https://steamcommunity.com/sharedfiles/filedetails/?id=123")
+    monkeypatch.delenv(f"{prefix}_WORKSHOP_{other}", raising=False)
+    invoke = Mock(return_value=SimpleNamespace(returncode=0))
+    monkeypatch.setattr(runner.subprocess, "run", invoke)
+    assert runner.main(["bash", str(runner.REPO_ROOT / "tests/smoke_tests/run_tf2.sh")]) == 0
+    environment = invoke.call_args.kwargs["env"]
+    assert environment[f"{prefix}_WORKSHOP_{kind}"] == os.environ[f"{prefix}_WORKSHOP_{kind}"]
+    assert f"{prefix}_WORKSHOP_{other}" not in environment
+
+
+def test_non_smoke_command_does_not_inherit_smoke_fixtures(monkeypatch):
+    for key in ("ITEM", "COLLECTION"):
+        monkeypatch.delenv(f"NS2_WORKSHOP_{key}", raising=False)
+    invoke = Mock(return_value=SimpleNamespace(returncode=0))
+    monkeypatch.setattr(runner.subprocess, "run", invoke)
+    assert runner.main(["python3", "-m", "pytest", "tests/integration_tests/test_ns2server.py"]) == 0
+    assert "NS2_WORKSHOP_ITEM" not in invoke.call_args.kwargs["env"]
+
+
 def test_runner_preserves_signal_exit_and_handles_unavailable_command(monkeypatch, capsys):
     monkeypatch.setattr(runner.subprocess, "run", Mock(return_value=SimpleNamespace(returncode=-15)))
     assert runner.main(["owned-command"]) == 143

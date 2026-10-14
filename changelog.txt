@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-14
+- Workshop smoke CI: supply public fixtures for the eight runners whose
+  item/collection variables are separate from their opt-in flags, preserving
+  explicit overrides so a stock-only pass cannot replace Workshop validation.
 - Workshop validation: use authenticated ARK RCON for the complete native
   Blueprint property probe instead of treating stdin delivery as execution.
   Flush native startup logs and bound the response wait.
