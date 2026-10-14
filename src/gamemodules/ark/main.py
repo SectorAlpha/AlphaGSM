@@ -10,7 +10,9 @@ from server.settable_keys import SettingSpec
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
 from server.modsupport.native_workshop import build_native_workshop_support
-from .workshop import configure_workshop, configured_workshop_ids, refresh_launch_workshop_ids
+from .workshop import (
+    configure_workshop, configured_workshop_ids, configured_workshop_map, refresh_launch_workshop_ids,
+)
 
 steam_app_id = 376030
 steam_anonymous_login_possible = True
@@ -162,10 +164,11 @@ def get_start_command(server):
         raise ServerError("Executable file not found")
     working_dir = server.data["dir"]
     launcher_relpath = os.path.relpath(exe_path, working_dir)
+    launch_map = configured_workshop_map(server)
     map_args = (
         "%s?listen?SessionName=%s?Port=%s?QueryPort=%s?MaxPlayers=%s?ServerAdminPassword=%s"
         % (
-            server.data["map"],
+            launch_map,
             _launch_session_name(server),
             server.data["port"],
             server.data["queryport"],
@@ -175,6 +178,8 @@ def get_start_command(server):
     )
     if server.data["serverpassword"]:
         map_args += "?ServerPassword=%s" % (server.data["serverpassword"],)
+    if launch_map.startswith("/Game/Mods/"):
+        map_args += "?MapModID=" + launch_map.split("/", 4)[3]
     workshop_ids = configured_workshop_ids(server)
     if workshop_ids:
         map_args += "?GameModIds=" + ",".join(workshop_ids)
@@ -234,8 +239,9 @@ def checkvalue(server, key, *value):
         key,
         *value,
         int_keys=("port", "queryport", "rconport", "maxplayers"),
-        custom_handlers={"rconenabled": _rcon_enabled},
-        str_keys=("map", "sessionname", "adminpassword", "serverpassword", "exe_name", "dir"),
+        custom_handlers={"rconenabled": _rcon_enabled,
+                         "map": lambda _server, selected: configured_workshop_map(_server, selected)},
+        str_keys=("sessionname", "adminpassword", "serverpassword", "exe_name", "dir"),
     )
 
 

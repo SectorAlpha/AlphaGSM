@@ -60,7 +60,7 @@ def _metadata(path):
     return raw
 
 
-def _descriptor(item, root):
+def _descriptor(item, root, *, declared_maps=None):
     """Build ARK's binary .mod descriptor from validated mod.info/modmeta.info."""
     info = io.BytesIO(_metadata(root / "mod.info"))
     name = _string(info)
@@ -76,8 +76,13 @@ def _descriptor(item, root):
     if pair_count > 4096:
         raise ServerError("ARK Workshop metadata has too many properties")
     pairs = {_string(metadata): _string(metadata) for _index in range(pair_count)}
-    if metadata.read() or pairs.get("ModType") != "1":
-        raise ServerError("Only ARK stackable gameplay mods (ModType 1) are supported")
+    if metadata.read() or pairs.get("ModType") not in ("1", "2"):
+        raise ServerError("Only ARK gameplay mods (ModType 1) and maps (ModType 2) are supported")
+    if pairs["ModType"] == "2":
+        if not maps or any(not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_-]*", value) for value in maps):
+            raise ServerError("ARK map metadata must declare safe native map names")
+        if declared_maps is not None:
+            declared_maps[item] = maps
     result = struct.pack("<Q", int(item)) + _encode_string(name)
     result += _encode_string(f"../../../ShooterGame/Content/Mods/{item}")
     result += struct.pack("<I", count) + b"".join(_encode_string(value) for value in maps)
@@ -122,9 +127,10 @@ def decompress_ark_file(source, destination):
     return total
 
 
-def _prepare_files(payloads, scratch):
+def _prepare_files(payloads, scratch, *, map_catalog=None):
     """Validate every item before publishing any native descriptor or asset."""
     files = {}
+    declared_maps = {}
     for item, payload in payloads.items():
         entries = []
         for path in payload.rglob("*"):
@@ -136,7 +142,8 @@ def _prepare_files(payloads, scratch):
         root = payload / "LinuxNoEditor"
         if not root.is_dir():
             raise ServerError("ARK Workshop mod has no native LinuxNoEditor content")
-        files[f"ShooterGame/Content/Mods/{item}.mod"] = _descriptor(item, root)
+        files[f"ShooterGame/Content/Mods/{item}.mod"] = _descriptor(
+            item, root, declared_maps=declared_maps)
         size = 0
         for source in sorted(path for path in entries if root in path.parents):
             if not source.is_file() or source.name.endswith(".z.uncompressed_size"):
@@ -154,6 +161,19 @@ def _prepare_files(payloads, scratch):
                 files[target] = source
             if size > MAX_MOD:
                 raise ServerError("ARK Workshop mod exceeds the 8 GiB unpacked limit")
+        native_maps = {}
+        for name in declared_maps.get(item, []):
+            prefix = f"ShooterGame/Content/Mods/{item}/"
+            candidates = [path for path in files if path.startswith(prefix)
+                          and Path(path).name == name + ".umap"]
+            if len(candidates) != 1:
+                raise ServerError("ARK map metadata must resolve to one staged native .umap: " + name)
+            launch = "/Game/Mods/" + item + "/" + candidates[0][len(prefix):-5]
+            if not re.fullmatch(r"/Game/Mods/[0-9]+/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+", launch):
+                raise ServerError("ARK map payload has an unsafe native map path")
+            native_maps[name] = launch
+        if native_maps and map_catalog is not None:
+            map_catalog[item] = native_maps
     return files
 
 
@@ -189,7 +209,24 @@ def configured_workshop_ids(server):
     if (not isinstance(values, list) or any(not isinstance(value, str) or not value.isascii()
             or not value.isdigit() or not 0 < int(value) < 2**64 for value in values)):
         raise ServerError("Invalid ARK Workshop launch snapshot")
-    return list(values)
+    maps = state.get("ark_workshop_maps", {})
+    return [item for item in values if not isinstance(maps, dict) or item not in maps]
+
+
+def configured_workshop_map(server, value=None):
+    """Use validated staged map paths without reopening engine-owned live files."""
+    selected = str(server.data["map"] if value is None else value)
+    if not selected.startswith("/Game/Mods/"):
+        return selected
+    state = server.data.get("mods", {})
+    maps = state.get("ark_workshop_maps", {})
+    if isinstance(maps, dict):
+        for item, entries in maps.items():
+            if isinstance(item, str) and isinstance(entries, dict) and selected in entries.values():
+                if re.fullmatch(r"/Game/Mods/" + re.escape(item)
+                                + r"/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+", selected):
+                    return selected
+    raise ServerError("Custom ARK map must belong to a staged, active Workshop map")
 
 
 def refresh_launch_workshop_ids(server):
@@ -226,24 +263,27 @@ def configure_workshop(server, item_ids):
     previous = state.get("ark_workshop_ids", [])
     if not isinstance(previous, list) or any(not isinstance(value, str) for value in previous):
         raise ServerError("Invalid ARK Workshop ownership state")
-    if not item_ids and not previous:
+    if not item_ids and not previous and not state.get("ark_workshop_maps"):
         return []
     config = safe_server_path(server, CONFIG)
     original = _metadata(config).decode("utf-8-sig") if config.exists() else None
-    text, owned = _merge_ids(original, previous, item_ids)
-    if len(text.encode("utf-8")) > MAX_METADATA:
-        raise ServerError("ARK configuration exceeds size limit")
     payloads = download_workshop_items(server, 346110, item_ids) if item_ids else {}
     scratch = safe_server_path(server, ".alphagsm/ark-unpacked")
     scratch.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(dir=scratch) as directory:
-        files = _prepare_files(payloads, Path(directory))
+        maps = {}
+        files = _prepare_files(payloads, Path(directory), map_catalog=maps)
+        text, owned = _merge_ids(original, previous, [item for item in item_ids if item not in maps])
+        if len(text.encode("utf-8")) > MAX_METADATA:
+            raise ServerError("ARK configuration exceeds size limit")
         write_managed_text(server, CONFIG, text)
         had_ids = "ark_workshop_ids" in state
         had_launch_ids = "ark_workshop_launch_ids" in state
         previous_launch_ids = state.get("ark_workshop_launch_ids")
+        previous_maps = state.get("ark_workshop_maps")
         state["ark_workshop_ids"] = owned
         state["ark_workshop_launch_ids"] = _parse_ids(text)[3]
+        state["ark_workshop_maps"] = maps
         try:
             paths = publish_owned_payloads(server, OWNER, files)
         except BaseException:
@@ -255,6 +295,10 @@ def configure_workshop(server, item_ids):
                 state["ark_workshop_launch_ids"] = previous_launch_ids
             else:
                 state.pop("ark_workshop_launch_ids", None)
+            if previous_maps is None:
+                state.pop("ark_workshop_maps", None)
+            else:
+                state["ark_workshop_maps"] = previous_maps
             if original is None:
                 safe_server_path(server, CONFIG).unlink(missing_ok=True)
             else:

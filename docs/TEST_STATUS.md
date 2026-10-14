@@ -43,6 +43,12 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- Replacement changes passed lint, Linux units and coverage in GitHub run
+  `38651680142`. Focused run `38649280824` passed Space Engineers' Docker MES
+  smoke and NS2's process native Workshop integration. ARK's Linux engine
+  authenticated RCON but returned only a receipt for `GetAll`; the replacement
+  fixture now requires a staged Linux custom world plus exact native startup
+  and A2S identity. Squad 44/Wreckfest native proof failures remain open.
 - Full PR run `38582006699` completed with ten persistent integration failures
   across ARK Workshop, NS2 Docker Workshop, Space Engineers process, Squad 44
   Workshop, TF2 Docker Workshop and Wreckfest Workshop; JC3 recovered on recheck.

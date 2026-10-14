@@ -75,6 +75,20 @@ def test_docker_uses_host_identity_and_private_home_without_permission_rewrites(
     assert not any("chmod" in argument or "runuser" in argument for argument in spec["command"])
 
 
+def test_staged_map_does_not_change_default_world_until_explicitly_selected(tmp_path):
+    module, server = prepared(tmp_path)
+    server.data["mods"] = {"ark_workshop_ids": ["111"], "ark_workshop_launch_ids": [],
+                           "ark_workshop_maps": {"111": {"FlatMap": "/Game/Mods/111/FlatMap"}}}
+    command, _directory = module.get_start_command(server)
+    assert command[1].startswith("TheIsland?listen?") and "?MapModID=" not in command[1]
+    server.data["map"] = "/Game/Mods/111/FlatMap"
+    command, _directory = module.get_start_command(server)
+    assert command[1].startswith("/Game/Mods/111/FlatMap?listen?")
+    assert "?MapModID=111" in command[1] and "?GameModIds=" not in command[1]
+    spec = module.get_container_spec(server)
+    assert spec["command"][1] == command[1]
+
+
 def test_prestart_snapshots_operator_mods_even_when_autoapply_is_disabled(tmp_path, monkeypatch):
     module, server = prepared(tmp_path)
     adapter = import_module("gamemodules.ark.workshop")

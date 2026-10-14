@@ -111,3 +111,110 @@ def test_launch_includes_native_mod_ids_even_when_first_boot_regenerates_ini(tmp
     adapter.configure_workshop(server, [])
     command, _directory = module.get_start_command(server)
     assert "?GameModIds=999" in command[1] and "111" not in command[1]
+
+
+def test_map_descriptor_requires_declared_native_world_and_snapshots_its_safe_path(tmp_path, monkeypatch):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    (payload / "mod.info").write_bytes(fstring("Very Flat Map") + struct.pack("<I", 1)
+                                        + fstring("FlatMap") + b"\0" * 8)
+    (payload / "modmeta.info").write_bytes(struct.pack("<I", 1) + fstring("ModType") + fstring("2"))
+    (payload / "Maps").mkdir()
+    (payload / "Maps/FlatMap.umap").write_bytes(b"native cooked world")
+    adapter.configure_workshop(server, ["111"])
+    expected = "/Game/Mods/111/Maps/FlatMap"
+    assert server.data["mods"]["ark_workshop_maps"] == {"111": {"FlatMap": expected}}
+    assert adapter.configured_workshop_ids(server) == []
+    config = tmp_path / adapter.CONFIG
+    assert "ActiveMods=\n" in config.read_text()
+    server.data["map"] = expected
+    assert adapter.configured_workshop_map(server) == expected
+    descriptor = (tmp_path / "ShooterGame/Content/Mods/111.mod").read_bytes()
+    assert descriptor.endswith(b"\x33\xff\x22\xff\x02\0\0\0\x01"
+                               + (payload / "modmeta.info").read_bytes())
+    module = import_module("gamemodules.ark")
+    module.configure(server, ask=False, port=28121, dir=str(tmp_path))
+    executable = tmp_path / server.data["exe_name"]
+    executable.parent.mkdir(parents=True)
+    executable.write_text("")
+    command, _directory = module.get_start_command(server)
+    assert command[1].startswith(expected + "?listen?")
+    assert "?MapModID=111" in command[1] and "?GameModIds=111" not in command[1]
+    assert module.checkvalue(server, ["map"], expected) == expected
+    with pytest.raises(ServerError, match="staged"):
+        module.checkvalue(server, ["map"], "/Game/Mods/999/FlatMap")
+    adapter.configure_workshop(server, [])
+    assert server.data["mods"]["ark_workshop_maps"] == {}
+    with pytest.raises(ServerError, match="staged"):
+        adapter.configured_workshop_map(server)
+
+
+@pytest.mark.parametrize("declared,world", [
+    ("FlatMap", "Other.umap"), ("../FlatMap", "FlatMap.umap"),
+    ("FlatMap?listen", "FlatMap.umap"), ("/Game/Maps/FlatMap", "FlatMap.umap"),
+])
+def test_map_payload_rejects_missing_world_and_unsafe_declared_identity(tmp_path, monkeypatch, declared, world):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    (payload / "mod.info").write_bytes(fstring("Map") + struct.pack("<I", 1) + fstring(declared))
+    (payload / "modmeta.info").write_bytes(struct.pack("<I", 1) + fstring("ModType") + fstring("2"))
+    (payload / world).write_bytes(b"world")
+    with pytest.raises(ServerError, match="map"):
+        adapter.configure_workshop(server, ["111"])
+    assert not (tmp_path / "ShooterGame/Content/Mods/111.mod").exists()
+
+
+def test_total_conversion_and_undeclared_custom_launch_remain_rejected(tmp_path, monkeypatch):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    (payload / "modmeta.info").write_bytes(struct.pack("<I", 1) + fstring("ModType") + fstring("3"))
+    with pytest.raises(ServerError, match="ModType"):
+        adapter.configure_workshop(server, ["111"])
+    server.data["map"] = "/Game/Mods/111/FlatMap"
+    with pytest.raises(ServerError, match="staged"):
+        adapter.configured_workshop_map(server)
+
+
+def test_map_snapshot_rolls_back_if_publication_fails(tmp_path, monkeypatch):
+    adapter, server, _payload, _content = make_adapter(tmp_path, monkeypatch)
+    server.data["mods"] = {"ark_workshop_maps": {"999": {"Other": "/Game/Mods/999/Other"}}}
+    monkeypatch.setattr(adapter, "publish_owned_payloads", lambda *_args: (_ for _ in ()).throw(OSError("disk full")))
+    with pytest.raises(OSError):
+        adapter.configure_workshop(server, ["111"])
+    assert server.data["mods"]["ark_workshop_maps"] == {"999": {"Other": "/Game/Mods/999/Other"}}
+
+
+def test_duplicate_native_map_basenames_are_rejected_before_publication(tmp_path, monkeypatch):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    (payload / "mod.info").write_bytes(fstring("Map") + struct.pack("<I", 1) + fstring("FlatMap"))
+    (payload / "modmeta.info").write_bytes(struct.pack("<I", 1) + fstring("ModType") + fstring("2"))
+    (payload / "FlatMap.umap").write_bytes(b"one")
+    (payload / "Other").mkdir()
+    (payload / "Other/FlatMap.umap").write_bytes(b"two")
+    with pytest.raises(ServerError, match="one staged native"):
+        adapter.configure_workshop(server, ["111"])
+
+
+def test_windows_only_map_is_rejected_before_native_publication(tmp_path, monkeypatch):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    payload.rename(payload.with_name("WindowsNoEditor"))
+    with pytest.raises(ServerError, match="LinuxNoEditor"):
+        adapter.configure_workshop(server, ["111"])
+    assert not (tmp_path / "ShooterGame/Content/Mods/111.mod").exists()
+
+
+def test_custom_map_catalog_does_not_claim_operator_active_mod_ids(tmp_path, monkeypatch):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    (payload / "mod.info").write_bytes(fstring("Map") + struct.pack("<I", 1) + fstring("FlatMap"))
+    (payload / "modmeta.info").write_bytes(struct.pack("<I", 1) + fstring("ModType") + fstring("2"))
+    (payload / "FlatMap.umap").write_bytes(b"world")
+    config = tmp_path / adapter.CONFIG
+    config.parent.mkdir(parents=True)
+    config.write_text("[ServerSettings]\nActiveMods=111,999\nOperatorValue=keep\n")
+    adapter.configure_workshop(server, ["111"])
+    assert server.data["mods"]["ark_workshop_ids"] == []
+    assert "ActiveMods=111,999" in config.read_text()
+    server.data["map"] = "/Game/Mods/111/FlatMap"
+    assert adapter.configured_workshop_map(server) == server.data["map"]
+    adapter.configure_workshop(server, [])
+    assert "ActiveMods=111,999" in config.read_text()
+    assert "OperatorValue=keep" in config.read_text()
+    assert server.data["mods"]["ark_workshop_maps"] == {}
+    assert not (tmp_path / "ShooterGame/Content/Mods/111.mod").exists()

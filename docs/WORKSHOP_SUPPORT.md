@@ -46,6 +46,12 @@ Earlier stock-only smoke results for those runners are not Workshop evidence.
 
 ## Fixture evidence and limitations
 
+- ARK: Very Flat Map `2041231763` replaces the unsupported Linux `GetAll`
+  introspection probe. The adapter must validate native Linux map metadata and
+  its exact staged world path; fresh engine startup and real A2S must then agree
+  on `FlatMap`. Compatibility and both runtime load results remain pending CI.
+- Space Engineers' Docker smoke passed MES script execution in CI run
+  `38649280824`; process and Docker integration results are still pending.
 - Wreckfest's stock process and Docker integrations plus Docker smoke passed in CI run `38545270577` on 2026-10-14. These require fresh native startup, runtime liveness, limited UDP reachability and complete shutdown; they do not establish game metadata or Workshop loading. Its Workshop row remains in progress until fresh native registry capture passes the stricter fixture check.
 - Squad 44's stock process and Docker integrations plus Docker smoke passed in CI run `38537399526` on 2026-10-14, with real A2S and shutdown checks after depot-SDK launch preference was added. The loaded SDK hash was not retained in successful captured output; this does not prove the previous timeout's cause. Stop retains its existing forced-stop fallback. CI now selects Ramelle `2387944294`, whose author advertises Linux content, and checks the staged plugin's exact Workshop and current SDK identity. Anonymous access and native plugin-load proof for this fixture remain pending, so its Workshop load row is unchanged.
 - Reactive Drop's anonymous stock baseline passed process and Docker integrations plus Docker smoke in CI on 2026-10-14. This validates the server and terminal correction; its Workshop load row remains pending actual item execution.

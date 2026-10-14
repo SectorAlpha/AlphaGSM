@@ -28,7 +28,7 @@ WORKSHOP_PROBE = Path(__file__).resolve().parents[1] / "smoke_tests/ark_workshop
 
 
 def _workshop_probe(env, server_name, action):
-    """Keep native RCON secrets inside the configured AlphaGSM secret store."""
+    """Share strict native custom-world proof with the standalone smoke runner."""
     result = subprocess.run([sys.executable, str(WORKSHOP_PROBE), action, server_name],
                             env=env, text=True, capture_output=True, timeout=180, check=False)
     assert_alphagsm_result_ok(result)
@@ -70,13 +70,9 @@ def _run_ark_lifecycle(tmp_path, *, runtime_backend, workshop=False):
     assert_alphagsm_result_ok(result)
     if workshop:
         run_and_assert_ok(env, server_name, "mod", "add", "workshop",
-                          "https://steamcommunity.com/sharedfiles/filedetails/?id=2860800256")
+                          "https://steamcommunity.com/sharedfiles/filedetails/?id=2041231763")
         run_and_assert_ok(env, server_name, "mod", "apply")
         _workshop_probe(env, server_name, "prepare")
-        engine = install_dir / "ShooterGame/Saved/Config/LinuxServer/Engine.ini"
-        with engine.open("a", encoding="utf-8") as handle:
-            handle.write("\n[Core.Log]\nLogObj=Log\nLogLinker=Verbose\n"
-                         "LogStreaming=Verbose\nLogUObjectGlobals=Verbose\n")
     log_dir = install_dir / "ShooterGame/Saved/Logs"
     if log_dir.exists():
         for path in log_dir.glob("*.log"):
@@ -106,13 +102,13 @@ def _run_ark_lifecycle(tmp_path, *, runtime_backend, workshop=False):
     assert_alphagsm_result_ok(stop)
     wait_for_udp_closed("127.0.0.1", query_port, STOP_TIMEOUT)
     if workshop:
-        assert not (install_dir / "ShooterGame/Content/Mods/2860800256.mod").exists()
+        assert not (install_dir / "ShooterGame/Content/Mods/2041231763.mod").exists()
 
 
 @pytest.mark.timeout(SETUP_TIMEOUT + 2 * START_TIMEOUT + 600)
 @pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
 def test_ark_native_workshop(tmp_path, runtime_backend):
-    """Keep the unverified native Blueprint fixture separate from baseline health."""
+    """Require staged Linux map metadata, a constructed custom world and exact A2S."""
     if os.environ.get("ALPHAGSM_RUN_ARK_WORKSHOP") != "1":
-        pytest.skip("Native ARK Workshop object-load proof pending; opt in with ALPHAGSM_RUN_ARK_WORKSHOP=1")
+        pytest.skip("Set ALPHAGSM_RUN_ARK_WORKSHOP=1 for native public Workshop map checks")
     _run_ark_lifecycle(tmp_path, runtime_backend=runtime_backend, workshop=True)

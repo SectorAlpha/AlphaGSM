@@ -1,84 +1,61 @@
-"""ARK proof must execute a complete property command on native RCON."""
+"""ARK proof requires an actually initialized native custom world and A2S."""
 
 from types import SimpleNamespace
 
 import pytest
 
 from tests.smoke_tests.ark_workshop import (
-    NATIVE_COMMAND, assert_native_object_property, prepare_probe, probe_native_object,
+    FIXTURE_ID, configured_fixture_map, assert_native_world, assert_workshop_map_info,
 )
 
 
-OBJECT = (
-    '0) PrimalGameData_BP_Spoilers_C '
-    '/Game/Mods/Spoilers/PrimalGameData_BP_Spoilers.Default__PrimalGameData_BP_Spoilers_C.'
-    'ModName = "Meat Spoiler"\n'
+MAP = f"/Game/Mods/{FIXTURE_ID}/FlatMap"
+WORLD = (
+    '[2026.10.15-00.00.00:000][  0]Server: "Disposable" has successfully started!\n'
+    f'[2026.10.15-00.00.00:001][  0]Commandline:  {MAP}?listen?Port=7777\n'
+    '[2026.10.15-00.00.00:002][  0]Full Startup: 12.34 seconds\n'
 )
 
 
-@pytest.mark.parametrize("prefix", ["", "LogObj: ", "[2026.10.14-17.20.00:001][  1]LogObj: "])
-def test_native_property_record_accepts_rcon_or_flushed_engine_output(prefix):
-    assert_native_object_property(prefix + OBJECT)
+def test_native_initialized_world_and_real_exact_a2s_map_prove_execution():
+    assert_native_world(WORLD, MAP)
+    assert_workshop_map_info({"protocol": "a2s", "map": "FlatMap", "max_players": 70, "port": 27015}, 27015)
+    server = SimpleNamespace(data={"mods": {"ark_workshop_maps": {FIXTURE_ID: {"FlatMap": MAP}}}})
+    assert configured_fixture_map(server) == MAP
 
 
-@pytest.mark.parametrize("output", [
-    "", "Server received command but the command had no response", NATIVE_COMMAND,
-    "echo " + OBJECT,
-    "LogConsoleResponse: Executing " + NATIVE_COMMAND,
-    "LogLinker: Failed to find PrimalGameData_BP_Spoilers_C",
-    OBJECT.replace("PrimalGameData_BP_Spoilers_C", "PrimalGameData_BP_C"),
-    OBJECT.replace("ModName =", "UnknownProperty ="),
-    OBJECT.replace('"Meat Spoiler"', '""'),
-    "ActiveMods=2860800256\n?GameModIds=2860800256",
+@pytest.mark.parametrize("native", [
+    "", "echo " + WORLD.replace("\n", "\necho "),
+    WORLD.replace(MAP, "/Game/Maps/TheIsland"),
+    WORLD.replace("has successfully started!", "initializing"),
+    WORLD.replace("Full Startup:", "Starting:"),
+    f"ActiveMods={FIXTURE_ID}\n?GameModIds={FIXTURE_ID}",
 ])
-def test_echo_receipt_config_and_missing_or_wrong_objects_do_not_prove_native_load(output):
-    with pytest.raises(AssertionError, match="native Blueprint ModName"):
-        assert_native_object_property(output)
+def test_download_config_command_echo_or_unfinished_wrong_world_cannot_pass(native):
+    with pytest.raises(AssertionError):
+        assert_native_world(native, MAP)
 
 
-def test_probe_uses_runtime_host_and_authenticated_property_command(monkeypatch):
-    from server import runtime
-    from utils import query
-
-    server = SimpleNamespace(data={"adminpassword": "private-disposable", "rconport": 27020})
-    monkeypatch.setattr(runtime, "resolve_query_host", lambda selected: "172.18.0.1"
-                        if selected is server else "wrong")
-    requests = []
-    def command(host, port, password, timeout, text):
-        requests.append((host, port, password, timeout, text))
-        return "No Players Connected" if text == "ListPlayers" else OBJECT
-    monkeypatch.setattr(query, "_source_rcon_command_once", command)
-    probe_native_object(server, read_logs=lambda: (_ for _ in ()).throw(
-        AssertionError("Valid RCON proof must not depend on a writable engine log")))
-    assert [request[-1] for request in requests] == ["ListPlayers", NATIVE_COMMAND]
-    assert all(request[:3] == ("172.18.0.1", 27020, "private-disposable") for request in requests)
-    assert NATIVE_COMMAND.endswith(" ModName SHOWDEFAULTS")
+@pytest.mark.parametrize("info", [
+    {"protocol": "tcp", "map": "FlatMap", "max_players": 70},
+    {"protocol": "a2s", "map": "TheIsland", "max_players": 70},
+    {"protocol": "a2s", "map": "FlatMap", "max_players": 0},
+    {"protocol": "a2s", "map": "FlatMap", "max_players": True},
+    {"protocol": "a2s", "map": "", "max_players": 0},
+])
+def test_startup_protocol_envelope_cannot_substitute_for_workshop_world(info):
+    with pytest.raises(AssertionError):
+        assert_workshop_map_info(info)
 
 
-def test_generic_rcon_receipt_times_out_with_native_response_and_redacted_password(monkeypatch):
-    from server import runtime
-
-    server = SimpleNamespace(data={"adminpassword": "private-disposable", "rconport": 27020})
-    monkeypatch.setattr(runtime, "resolve_query_host", lambda _server: "127.0.0.1")
-    elapsed = [0]
-    def sleep(seconds):
-        elapsed[0] += seconds
-    def command(text, _remaining):
-        return "No Players Connected" if text == "ListPlayers" else "Server received, But no response!!"
-    with pytest.raises(AssertionError, match="But no response") as failure:
-        probe_native_object(server, timeout=3, command=command,
-                            read_logs=lambda: "private-disposable", clock=lambda: elapsed[0], sleep=sleep)
-    assert "private-disposable" not in str(failure.value)
+def test_wrong_or_unstaged_fixture_world_is_rejected():
+    for maps in ({}, {FIXTURE_ID: {"FlatMap": "/Game/Maps/FlatMap"}},
+                 {FIXTURE_ID: {"FlatMap": f"/Game/Mods/{FIXTURE_ID}/Other"}}):
+        with pytest.raises(AssertionError):
+            configured_fixture_map(SimpleNamespace(data={"mods": {"ark_workshop_maps": maps}}))
 
 
-def test_prepare_keeps_generated_password_out_of_argv_and_avoids_claimed_ports(monkeypatch):
-    from scripts import select_test_port
-
-    requests = []
-    ports = iter((7777, 7778, 27015, 27020))
-    monkeypatch.setattr(select_test_port, "pick_free_port_group", lambda _count: next(ports))
-    server = SimpleNamespace(data={"port": 7777, "queryport": 27015},
-                             doset=lambda *args: requests.append(args))
-    prepare_probe(server)
-    assert requests[0][0] == "adminpassword" and len(requests[0][1]) == 48
-    assert requests[1:] == [("rconport", "27020"), ("rconenabled", "true")]
+def test_custom_world_on_wrong_query_port_cannot_pass():
+    with pytest.raises(AssertionError):
+        assert_workshop_map_info({"protocol": "a2s", "map": "FlatMap", "max_players": 70,
+                                  "port": 27016}, 27015)

@@ -109,10 +109,10 @@ alphagsm myserver set KEY VALUE
 
 - **Map directory**: Check game documentation
 - **Mod directory**: Check game documentation
-- **Workshop support**: anonymous stackable Linux gameplay-mod staging;
+- **Workshop support**: anonymous Linux gameplay-mod and custom-map staging;
   fresh process/Docker engine validation is pending.
 
-## Workshop gameplay mods
+## Workshop mods and maps
 
 ```bash
 alphagsm myserver mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=2860800256
@@ -123,41 +123,51 @@ alphagsm myserver start
 
 AlphaGSM validates items against ARK: Survival Evolved game AppID `346110`,
 downloads anonymously, and validates native `mod.info` and `modmeta.info`.
-Stackable gameplay mods (`ModType=1`) with `LinuxNoEditor` content are supported;
-map mods, total conversions and Windows-only payloads are rejected.
+Stackable gameplay mods (`ModType=1`) and custom maps (`ModType=2`) require
+`LinuxNoEditor` content. Total conversions and Windows-only payloads are rejected.
+Custom-map metadata must declare a safe map name that resolves to exactly one
+staged native `.umap`; missing or ambiguous maps fail before publication.
 
 Compressed `.z` assets are decompressed with checked chunk sizes and bounded
 output. Native assets and a binary `.mod` descriptor are published under
 `ShooterGame/Content/Mods/`. The ordered `ActiveMods` setting in
 `ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini` preserves operator
 IDs and unrelated settings. Per-file decompression is limited to 1 GiB and
-each mod to 8 GiB of unpacked content.
+each mod to 8 GiB of unpacked content. Custom maps use their exact staged
+`/Game/Mods/ID/.../MapName` path and `MapModID`; they are not mixed into the
+gameplay `GameModIds` launch list. Merely installing a map leaves `TheIsland`
+selected until you explicitly change `map`.
+
+For the small public [Very Flat Map](https://steamcommunity.com/sharedfiles/filedetails/?id=2041231763)
+fixture (author's map name `FlatMap`, listed payload 3.372 MB):
+
+```bash
+alphagsm myserver mod add workshop 2041231763
+alphagsm myserver mod apply
+alphagsm myserver set map /Game/Mods/2041231763/FlatMap
+alphagsm myserver start
+alphagsm myserver info --json
+```
+
+Fresh CI still needs to prove the current public payload contains compatible
+Linux map content and that both runtimes can serve the custom world.
 
 `mod remove workshop ID_OR_URL` followed by `mod apply` removes selected owned
 content and activation IDs. `mod cleanup` clears all desired Workshop items.
 Operator files remain present; modified owned files block replacement or cleanup.
-Removing a gameplay mod can affect world objects created by that mod. The
-[Meat Spoiler fixture](https://steamcommunity.com/sharedfiles/filedetails/?id=2860800256)
-is intended for a disposable validation world. Native file staging and
-`ActiveMods` alone do not establish a successful engine load.
+Removing a gameplay mod can affect world objects created by that mod. Switch
+back to an installed map before starting after custom-map cleanup. Native file
+staging and `ActiveMods` alone do not establish a successful engine load.
 
 Baseline smoke and integration runs use the stock world. They require a named
 world and positive player capacity; the initial empty A2S response is insufficient.
 The separate, currently unverified Workshop case requires
-`ALPHAGSM_RUN_ARK_WORKSHOP=1`. Opting in retains the native Blueprint-load
-assertion and surfaces its failure normally. Native activation IDs are snapshotted
-before start so inspecting or stopping the live container does not reopen an
-engine-private INI.
-
-The Workshop case creates a disposable local RCON password in AlphaGSM's secret
-store and allocates its own RCON port. It authenticates against the configured
-runtime host, including the published-port gateway for sibling Docker containers,
-then runs `getall PrimalGameData_BP_Spoilers_C ModName SHOWDEFAULTS`. A numbered
-native object record must name that Blueprint and its nonempty Meat Spoiler
-`ModName` property. Command receipts and launch/config IDs do not count as proof.
-The class default object is included because ARK loads stackable Blueprint game
-data before merging it into the world. The server flushes native logging to files
-and stdout; the probe also accepts the authenticated RCON property response.
-This replaces stdin command delivery, which can succeed without ARK executing the
-command, and the old property-less `getall` probe. Fresh CI must still confirm
-that the shipped native server exposes this property through RCON.
+`ALPHAGSM_RUN_ARK_WORKSHOP=1`. It selects the declared `FlatMap` world and requires
+fresh native successful-startup records on its exact staged map URL, plus real
+A2S metadata naming `FlatMap` with positive player capacity. A stock-world
+fallback, download result or activation ID cannot satisfy the assertion.
+The Linux 361.7 server authenticated native RCON but returned only a generic
+receipt for engine `GetAll`, so the fixture now proves custom-world execution
+instead of relying on unsupported object introspection. Native activation IDs
+and map paths are snapshotted before start so inspecting or stopping the live
+container does not reopen an engine-private INI.

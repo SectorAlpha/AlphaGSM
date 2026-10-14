@@ -108,17 +108,10 @@ run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
 run_alphagsm "$SERVER_NAME" set queryport "$QUERY_PORT"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 if [[ "${ALPHAGSM_RUN_ARK_WORKSHOP:-0}" == "1" ]]; then
-  run_alphagsm "$SERVER_NAME" mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=2860800256
+  run_alphagsm "$SERVER_NAME" mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=2041231763
   run_alphagsm "$SERVER_NAME" mod apply
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
     "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/ark_workshop.py" prepare "$SERVER_NAME"
-  cat >> "$INSTALL_DIR/ShooterGame/Saved/Config/LinuxServer/Engine.ini" <<'EOF'
-[Core.Log]
-LogObj=Log
-LogLinker=Verbose
-LogStreaming=Verbose
-LogUObjectGlobals=Verbose
-EOF
 fi
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1

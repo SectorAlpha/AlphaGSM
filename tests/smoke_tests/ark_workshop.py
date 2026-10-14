@@ -1,92 +1,74 @@
-"""Authenticated native ARK Blueprint-property proof shared by CI and smoke."""
+"""Require ARK to construct and serve a staged public Workshop map."""
 
 import argparse
+import json
 from pathlib import Path
 import re
-import secrets
+import subprocess
 import sys
 import time
 
 
-NATIVE_COMMAND = "getall PrimalGameData_BP_Spoilers_C ModName SHOWDEFAULTS"
-OBJECT_ROW = re.compile(
-    r"^(?:\[[^\]\r\n]+\]\[\s*\d+\])?(?:LogObj:\s*(?:Log:\s*)?)?\s*\d+\)\s*"
-    r"PrimalGameData_BP_Spoilers_C\s+"
-    r"/Game/Mods/[^\s]*PrimalGameData_BP_Spoilers\."
-    r"(?:Default__)?PrimalGameData_BP_Spoilers_C(?:_\d+)?\.ModName\s*=\s*"
-    r'[^\r\n]*spoiler[^\r\n]*$', re.MULTILINE | re.IGNORECASE,
-)
+# Author: https://steamcommunity.com/sharedfiles/filedetails/?id=2041231763
+# Native map FlatMap; 3.372 MB listed Workshop payload. Linux content is checked
+# by the adapter and actual process/Docker compatibility remains a CI assertion.
+FIXTURE_ID = "2041231763"
+FIXTURE_MAP = "FlatMap"
 
 
-def assert_native_object_property(output):
-    """Require a native object/property record; receipts, echoes and errors fail."""
-    assert OBJECT_ROW.search(output), (
-        "ARK did not enumerate the Meat Spoiler native Blueprint ModName property:\n"
-        + output[-12000:])
+def configured_fixture_map(server):
+    """Select only the declared native map from this exact staged Workshop item."""
+    state = server.data.get("mods", {})
+    maps = state.get("ark_workshop_maps", {}).get(FIXTURE_ID, {})
+    path = maps.get(FIXTURE_MAP, "")
+    assert path.startswith(f"/Game/Mods/{FIXTURE_ID}/"), "Fixture map is not staged native Linux content"
+    assert path.rsplit("/", 1)[-1] == FIXTURE_MAP, "Workshop descriptor selected the wrong native map"
+    return path
 
 
-def prepare_probe(server):
-    """Enable disposable local RCON without passing its password in shell arguments."""
-    # Imported only when executed, so parser regressions need no server runtime.
-    from scripts.select_test_port import pick_free_port_group
-
-    excluded = {int(server.data[key]) for key in ("port", "queryport")}
-    excluded.add(int(server.data["port"]) + 1)
-    port = pick_free_port_group(1)
-    while port in excluded:
-        port = pick_free_port_group(1)
-    server.doset("adminpassword", secrets.token_hex(24))
-    server.doset("rconport", str(port))
-    server.doset("rconenabled", "true")
+def assert_native_world(log_text, launch_map):
+    """Require fresh successful engine initialization on the exact custom map URL."""
+    prefix = r"^(?:\ufeff)?\[[^\]\r\n]+\]\[\s*\d+\]"
+    assert re.search(prefix + r'Server: "[^"\r\n]+" has successfully started!', log_text, re.MULTILINE), (
+        "Native ARK world did not complete server initialization")
+    assert re.search(prefix + r"Commandline:\s*" + re.escape(launch_map) + r"\?listen(?:\?|\s)",
+                     log_text, re.MULTILINE), "Native startup did not execute the exact staged Workshop map"
+    assert re.search(prefix + r"Full Startup: [0-9.]+ seconds", log_text, re.MULTILINE), (
+        "Native ARK custom-world startup did not finish")
 
 
-def probe_native_object(server, timeout=120, *, command=None, read_logs=None,
-                        clock=time.monotonic, sleep=time.sleep):
-    """Require authenticated RCON transport and the exact loaded fixture property."""
-    from server import runtime
-    from utils.query import QueryError, _source_rcon_command_once
+def assert_workshop_map_info(info, expected_port=None):
+    """A named desired map, empty startup envelope or TCP fallback is insufficient."""
+    assert info.get("protocol") == "a2s" and info.get("map") == FIXTURE_MAP, (
+        f"ARK did not serve the native Workshop world {FIXTURE_MAP}: {info!r}")
+    maximum = info.get("max_players")
+    assert isinstance(maximum, int) and not isinstance(maximum, bool) and maximum > 0, info
+    if expected_port is not None:
+        assert info.get("port") == expected_port, info
 
-    host = runtime.resolve_query_host(server)
-    password = server.data["adminpassword"]
-    port = int(server.data["rconport"])
-    if command is None:
-        command = lambda text, remaining: _source_rcon_command_once(
-            host, port, password, min(10, remaining), text)
-    if read_logs is None:
-        def read_logs():
-            root = Path(server.data["dir"]) / "ShooterGame/Saved/Logs"
-            native = "\n".join(path.read_text(errors="replace") for path in root.glob("*.log"))
-            return native + "\n" + runtime.read_server_logs(server, lines=2000)
-    deadline = clock() + timeout
-    last = "RCON has not answered"
+
+def wait_for_native_world(server, read_info, timeout=120, *, clock=time.monotonic, sleep=time.sleep):
+    """Combine fresh engine startup with real A2S world identity and capacity."""
+    launch_map = configured_fixture_map(server)
+    logs = Path(server.data["dir"]) / "ShooterGame/Saved/Logs"
+    deadline, last, native = clock() + timeout, "", ""
     while clock() < deadline:
+        native = "\n".join(path.read_text(errors="replace") for path in logs.glob("*.log"))
         try:
-            last = command("ListPlayers", deadline - clock())
-            if last.strip().lower() == "no players connected":
-                break
-        except QueryError as exc:
-            last = str(exc)
-        sleep(min(2, max(0, deadline - clock())))
-    else:
-        raise AssertionError("ARK native RCON never confirmed the empty world: "
-                             + last.replace(password, "<redacted>"))
-    # Unlike stdin/FIFO delivery, this receives ARK's authenticated command response.
-    # GetAll requires a property; SHOWDEFAULTS includes the loaded mod Blueprint CDO.
-    response = command(NATIVE_COMMAND, max(0.1, deadline - clock()))
-    last = response
-    while clock() < deadline:
-        try:
-            assert_native_object_property(last)
-            print("ARK enumerated the loaded Meat Spoiler Blueprint ModName property.")
+            assert_native_world(native, launch_map)
+            assert_workshop_map_info(read_info(), int(server.data["queryport"]))
+            print(f"ARK constructed and serves Workshop world {FIXTURE_MAP} item={FIXTURE_ID} path={launch_map}")
             return
-        except AssertionError:
-            last = response + "\n" + read_logs()
+        except (AssertionError, ValueError, subprocess.TimeoutExpired) as exc:
+            last = str(exc)
             sleep(min(2, max(0, deadline - clock())))
-    assert_native_object_property(last.replace(password, "<redacted>"))
+    from server.diagnostics import redact_diagnostic
+    detail = redact_diagnostic(server, last + "\n" + native[-16000:])
+    raise AssertionError("ARK native Workshop world proof failed: " + detail)
 
 
 def main():
-    """Use the configured AlphaGSM runtime host, including Docker sibling gateways."""
+    """Prepare through AlphaGSM set; check through its exact runtime-aware info API."""
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=("prepare", "check"))
     parser.add_argument("server_name")
@@ -95,12 +77,17 @@ def main():
 
     server = Server(args.server_name)
     if args.action == "prepare":
-        prepare_probe(server)
+        server.doset("map", configured_fixture_map(server))
     else:
-        probe_native_object(server)
+        script = Path(__file__).resolve().parents[2] / "alphagsm"
+        def read_info():
+            result = subprocess.run([sys.executable, str(script), args.server_name, "info", "--json"],
+                                    check=False, capture_output=True, text=True, timeout=20)
+            assert result.returncode == 0, result.stderr
+            return json.loads(result.stdout)
+        wait_for_native_world(server, read_info)
 
 
 if __name__ == "__main__":
-    # Keep the same repository import surface as AlphaGSM's CLI.
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
     main()

@@ -13,9 +13,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
 - Workshop smoke CI: supply public fixtures for the eight runners whose
   item/collection variables are separate from their opt-in flags, preserving
   explicit overrides so a stock-only pass cannot replace Workshop validation.
-- Workshop validation: use authenticated ARK RCON for the complete native
-  Blueprint property probe instead of treating stdin delivery as execution.
-  Flush native startup logs and bound the response wait.
+- ARK: stage native Workshop maps from validated Linux metadata and select
+  exact published world paths. Validate a custom world through flushed engine
+  startup logs and real A2S map identity; command receipt is not mod execution.
 - TF2: initialize the dedicated-server UGC library in the installation and
   verify its exact ready item/current canonical map before accepting A2S.
 - NS2: expose an optional web-admin bind address so Docker validation can
