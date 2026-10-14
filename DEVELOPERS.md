@@ -1023,6 +1023,11 @@ an initial test-failure exit code can be recovered by one matching successful
 isolated recheck. The initial failure and its standard/heavy runner lane remain
 visible. `FLAKY RECOVERED` is a temporary non-blocking classification, not proof
 that a recurring failure has been fixed; track its failing node and log evidence.
+
+The summary runs after failed dependencies but honors workflow cancellation
+through `!cancelled()`. Canceled runs cannot provide complete evidence and are
+not certified. On active runs, missing or malformed recheck collector output
+remains a blocking error and retains the original required-job diagnostics.
 Scheduled and merge-group runs exercise broad coverage beyond PR routing.
 
 ### State and process ownership

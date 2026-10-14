@@ -43,6 +43,12 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- Required anonymous Workshop campaign `38558175692` completed on 2026-10-14:
+  20 initial integration failures, one recovered recheck, 19 persistent failures,
+  and three failed smoke scenarios. Earlier native-load evidence in the Workshop
+  matrix does not certify this CI run. The canceled duplicate `38558162021`
+  separately exposed a summary cancellation/missing-output defect; fixing that
+  reporting path does not resolve or suppress the game failures.
 - CI run `38479351815` exposed ARK engine-file permission failures, Reactive
   Drop duplicate SteamCMD configuration and host-Wine prerequisite failures,
   Wreckfest's incorrect `./cmd.exe` launch and runtime selection, and Squad 44

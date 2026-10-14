@@ -145,7 +145,19 @@ def summarize(artifacts: Path, needs: dict) -> list[str]:
         errors.append('windows-native-unit: expected exactly the four native Windows cases passed without skips')
 
     outputs = needs.get('collect-integration-rechecks', {}).get('outputs', {})
-    rechecks = json.loads(outputs['matrix'])['include']
+    try:
+        matrix = json.loads(outputs['matrix'])
+        if not isinstance(matrix, dict) or not isinstance(matrix.get('include'), list):
+            raise ValueError('expected a JSON object with an include array')
+        rechecks = matrix['include']
+        required_fields = ('source_artifact', 'nodeid', 'runtime_backend', 'runner_class')
+        if any(not isinstance(row, dict)
+               or any(not isinstance(row.get(key), str) or not row[key] for key in required_fields)
+               for row in rechecks):
+            raise ValueError('invalid recheck row metadata')
+    except (KeyError, TypeError, ValueError) as exc:
+        errors.append(f'collect-integration-rechecks: missing or invalid recheck matrix output ({exc})')
+        rechecks = []
     # Recompute from the original reports: a collector omission or tampered lane
     # cannot erase an initial failure or retry a passing test.
     recomputed = collect_failed_rechecks(artifacts, routing=routing)

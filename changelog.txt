@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-14
+- CI summary: honor workflow cancellation instead of validating unfinished
+  artifacts. Missing or malformed recheck output on active runs remains a
+  blocking error and preserves the original required-job diagnostics.
 - CI: require all existing public anonymous Workshop scenarios in smoke, process/Docker
   integration and isolated rechecks; skipped required cases now fail validation.
   Run the four native Windows unit cases on Windows and require their evidence

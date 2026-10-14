@@ -155,6 +155,34 @@ def test_gate_fails_closed(tmp_path, damage):
     assert result.returncode == 1, result.stdout + result.stderr
 
 
+@pytest.mark.parametrize('collector_result', ['cancelled', 'failure', 'skipped', 'success'])
+def test_missing_recheck_output_preserves_required_job_diagnostics(tmp_path, collector_result):
+    needs = context()
+    backend(tmp_path)
+    needs['lint']['result'] = 'failure'
+    needs['collect-integration-rechecks'] = {'result': collector_result, 'outputs': {}}
+
+    result = gate(tmp_path, needs)
+
+    assert result.returncode == 1
+    assert 'lint: expected success, got failure' in result.stdout
+    assert 'collect-integration-rechecks: missing or invalid recheck matrix output' in result.stdout
+    assert "Invalid or missing CI evidence: 'matrix'" not in result.stdout
+    if collector_result != 'success':
+        assert f'collect-integration-rechecks: expected success, got {collector_result}' in result.stdout
+
+
+@pytest.mark.parametrize('matrix', ['not json', 'null', '[]', '{}', '{"include":null}',
+                                  '{"include":{}}', '{"include":[{}]}'])
+def test_malformed_recheck_output_is_a_named_blocking_error(tmp_path, matrix):
+    needs = context()
+    backend(tmp_path)
+    needs['collect-integration-rechecks']['outputs']['matrix'] = matrix
+    result = gate(tmp_path, needs)
+    assert result.returncode == 1
+    assert 'collect-integration-rechecks: missing or invalid recheck matrix output' in result.stdout
+
+
 @pytest.mark.parametrize('damage', ['missing-report', 'missing-exit-code', 'collection-error', 'missing-test-file'])
 def test_selected_integration_requires_complete_reports(tmp_path, damage):
     needs = context()

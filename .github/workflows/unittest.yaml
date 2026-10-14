@@ -1217,7 +1217,7 @@ jobs:
   summarize-tests:
     runs-on: ubuntu-latest
     needs: [build, lint, unit-test, windows-native-unit, coverage, binary-build-smoke, classify-changes, discover-smoke-tests, discover-integration-tests, build-integration-image, build-java-runtime, build-quake-linux-runtime, build-simple-tcp-runtime, build-steamcmd-linux-runtime, build-wine-proton-runtime, smoke-test-standard, smoke-test-heavy, integration-test-standard, integration-test-heavy, backend-smoke-test, backend-integration-test, windows-minecraft-integration, macos-minecraft-integration, collect-integration-rechecks, integration-flake-recheck]
-    if: always()
+    if: ${{ !cancelled() }}
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
