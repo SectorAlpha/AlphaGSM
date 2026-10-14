@@ -8,10 +8,10 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-14
-- CI: let running and queued PR test runs finish instead of canceling them on
-  new pushes. Keep every game matrix running after individual failures and
-  always produce the required summary. Missing or malformed recheck output
-  remains a blocking error with the original required-job diagnostics.
+- CI: cancel superseded runs on new pushes while keeping the latest commit's
+  complete game matrices running after individual failures. Always produce the
+  required summary; missing or malformed recheck output remains a blocking
+  error with the original required-job diagnostics.
 - CI: require all existing public anonymous Workshop scenarios in smoke, process/Docker
   integration and isolated rechecks; skipped required cases now fail validation.
   Run the four native Windows unit cases on Windows and require their evidence
