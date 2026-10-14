@@ -165,8 +165,8 @@ def _run_wreckfestserver_lifecycle(tmp_path, *, runtime_backend, workshop_fixtur
         run_and_assert_ok(env, server_name, "start")
         wait_for_log_marker(native_log, ["Server connected."], START_TIMEOUT,
                             env=env, server_name=server_name)
-        # TCP proves connectivity only; the fresh engine log establishes startup.
-        wait_for_info_protocol(env, server_name, "tcp", START_TIMEOUT, expected_port=port)
+        # UDP silence counts as reachable; the fresh engine log establishes startup.
+        wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT, expected_port=queryport)
 
         status = run_and_assert_ok(env, server_name, "status")
         assert "Server is running" in status.stdout
@@ -183,25 +183,26 @@ def _run_wreckfestserver_lifecycle(tmp_path, *, runtime_backend, workshop_fixtur
                 (target / f"wreckfestserver-{backend}.log").write_text(evidence)
 
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert f"TCP ping on port {port}" in query_result.stdout, (
+        assert f"UDP ping on port {queryport}" in query_result.stdout, (
             f"Unexpected query output: {query_result.stdout!r}"
         )
 
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert f"TCP ping on port {port}" in info_result.stdout, (
+        assert f"UDP ping on port {queryport}" in info_result.stdout, (
             f"Unexpected info output: {info_result.stdout!r}"
         )
         assert "No further details available." in info_result.stdout
 
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         info_data = json.loads(info_json_result.stdout.strip())
-        assert info_data["protocol"] == "tcp", (
-            f"Expected explicit TCP connectivity in info JSON: {info_data!r}"
+        assert info_data["protocol"] == "udp", (
+            f"Expected explicit UDP reachability in info JSON: {info_data!r}"
         )
-        assert info_data["port"] == port, (
-            f"Expected reported info port {port}: {info_data!r}"
+        assert info_data["port"] == queryport, (
+            f"Expected reported info port {queryport}: {info_data!r}"
         )
         assert set(info_data) == {"protocol", "port", "latency_ms"}, info_data
+        # The shared field records elapsed probe time, including timeout; not RTT.
         assert isinstance(info_data["latency_ms"], (int, float)) and info_data["latency_ms"] >= 0
     except BaseException:
         _diagnose_wreckfest(env, server_name, queryport, install_dir, backend, gameport=port)

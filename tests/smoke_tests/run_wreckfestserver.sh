@@ -196,8 +196,8 @@ SERVER_STARTED=1
 rm -f -- "$INSTALL_DIR/log.txt"
 run_alphagsm "$SERVER_NAME" start
 wait_for_glob_ready "$INSTALL_DIR/log.txt" "$START_TIMEOUT_SECONDS" "Server connected\."
-# This explicit TCP surface provides connectivity and latency only.
-wait_for_info_protocol "$SERVER_NAME" "tcp" "$START_TIMEOUT_SECONDS" "$PORT"
+# UDP silence counts as reachable; fresh native startup and runtime status are required.
+wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS" "$QUERY_PORT"
 if [[ "$WORKSHOP_CONFIGURED" == 1 ]]; then
   run_alphagsm "$SERVER_NAME" send tracks
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
@@ -209,10 +209,10 @@ printf '%s\n' "$STATUS_OUTPUT"
 [[ "$STATUS_OUTPUT" == *"Server is running"* ]]
 QUERY_OUTPUT="$(run_alphagsm "$SERVER_NAME" query)"
 printf '%s\n' "$QUERY_OUTPUT"
-[[ "$QUERY_OUTPUT" == *"TCP ping on port $PORT"* ]]
+[[ "$QUERY_OUTPUT" == *"UDP ping on port $QUERY_PORT"* ]]
 INFO_OUTPUT="$(run_alphagsm "$SERVER_NAME" info)"
 printf '%s\n' "$INFO_OUTPUT"
-[[ "$INFO_OUTPUT" == *"TCP ping on port $PORT"* ]]
+[[ "$INFO_OUTPUT" == *"UDP ping on port $QUERY_PORT"* ]]
 [[ "$INFO_OUTPUT" == *"No further details available."* ]]
 INFO_JSON="$(ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
   "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" info --json)"
@@ -220,11 +220,12 @@ printf '%s\n' "$INFO_JSON"
 "$PYTHON_BIN" -c '
 import json, sys
 payload = json.load(sys.stdin)
-assert payload["protocol"] == "tcp", payload
+assert payload["protocol"] == "udp", payload
 assert payload["port"] == int(sys.argv[1]), payload
 assert set(payload) == {"protocol", "port", "latency_ms"}, payload
+# Shared latency_ms is elapsed probe time, including timeout, not an RTT.
 assert isinstance(payload["latency_ms"], (int, float)) and payload["latency_ms"] >= 0, payload
-' "$PORT" <<< "$INFO_JSON"
+' "$QUERY_PORT" <<< "$INFO_JSON"
 run_alphagsm "$SERVER_NAME" stop
 SERVER_STARTED=0
 wait_for_owned_listeners_closed

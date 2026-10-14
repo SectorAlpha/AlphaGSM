@@ -141,7 +141,7 @@ def test_smoke_runtime_selector_respects_ci_without_starting_servers(settings, e
 
 @pytest.mark.parametrize("backend", ["process", "docker"])
 @pytest.mark.parametrize("fabricated_metadata", [False, True])
-def test_baseline_requires_fresh_native_startup_and_limited_tcp_info(
+def test_baseline_requires_fresh_native_startup_and_limited_udp_info(
         integration, tmp_path, monkeypatch, backend, fabricated_metadata):
     for key in ("ALPHAGSM_WRECKFESTSERVER_TEST_INSTALL", "ALPHAGSM_WRECKFESTSERVER_TEST_CACHE"):
         monkeypatch.delenv(key, raising=False)
@@ -172,11 +172,11 @@ def test_baseline_requires_fresh_native_startup_and_limited_tcp_info(
         if arguments == ("status",):
             return SimpleNamespace(stdout="Server isn't running" if stopped else "Server is running")
         if arguments == ("query",):
-            return SimpleNamespace(stdout="Server port is open (TCP ping on port 33540 — 0.1 ms).")
+            return SimpleNamespace(stdout="Server port is open (UDP ping on port 27016 - 2000.1 ms).")
         if arguments == ("info",):
-            return SimpleNamespace(stdout="TCP ping on port 33540. No further details available.")
+            return SimpleNamespace(stdout="UDP ping on port 27016. No further details available.")
         if arguments == ("info", "--json"):
-            payload = {"protocol": "tcp", "port": 33540, "latency_ms": 0.1}
+            payload = {"protocol": "udp", "port": 27016, "latency_ms": 2000.1}
             if fabricated_metadata:
                 payload["name"] = "configured name is not engine metadata"
             return SimpleNamespace(stdout=json.dumps(payload))
@@ -189,10 +189,10 @@ def test_baseline_requires_fresh_native_startup_and_limited_tcp_info(
         events.append("native-ready")
         return path.read_text()
 
-    def tcp_ready(_env, _server, protocol, _timeout, *, expected_port):
+    def udp_ready(_env, _server, protocol, _timeout, *, expected_port):
         assert events == ["start", "native-ready"]
-        assert (protocol, expected_port) == ("tcp", 33540)
-        events.append("tcp-ready")
+        assert (protocol, expected_port) == ("udp", 27016)
+        events.append("udp-ready")
 
     def cleanup(*_args):
         nonlocal stopped
@@ -202,7 +202,7 @@ def test_baseline_requires_fresh_native_startup_and_limited_tcp_info(
     monkeypatch.setattr(integration, "run_setup_with_port_retry", setup)
     monkeypatch.setattr(integration, "run_and_assert_ok", command)
     monkeypatch.setattr(integration, "wait_for_log_marker", native_ready)
-    monkeypatch.setattr(integration, "wait_for_info_protocol", tcp_ready)
+    monkeypatch.setattr(integration, "wait_for_info_protocol", udp_ready)
     monkeypatch.setattr(integration, "_cleanup_wreckfest", cleanup)
     monkeypatch.setattr(integration, "_diagnose_wreckfest",
                         lambda *_args, **_kwargs: events.append("diagnostic"))
@@ -216,20 +216,20 @@ def test_baseline_requires_fresh_native_startup_and_limited_tcp_info(
         assert events[-2:] == ["diagnostic", "stop"]
     else:
         integration._run_wreckfestserver_lifecycle(tmp_path, runtime_backend=backend)
-        assert events == ["start", "native-ready", "tcp-ready", "stop",
+        assert events == ["start", "native-ready", "udp-ready", "stop",
                           ("tcp-closed", 33540), ("udp-closed", 33540),
                           ("udp-closed", 27016), ("udp-closed", 27015)]
 
 
-def test_smoke_checks_native_startup_before_limited_tcp_and_complete_stop():
+def test_smoke_checks_native_startup_before_limited_udp_and_complete_stop():
     path = Path(__file__).resolve().parents[2] / "smoke_tests/run_wreckfestserver.sh"
     source = path.read_text(encoding="utf-8")
     rotate = source.index('rm -f -- "$INSTALL_DIR/log.txt"')
     start = source.index('run_alphagsm "$SERVER_NAME" start', rotate)
     native_ready = source.index('wait_for_glob_ready "$INSTALL_DIR/log.txt"', start)
-    tcp_ready = source.index('wait_for_info_protocol "$SERVER_NAME" "tcp"', native_ready)
-    stop = source.index('run_alphagsm "$SERVER_NAME" stop', tcp_ready)
-    assert rotate < start < native_ready < tcp_ready < stop
+    udp_ready = source.index('wait_for_info_protocol "$SERVER_NAME" "udp"', native_ready)
+    stop = source.index('run_alphagsm "$SERVER_NAME" stop', udp_ready)
+    assert rotate < start < native_ready < udp_ready < stop
     assert '"Server connected\\."' in source
     assert 'No further details available.' in source
     assert 'set(payload) == {"protocol", "port", "latency_ms"}' in source

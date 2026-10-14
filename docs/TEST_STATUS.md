@@ -54,11 +54,13 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
   depot-SDK launch preference was added; successful captured output does not
   establish the loaded SDK hash or prove the earlier timeout's cause. Wreckfest's
   added A2S requirement was unsupported: all address families timed out while
-  the engine's query-port socket was dual stack. Its existing Linux TCP
-  connectivity contract is restored, with fresh native startup evidence required
-  separately; replacement CI is pending. Stock ARK and Squad 44 tests retain
+  the engine's query-port socket was dual stack. Docker's published TCP proxy
+  also masked the lack of a native TCP listener in the process lane. Linux now
+  uses limited UDP reachability on the observed query port, with fresh native
+  startup evidence and runtime liveness required separately; replacement CI is
+  pending. Stock ARK and Squad 44 tests retain
   actual A2S readiness, while their unverified Workshop cases remain explicit
-  opt-ins. Wreckfest's TCP result does not establish track/player metadata or
+  opt-ins. Wreckfest's UDP result does not establish track/player metadata or
   Workshop loading; a successful Windows launch alone cannot pass its baseline.
 - The anonymous Workshop expansion is tracked per game and runtime in
   [WORKSHOP_SUPPORT.md](WORKSHOP_SUPPORT.md). Existing baseline server status

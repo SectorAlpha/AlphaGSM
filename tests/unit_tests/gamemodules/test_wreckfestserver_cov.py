@@ -128,7 +128,7 @@ def test_install_ensures_parent_appid_and_config(tmp_path):
 
 
 @pytest.mark.parametrize("is_linux,expected_port,protocol", [
-    (True, 33540, "tcp"),
+    (True, 27016, "udp"),
     (False, 27016, "a2s"),
 ])
 def test_query_and_info_preserve_platform_endpoint(is_linux, expected_port, protocol):

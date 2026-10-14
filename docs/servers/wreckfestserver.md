@@ -14,11 +14,13 @@ including `crazy_2000_classic`, its reversed event, and its deathloop event.
 The adapter preserves operator mod folders and config entries while managing
 its own native `mods=` entries.
 
-On Linux, `query` and `info` retain the existing TCP connectivity check on the
-game port. They do not report track or player information. Current remote
+On Linux, `query` and `info` check UDP reachability on the configured query port.
+They do not report track or player information. A silent UDP probe means no
+port-unreachable error was received; it does not prove an application response
+or measure round-trip latency. Current remote
 diagnostics receive no A2S response over IPv4 or IPv6; the native server uses
 THQN networking. The baseline additionally requires a fresh native
-`Server connected.` log, so an open Docker proxy alone cannot pass startup.
+`Server connected.` log and running runtime, so reachability alone cannot pass startup.
 Replacement process and Docker validation is pending.
 
 Workshop checks still require fresh native track-registry output beyond the

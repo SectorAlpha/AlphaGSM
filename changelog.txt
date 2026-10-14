@@ -13,10 +13,11 @@ Historical detail lives in git history. Keep this file focused on release-facing
 - Lifecycle tests: fix Reactive Drop's duplicate SteamCMD configuration and
   select Wine runtime prerequisites consistently. Wreckfest honors the CI
   backend and stops failed launches before removing managed content.
-- Wreckfest: restore the existing Linux TCP connectivity contract after an
-  unsupported A2S requirement caused timeouts. Require fresh native startup
-  evidence and complete TCP/UDP shutdown; Workshop checks still require native
-  track registration rather than config echoes or port availability.
+- Wreckfest: use limited UDP reachability on the native query port after an
+  unsupported A2S requirement and Docker-only TCP proxy checks caused false
+  assumptions. Require fresh native startup evidence, running runtime and
+  complete TCP/UDP shutdown; Workshop checks still require native track
+  registration rather than config echoes or port availability.
 - Reactive Drop: provide terminal-backed Docker input so the native Windows
   console API can read events; attempt cleanup even when startup fails.
   Anonymous process/Docker baselines now pass real A2S lifecycle checks in CI.
