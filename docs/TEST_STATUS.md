@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-10-13
+Last updated: 2026-10-14
 
 ## Summary
 
@@ -11,7 +11,7 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 | Status   | Count |
 |----------|-------|
-| PASSED | 140 |
+| PASSED | 141 |
 | ENABLED (AUTH) | 49 |
 | ENABLED (BYO) | 45 |
 | DISABLED | 4 |
@@ -46,19 +46,15 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 - CI run `38479351815` exposed ARK engine-file permission failures, Reactive
   Drop duplicate SteamCMD configuration and host-Wine prerequisite failures,
   Wreckfest's incorrect `./cmd.exe` launch and runtime selection, and Squad 44
-  query/obsolete Workshop fixture failures. Corrections are awaiting replacement
-  CI; no local retests were run. ARK's corrected Docker smoke and integration
-  passed in run `38531765158`, and Reactive Drop's process lifecycle passed.
-  Reactive Drop's newly exposed Docker console-input failure has a terminal
-  correction awaiting CI. Stock ARK and Squad 44 lifecycle tests retain
+  query/obsolete Workshop fixture failures. No local retests were run. ARK's
+  corrected Docker smoke and integration passed in run `38531765158`.
+  Reactive Drop's process and Docker integrations plus Docker smoke passed in
+  run `38534961789` after its terminal-input correction. Squad 44 and Wreckfest
+  still time out on actual A2S; the bundled-SDK candidate and address-family
+  diagnostics await further CI. Stock ARK and Squad 44 lifecycle tests retain
   actual A2S readiness, while their unverified Workshop cases remain explicit
   opt-ins. Wreckfest's current A2S contract supersedes the historical TCP result
   below; a successful Windows launch alone does not establish health.
-- Alien Swarm: Reactive Drop (`asrdserver`) has a new anonymous-install module,
-  native Workshop configuration and CLI lifecycle tests. Its first live probe
-  exposed config execution and bind-address issues; those corrections have unit
-  coverage, but the corrected full process lifecycle is still pending. Docker
-  validation awaits an SSD-backed endpoint. It has not been promoted to PASSED.
 - The anonymous Workshop expansion is tracked per game and runtime in
   [WORKSHOP_SUPPORT.md](WORKSHOP_SUPPORT.md). Existing baseline server status
   does not imply its new Workshop loader has passed live validation.
@@ -189,7 +185,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | ns2server | Process and Docker lifecycle revalidation of the corrected install-root launcher, relative data paths, exact A2S query on `port + 1`, and shutdown checks. |
 | ns2cserver | Process and Docker lifecycle revalidation of the corrected `ia32` working directory, relative data paths, exact A2S query on `port + 1`, and shutdown checks. |
 
-## PASSED (140)
+## PASSED (141)
 
 | Test | Type |
 |------|------|
@@ -198,6 +194,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | ark | Docker runtime (SteamCMD Linux) — PASSED 2026-06-01; fresh formal integration now proves the old size-based disabled note is no longer the real blocker: anonymous SteamCMD setup for app `376030` completes on the shared `steamcmd-linux` runtime, AlphaGSM launches `ShooterGame/Binaries/Linux/ShooterGameServer` from its real working directory inside the Docker lane as a non-root user with the shared Steam bootstrap mounted into `~/.steam/sdk64/steamclient.so`, and validates real A2S `query`, `info`, and `info --json` on the managed `queryport` instead of the older stale host-process / generic-TCP assumptions |
 | arksurvivalascended | Docker runtime (Wine/Proton) — PASSED 2026-05-30; the current correction replaces the deprecated Steam query-port assumption with authenticated Source RCON `ListPlayers` on managed TCP `rconport`. The runtime contract claims and publishes game UDP and RCON TCP; launch enables RCON and keeps the admin password out of query output. Replacement CI validation is pending; this does not record a new pass. |
 | armarserver | SteamCMD |
+| asrdserver | Wine/Proton — PASSED 2026-10-14 in process and Docker integrations plus Docker smoke (`38534961789`). Anonymous game/SDK setup, loaded-map A2S readiness, status/query/info/JSON, stop and query shutdown passed through AlphaGSM. Docker supplies terminal-backed stdin for the native Win32 console API. Optional Workshop engine-load validation remains unverified. |
 | avserver | SteamCMD — anonymous AzimuthLib Workshop activation passed process and branch-local Docker lifecycles on 2026-10-13, including live Lua execution and native query/info/shutdown. |
 | archive_backed_installs | Archive |
 | bb2server | SteamCMD (Source) — PASSED; process and Docker readiness uses AlphaGSM's real A2S `info --json` response because Docker console logs can omit the traditional Source startup markers |

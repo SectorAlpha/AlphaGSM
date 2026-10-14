@@ -34,6 +34,7 @@ Items and collections use numeric IDs or official Steam Community Workshop URLs.
 
 ## Fixture evidence and limitations
 
+- Reactive Drop's anonymous stock baseline passed process and Docker integrations plus Docker smoke in CI on 2026-10-14. This validates the server and terminal correction; its Workshop load row remains pending actual item execution.
 - L4D2: Back To School collection `121115793` and Admin System `214630948`; fresh engine load order enumerates all 11 VPKs, and Admin System execution was observed. Unavailable original collection `3819008159` is not a passing fixture.
 - Garry's Mod: ULib/ULX collection `2886432224`; fresh native VFS CRCs and both live Lua APIs.
 - Unturned: PEI Arena `2396897717`; native map loading and real A2S map identity.

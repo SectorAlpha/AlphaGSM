@@ -1,8 +1,8 @@
 # Alien Swarm: Reactive Drop
 
 The `asrdserver` module installs the anonymous Windows dedicated-server files and
-runs them through Wine on Linux. The baseline process lifecycle passed in CI on
-2026-10-14. Docker validation is pending a rerun of the native console fix;
+runs them through Wine on Linux. The baseline is `PASSED`: process and Docker
+integration lifecycles plus Docker smoke passed in CI on 2026-10-14.
 Workshop load validation remains opt-in and unverified.
 
 ## Requirements

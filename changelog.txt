@@ -15,6 +15,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
   backend and stops failed launches before removing managed content.
 - Reactive Drop: provide terminal-backed Docker input so the native Windows
   console API can read events; attempt cleanup even when startup fails.
+  Anonymous process/Docker baselines now pass real A2S lifecycle checks in CI.
 - Squad 44: prefer the Steam SDK shipped with its server depot through a
   launch-only library path, preserving the operator's HOME and library paths.
 - CI diagnostics: record Squad 44 SDK revisions and Wreckfest's actual IPv4,

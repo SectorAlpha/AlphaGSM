@@ -1396,7 +1396,7 @@
         "process": true
       },
       "schema_version": 1,
-      "support_state": "UNKNOWN",
+      "support_state": "PASSED",
       "unknown_fields": [
         "architectures",
         "platform_requirements.docker.operating_system",

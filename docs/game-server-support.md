@@ -28,6 +28,7 @@ Notes:
 - [x] ark
 - [x] arksurvivalascended
 - [x] armarserver
+- [x] asrdserver
 - [x] avserver
 - [x] bb2server
 - [x] btlserver
