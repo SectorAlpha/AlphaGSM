@@ -37,6 +37,10 @@ No background service is installed automatically. Reporting reconciles approved
 local name/capacity after successful local changes and every roughly 60 seconds.
 Advertised host/port remain an explicit local choice. The compatible service
 requires a separate public-name challenge before granting endpoint verification.
+Reporting retries temporary configuration-lock timeouts during long lifecycle
+operations and resumes when the lock is released; a busy lifecycle does not
+permanently terminate reporting. Publication still expires if renewal is delayed
+beyond the service lease.
 
 Normal AlphaGSM stop may force termination after graceful attempts. Restart is
 stop then start and requires a running server. Status reports only running,
