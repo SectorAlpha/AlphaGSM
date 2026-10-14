@@ -5,8 +5,12 @@ This guide covers the `squad44server` module in AlphaGSM.
 `squad44server` has a previously passed Ubuntu 24.04 Linux baseline. The current
 CI failure remains under investigation: the stock engine loads its world, but
 the integration-container A2S query times out. Host smoke reached A2S before
-failing its obsolete Workshop fixture check. The next CI run isolates the
-stock baseline and retains real A2S, query/info and shutdown requirements.
+failing its obsolete Workshop fixture check. Clean baseline CI initialized the
+Steam API and loaded the world, but still timed out on A2S. A candidate now
+prefers the SDK redistributable shipped in the server depot using a launch-time
+library path, preserving the existing process library path and leaving HOME
+unchanged. This candidate is pending CI; the SDK revision has not been proven
+to cause the timeout. Real A2S, query/info and shutdown checks remain required.
 
 ## Requirements
 

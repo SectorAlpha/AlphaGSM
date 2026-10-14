@@ -17,6 +17,7 @@ from conftest import (
     wait_for_udp_closed, wait_for_runtime_log_marker, write_config,
 )
 from server.modsupport.workshop import normalize_workshop_identifier
+from tests.integration_tests.squad44_sdk_diagnostics import sdk_metadata_from_config
 
 pytestmark = pytest.mark.integration
 START_TIMEOUT = 900
@@ -51,6 +52,8 @@ def test_squad44server_lifecycle(tmp_path, *, runtime_backend=None, workshop=Non
     result, port = run_setup_with_port_retry(
         env, server_name, port, install_dir, timeout=SETUP_TIMEOUT)
     assert_alphagsm_result_ok(result)
+    print("[native-sdk]", json.dumps(sdk_metadata_from_config(install_dir, config_path),
+                                     sort_keys=True))
     if workshop:
         run_and_assert_ok(env, server_name, "mod", "add", "workshop", workshop[0])
         run_and_assert_ok(env, server_name, "mod", "apply")

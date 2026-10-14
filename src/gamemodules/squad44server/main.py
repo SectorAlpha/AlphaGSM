@@ -102,8 +102,8 @@ def prestart(server):
         apply_configured_mods(server)
 
 
-def get_start_command(server):
-    """Build the command used to launch a Squad 44 dedicated server."""
+def _native_start_command(server):
+    """Build the shared native argv without process-specific environment paths."""
 
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
@@ -118,6 +118,30 @@ def get_start_command(server):
         ],
         server.data["dir"],
     )
+
+
+def _vendor_sdk_directory(server):
+    """Return the installed redistributable directory when the depot provides it."""
+    directory = os.path.abspath(os.path.join(server.data["dir"], "linux64"))
+    return directory if os.path.isfile(os.path.join(directory, "steamclient.so")) else None
+
+
+def get_start_command(server):
+    """Prefer the depot SDK while preserving the operator's process library path."""
+    command, cwd = _native_start_command(server)
+    sdk_directory = _vendor_sdk_directory(server)
+    if sdk_directory:
+        inherited = os.environ.get("LD_LIBRARY_PATH", "")
+        library_path = sdk_directory + (":" + inherited if inherited else "")
+        command = ["env", "LD_LIBRARY_PATH=" + library_path, *command]
+    return command, cwd
+
+
+def _container_sdk_env(server):
+    """Select the mounted depot SDK without copying manager environment paths."""
+    if _vendor_sdk_directory(server):
+        return {"LD_LIBRARY_PATH": runtime_module.DEFAULT_CONTAINER_WORKDIR + "/linux64"}
+    return {}
 
 
 def get_query_address(server):
@@ -178,13 +202,14 @@ def get_runtime_requirements(server):
     """Declare native Linux execution and the complete claimed port set."""
     return runtime_module.build_runtime_requirements(
         server, family="steamcmd-linux", port_definitions=_PORT_DEFINITIONS,
-        extra=_RUNTIME_EXTRA,
+        extra=_RUNTIME_EXTRA, env=_container_sdk_env(server),
     )
 
 
 def get_container_spec(server):
     """Launch the native server as the owner of the disposable install."""
     return runtime_module.build_container_spec(
-        server, family="steamcmd-linux", get_start_command=get_start_command,
+        server, family="steamcmd-linux", get_start_command=_native_start_command,
         port_definitions=_PORT_DEFINITIONS, extra=_RUNTIME_EXTRA, stdin_open=True,
+        env=_container_sdk_env(server),
     )
