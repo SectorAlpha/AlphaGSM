@@ -122,7 +122,7 @@ def test_workflow_retains_initial_exit_status_and_reports():
 def test_required_summary_covers_all_jobs_and_receives_needs_evidence():
     text = WORKFLOW_PATH.read_text(encoding="utf-8")
     summary = text.split("  summarize-tests:", 1)[1]
-    assert "if: ${{ !cancelled() }}" in summary
+    assert "if: always()" in summary
     assert "CI_NEEDS_JSON: ${{ toJson(needs) }}" in summary
     for job in ("lint", "unit-test", "coverage", "binary-build-smoke", "backend-smoke-test",
                 "backend-integration-test", "windows-minecraft-integration", "macos-minecraft-integration"):

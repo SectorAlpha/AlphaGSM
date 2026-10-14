@@ -71,7 +71,7 @@ def test_native_windows_lane_is_called_and_required_by_summary(jobs):
     assert "if" not in windows, "Native Windows coverage must not depend on game-file routing"
     summary = jobs["summarize-tests"]
     assert "windows-native-unit" in summary["needs"]
-    assert summary["if"] == "${{ !cancelled() }}"
+    assert summary["if"] == "always()"
     download = step(summary, "Download all test results")
     assert download["with"]["pattern"] == "*-results-*"
     assert download["with"]["merge-multiple"] == "false"

@@ -23,6 +23,48 @@ def integration_module(name, monkeypatch):
     return module
 
 
+@pytest.mark.parametrize('name,entrypoint,home_name', [
+    ('bb2server', 'test_bb2server_lifecycle', 'home'),
+    ('doiserver', 'test_doiserver_lifecycle', 'home'),
+    ('insserver', 'test_insserver_lifecycle', 'home'),
+    ('nmrihserver', 'test_nmrihserver_lifecycle', 'home'),
+    ('tf2', 'test_tf2_download_install_and_start', 'alphagsm-home'),
+])
+@pytest.mark.parametrize('backend', ['process', 'docker'])
+@pytest.mark.parametrize('shared_work_dir', [False, True])
+def test_source_workshop_lifecycles_reach_create_with_one_steamcmd_section(
+        tmp_path, monkeypatch, name, entrypoint, home_name, backend, shared_work_dir):
+    module = integration_module(name, monkeypatch)
+    if shared_work_dir:
+        monkeypatch.setenv('ALPHAGSM_WORK_DIR', str(tmp_path / 'shared'))
+    else:
+        monkeypatch.delenv('ALPHAGSM_WORK_DIR', raising=False)
+    override = str(tmp_path / 'SteamCMD 100% override')
+    monkeypatch.setenv(f'ALPHAGSM_{name.upper()}_STEAMCMD_PATH', override)
+    for helper in ('require_integration_opt_in', 'require_steamcmd_opt_in', 'require_command_for_runtime'):
+        monkeypatch.setattr(module, helper, lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(module, 'pick_free_tcp_port_group', lambda _count: 17000)
+    if hasattr(module, 'detect_query_host'):
+        monkeypatch.setattr(module, 'detect_query_host', lambda: '127.0.0.1')
+
+    class BeforeCreate(Exception):
+        pass
+
+    def inspect(env, _server, action, *_args, **_kwargs):
+        assert action == 'create'
+        parser = configparser.ConfigParser(interpolation=None)
+        parser.read(env['ALPHAGSM_CONFIG_LOCATION'], encoding='utf-8')
+        assert parser.sections().count('downloader.steamcmd') == 1
+        assert parser['downloader.steamcmd']['steamcmd_path'] == override
+        assert parser['runtime']['backend'] == backend
+        assert parser['server']['datapath'] == str(tmp_path / home_name / 'conf')
+        raise BeforeCreate
+
+    monkeypatch.setattr(module, 'run_and_assert_ok', inspect)
+    with pytest.raises(BeforeCreate):
+        getattr(module, entrypoint)(tmp_path, 'workshop', '123', backend)
+
+
 @pytest.mark.parametrize('name', ['asrdserver', 'ns2server'])
 @pytest.mark.parametrize('backend,hosts,expected', [
     ('process', ('127.0.0.1', '172.17.0.1'), '127.0.0.1'),

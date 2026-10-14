@@ -1,5 +1,6 @@
 """Shared fixtures and helpers for AlphaGSM integration tests."""
 
+import configparser
 import importlib
 import json
 import os
@@ -493,6 +494,17 @@ def write_config(
         ]
     )
     config_path.write_text("\n".join(config_lines) + "\n")
+
+
+def configure_steamcmd_path(config_path, steamcmd_path):
+    """Set a test's SteamCMD path without duplicating a shared-cache section."""
+    parser = configparser.ConfigParser(interpolation=None)
+    parser.read(config_path, encoding="utf-8")
+    if not parser.has_section("downloader.steamcmd"):
+        parser.add_section("downloader.steamcmd")
+    parser.set("downloader.steamcmd", "steamcmd_path", str(steamcmd_path))
+    with config_path.open("w", encoding="utf-8") as handle:
+        parser.write(handle)
 
 
 class _SecretSafeEnvironment(dict):

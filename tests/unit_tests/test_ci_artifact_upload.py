@@ -38,17 +38,18 @@ def test_smoke_results_survive_in_step_summary_before_artifact_upload():
         assert 'if-no-files-found: error' in upload
 
 
-def test_rechecks_and_final_summary_stop_when_the_workflow_is_cancelled():
-    """Canceled matrices cannot produce complete final evidence or launch rechecks."""
+def test_explicit_cancellation_stops_rechecks_but_retains_the_required_summary():
+    """Only an explicit cancellation should stop expensive queued rechecks."""
     workflow = Path('.github/workflows/unittest.yaml').read_text()
     jobs = dict(re.findall(r'^  ([\w-]+):\n(.*?)(?=^  [\w-]+:|\Z)',
                            workflow, re.MULTILINE | re.DOTALL))
-    for name in ('collect-integration-rechecks', 'integration-flake-recheck', 'summarize-tests'):
+    for name in ('collect-integration-rechecks', 'integration-flake-recheck'):
         condition = re.search(r'^    if: (.+)$', jobs[name], re.MULTILINE).group(1)
         assert '!cancelled()' in condition
         assert 'always()' not in condition
     assert "needs.collect-integration-rechecks.outputs.has_rechecks == 'true'" in jobs['integration-flake-recheck']
     # Individual diagnostic uploads still preserve the evidence available after failure.
+    assert '    if: always()' in jobs['summarize-tests']
     assert '        if: always()' in jobs['integration-flake-recheck']
 
 

@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import json
+import re
 
 import pytest
 
@@ -3156,12 +3157,13 @@ def test_unittest_workflow_declares_classify_changes_job():
     assert "classify-changes:" in text
 
 
-def test_unittest_workflow_cancels_superseded_pr_runs():
+def test_unittest_workflow_preserves_running_and_queued_pr_runs():
     text = WORKFLOW_PATH.read_text(encoding="utf-8")
 
-    assert "concurrency:" in text
-    assert "group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}" in text
-    assert "cancel-in-progress: true" in text
+    # A shared concurrency group replaces queued runs even with cancellation
+    # of running jobs disabled. Every requested validation must get its turn.
+    assert not re.search(r"^concurrency:", text, re.MULTILINE)
+    assert "cancel-in-progress:" not in text
 
 
 def test_unittest_workflow_routes_linux_game_matrices_from_classifier_outputs():

@@ -10,6 +10,7 @@ from tests.smoke_tests.nwi_workshop import assert_native_mounts
 import pytest
 
 from conftest import (
+    configure_steamcmd_path,
     workshop_runtime_backends,
     default_runtime_backend,
     require_integration_opt_in,
@@ -107,8 +108,7 @@ def test_tf2_download_install_and_start(tmp_path, workshop_source=None, workshop
     )
     if workshop_source:
         steamcmd_path = os.environ.get('ALPHAGSM_TF2_STEAMCMD_PATH', str(tmp_path / 'steamcmd'))
-        with config_path.open('a') as handle:
-            handle.write(f'\n[downloader.steamcmd]\nsteamcmd_path = {steamcmd_path}\n')
+        configure_steamcmd_path(config_path, steamcmd_path)
     env = alphagsm_env(config_path)
     query_host = detect_query_host()
 

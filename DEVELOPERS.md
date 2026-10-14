@@ -1024,10 +1024,13 @@ isolated recheck. The initial failure and its standard/heavy runner lane remain
 visible. `FLAKY RECOVERED` is a temporary non-blocking classification, not proof
 that a recurring failure has been fixed; track its failing node and log evidence.
 
-The summary runs after failed dependencies but honors workflow cancellation
-through `!cancelled()`. Canceled runs cannot provide complete evidence and are
-not certified. On active runs, missing or malformed recheck collector output
-remains a blocking error and retains the original required-job diagnostics.
+Every requested workflow run is allowed to finish. The PR workflow has no
+shared concurrency group, so new pushes neither cancel running tests nor
+replace pending runs. Game matrices keep `fail-fast: false`; one failing game
+does not cancel the others. Do not manually cancel a run to replace it with a
+focused campaign. The required summary uses `always()` to report all outcomes.
+Missing or malformed recheck collector output remains a blocking error and
+retains the original required-job diagnostics.
 Scheduled and merge-group runs exercise broad coverage beyond PR routing.
 
 ### State and process ownership

@@ -8,9 +8,10 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-14
-- CI summary: honor workflow cancellation instead of validating unfinished
-  artifacts. Missing or malformed recheck output on active runs remains a
-  blocking error and preserves the original required-job diagnostics.
+- CI: let running and queued PR test runs finish instead of canceling them on
+  new pushes. Keep every game matrix running after individual failures and
+  always produce the required summary. Missing or malformed recheck output
+  remains a blocking error with the original required-job diagnostics.
 - CI: require all existing public anonymous Workshop scenarios in smoke, process/Docker
   integration and isolated rechecks; skipped required cases now fail validation.
   Run the four native Windows unit cases on Windows and require their evidence
@@ -20,6 +21,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
   checking native map execution and A2S identity. Live load validation is pending.
 - Workshop CI: avoid duplicate NS2 SteamCMD test configuration and direct NS2
   and Reactive Drop admin probes to the published Docker endpoint.
+- Workshop CI: update the existing SteamCMD configuration section for
+  BrainBread 2, Day of Infamy, Insurgency, No More Room in Hell and TF2, so
+  shared CI work directories no longer fail before server creation.
 - ARK: run containers with the manager's UID/GID and retain launch mod IDs
   before startup so live console and stop commands do not reopen private INIs.
 - Lifecycle tests: fix Reactive Drop's duplicate SteamCMD configuration and

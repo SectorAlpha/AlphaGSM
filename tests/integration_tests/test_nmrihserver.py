@@ -7,6 +7,7 @@ import time
 import pytest
 
 from conftest import (
+    configure_steamcmd_path,
     workshop_runtime_backends,
     require_integration_opt_in,
     require_steamcmd_opt_in,
@@ -64,8 +65,7 @@ def test_nmrihserver_lifecycle(tmp_path, workshop_source=None, workshop_identifi
     )
     if workshop_source:
         steamcmd_path = os.environ.get("ALPHAGSM_NMRIHSERVER_STEAMCMD_PATH", str(tmp_path / "steamcmd"))
-        with config_path.open("a", encoding="utf-8") as handle:
-            handle.write(f"\n[downloader.steamcmd]\nsteamcmd_path = {steamcmd_path}\n")
+        configure_steamcmd_path(config_path, steamcmd_path)
     env = alphagsm_env(config_path)
     port = pick_free_tcp_port_group(3)
 
