@@ -82,9 +82,11 @@ class Service:
                     failures = 0
                     last_dirty = dirty
                     next_report = time.monotonic() + 55 + secrets.randbelow(11)
-                except (TransportError, ValueError):
+                except (TransportError, ValueError, TimeoutError):
                     failures = min(failures + 1, 6)
                     next_report = time.monotonic() + min(300, 2**failures) + secrets.randbelow(5)
+                    # Lifecycle operations can hold the config lock longer than
+                    # reporting's lock budget. Retry without ending the reporter.
                     # An outage never changes the result of a successful local CLI command.
 
     def _management_loop(self):

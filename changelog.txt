@@ -7,6 +7,10 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-15
+- Sector Alpha: retry reporting after temporary configuration-lock contention
+  during long lifecycle operations, keeping the reporting thread alive.
+
 2026-10-13
 - Sector Alpha: add an optional outbound HTTPS agent with separate reporting and
   management opt-ins, exact local server bindings, private scoped credentials,
