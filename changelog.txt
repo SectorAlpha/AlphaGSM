@@ -18,6 +18,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
   assumptions. Require fresh native startup evidence, running runtime and
   complete TCP/UDP shutdown; Workshop checks still require native track
   registration rather than config echoes or port availability.
+  Stock process/Docker integrations and Docker smoke now pass in CI.
 - Reactive Drop: provide terminal-backed Docker input so the native Windows
   console API can read events; attempt cleanup even when startup fails.
   Anonymous process/Docker baselines now pass real A2S lifecycle checks in CI.

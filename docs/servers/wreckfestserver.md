@@ -2,7 +2,8 @@
 
 This guide covers the `wreckfestserver` module in AlphaGSM.
 
-Status: `PASSED` on 2026-05-31.
+Status: `PASSED` for stock process and Docker startup, connectivity and shutdown
+on 2026-10-14 (CI run `38545270577`). Workshop loading remains unverified.
 
 ## Workshop validation checkpoint
 
@@ -21,7 +22,7 @@ or measure round-trip latency. Current remote
 diagnostics receive no A2S response over IPv4 or IPv6; the native server uses
 THQN networking. The baseline additionally requires a fresh native
 `Server connected.` log and running runtime, so reachability alone cannot pass startup.
-Replacement process and Docker validation is pending.
+Stock process and Docker integrations plus Docker smoke passed these checks.
 
 Workshop checks still require fresh native track-registry output beyond the
 baseline connectivity check. Automated capture and the complete modded lifecycle

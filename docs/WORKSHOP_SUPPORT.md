@@ -34,6 +34,7 @@ Items and collections use numeric IDs or official Steam Community Workshop URLs.
 
 ## Fixture evidence and limitations
 
+- Wreckfest's stock process and Docker integrations plus Docker smoke passed in CI run `38545270577` on 2026-10-14. These require fresh native startup, runtime liveness, limited UDP reachability and complete shutdown; they do not establish game metadata or Workshop loading. Its Workshop row remains in progress until fresh native registry capture passes the stricter fixture check.
 - Squad 44's stock process and Docker integrations plus Docker smoke passed in CI run `38537399526` on 2026-10-14, with real A2S and shutdown checks after depot-SDK launch preference was added. The loaded SDK hash was not retained in successful captured output; this does not prove the previous timeout's cause. Stop retains its existing forced-stop fallback. A compatible public Linux Workshop fixture and native plugin-load proof remain pending, so its Workshop load row is unchanged.
 - Reactive Drop's anonymous stock baseline passed process and Docker integrations plus Docker smoke in CI on 2026-10-14. This validates the server and terminal correction; its Workshop load row remains pending actual item execution.
 - L4D2: Back To School collection `121115793` and Admin System `214630948`; fresh engine load order enumerates all 11 VPKs, and Admin System execution was observed. Unavailable original collection `3819008159` is not a passing fixture.
