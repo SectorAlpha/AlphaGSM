@@ -3,6 +3,9 @@
 import argparse
 from pathlib import Path
 import re
+import subprocess
+import sys
+import time
 
 FIXTURE_ID = "3428792631"
 FIXTURE_NAME = "Crazy 2025"
@@ -10,17 +13,71 @@ TRACK = "crazy_2000_classic"
 
 
 def assert_workshop_loaded(log_text):
-    """A config line or reported mod count cannot satisfy the track registry check."""
-    assert re.search(r"(?im)^.*crazy_2000_classic.*$", log_text), "Native track registry did not list the Workshop event"
-    assert re.search(r"(?i)tracks", log_text), "The native available-track command did not run"
-    assert not re.search(r"(?i)(?:not found|failed to load).*crazy_2000_classic", log_text)
+    """Require the exact event in the latest native Tracks registry response.
+
+    The caller must supply a fresh capture. This validates response syntax;
+    it cannot establish when arbitrary supplied text was produced.
+    """
+    assert len(log_text) <= 1024 * 1024, "Native track response exceeds 1 MiB"
+    assert not re.search(r"(?i)\b(?:unknown command|error|failed to load|not found)\b", log_text), (
+        "Native track capture contains a command or load error")
+    header = None
+    for match in re.finditer(r"(?m)^[ \t]*Tracks:[ \t]*\r?(?:\n|$)", log_text):
+        header = match
+    assert header is not None, "Native Tracks: registry section is missing"
+    found = False
+    row_count = 0
+    for line in log_text[header.end():].splitlines():
+        row = re.fullmatch(r"[ \t]+([A-Za-z0-9_-]+)[ \t]+\(([^()\r\n]+)\)[ \t]*", line)
+        if row is None:
+            break
+        assert row_count < 1024, "Native Tracks: registry exceeds 1024 rows"
+        row_count += 1
+        if row.group(1) == TRACK and row.group(2).strip():
+            found = True
+    assert found, "Native track registry did not list the exact Workshop event"
+
+
+def wait_for_workshop_loaded(fetch_output, timeout_seconds=90, *,
+                             clock=time.monotonic, sleep=time.sleep):
+    """Poll complete fresh captures, giving each fetch its remaining time budget."""
+    deadline = clock() + timeout_seconds
+    last_error = "No native track registry response received"
+    while (remaining := deadline - clock()) > 0:
+        output = fetch_output(remaining)
+        try:
+            assert_workshop_loaded(output)
+        except AssertionError as error:
+            last_error = str(error)
+        else:
+            if clock() <= deadline:
+                return output
+            last_error = "Native track registry response arrived after the deadline"
+        remaining = deadline - clock()
+        if remaining > 0:
+            sleep(min(1, remaining))
+    raise AssertionError("Timed out waiting for native Workshop registry: " + last_error)
 
 
 def main():
     """Validate fresh native console output captured by a smoke run."""
     parser = argparse.ArgumentParser()
     parser.add_argument("log", type=Path)
-    assert_workshop_loaded(parser.parse_args().log.read_text(errors="replace"))
+    parser.add_argument("--server")
+    parser.add_argument("--timeout", type=float, default=90)
+    args = parser.parse_args()
+    if args.server:
+        def fetch(remaining):
+            result = subprocess.run(
+                [sys.executable, str(Path(__file__).resolve().parents[2] / "alphagsm"),
+                 args.server, "logs", "-n", "2000"],
+                capture_output=True, text=True, check=True, timeout=min(15, remaining),
+            )
+            return result.stdout
+        output = wait_for_workshop_loaded(fetch, timeout_seconds=args.timeout)
+        args.log.write_text(output, encoding="utf-8")
+    else:
+        assert_workshop_loaded(args.log.read_text(errors="replace"))
 
 
 if __name__ == "__main__":

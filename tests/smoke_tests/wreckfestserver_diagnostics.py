@@ -103,9 +103,14 @@ def _native_details(install):
         for steam_root in (prefix / "Program Files (x86)/Steam", prefix / "Program Files/Steam"):
             candidates.extend(steam_root / "logs" / name for name in ("connection_log.txt", "console_log.txt"))
     for candidate in candidates:
-        if candidate.is_file() and candidate.resolve().is_relative_to(install):
-            details["native_logs"].append({"path": str(candidate.relative_to(install)),
-                                           "network_tail": safe_network_tail(_bounded_text(candidate))})
+        try:
+            if candidate.is_file() and candidate.resolve().is_relative_to(install):
+                details["native_logs"].append({"path": str(candidate.relative_to(install)),
+                                               "network_tail": safe_network_tail(_bounded_text(candidate))})
+        except OSError:
+            # A container-owned prefix may be unreadable from the manager.
+            # Continue so the independent in-container observation still runs.
+            continue
     return details
 
 

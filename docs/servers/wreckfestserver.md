@@ -6,23 +6,26 @@ Status: `PASSED` on 2026-05-31.
 
 ## Workshop validation checkpoint
 
-Native Workshop support remains under validation as of 13 October 2026.
-Anonymous consumer-app `228380` downloads succeeded, and the actual engine's
-`tracks` command registered the public
+Native Workshop support remains under validation as of 14 October 2026.
+Anonymous consumer-app `228380` downloads succeeded. Diagnostic native console
+inspection listed events from the public
 [Crazy 2025 track pack](https://steamcommunity.com/sharedfiles/filedetails/?id=3428792631),
 including `crazy_2000_classic`, its reversed event, and its deathloop event.
 The adapter preserves operator mod folders and config entries while managing
 its own native `mods=` entries.
 
-The complete modded process lifecycle still fails at genuine Steam A2S
-query/info readiness, including with query ports in the vendor's LAN discovery
-range. AlphaGSM now checks that native query port; a listening Docker TCP proxy
-cannot establish server health. A diagnostic native Windows console probe
-proved track registration, but no console query fallback is exposed yet.
-Linux process launch now uses Xvfb consistently with Docker; owned Wine-child
-shutdown remains part of final verification. Workshop Docker checks are
-pending the test host's SSD-backed Docker endpoint. The historical baseline
-status above does not establish Workshop lifecycle support.
+On Linux, `query` and `info` retain the existing TCP connectivity check on the
+game port. They do not report track or player information. Current remote
+diagnostics receive no A2S response over IPv4 or IPv6; the native server uses
+THQN networking. The baseline additionally requires a fresh native
+`Server connected.` log, so an open Docker proxy alone cannot pass startup.
+Replacement process and Docker validation is pending.
+
+Workshop checks still require fresh native track-registry output beyond the
+baseline connectivity check. Automated capture and the complete modded lifecycle
+remain unverified; download, configuration and old console snapshots do not
+satisfy that requirement. Linux process launch uses Xvfb consistently with
+Docker. Shutdown checks include owned Wine processes and TCP/UDP port closure.
 
 ## Requirements
 

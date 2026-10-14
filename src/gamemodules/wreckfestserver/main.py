@@ -285,9 +285,15 @@ restart.__doc__ = "Restart the Wreckfest server."
 
 
 def get_query_address(server):
-    """Require a real Steam query response from the native query port."""
+    """Return Linux TCP connectivity or the historical native-host A2S endpoint.
+
+    The Linux TCP surface provides latency only. Current THQN query-port
+    traffic has not been established as Valve A2S or a metadata protocol.
+    """
 
     host = runtime_module.resolve_query_host(server)
+    if IS_LINUX:
+        return (host, int(server.data["port"]), "tcp")
     return (host, int(server.data["queryport"]), "a2s")
 
 

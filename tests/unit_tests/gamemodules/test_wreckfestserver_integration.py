@@ -1,6 +1,7 @@
 """Wreckfest CI backend selection and failed-start cleanup regressions."""
 
 import importlib.util
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -136,3 +137,102 @@ def test_smoke_runtime_selector_respects_ci_without_starting_servers(settings, e
     result = subprocess.run(["bash", "-c", selector + '\nprintf "%s" "$RUNTIME_BACKEND"'],
                             env=environment, text=True, capture_output=True, check=True)
     assert result.stdout == expected
+
+
+@pytest.mark.parametrize("backend", ["process", "docker"])
+@pytest.mark.parametrize("fabricated_metadata", [False, True])
+def test_baseline_requires_fresh_native_startup_and_limited_tcp_info(
+        integration, tmp_path, monkeypatch, backend, fabricated_metadata):
+    for key in ("ALPHAGSM_WRECKFESTSERVER_TEST_INSTALL", "ALPHAGSM_WRECKFESTSERVER_TEST_CACHE"):
+        monkeypatch.delenv(key, raising=False)
+    for name in ("require_integration_opt_in", "require_steamcmd_opt_in", "require_proton"):
+        monkeypatch.setattr(integration, name, lambda: None)
+    for name in ("require_command", "require_command_for_runtime", "write_config"):
+        monkeypatch.setattr(integration, name, lambda *args, **kwargs: None)
+    monkeypatch.setattr(integration, "effective_runtime_backend", lambda value, **_: value)
+    monkeypatch.setattr(integration, "alphagsm_env", lambda _: {})
+    monkeypatch.setattr(integration, "resolve_runtime_image", lambda *_: "branch-image")
+    ports = iter((33540, 27016, 27015))
+    monkeypatch.setattr(integration, "pick_free_udp_port", lambda: next(ports))
+    result = SimpleNamespace(returncode=0, stdout="", stderr="")
+    native_log = tmp_path / "server/log.txt"
+    events = []
+    stopped = False
+
+    def setup(*args, **_kwargs):
+        native_log.parent.mkdir()
+        native_log.write_text("Server connected. stale run")
+        return result, args[2]
+
+    def command(_env, _server, *arguments):
+        if arguments == ("start",):
+            assert not native_log.exists(), "Stale native readiness must be removed before launch"
+            native_log.write_text("12:34:56 Server connected.")
+            events.append("start")
+        if arguments == ("status",):
+            return SimpleNamespace(stdout="Server isn't running" if stopped else "Server is running")
+        if arguments == ("query",):
+            return SimpleNamespace(stdout="Server port is open (TCP ping on port 33540 — 0.1 ms).")
+        if arguments == ("info",):
+            return SimpleNamespace(stdout="TCP ping on port 33540. No further details available.")
+        if arguments == ("info", "--json"):
+            payload = {"protocol": "tcp", "port": 33540, "latency_ms": 0.1}
+            if fabricated_metadata:
+                payload["name"] = "configured name is not engine metadata"
+            return SimpleNamespace(stdout=json.dumps(payload))
+        return result
+
+    def native_ready(path, markers, *_args, **_kwargs):
+        assert events == ["start"]
+        assert path == native_log and markers == ["Server connected."]
+        assert "stale" not in path.read_text()
+        events.append("native-ready")
+        return path.read_text()
+
+    def tcp_ready(_env, _server, protocol, _timeout, *, expected_port):
+        assert events == ["start", "native-ready"]
+        assert (protocol, expected_port) == ("tcp", 33540)
+        events.append("tcp-ready")
+
+    def cleanup(*_args):
+        nonlocal stopped
+        stopped = True
+        events.append("stop")
+
+    monkeypatch.setattr(integration, "run_setup_with_port_retry", setup)
+    monkeypatch.setattr(integration, "run_and_assert_ok", command)
+    monkeypatch.setattr(integration, "wait_for_log_marker", native_ready)
+    monkeypatch.setattr(integration, "wait_for_info_protocol", tcp_ready)
+    monkeypatch.setattr(integration, "_cleanup_wreckfest", cleanup)
+    monkeypatch.setattr(integration, "_diagnose_wreckfest",
+                        lambda *_args, **_kwargs: events.append("diagnostic"))
+    monkeypatch.setattr(integration, "wait_for_tcp_closed",
+                        lambda host, port, timeout: events.append(("tcp-closed", port)))
+    monkeypatch.setattr(integration, "wait_for_generic_udp_closed",
+                        lambda host, port, timeout: events.append(("udp-closed", port)))
+    if fabricated_metadata:
+        with pytest.raises(AssertionError):
+            integration._run_wreckfestserver_lifecycle(tmp_path, runtime_backend=backend)
+        assert events[-2:] == ["diagnostic", "stop"]
+    else:
+        integration._run_wreckfestserver_lifecycle(tmp_path, runtime_backend=backend)
+        assert events == ["start", "native-ready", "tcp-ready", "stop",
+                          ("tcp-closed", 33540), ("udp-closed", 33540),
+                          ("udp-closed", 27016), ("udp-closed", 27015)]
+
+
+def test_smoke_checks_native_startup_before_limited_tcp_and_complete_stop():
+    path = Path(__file__).resolve().parents[2] / "smoke_tests/run_wreckfestserver.sh"
+    source = path.read_text(encoding="utf-8")
+    rotate = source.index('rm -f -- "$INSTALL_DIR/log.txt"')
+    start = source.index('run_alphagsm "$SERVER_NAME" start', rotate)
+    native_ready = source.index('wait_for_glob_ready "$INSTALL_DIR/log.txt"', start)
+    tcp_ready = source.index('wait_for_info_protocol "$SERVER_NAME" "tcp"', native_ready)
+    stop = source.index('run_alphagsm "$SERVER_NAME" stop', tcp_ready)
+    assert rotate < start < native_ready < tcp_ready < stop
+    assert '"Server connected\\."' in source
+    assert 'No further details available.' in source
+    assert 'set(payload) == {"protocol", "port", "latency_ms"}' in source
+    assert 'wait_for_owned_listeners_closed' in source[stop:]
+    assert 'isn\'t running' in source[stop:]
+    assert 'diagnose_wreckfest quick' not in source

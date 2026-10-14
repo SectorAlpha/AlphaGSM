@@ -26,12 +26,13 @@ from conftest import (
     run_and_assert_ok,
     run_setup_with_port_retry,
     wait_for_info_protocol,
-    wait_for_runtime_log_marker,
+    wait_for_log_marker,
     wait_for_generic_udp_closed,
+    wait_for_tcp_closed,
     write_config,
 )
 from gamemodules.wreckfestserver import steam_app_id
-from tests.smoke_tests.wreckfestserver_workshop import FIXTURE_ID, TRACK, assert_workshop_loaded
+from tests.smoke_tests.wreckfestserver_workshop import FIXTURE_ID, TRACK, wait_for_workshop_loaded
 from tests.smoke_tests.wreckfestserver_diagnostics import collect_remote_diagnostics
 
 pytestmark = [pytest.mark.integration]
@@ -99,8 +100,6 @@ def _run_wreckfestserver_lifecycle(tmp_path, *, runtime_backend, workshop_fixtur
         install_dir = Path(reusable_install).expanduser().resolve()
         assert install_dir.is_relative_to(work_root), "Reusable test install must be owned by this work root"
         assert (install_dir / "Wreckfest_x64.exe").is_file()
-        # This opt-in path is exclusively for this test's stopped disposable install.
-        (install_dir / "log.txt").unlink(missing_ok=True)
     config_path = tmp_path / "alphagsm.conf"
     server_name = ("itwreck" + tmp_path.name.replace("_", "")[-8:])[:15]
 
@@ -158,44 +157,59 @@ def _run_wreckfestserver_lifecycle(tmp_path, *, runtime_backend, workshop_fixtur
             run_and_assert_ok(env, server_name, "mod", "add", "workshop", FIXTURE_ID)
             run_and_assert_ok(env, server_name, "mod", "apply")
             run_and_assert_ok(env, server_name, "set", "track", TRACK)
+        # This install is disposable and stopped; only its native log is rotated.
+        native_log = install_dir / "log.txt"
+        assert not native_log.is_symlink(), "Native test log must not be a symlink"
+        assert native_log.resolve().parent == install_dir.resolve()
+        native_log.unlink(missing_ok=True)
         run_and_assert_ok(env, server_name, "start")
-        _diagnose_wreckfest(env, server_name, queryport, install_dir, backend, quick=True, gameport=port)
-        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
+        wait_for_log_marker(native_log, ["Server connected."], START_TIMEOUT,
+                            env=env, server_name=server_name)
+        # TCP proves connectivity only; the fresh engine log establishes startup.
+        wait_for_info_protocol(env, server_name, "tcp", START_TIMEOUT, expected_port=port)
 
-        run_and_assert_ok(env, server_name, "status")
+        status = run_and_assert_ok(env, server_name, "status")
+        assert "Server is running" in status.stdout
         if workshop_fixture:
             run_and_assert_ok(env, server_name, "send", "tracks")
-            evidence = wait_for_runtime_log_marker(env, server_name, [TRACK], 90)
-            assert_workshop_loaded(evidence)
+            evidence = wait_for_workshop_loaded(
+                lambda remaining: run_and_assert_ok(
+                    env, server_name, "logs", "-n", "2000", timeout=min(15, remaining)).stdout,
+                timeout_seconds=90,
+            )
             if os.environ.get("ALPHAGSM_WORK_DIR"):
                 target = Path(os.environ["ALPHAGSM_WORK_DIR"]) / "evidence"
                 target.mkdir(exist_ok=True)
                 (target / f"wreckfestserver-{backend}.log").write_text(evidence)
 
         query_result = run_and_assert_ok(env, server_name, "query")
-        assert "Steam" in query_result.stdout or "A2S" in query_result.stdout, (
+        assert f"TCP ping on port {port}" in query_result.stdout, (
             f"Unexpected query output: {query_result.stdout!r}"
         )
 
         info_result = run_and_assert_ok(env, server_name, "info")
-        assert "AlphaGSM Wreckfest IT" in info_result.stdout, (
+        assert f"TCP ping on port {port}" in info_result.stdout, (
             f"Unexpected info output: {info_result.stdout!r}"
         )
+        assert "No further details available." in info_result.stdout
 
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         info_data = json.loads(info_json_result.stdout.strip())
-        assert info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {info_data!r}"
+        assert info_data["protocol"] == "tcp", (
+            f"Expected explicit TCP connectivity in info JSON: {info_data!r}"
         )
-        assert info_data["port"] == queryport, (
-            f"Expected reported info port {queryport}: {info_data!r}"
+        assert info_data["port"] == port, (
+            f"Expected reported info port {port}: {info_data!r}"
         )
+        assert set(info_data) == {"protocol", "port", "latency_ms"}, info_data
+        assert isinstance(info_data["latency_ms"], (int, float)) and info_data["latency_ms"] >= 0
     except BaseException:
         _diagnose_wreckfest(env, server_name, queryport, install_dir, backend, gameport=port)
         raise
     finally:
         _cleanup_wreckfest(env, server_name, workshop_fixture, sys.exc_info()[1])
 
+    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
     for claimed_port in (port, queryport, steamport):
         wait_for_generic_udp_closed("127.0.0.1", claimed_port, STOP_TIMEOUT)
     status = run_and_assert_ok(env, server_name, "status")

@@ -49,6 +49,39 @@ run_alphagsm() {
 # shellcheck source=smoke_tests/steamcmd_helpers.sh
 source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
+wait_for_owned_listeners_closed() {
+  "$PYTHON_BIN" - "$STOP_TIMEOUT_SECONDS" "$PORT" "$QUERY_PORT" "$STEAM_PORT" <<'PY'
+import socket
+import sys
+import time
+
+deadline = time.monotonic() + int(sys.argv[1])
+game_port, query_port, steam_port = map(int, sys.argv[2:])
+pending = {("tcp", game_port), ("udp", game_port), ("udp", query_port), ("udp", steam_port)}
+while pending and time.monotonic() < deadline:
+    for protocol, port in tuple(pending):
+        try:
+            if protocol == "tcp":
+                with socket.create_connection(("127.0.0.1", port), timeout=1):
+                    pass
+            else:
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                    sock.settimeout(1)
+                    sock.connect(("127.0.0.1", port))
+                    sock.send(b"\x00")
+                    try:
+                        sock.recv(1)
+                    except socket.timeout:
+                        pass  # Silence does not prove a UDP listener has closed.
+        except ConnectionRefusedError:
+            pending.remove((protocol, port))
+    if pending:
+        time.sleep(1)
+if pending:
+    raise SystemExit(f"Owned Wreckfest listeners still open after stop: {sorted(pending)}")
+PY
+}
+
 diagnose_wreckfest() {
   local container=""
   local -a observation_args=("$QUERY_PORT" "$INSTALL_DIR" --game-port "$PORT")
@@ -159,22 +192,45 @@ if [[ "${ALPHAGSM_RUN_WORKSHOP:-0}" == 1 ]]; then
   run_alphagsm "$SERVER_NAME" set track crazy_2000_classic
 fi
 SERVER_STARTED=1
+[[ ! -L "$INSTALL_DIR/log.txt" ]]
+rm -f -- "$INSTALL_DIR/log.txt"
 run_alphagsm "$SERVER_NAME" start
-diagnose_wreckfest quick || true
-wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+wait_for_glob_ready "$INSTALL_DIR/log.txt" "$START_TIMEOUT_SECONDS" "Server connected\."
+# This explicit TCP surface provides connectivity and latency only.
+wait_for_info_protocol "$SERVER_NAME" "tcp" "$START_TIMEOUT_SECONDS" "$PORT"
 if [[ "$WORKSHOP_CONFIGURED" == 1 ]]; then
   run_alphagsm "$SERVER_NAME" send tracks
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
-    "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" logs -n 2000 > "$WORK_DIR/workshop-engine.log"
-  "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/wreckfestserver_workshop.py" "$WORK_DIR/workshop-engine.log"
+    "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/wreckfestserver_workshop.py" \
+    "$WORK_DIR/workshop-engine.log" --server "$SERVER_NAME" --timeout 90
 fi
-run_alphagsm "$SERVER_NAME" status
-run_alphagsm "$SERVER_NAME" query
-run_alphagsm "$SERVER_NAME" info
-run_alphagsm "$SERVER_NAME" info --json
+STATUS_OUTPUT="$(run_alphagsm "$SERVER_NAME" status)"
+printf '%s\n' "$STATUS_OUTPUT"
+[[ "$STATUS_OUTPUT" == *"Server is running"* ]]
+QUERY_OUTPUT="$(run_alphagsm "$SERVER_NAME" query)"
+printf '%s\n' "$QUERY_OUTPUT"
+[[ "$QUERY_OUTPUT" == *"TCP ping on port $PORT"* ]]
+INFO_OUTPUT="$(run_alphagsm "$SERVER_NAME" info)"
+printf '%s\n' "$INFO_OUTPUT"
+[[ "$INFO_OUTPUT" == *"TCP ping on port $PORT"* ]]
+[[ "$INFO_OUTPUT" == *"No further details available."* ]]
+INFO_JSON="$(ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
+  "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" info --json)"
+printf '%s\n' "$INFO_JSON"
+"$PYTHON_BIN" -c '
+import json, sys
+payload = json.load(sys.stdin)
+assert payload["protocol"] == "tcp", payload
+assert payload["port"] == int(sys.argv[1]), payload
+assert set(payload) == {"protocol", "port", "latency_ms"}, payload
+assert isinstance(payload["latency_ms"], (int, float)) and payload["latency_ms"] >= 0, payload
+' "$PORT" <<< "$INFO_JSON"
 run_alphagsm "$SERVER_NAME" stop
 SERVER_STARTED=0
-run_alphagsm "$SERVER_NAME" status
+wait_for_owned_listeners_closed
+STATUS_OUTPUT="$(run_alphagsm "$SERVER_NAME" status)"
+printf '%s\n' "$STATUS_OUTPUT"
+[[ "$STATUS_OUTPUT" == *"isn't running"* ]]
 if [[ "$WORKSHOP_CONFIGURED" == 1 ]]; then
   run_alphagsm "$SERVER_NAME" mod cleanup
   WORKSHOP_CONFIGURED=0

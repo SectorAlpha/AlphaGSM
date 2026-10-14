@@ -398,6 +398,17 @@ Curated server-side mod support now has a shared core under
   [the Workshop support matrix](docs/WORKSHOP_SUPPORT.md). Require fresh engine
   mount, map, registry or mod execution evidence in addition to query/info and
   shutdown; configured desired state is not engine load proof.
+- Wreckfest's Linux baseline uses its existing game-port TCP connectivity
+  surface plus a fresh native `Server connected.` log; it provides no map or
+  population metadata. CI run `38537399526` found no A2S response over IPv4,
+  IPv6 or mapped IPv4 even inside the container with `IPV6_V6ONLY=false`.
+  Static inspection of the shipped THQN `steam_api64.dll` identifies
+  `SteamNetworkingSockets_LibV12::CreateListenSocketIP` at the configured query
+  port. Neither that socket nor compiled-in RakNet support proves a metadata
+  query API. Keep those probes diagnostic until a native response is verified;
+  do not substitute a transport handshake for game state. Workshop acceptance
+  additionally requires an exact registered event row under the latest native
+  `Tracks:` response, captured from the current disposable server lifecycle.
 - Current Squad uses `squad_rcon` for health and info: authenticated native
   `ShowServerInfo` and `ShowCurrentMap` exchanges share one overall deadline.
   The parser exposes only public metadata, validates population bounds and

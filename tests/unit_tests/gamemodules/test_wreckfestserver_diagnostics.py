@@ -80,6 +80,20 @@ def test_native_log_tail_keeps_network_evidence_and_omits_secrets():
     assert diagnostics.safe_network_tail(source) == "bind query port 27016\nIPv6 socket ready"
 
 
+def test_unreadable_wine_log_does_not_abort_native_observations(monkeypatch, tmp_path):
+    (tmp_path / "log.txt").write_text("Server connected.\n", encoding="utf-8")
+    original = diagnostics.Path.is_file
+
+    def inaccessible_candidate(path):
+        if path.name == "connection_log.txt":
+            raise PermissionError("Wine prefix belongs to container user")
+        return original(path)
+
+    monkeypatch.setattr(diagnostics.Path, "is_file", inaccessible_candidate)
+    result = diagnostics._native_details(tmp_path)
+    assert result["native_logs"] == [{"path": "log.txt", "network_tail": "Server connected."}]
+
+
 def test_raknet_observer_correlates_nonce_and_bounds_disposable_payload(monkeypatch):
     nonce = b"N" * 8
     payload = b"x" * 900

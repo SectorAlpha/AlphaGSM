@@ -127,13 +127,19 @@ def test_install_ensures_parent_appid_and_config(tmp_path):
     assert (tmp_path / "server_config.cfg").is_file()
 
 
-def test_get_query_address_uses_queryport():
+@pytest.mark.parametrize("is_linux,expected_port,protocol", [
+    (True, 33540, "tcp"),
+    (False, 27016, "a2s"),
+])
+def test_query_and_info_preserve_platform_endpoint(is_linux, expected_port, protocol):
     server = DummyServer()
     server.data["port"] = "33540"
     server.data["queryport"] = "27016"
-    with patch.object(mod.runtime_module, "resolve_query_host", return_value="127.0.0.1"):
-        assert mod.get_query_address(server) == ("127.0.0.1", 27016, "a2s")
-        assert mod.get_info_address(server) == ("127.0.0.1", 27016, "a2s")
+    with patch.object(mod, "IS_LINUX", is_linux), patch.object(
+            mod.runtime_module, "resolve_query_host", return_value="192.0.2.8"):
+        expected = ("192.0.2.8", expected_port, protocol)
+        assert mod.get_query_address(server) == expected
+        assert mod.get_info_address(server) == expected
 
 
 def test_get_start_command_wraps_windows_payload_on_linux(tmp_path):
