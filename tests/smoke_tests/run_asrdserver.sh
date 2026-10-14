@@ -93,8 +93,8 @@ with open(sys.argv[1]) as handle:
 PYIDS
 )"
 fi
-run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
+run_alphagsm "$SERVER_NAME" start
 wait_for_info_protocol "$SERVER_NAME" a2s "$START_TIMEOUT_SECONDS" "$PORT"
 if [[ -n "${WORKSHOP_IDS:-}" ]]; then
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src:$REPO_ROOT" \

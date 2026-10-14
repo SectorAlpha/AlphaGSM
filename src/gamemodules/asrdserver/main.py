@@ -125,9 +125,12 @@ get_info_address = MODULE.get_info_address
 _PORTS = ({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'},
           {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'})
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-    port_definitions=_PORTS, stdin_open=True,
+    port_definitions=_PORTS, stdin_open=True, stop_mode='docker-stop',
 )
+# Wine requires terminal-backed stdin for the native Win32 console input APIs.
+# Keep docker-stop: exec-console would replace that terminal input with a FIFO.
 get_container_spec = gamemodule_common.make_proton_container_spec_builder(
     get_start_command=get_start_command, port_definitions=_PORTS, stdin_open=True,
+    tty=True, stop_mode='docker-stop',
 )
 command_functions.update({'update': update, 'restart': restart})

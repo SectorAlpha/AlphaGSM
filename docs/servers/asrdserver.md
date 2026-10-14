@@ -1,8 +1,9 @@
 # Alien Swarm: Reactive Drop
 
 The `asrdserver` module installs the anonymous Windows dedicated-server files and
-runs them through Wine on Linux. Process and Docker lifecycle validation remain
-pending a successful runtime rerun.
+runs them through Wine on Linux. The baseline process lifecycle passed in CI on
+2026-10-14. Docker validation is pending a rerun of the native console fix;
+Workshop load validation remains opt-in and unverified.
 
 ## Requirements
 
@@ -10,6 +11,12 @@ pending a successful runtime rerun.
 - Docker runtime: the shared `wine-proton` image and a working Docker endpoint;
   host Wine and screen are not prerequisites for this runtime.
 - Enough space for the game depot, a private Wine prefix and Workshop content.
+
+The ASRD Docker spec keeps stdin open with a terminal so Wine can create the
+native Win32 console input handle. Pipe-backed input previously caused an early
+`CTextConsoleWin32::GetLine` exit. The module uses Docker stop rather than the
+console FIFO path; its process launcher is unchanged. This follows
+[Wine's terminal-to-console initialization](https://github.com/wine-mirror/wine/blob/wine-9.0/dlls/ntdll/unix/env.c#L1298).
 
 ```bash
 alphagsm myasrd create asrdserver

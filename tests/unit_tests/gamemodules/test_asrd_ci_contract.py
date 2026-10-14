@@ -57,7 +57,8 @@ def test_lifecycle_writes_one_steamcmd_section_and_keeps_override(tmp_path, monk
 
 
 @pytest.mark.parametrize('backend', ['docker', 'auto', 'process', None])
-def test_smoke_runs_cli_baseline_with_only_selected_runtime_prerequisites(tmp_path, backend):
+@pytest.mark.parametrize('fail_start', [False, True])
+def test_smoke_runs_cli_baseline_with_only_selected_runtime_prerequisites(tmp_path, backend, fail_start):
     """Replay the actual runner with fake commands; no Wine/Docker or sockets are used."""
     calls = tmp_path / 'commands.jsonl'
     required = tmp_path / 'requirements.txt'
@@ -81,6 +82,8 @@ if args and args[0].endswith('/alphagsm'):
     pathlib.Path(os.environ['SNAPSHOT']).write_text(pathlib.Path(os.environ['ALPHAGSM_CONFIG_LOCATION']).read_text())
     with open(os.environ['CALLS'], 'a') as output:
         output.write(json.dumps(args[1:]) + '\\n')
+    if args[2:] == ['start'] and os.environ.get('ASRD_FAIL_START') == '1':
+        raise SystemExit(42)
     if args[2:] == ['info', '--json']:
         print(json.dumps({'protocol': 'a2s', 'port': 27015, 'map': 'lobby'}))
     elif args[2:] == ['query']:
@@ -100,7 +103,8 @@ else:
     env = dict(os.environ, BASH_ENV=str(bootstrap), PYTHON_BIN=str(fake_python),
                REQUIRED=str(required), CALLS=str(calls), SNAPSHOT=str(snapshot), SERVER_NAME='itasrdserver',
                ALPHAGSM_TEST_RUNTIME_BACKEND=backend or 'auto', ALPHAGSM_WORK_DIR=str(tmp_path / 'work'),
-               ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON='branch-local-wine:ci-regression')
+               ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON='branch-local-wine:ci-regression',
+               ASRD_FAIL_START='1' if fail_start else '0')
     if backend is None:
         env.pop('ALPHAGSM_TEST_RUNTIME_BACKEND')
     for key in list(env):
@@ -108,7 +112,7 @@ else:
             env.pop(key)
     result = subprocess.run(['bash', str(ROOT / 'tests/smoke_tests/run_asrdserver.sh')],
                             env=env, capture_output=True, text=True, check=False, timeout=15)
-    assert result.returncode == 0, result.stderr or result.stdout
+    assert result.returncode == (42 if fail_start else 0), result.stderr or result.stdout
     prerequisites = required.read_text().splitlines()
     docker = backend != 'process'
     assert ('docker' in prerequisites) == docker
@@ -122,6 +126,46 @@ else:
     commands = [json.loads(line) for line in calls.read_text().splitlines()]
     actions = [command[1] if len(command) > 1 else command[0] for command in commands]
     assert actions.index('create') < actions.index('setup') < actions.index('start')
+    if fail_start:
+        assert actions.index('start') < actions.index('stop')
+        assert 'query' not in actions and 'shutdown-probe' not in actions
+        return
     assert actions.index('start') < actions.index('info') < actions.index('query') < actions.index('stop')
     assert commands.count(['itasrdserver', 'info', '--json']) >= 2
     assert actions.index('stop') < actions.index('shutdown-probe')
+
+
+def test_failed_start_still_attempts_stop_and_preserves_original_error(tmp_path, monkeypatch):
+    """A container can fail after creation, so start itself needs the cleanup guard."""
+    from types import SimpleNamespace
+    from tests.integration_tests import conftest as helpers
+    monkeypatch.setitem(sys.modules, 'conftest', helpers)
+    spec = importlib.util.spec_from_file_location('_asrd_failed_start', ROOT / 'tests/integration_tests/test_asrdserver.py')
+    integration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(integration)
+    for name in ('require_integration_opt_in', 'require_steamcmd_opt_in', 'require_command_for_runtime'):
+        monkeypatch.setattr(integration, name, lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(integration, 'pick_free_tcp_port_group', lambda _count: 27015)
+    monkeypatch.setattr(integration, 'resolve_wine_proton_runtime_image', lambda: 'fixture-image')
+    failure = RuntimeError('native console failed during start')
+    result = SimpleNamespace(returncode=0, stdout='', stderr='')
+    stopped = []
+
+    def run(_env, name, action, *_args, **_kwargs):
+        if action == 'setup':
+            install = tmp_path / 'server'
+            install.mkdir()
+            (install / 'srcds_console.exe').write_bytes(b'fixture engine')
+            config = tmp_path / 'home/conf'
+            config.mkdir()
+            (config / f'{name}.json').write_text(json.dumps({'wineprefix': str(install / '.wine')}))
+        if action == 'start':
+            raise failure
+        return result
+
+    monkeypatch.setattr(integration, 'run_and_assert_ok', run)
+    monkeypatch.setattr(integration, 'capture_alphagsm_stop',
+                        lambda *args: stopped.append(args[2]) or result)
+    with pytest.raises(RuntimeError) as raised:
+        integration.test_asrdserver_lifecycle(tmp_path, runtime_backend='docker')
+    assert raised.value is failure and stopped == [failure]

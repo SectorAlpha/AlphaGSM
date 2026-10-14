@@ -13,6 +13,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
 - Lifecycle tests: fix Reactive Drop's duplicate SteamCMD configuration and
   select Wine runtime prerequisites consistently. Wreckfest honors the CI
   backend and stops failed launches before removing managed content.
+- Reactive Drop: provide terminal-backed Docker input so the native Windows
+  console API can read events; attempt cleanup even when startup fails.
 - Workshop tests: keep unverified ARK and obsolete Squad 44 fixtures separate
   from stock lifecycles; retain real engine-load and A2S requirements.
 - Wine containers: preserve Windows command-processor lookup instead of

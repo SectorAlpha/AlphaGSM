@@ -67,8 +67,8 @@ def test_asrdserver_lifecycle(tmp_path, workshop_source=None, workshop_identifie
         workshop_config = install_dir / 'reactivedrop/cfg/workshop.cfg'
         with workshop_config.open('a') as handle:
             handle.write('// AlphaGSM test-owned operator comment\n')
-    run_and_assert_ok(env, name, 'start', allow_known_steamcmd_skip=False)
     try:
+        run_and_assert_ok(env, name, 'start', allow_known_steamcmd_skip=False)
         wait_for_info_protocol(env, name, 'a2s', START_TIMEOUT, expected_port=port)
         if items:
             _verify_workshop_execution(env, name, items, port, password)

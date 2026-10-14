@@ -136,3 +136,20 @@ def test_sync_writes_selected_config_and_rejects_escape_before_any_write(adapter
     server.data['server_cfg']='../../../outside.cfg'
     with pytest.raises(ServerError): module.sync_server_config(server)
     assert not (root/'outside.cfg').exists()
+
+
+def test_docker_native_console_has_real_terminal_without_fifo_or_process_rewrite(adapter, monkeypatch):
+    """Wine creates Win32 console input handles only for terminal-backed Unix stdin."""
+    module,server=adapter
+    server.module=module
+    server.data['module']='asrdserver'
+    monkeypatch.setattr(module.proton,'wrap_command',lambda command,**kwargs:['wine',*command])
+    process_command,_=module.get_start_command(server)
+    requirements=module.get_runtime_requirements(server)
+    spec=module.runtime_module.get_container_spec(server)
+    assert requirements['stop_mode']=='docker-stop' and requirements['stdin_open'] is True
+    assert spec['stop_mode']=='docker-stop' and spec['stdin_open'] is True and spec['tty'] is True
+    native=module.proton.unwrap_runtime_command(process_command)
+    assert spec['command']==native
+    assert module.runtime_module.container_launch_command(spec)==native
+    assert spec['env']['ALPHAGSM_WINEPREFIX']=='/srv/server/.wine'
