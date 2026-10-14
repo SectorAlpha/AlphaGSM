@@ -8,6 +8,24 @@ ALPHAGSM_SCRIPT="$REPO_ROOT/alphagsm"
 SERVER_NAME="${SERVER_NAME:-itasrdserver}"
 START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-600}"
 SERVER_STARTED=0
+RUNTIME_BACKEND="${ALPHAGSM_TEST_RUNTIME_BACKEND:-process}"
+if [[ -z "${ALPHAGSM_TEST_RUNTIME_BACKEND:-}" ]] && \
+   [[ -n "${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON:-}" || "${GITHUB_ACTIONS:-}" == true ]]; then
+  RUNTIME_BACKEND=docker
+fi
+# This module declares a Docker runtime, so an explicit auto selection resolves to Docker.
+if [[ "$RUNTIME_BACKEND" == auto ]]; then RUNTIME_BACKEND=docker; fi
+case "$RUNTIME_BACKEND" in
+  process|docker) ;;
+  *) echo "Unsupported ASRD smoke runtime: $RUNTIME_BACKEND" >&2; exit 1 ;;
+esac
+RUNTIME_IMAGE="${ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON:-ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest}"
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "Required command not found for $RUNTIME_BACKEND runtime: $1" >&2
+    exit 1
+  }
+}
 run_alphagsm() {
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
 }
@@ -16,8 +34,13 @@ cleanup() {
   if [[ "${SERVER_STARTED:-0}" == 1 ]]; then run_alphagsm "$SERVER_NAME" stop || true; fi
 }
 trap cleanup EXIT
-command -v screen >/dev/null
-command -v wine >/dev/null
+require_cmd "$PYTHON_BIN"
+if [[ "$RUNTIME_BACKEND" == docker ]]; then
+  require_cmd docker
+else
+  require_cmd screen
+  require_cmd wine
+fi
 SMOKE_WORK_ROOT="${ALPHAGSM_WORK_DIR:-${TMPDIR:-/tmp}}"
 mkdir -p "$SMOKE_WORK_ROOT"
 WORK_DIR="$(mktemp -d "$SMOKE_WORK_ROOT/asrdserver-smoke-XXXXXX")"
@@ -37,6 +60,13 @@ target_path = $HOME_DIR/downloads/downloads
 steamcmd_path = $WORK_DIR/steamcmd
 [server]
 datapath = $HOME_DIR/conf
+[runtime]
+backend = $RUNTIME_BACKEND
+[process]
+backend = screen
+[docker]
+backend = subprocess
+image_wine_proton = $RUNTIME_IMAGE
 [screen]
 screenlog_path = $HOME_DIR/logs
 sessiontag = AlphaGSM-ASRD-Smoke#

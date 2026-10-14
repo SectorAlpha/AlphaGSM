@@ -9,9 +9,18 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-900}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itsquad44server}"
 SERVER_STARTED=0
+WORKSHOP_ENABLED="${ALPHAGSM_RUN_SQUAD44_WORKSHOP:-0}"
 RUNTIME_BACKEND="${ALPHAGSM_TEST_RUNTIME_BACKEND:-docker}"
 ALPHAGSM_WORK_DIR="${ALPHAGSM_WORK_DIR:-$REPO_ROOT/build/workshop-validation/squad44server}"
 export ALPHAGSM_WORK_DIR
+if [[ "$WORKSHOP_ENABLED" == "1" ]]; then
+  : "${ALPHAGSM_SQUAD44_WORKSHOP_ID:?Select a current public Linux Workshop fixture ID or URL}"
+  : "${ALPHAGSM_SQUAD44_WORKSHOP_PLUGIN:?Set its native plugin name}"
+  if [[ "$ALPHAGSM_SQUAD44_WORKSHOP_ID" == *2909251852* ]]; then
+    echo "SquidBots uses an obsolete SDK; select a current Linux fixture" >&2
+    exit 1
+  fi
+fi
 
 run_alphagsm() {
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
@@ -63,19 +72,24 @@ if [[ -n "${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX:-}" ]]; then
   run_alphagsm "$SERVER_NAME" set image "$ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX"
 fi
 run_alphagsm "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
-run_alphagsm "$SERVER_NAME" mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=2909251852
-run_alphagsm "$SERVER_NAME" mod apply
+if [[ "$WORKSHOP_ENABLED" == "1" ]]; then
+  run_alphagsm "$SERVER_NAME" mod add workshop "$ALPHAGSM_SQUAD44_WORKSHOP_ID"
+  run_alphagsm "$SERVER_NAME" mod apply
+fi
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_info_protocol "$SERVER_NAME" a2s "$START_TIMEOUT_SECONDS"
-"$PYTHON_BIN" - "$INSTALL_DIR" <<'PY'
+if [[ "$WORKSHOP_ENABLED" == "1" ]]; then
+  "$PYTHON_BIN" - "$INSTALL_DIR" "$ALPHAGSM_SQUAD44_WORKSHOP_PLUGIN" <<'PY'
 from pathlib import Path
 import re
 import sys
 logs = Path(sys.argv[1]) / "PostScriptum/Saved/Logs"
-assert any(re.search(r"LogPakFile:.*Mounted Pak file.*SquidBots.*\.pak", path.read_text(errors="replace"))
+plugin = re.escape(sys.argv[2])
+assert any(re.search(r"LogPakFile:.*Mounted Pak file.*" + plugin + r".*\.pak", path.read_text(errors="replace"))
            for path in logs.glob("*.log")), "Fresh engine log did not prove native Workshop PAK mounting"
 PY
+fi
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info
@@ -99,5 +113,7 @@ while time.monotonic() < deadline:
 else:
     raise SystemExit("Native A2S query port still responds after stop")
 PY
-run_alphagsm "$SERVER_NAME" mod cleanup
+if [[ "$WORKSHOP_ENABLED" == "1" ]]; then
+  run_alphagsm "$SERVER_NAME" mod cleanup
+fi
 run_alphagsm "$SERVER_NAME" status

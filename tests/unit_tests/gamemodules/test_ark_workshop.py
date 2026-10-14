@@ -91,6 +91,7 @@ def test_publication_failure_rolls_back_ini_and_native_ownership(tmp_path, monke
     config = tmp_path / "ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini"
     assert "ActiveMods=111" in config.read_text()
     assert server.data["mods"]["ark_workshop_ids"] == ["111"]
+    assert server.data["mods"]["ark_workshop_launch_ids"] == ["111"]
 
 
 def test_launch_includes_native_mod_ids_even_when_first_boot_regenerates_ini(tmp_path, monkeypatch):

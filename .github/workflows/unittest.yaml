@@ -4,6 +4,12 @@ on:
   pull_request:
     branches: [master]
   workflow_dispatch:
+    inputs:
+      game_test_paths:
+        description: Optional space-separated integration/smoke test paths; empty runs the full fleet
+        required: false
+        default: ""
+        type: string
   workflow_call:
   merge_group:
   schedule:
@@ -144,6 +150,8 @@ jobs:
           git fetch --no-tags origin "${{ github.event.pull_request.base.sha }}"
       - id: classify
         name: Classify Linux game smoke and integration scope
+        env:
+          ALPHAGSM_CI_GAME_TEST_PATHS: ${{ github.event_name == 'workflow_dispatch' && inputs.game_test_paths || '' }}
         run: |
           python3 scripts/ci_game_test_routing.py \
             --event-name "$GITHUB_EVENT_NAME" \

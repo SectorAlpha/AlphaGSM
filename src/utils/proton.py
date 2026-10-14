@@ -444,6 +444,9 @@ def get_container_spec(
         native_command
         and not os.path.isabs(native_command[0])
         and not native_command[0].startswith("./")
+        # Wine resolves the command processor from its Windows system directory.
+        # Prefixing it with ./ instead requests a file in the game installation.
+        and native_command[0].casefold() != "cmd.exe"
     ):
         native_command[0] = "./" + native_command[0].lstrip("./")
     spec = {

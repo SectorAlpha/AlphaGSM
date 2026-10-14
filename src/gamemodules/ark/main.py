@@ -1,7 +1,6 @@
 """ARK: Survival Evolved dedicated server lifecycle helpers."""
 
 import os
-import shlex
 
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -11,12 +10,11 @@ from server.settable_keys import SettingSpec
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
 from server.modsupport.native_workshop import build_native_workshop_support
-from .workshop import configure_workshop, configured_workshop_ids
+from .workshop import configure_workshop, configured_workshop_ids, refresh_launch_workshop_ids
 
 steam_app_id = 376030
 steam_anonymous_login_possible = True
 workshop_app_id = 346110
-CONTAINER_STEAMCMD_DIR = "/opt/alphagsm-steamcmd"
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -153,6 +151,7 @@ def prestart(server):
     """Reconcile native descriptors, decompressed assets and ActiveMods before start."""
     if ensure_mod_state(server).get("autoapply", True):
         apply_configured_mods(server)
+    refresh_launch_workshop_ids(server)
 
 
 def get_start_command(server):
@@ -251,56 +250,19 @@ def _rcon_enabled(server, value):
 
 def get_runtime_requirements(server):
     """Return ARK's native Linux Docker runtime contract."""
-
-    mounts = None
-    if "dir" in server.data:
-        mounts = [
-            {
-                "source": server.data["dir"],
-                "target": "/srv/server",
-                "mode": "rw",
-            },
-            {
-                "source": os.path.normpath(steamcmd.STEAMCMD_DIR),
-                "target": CONTAINER_STEAMCMD_DIR,
-                "mode": "ro",
-            },
-        ]
-
     return runtime_module.build_runtime_requirements(
         server,
         family="steamcmd-linux",
         port_definitions=_PORT_DEFINITIONS,
-        mounts=mounts,
+        extra={"run_as_host_user": True, "container_home": "/home/alphagsm"},
     )
 
 
 def get_container_spec(server):
     """Run ARK in Docker as the mounted server-directory owner."""
 
-    requirements = get_runtime_requirements(server)
-    command, _cwd = get_start_command(server)
-    shell_command = " ".join(shlex.quote(part) for part in command)
-    return {
-        "working_dir": "/srv/server",
-        "stdin_open": True,
-        "tty": False,
-        "env": requirements.get("env", {}),
-        "mounts": requirements.get("mounts", []),
-        "ports": requirements.get("ports", []),
-        "command": [
-            "sh",
-            "-lc",
-            (
-                'id -u alphagsm >/dev/null 2>&1 || useradd -M -u 1000 -o alphagsm; '
-                'mkdir -p /home/alphagsm/.steam/sdk64; '
-                'chmod -R a+rwX /srv/server /home/alphagsm; '
-                'ln -sfn '
-                + CONTAINER_STEAMCMD_DIR
-                + '/linux64/steamclient.so /home/alphagsm/.steam/sdk64/steamclient.so; '
-                'export HOME=/home/alphagsm USER=alphagsm LOGNAME=alphagsm; '
-                "exec runuser -u alphagsm -- sh -lc "
-                + shlex.quote(shell_command)
-            ),
-        ],
-    }
+    return runtime_module.build_container_spec(
+        server, family="steamcmd-linux", get_start_command=get_start_command,
+        port_definitions=_PORT_DEFINITIONS, stdin_open=True,
+        extra={"run_as_host_user": True, "container_home": "/home/alphagsm"},
+    )

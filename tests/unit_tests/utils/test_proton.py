@@ -446,6 +446,19 @@ def test_get_container_spec_uses_unwrapped_command_and_runtime_env():
     ]
 
 
+@pytest.mark.parametrize("launcher", ["cmd.exe", "CMD.EXE"])
+def test_container_spec_preserves_windows_command_processor_lookup(launcher):
+    """A Windows system launcher must not become a nonexistent server-local file."""
+    server = DummyServer(data={"dir": "/srv/wreckfest"})
+    spec = proton_module.get_container_spec(
+        server,
+        lambda _server: (["env", "WINEDEBUG=-all", "/usr/bin/wine", launcher,
+                          "/c", "Wreckfest_x64.exe", "-s"], "/srv/wreckfest"),
+    )
+    assert spec["command"] == [launcher, "/c", "Wreckfest_x64.exe", "-s"]
+    assert spec["working_dir"] == "/srv/server"
+
+
 @pytest.mark.parametrize(
     "data, expected_ports",
     [

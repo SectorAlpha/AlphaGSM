@@ -26,9 +26,16 @@ status above does not establish Workshop lifecycle support.
 
 ## Requirements
 
-- Docker
-- AlphaGSM's `wine-proton` runtime image on Linux
+- Docker and AlphaGSM's `wine-proton` image for the Docker runtime on Linux
 - SteamCMD access for app `361580` with anonymous login
+
+For the process runtime on Linux, use Wine or Proton-GE and `xvfb-run`.
+The baseline integration case honors `ALPHAGSM_TEST_RUNTIME_BACKEND` from CI;
+the smoke runner accepts `process`, `docker`, or `auto` through the same
+variable. It defaults to Docker in GitHub Actions or when a runtime image is
+provided, and to process elsewhere; explicit `auto` uses Docker.
+Public Workshop checks additionally require
+`ALPHAGSM_RUN_WORKSHOP=1`; baseline checks do not install a Workshop fixture.
 
 ## Quick Start
 
@@ -104,7 +111,11 @@ AlphaGSM keeps these upstream config keys in sync inside `server_config.cfg`:
 
 - Module name: `wreckfestserver`
 - Main game port default: `33540`
-- Query/info contract on validated Linux lane: generic `tcp` on the managed main game port
+- Query/info requires an actual Steam A2S response on the configured query port.
+- Wine console input/output remains a validation limitation: the native
+  Windows console can register the Workshop track, while ordinary AlphaGSM
+  stdin/log capture has not yet supplied that native command response.
+  Neither a config echo nor an open TCP port satisfies the Workshop check.
 
 <!-- alphagsm-server-variables:start -->
 

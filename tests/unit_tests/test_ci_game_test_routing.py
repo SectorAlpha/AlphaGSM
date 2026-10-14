@@ -3285,6 +3285,39 @@ def test_pr_event_still_routes_docs_only_diff(monkeypatch):
     assert routing.build_outputs_for_event('pull_request', 'base', 'head')['game_test_mode'] == 'skip'
 
 
+def test_manual_run_can_select_existing_game_tests_without_expanding_the_fleet():
+    routing = load_routing_module()
+    paths = ['tests/integration_tests/test_asrdserver.py',
+             'tests/smoke_tests/run_asrdserver.sh']
+    outputs = routing.build_outputs_for_event(
+        'workflow_dispatch', repo_root=Path('.'), target_paths=paths)
+    assert outputs['game_test_mode'] == 'targeted'
+    integrations = json.loads(outputs['integration_standard_matrix'])['include']
+    assert len(integrations) == 2
+    assert {row['files'] for row in integrations} == {paths[0]}
+    assert {row['runtime_backend'] for row in integrations} == {'process', 'docker'}
+    smoke = json.loads(outputs['smoke_standard_matrix'])['include']
+    assert [row['scripts'] for row in smoke] == [paths[1]]
+    assert outputs['has_integration_heavy_tests'] == 'false'
+
+
+@pytest.mark.parametrize('event', ['pull_request', 'schedule', 'merge_group', 'workflow_call'])
+def test_targeted_manual_paths_cannot_reduce_required_non_manual_coverage(event):
+    routing = load_routing_module()
+    with pytest.raises(ValueError, match='manual'):
+        routing.build_outputs_for_event(
+            event, target_paths=['tests/integration_tests/test_asrdserver.py'])
+
+
+@pytest.mark.parametrize('path', ['src/server/runtime.py', '../tests/integration_tests/test_ark.py',
+                                 'tests/integration_tests/missing.py',
+                                 'tests/integration_tests/test_does_not_exist.py'])
+def test_manual_game_selection_rejects_non_game_or_missing_paths(path):
+    routing = load_routing_module()
+    with pytest.raises(ValueError, match='test path'):
+        routing.build_outputs_for_event('workflow_dispatch', repo_root=Path('.'), target_paths=[path])
+
+
 @pytest.mark.parametrize(
     "test_name",
     [

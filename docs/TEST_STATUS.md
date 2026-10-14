@@ -43,6 +43,14 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- CI run `38479351815` exposed ARK engine-file permission failures, Reactive
+  Drop duplicate SteamCMD configuration and host-Wine prerequisite failures,
+  Wreckfest's incorrect `./cmd.exe` launch and runtime selection, and Squad 44
+  query/obsolete Workshop fixture failures. Corrections are awaiting replacement
+  CI; no local retests were run. Stock ARK and Squad 44 lifecycle tests retain
+  actual A2S readiness, while their unverified Workshop cases remain explicit
+  opt-ins. Wreckfest's current A2S contract supersedes the historical TCP result
+  below; a successful Windows launch alone does not establish health.
 - Alien Swarm: Reactive Drop (`asrdserver`) has a new anonymous-install module,
   native Workshop configuration and CLI lifecycle tests. Its first live probe
   exposed config execution and bind-address issues; those corrections have unit

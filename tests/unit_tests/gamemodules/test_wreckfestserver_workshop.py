@@ -185,6 +185,18 @@ def test_linux_process_has_same_xvfb_drivers_as_docker(server, tmp_path, monkeyp
     assert "WINEDLLOVERRIDES=" in command
 
 
+def test_native_container_command_resolves_windows_builtin_cmd(server, tmp_path, monkeypatch):
+    (tmp_path / "Wreckfest_x64.exe").write_bytes(b"fixture exe")
+    server.data.update(exe_name="Wreckfest_x64.exe", port=33540, queryport=27016, steamport=27015)
+    monkeypatch.setattr(module, "IS_LINUX", True)
+    monkeypatch.setattr(module.proton, "wrap_command", lambda command, **_: ["wine", *command])
+    spec = module.get_container_spec(server)
+    assert spec["command"] == [
+        "cmd.exe", "/c", "Wreckfest_x64.exe", "-s", "server_config=server_config.cfg",
+    ]
+    assert spec["working_dir"] == "/srv/server"
+
+
 @pytest.mark.parametrize("desired", [["456"], []])
 def test_running_server_refuses_apply_and_cleanup_before_download_or_publication(server, tmp_path, monkeypatch, desired):
     ws = adapter()

@@ -183,10 +183,21 @@ def _parse_ids(original):
 
 
 def configured_workshop_ids(server):
-    """Carry the native array into the launch URL before first-boot config resets."""
+    """Read the last prestart snapshot without opening an engine-owned live INI."""
+    state = server.data.get("mods", {})
+    values = state.get("ark_workshop_launch_ids", state.get("ark_workshop_ids", []))
+    if (not isinstance(values, list) or any(not isinstance(value, str) or not value.isascii()
+            or not value.isdigit() or not 0 < int(value) < 2**64 for value in values)):
+        raise ServerError("Invalid ARK Workshop launch snapshot")
+    return list(values)
+
+
+def refresh_launch_workshop_ids(server):
+    """Snapshot merged operator and managed IDs while the engine is stopped."""
     config = safe_server_path(server, CONFIG)
     original = _metadata(config).decode("utf-8-sig") if config.exists() else None
-    return _parse_ids(original)[3]
+    server.data.setdefault("mods", {})["ark_workshop_launch_ids"] = _parse_ids(original)[3]
+    server.data.save()
 
 
 def _merge_ids(original, previous, desired):
@@ -229,7 +240,10 @@ def configure_workshop(server, item_ids):
         files = _prepare_files(payloads, Path(directory))
         write_managed_text(server, CONFIG, text)
         had_ids = "ark_workshop_ids" in state
+        had_launch_ids = "ark_workshop_launch_ids" in state
+        previous_launch_ids = state.get("ark_workshop_launch_ids")
         state["ark_workshop_ids"] = owned
+        state["ark_workshop_launch_ids"] = _parse_ids(text)[3]
         try:
             paths = publish_owned_payloads(server, OWNER, files)
         except BaseException:
@@ -237,6 +251,10 @@ def configure_workshop(server, item_ids):
                 state["ark_workshop_ids"] = previous
             else:
                 state.pop("ark_workshop_ids", None)
+            if had_launch_ids:
+                state["ark_workshop_launch_ids"] = previous_launch_ids
+            else:
+                state.pop("ark_workshop_launch_ids", None)
             if original is None:
                 safe_server_path(server, CONFIG).unlink(missing_ok=True)
             else:

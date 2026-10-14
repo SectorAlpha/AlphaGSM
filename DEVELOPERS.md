@@ -815,6 +815,17 @@ runtime. Real integration/game/backend acceptance runs in CI for PR #36; local
 validation uses unit tests and static checks.
 
 The GitHub Actions workflow is [`.github/workflows/unittest.yaml`](.github/workflows/unittest.yaml).
+Manual dispatch accepts an optional `game_test_paths` input containing existing,
+space-separated `tests/integration_tests/test_*.py` and
+`tests/smoke_tests/run_*.sh` paths. This limits the game matrix for CI-only
+diagnosis while retaining unit, lint, image and backend gates. Omit it for the
+full fleet. PR, scheduled, merge-queue and reusable-run routing cannot be reduced
+through this input. For example:
+
+```bash
+gh workflow run unittest.yaml --ref YOUR_BRANCH \
+  -f game_test_paths='tests/integration_tests/test_asrdserver.py tests/smoke_tests/run_asrdserver.sh'
+```
 
 The workflow runs for pull requests targeting `master`, scheduled coverage,
 merge groups, manual dispatch and reusable release validation. Its current gates are:

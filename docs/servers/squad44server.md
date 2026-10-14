@@ -2,7 +2,11 @@
 
 This guide covers the `squad44server` module in AlphaGSM.
 
-`squad44server` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The GitHub integration lane exercises process and Docker runtimes. Validation of the Docker host-user change is pending CI; local runs use the process runtime unless you select Docker.
+`squad44server` has a previously passed Ubuntu 24.04 Linux baseline. The current
+CI failure remains under investigation: the stock engine loads its world, but
+the integration-container A2S query times out. Host smoke reached A2S before
+failing its obsolete Workshop fixture check. The next CI run isolates the
+stock baseline and retains real A2S, query/info and shutdown requirements.
 
 ## Requirements
 
@@ -48,7 +52,7 @@ alphagsm mysquad44s stop
 
 Setup configures:
 
-- the game port (default 27165)
+- the game port (default 7787)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -62,7 +66,7 @@ alphagsm mysquad44s backup
 ## Notes
 
 - Module name: `squad44server`
-- Default port: 27165
+- Default game port: 7787; default managed query port: game port plus one
 
 <!-- alphagsm-server-variables:start -->
 
@@ -105,7 +109,7 @@ create is still the live source of truth.
 ## Workshop plugins and maps
 
 ```bash
-alphagsm myserver mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=2909251852
+alphagsm myserver mod add workshop CURRENT_LINUX_WORKSHOP_ID_OR_URL
 alphagsm myserver mod add workshop-collection COLLECTION_ID
 alphagsm myserver mod apply
 alphagsm myserver start
@@ -125,3 +129,15 @@ does not establish that the current server build can load its SDK version.
 files. `mod cleanup` clears the desired list and removes unchanged files owned
 by AlphaGSM. Operator plugins and files remain present. Edited owned files block
 replacement or cleanup instead of being overwritten.
+
+Baseline smoke and integration runs do not install Workshop content. The previous
+SquidBots fixture (`2909251852`) was rejected by the engine: its `.mi` declares
+`Engine=4.27.2`, while current SDK fixtures use `4.27.2.SQ44`. Recent small
+fixtures examined so far shipped only Windows cooks. A compatible public Linux
+fixture and process/Docker native-load proof are still pending.
+
+To exercise a selected current fixture explicitly, set
+`ALPHAGSM_RUN_SQUAD44_WORKSHOP=1`, `ALPHAGSM_SQUAD44_WORKSHOP_ID` (ID or URL),
+and `ALPHAGSM_SQUAD44_WORKSHOP_PLUGIN` (native plugin name). The separate
+Workshop test keeps engine mounting and serialization assertions; startup and
+query timeouts remain failures. This does not replace the baseline CI check.

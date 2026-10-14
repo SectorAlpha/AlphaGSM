@@ -7,6 +7,19 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-14
+- ARK: run containers with the manager's UID/GID and retain launch mod IDs
+  before startup so live console and stop commands do not reopen private INIs.
+- Lifecycle tests: fix Reactive Drop's duplicate SteamCMD configuration and
+  select Wine runtime prerequisites consistently. Wreckfest honors the CI
+  backend and stops failed launches before removing managed content.
+- Workshop tests: keep unverified ARK and obsolete Squad 44 fixtures separate
+  from stock lifecycles; retain real engine-load and A2S requirements.
+- Wine containers: preserve Windows command-processor lookup instead of
+  resolving cmd.exe as a missing file in the game directory.
+- CI: allow explicit game-test selection on manual runs while preserving full
+  scheduled coverage and normal PR routing; keep regression validation on CI.
+
 2026-10-13
 - tModLoader: add public-release dedicated-server installation, contained world
   configuration and native Workshop package activation, with Census command

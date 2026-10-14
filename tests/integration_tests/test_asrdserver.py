@@ -1,5 +1,6 @@
 """AlphaGSM CLI lifecycle and native Workshop execution for Reactive Drop."""
 
+import configparser
 import json
 import os
 from pathlib import Path
@@ -37,8 +38,13 @@ def test_asrdserver_lifecycle(tmp_path, workshop_source=None, workshop_identifie
     name = f'workshop-asrd-{runtime_backend}' if workshop_source else 'itasrdserver'
     write_config(config, home, session_tag='AlphaGSM-ASRD-IT#', runtime_backend=runtime_backend, module_name=module_name)
     steamcmd = os.environ.get('ALPHAGSM_ASRDSERVER_STEAMCMD_PATH', str(tmp_path / 'steamcmd'))
-    with config.open('a') as handle:
-        handle.write(f'\n[downloader.steamcmd]\nsteamcmd_path = {steamcmd}\n')
+    parser = configparser.ConfigParser(interpolation=None)
+    parser.read(config, encoding='utf-8')
+    if not parser.has_section('downloader.steamcmd'):
+        parser.add_section('downloader.steamcmd')
+    parser.set('downloader.steamcmd', 'steamcmd_path', steamcmd)
+    with config.open('w', encoding='utf-8') as handle:
+        parser.write(handle)
     env = alphagsm_env(config)
     port = pick_free_tcp_port_group(3)
     run_and_assert_ok(env, name, 'create', module_name, allow_known_steamcmd_skip=False)

@@ -1,13 +1,14 @@
 # Alien Swarm: Reactive Drop
 
 The `asrdserver` module installs the anonymous Windows dedicated-server files and
-runs them through Wine on Linux. Process validation is in progress; Docker
-validation awaits an SSD-backed endpoint.
+runs them through Wine on Linux. Process and Docker lifecycle validation remain
+pending a successful runtime rerun.
 
 ## Requirements
 
 - Linux process runtime: `screen`, Wine with 32-bit support, and SteamCMD libraries.
-- Docker runtime: the shared `wine-proton` image and a working Docker endpoint.
+- Docker runtime: the shared `wine-proton` image and a working Docker endpoint;
+  host Wine and screen are not prerequisites for this runtime.
 - Enough space for the game depot, a private Wine prefix and Workshop content.
 
 ```bash
@@ -34,6 +35,14 @@ install directory on that disk during setup too. Game UDP/TCP, client UDP and
 SourceTV UDP ports are managed by AlphaGSM. Common settings include `port`,
 `clientport`, `sourcetvport`, `map`, `servername`, `maxplayers`, `serverpassword`
 and `rconpassword`.
+
+The smoke runner honors `ALPHAGSM_TEST_RUNTIME_BACKEND=process` or `docker`.
+An explicit `auto` uses this module's Docker runtime. Without an explicit backend,
+CI or a supplied `ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON` selects Docker; local
+runs otherwise use process. The supplied image is written into the smoke config
+so CI uses its branch image. Integration setup preserves an explicit
+`ALPHAGSM_ASRDSERVER_STEAMCMD_PATH` without adding a duplicate config section when
+`ALPHAGSM_WORK_DIR` already provides one.
 
 ## Native Workshop content
 

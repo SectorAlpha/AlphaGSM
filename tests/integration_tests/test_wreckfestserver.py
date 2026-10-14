@@ -10,6 +10,7 @@ import pytest
 
 from conftest import (
     alphagsm_env,
+    default_runtime_backend,
     effective_runtime_backend,
     require_command_for_runtime,
     require_proton,
@@ -26,7 +27,7 @@ from conftest import (
     run_setup_with_port_retry,
     wait_for_info_protocol,
     wait_for_runtime_log_marker,
-    wait_for_tcp_closed,
+    wait_for_generic_udp_closed,
     write_config,
 )
 from gamemodules.wreckfestserver import steam_app_id
@@ -42,14 +43,36 @@ PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:
 
 
 @pytest.mark.timeout(TEST_TIMEOUT)
-def test_wreckfestserver_lifecycle(tmp_path, runtime_backend="auto", workshop_fixture=False):
+def test_wreckfestserver_lifecycle(tmp_path):
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend())
+    _run_wreckfestserver_lifecycle(tmp_path, runtime_backend=runtime_backend)
+
+
+def _cleanup_wreckfest(env, server_name, workshop_fixture, original_error):
+    """Stop even failed launches and clean managed content only after a successful stop."""
+    stopped = capture_alphagsm_stop(env, server_name, original_error, timeout=STOP_TIMEOUT)
+    if stopped is not None and stopped.returncode == 0 and workshop_fixture:
+        try:
+            cleaned = run_alphagsm(env, server_name, "mod", "cleanup")
+            log_command_result("alphagsm mod cleanup", cleaned)
+            if original_error is None:
+                assert_alphagsm_result_ok(cleaned)
+        except Exception as error:
+            if original_error is None:
+                raise
+            print(f"[diagnostic] Workshop cleanup raised {type(error).__name__}; preserving lifecycle failure")
+    if original_error is None:
+        assert_alphagsm_result_ok(stopped)
+
+
+def _run_wreckfestserver_lifecycle(tmp_path, *, runtime_backend, workshop_fixture=False):
     require_integration_opt_in()
     require_steamcmd_opt_in()
     backend = effective_runtime_backend(runtime_backend, module_name="wreckfestserver")
     if backend == "docker":
         require_command("docker")
     else:
-        require_command_for_runtime("screen", runtime_backend=runtime_backend, module_name="wreckfestserver")
+        require_command_for_runtime("xvfb-run", runtime_backend=runtime_backend, module_name="wreckfestserver")
         require_proton()
 
     home_dir = tmp_path / "home"
@@ -65,11 +88,6 @@ def test_wreckfestserver_lifecycle(tmp_path, runtime_backend="auto", workshop_fi
         (install_dir / "log.txt").unlink(missing_ok=True)
     config_path = tmp_path / "alphagsm.conf"
     server_name = ("itwreck" + tmp_path.name.replace("_", "")[-8:])[:15]
-    image = resolve_runtime_image(
-        "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
-        LOCAL_WINE_PROTON_IMAGE,
-        PUBLISHED_WINE_PROTON_IMAGE,
-    )
 
     write_config(
         config_path,
@@ -89,6 +107,11 @@ def test_wreckfestserver_lifecycle(tmp_path, runtime_backend="auto", workshop_fi
         steamport = pick_free_udp_port()
     run_and_assert_ok(env, server_name, "create", "wreckfestserver")
     if backend == "docker":
+        image = resolve_runtime_image(
+            "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
+            LOCAL_WINE_PROTON_IMAGE,
+            PUBLISHED_WINE_PROTON_IMAGE,
+        )
         run_and_assert_ok(env, server_name, "set", "image", image)
     run_and_assert_ok(env, server_name, "set", "wineprefix", str(install_dir / ".alphagsm-wineprefix"))
     run_and_assert_ok(env, server_name, "set", "queryport", str(queryport))
@@ -115,13 +138,12 @@ def test_wreckfestserver_lifecycle(tmp_path, runtime_backend="auto", workshop_fi
             f"{result.stdout}\n{result.stderr}"
         )
 
-    if workshop_fixture:
-        run_and_assert_ok(env, server_name, "mod", "add", "workshop", FIXTURE_ID)
-        run_and_assert_ok(env, server_name, "mod", "apply")
-        run_and_assert_ok(env, server_name, "set", "track", TRACK)
-    run_and_assert_ok(env, server_name, "start")
-
     try:
+        if workshop_fixture:
+            run_and_assert_ok(env, server_name, "mod", "add", "workshop", FIXTURE_ID)
+            run_and_assert_ok(env, server_name, "mod", "apply")
+            run_and_assert_ok(env, server_name, "set", "track", TRACK)
+        run_and_assert_ok(env, server_name, "start")
         wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
 
         run_and_assert_ok(env, server_name, "status")
@@ -153,14 +175,13 @@ def test_wreckfestserver_lifecycle(tmp_path, runtime_backend="auto", workshop_fi
             f"Expected reported info port {queryport}: {info_data!r}"
         )
     finally:
-        stop_result = capture_alphagsm_stop(env, server_name, sys.exc_info()[1], timeout=90)
-    assert_alphagsm_result_ok(stop_result)
+        _cleanup_wreckfest(env, server_name, workshop_fixture, sys.exc_info()[1])
 
-    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    for claimed_port in (port, queryport, steamport):
+        wait_for_generic_udp_closed("127.0.0.1", claimed_port, STOP_TIMEOUT)
     status = run_and_assert_ok(env, server_name, "status")
     assert "isn't running" in status.stdout
     if workshop_fixture:
-        run_and_assert_ok(env, server_name, "mod", "cleanup")
         assert "alphagsm-" + FIXTURE_ID not in (install_dir / "server_config.cfg").read_text()
 
 
@@ -168,4 +189,4 @@ def test_wreckfestserver_lifecycle(tmp_path, runtime_backend="auto", workshop_fi
                     reason="Set ALPHAGSM_RUN_WORKSHOP=1 for native public Workshop checks")
 @pytest.mark.parametrize("runtime_backend", ["process", "docker"])
 def test_wreckfestserver_native_workshop(tmp_path, runtime_backend):
-    test_wreckfestserver_lifecycle(tmp_path, runtime_backend, workshop_fixture=True)
+    _run_wreckfestserver_lifecycle(tmp_path, runtime_backend=runtime_backend, workshop_fixture=True)
