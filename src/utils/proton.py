@@ -221,6 +221,31 @@ def wrap_command(command, wineprefix=None, prefer_proton=False):
     )
 
 
+def wrap_xvfb_command(command, wineprefix=None, prefer_proton=False):
+    """Launch a Windows server with X11 drivers matching the container runtime.
+
+    Only replace the launcher's environment assignments. A native argument that
+    happens to contain the same variable name remains part of the game command.
+    DISPLAY is inherited from xvfb-run instead of the generic headless wrapper.
+    """
+    wrapped = wrap_command(command, wineprefix=wineprefix, prefer_proton=prefer_proton)
+    if wrapped and wrapped[0] == "env":
+        index = 1
+        prefix = ["env"]
+        while index + 1 < len(wrapped) and wrapped[index] == "-u":
+            prefix.extend(wrapped[index:index + 2])
+            index += 2
+        while index < len(wrapped) and _is_env_assignment(wrapped[index]):
+            if wrapped[index].split("=", 1)[0] not in {"DISPLAY", "WINEDLLOVERRIDES"}:
+                prefix.append(wrapped[index])
+            index += 1
+        wrapped = prefix + wrapped[index:]
+    wrapped = prepend_env_assignments(
+        wrapped, WINEDLLOVERRIDES="", SDL_VIDEODRIVER="x11", SDL_AUDIODRIVER="dummy",
+    )
+    return ["xvfb-run", "-a", "--server-args=-screen 0 1024x768x24 -nolisten tcp", *wrapped]
+
+
 def prepend_env_assignments(command, **env_vars):
     """Return *command* with extra ``env`` assignments prepended."""
 

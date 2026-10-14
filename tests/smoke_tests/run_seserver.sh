@@ -64,7 +64,7 @@ trap cleanup EXIT
 require_cmd "$PYTHON_BIN"
 case "$RUNTIME_BACKEND" in
   docker) require_cmd docker ;;
-  process) require_cmd wine ;;
+  process) require_cmd wine; require_cmd xvfb-run ;;
   *) echo "ALPHAGSM_TEST_RUNTIME_BACKEND must be process, docker, or auto" >&2; exit 1 ;;
 esac
 

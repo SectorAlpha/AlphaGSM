@@ -36,11 +36,11 @@ Earlier stock-only smoke results for those runners are not Workshop evidence.
 | Team Fortress 2 | 440 | Verified native map download without GSLT | Passed | Awaiting SSD Docker endpoint |
 | Killing Floor 2 | 232090 | Verified map download | In progress | Awaiting SSD Docker endpoint |
 | Rising Storm 2: Vietnam | 418460 | Verified map download | In progress | Awaiting SSD Docker endpoint |
-| Natural Selection 2 | 4920 | Verified map and server-plugin downloads | In progress | Awaiting SSD Docker endpoint |
+| Natural Selection 2 | 4920 | Verified map and server-plugin downloads | Passed | In progress |
 | Terraria tModLoader | 1281930 | Verified | Passed | Passed |
 | rFactor 2 | 365960 | Verified free Studio 397 package | In progress | Awaiting SSD Docker endpoint |
 | Alien Swarm: Reactive Drop | 563560 | Native loader documented; validation pending | Pending | Pending |
-| Space Engineers | 244850 | Verified | In progress | In progress |
+| Space Engineers | 244850 | Verified | In progress | Passed |
 | Wreckfest | 228380 | Verified | In progress | In progress |
 | Stationeers | 544550 | Verified | Passed | Awaiting SSD Docker endpoint |
 
@@ -50,8 +50,13 @@ Earlier stock-only smoke results for those runners are not Workshop evidence.
   introspection probe. The adapter must validate native Linux map metadata and
   its exact staged world path; fresh engine startup and real A2S must then agree
   on `FlatMap`. Compatibility and both runtime load results remain pending CI.
-- Space Engineers' Docker smoke passed MES script execution in CI run
-  `38649280824`; process and Docker integration results are still pending.
+- Space Engineers' Docker smoke and both baseline/native integrations passed
+  MES script execution in CI run `38649280824`. Process startup progressed
+  beyond the VC prerequisite check but exited during Steam initialization;
+  matching the passing container's virtual display remains under validation.
+- NS2's process native Workshop integration passed in run `38649280824`.
+  Its Docker engine rejected wildcard web-admin binding; the replacement
+  transport retains authenticated loopback inside the managed container.
 - Wreckfest's stock process and Docker integrations plus Docker smoke passed in CI run `38545270577` on 2026-10-14. These require fresh native startup, runtime liveness, limited UDP reachability and complete shutdown; they do not establish game metadata or Workshop loading. Its Workshop row remains in progress until fresh native registry capture passes the stricter fixture check.
 - Squad 44's stock process and Docker integrations plus Docker smoke passed in CI run `38537399526` on 2026-10-14, with real A2S and shutdown checks after depot-SDK launch preference was added. The loaded SDK hash was not retained in successful captured output; this does not prove the previous timeout's cause. Stop retains its existing forced-stop fallback. CI now selects Ramelle `2387944294`, whose author advertises Linux content, and checks the staged plugin's exact Workshop and current SDK identity. Anonymous access and native plugin-load proof for this fixture remain pending, so its Workshop load row is unchanged.
 - Reactive Drop's anonymous stock baseline passed process and Docker integrations plus Docker smoke in CI on 2026-10-14. This validates the server and terminal correction; its Workshop load row remains pending actual item execution.

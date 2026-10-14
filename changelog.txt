@@ -7,6 +7,12 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-15
+- TF2 Docker: launch with the host's identity, a writable private Steam home
+  and an absolute container UGC path so Workshop library metadata can initialize.
+- Space Engineers process: use the same virtual display and X11 drivers as
+  the validated container while preserving private Wine/Proton prefix selection.
+
 2026-10-14
 - Squad 44 validation: recognize its direct native PAK precacher registration
   and exact successful mod serialization before checking the custom world and A2S.

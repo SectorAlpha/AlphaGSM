@@ -2,6 +2,7 @@
 
 import json
 import os
+import subprocess
 import time
 import uuid
 
@@ -273,4 +274,9 @@ def _verify_native_workshop_map(env, server_name, item_ids, port):
                 error = exc
         time.sleep(2)
     output = run_and_assert_ok(env, server_name, 'logs', '-n', '20000').stdout
+    try:
+        doctor = run_alphagsm(env, server_name, 'doctor', '--json', timeout=15)
+        print('[diagnostic] TF2 Workshop runtime launch context: ' + doctor.stdout[-16000:])
+    except (OSError, subprocess.SubprocessError) as exc:
+        print(f'[diagnostic] TF2 runtime context unavailable: {exc}')
     pytest.fail(f'TF2 native Workshop map execution evidence missing: {error}\n{output[-20000:]}')

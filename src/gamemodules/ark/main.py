@@ -239,8 +239,7 @@ def checkvalue(server, key, *value):
         key,
         *value,
         int_keys=("port", "queryport", "rconport", "maxplayers"),
-        custom_handlers={"rconenabled": _rcon_enabled,
-                         "map": lambda _server, selected: configured_workshop_map(_server, selected)},
+        custom_handlers={"rconenabled": _rcon_enabled, "map": configured_workshop_map},
         str_keys=("sessionname", "adminpassword", "serverpassword", "exe_name", "dir"),
     )
 

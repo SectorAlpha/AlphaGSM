@@ -265,7 +265,7 @@ def update(server, validate=True, restart=False):
         _package_override("apply_configured_maps", apply_configured_maps)(server)
 
 
-def get_start_command(server):
+def get_start_command(server, *, ugc_path=None):
     """Build the command list used to launch the TF2 dedicated server."""
     # example run ./srcds_run -game tf -port 27015 +maxplayers 32 +map cf_2fort
     exe_name = server.data["exe_name"]
@@ -312,7 +312,8 @@ def get_start_command(server):
     if mods.get('enabled', True) and mods.get('desired', {}).get('workshop'):
         # Initialize Steam's dedicated-server UGC library inside the mounted install.
         # Without -ugcpath the native download may wait on a nonexistent Steam library.
-        command.extend(['-ugcpath', 'steamapps/workshop'])
+        command.extend(['-ugcpath', ugc_path or os.path.join(
+            os.path.abspath(server.data['dir']), 'steamapps', 'workshop')])
         command.extend(['+exec', 'alphagsm_workshop.cfg'])
     return command, server.data['dir']
 
@@ -558,10 +559,16 @@ get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
     port_definitions=({"key": "port", "protocol": "udp"}, {"key": "port", "protocol": "tcp"},
                       {"key": "port", "offset": 1, "protocol": "udp"},
                       {"key": "port", "offset": 5, "protocol": "udp"}),
+    extra={"run_as_host_user": True, "container_home": "/home/alphagsm"},
 )
 
 def _get_container_start_command(server):
-    return build_source_container_start_command(server, get_start_command)
+    # The command is shell-quoted inside script before shared path mapping runs.
+    # Resolve the UGC argument in the container namespace before quoting it.
+    return build_source_container_start_command(
+        server, lambda current: get_start_command(
+            current, ugc_path=runtime_module.DEFAULT_CONTAINER_WORKDIR + '/steamapps/workshop'),
+    )
 
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
@@ -571,4 +578,5 @@ get_container_spec = gamemodule_common.make_container_spec_builder(
                       {"key": "port", "offset": 1, "protocol": "udp"},
                       {"key": "port", "offset": 5, "protocol": "udp"}),
     stdin_open=True,
+    extra={"run_as_host_user": True, "container_home": "/home/alphagsm"},
 )

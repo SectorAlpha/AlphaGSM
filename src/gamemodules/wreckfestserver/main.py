@@ -332,15 +332,7 @@ def get_start_command(server):
 
 def _wrap_linux_command(command, wineprefix=None):
     """Use the same X11 drivers as the Windows container runtime."""
-    wrapped = proton.wrap_command(command, wineprefix=wineprefix, prefer_proton=True)
-    wrapper = wrapped[:-len(command)]
-    wrapped = [argument for argument in wrapper if not argument.startswith(
-        ("DISPLAY=", "WINEDLLOVERRIDES="))] + list(command)
-    wrapped = proton.prepend_env_assignments(
-        wrapped, WINEDLLOVERRIDES="", SDL_VIDEODRIVER="x11", SDL_AUDIODRIVER="dummy",
-    )
-    return ["xvfb-run", "-a",
-            "--server-args=-screen 0 1024x768x24 -nolisten tcp", *wrapped]
+    return proton.wrap_xvfb_command(command, wineprefix=wineprefix, prefer_proton=True)
 
 
 def prestart(server):

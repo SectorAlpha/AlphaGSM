@@ -17,6 +17,21 @@ def test_console_wrapper_quotes_arguments_without_executing_them():
     assert shlex.split(wrapped[2]) == command
 
 
+@pytest.mark.parametrize("prefer_proton", [False, True])
+def test_xvfb_wrap_preserves_runtime_prefix_and_exposes_x11_driver(tmp_path, monkeypatch, prefer_proton):
+    monkeypatch.setattr(proton_module, 'find_wine', lambda: '/usr/bin/wine')
+    monkeypatch.setattr(proton_module, 'find_proton', lambda: '/opt/proton/proton')
+    native = ['server.exe', '-noconsole', 'WINEDLLOVERRIDES=native-argument']
+    prefix = str(tmp_path / 'private-prefix')
+    command = proton_module.wrap_xvfb_command(native, wineprefix=prefix, prefer_proton=prefer_proton)
+    assert command[:2] == ['xvfb-run', '-a']
+    assert 'WINEDLLOVERRIDES=winex11.drv=' not in command and 'DISPLAY=' not in command
+    assert 'WINEDLLOVERRIDES=' in command and 'SDL_VIDEODRIVER=x11' in command
+    assert ('STEAM_COMPAT_DATA_PATH=' if prefer_proton else 'WINEPREFIX=') + prefix in command
+    assert ('/opt/proton/proton' if prefer_proton else '/usr/bin/wine') in command
+    assert proton_module.unwrap_runtime_command(command) == native
+
+
 def test_prepare_wineprefix_copies_runtime_template_into_fresh_prefix(tmp_path):
     template = tmp_path / "prepared"
     template.mkdir()

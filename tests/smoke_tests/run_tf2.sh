@@ -146,7 +146,11 @@ PYMAP
     fi
     sleep 2
   done
-  [[ "$WORKSHOP_MAP_LOADED" == "1" ]] || { run_alphagsm "$SERVER_NAME" logs -n 20000; exit 1; }
+  if [[ "$WORKSHOP_MAP_LOADED" != "1" ]]; then
+    run_alphagsm "$SERVER_NAME" doctor --json || true
+    run_alphagsm "$SERVER_NAME" logs -n 20000
+    exit 1
+  fi
 fi
 
 run_alphagsm "$SERVER_NAME" query

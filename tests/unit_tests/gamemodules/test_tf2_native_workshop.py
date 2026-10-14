@@ -3,6 +3,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import shlex
 import sys
 from types import SimpleNamespace
 
@@ -41,9 +42,16 @@ def test_id_url_collection_native_sync_and_cleanup_preserve_engine_cache(adapter
     assert cfg.read_text()=='tf_workshop_map_sync 123\ntf_workshop_map_sync 124\n'
     command,_=module.get_start_command(server)
     assert ['+exec','alphagsm_workshop.cfg']==command[-2:]
-    assert command[command.index('-ugcpath') + 1] == 'steamapps/workshop'
+    assert command[command.index('-ugcpath') + 1] == str(Path(server.data['dir']) / 'steamapps/workshop')
     spec = module.get_container_spec(server)
-    assert '-ugcpath steamapps/workshop' in spec['command'][spec['command'].index('--command') + 1]
+    native = shlex.split(spec['command'][spec['command'].index('--command') + 1])
+    assert native[native.index('-ugcpath') + 1] == '/srv/server/steamapps/workshop'
+    assert str(Path(server.data['dir']) / 'steamapps/workshop') not in native
+    assert spec['run_as_host_user'] and spec['container_home'] == '/home/alphagsm'
+    assert spec['env']['HOME'] == '/home/alphagsm'
+    requirements = module.get_runtime_requirements(server)
+    assert requirements['run_as_host_user'] and requirements['env']['HOME'] == '/home/alphagsm'
+    assert any(mount['target'] == '/home/alphagsm' and mount['mode'] == 'rw' for mount in spec['mounts'])
     assert not any('steamaccount' in value or 'authkey' in value for value in command)
     cache=Path(server.data['dir'])/'steamapps/workshop/content/440/123/map.bsp'
     cache.parent.mkdir(parents=True); cache.write_bytes(b'engine cached map')
@@ -149,7 +157,7 @@ def test_workshop_lifecycle_requires_execution_instead_of_pending_a2s_map(
             text = frame
         return SimpleNamespace(returncode=0, stdout=text)
 
-    def info(*_args):
+    def info(*_args, **_kwargs):
         commands.append(('info', ('--json',)))
         return SimpleNamespace(returncode=0, stdout=json.dumps(
             {'protocol': 'a2s', 'port': 27015, 'map': advertised_map}))

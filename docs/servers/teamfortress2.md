@@ -181,9 +181,11 @@ are rejected. Native Workshop map names are `workshop/ITEM_ID`; the engine resol
 the full map name and downloads the current map itself. No Steam account token
 or Workshop API key is supplied. The existing curated map and addon commands stay
 available. See [Valve's native map-loader update](https://www.teamfortress.com/post.php?id=17214).
-AlphaGSM supplies `-ugcpath steamapps/workshop` while native Workshop maps are
-enabled so the engine initializes a dedicated-server download library inside the
-install directory, including when that directory is mounted into Docker.
+AlphaGSM supplies an absolute `-ugcpath` under the install's `steamapps/workshop`
+directory while native Workshop maps are enabled. Docker uses the mounted
+container path and the host user's identity, with a private writable HOME and
+Steam library metadata, so the native downloader sees the same initialized
+library layout as a process server.
 
 Apply while stopped. AlphaGSM refuses a preexisting unowned sync configuration
 and externally edited managed files. `mod cleanup` removes only its unchanged

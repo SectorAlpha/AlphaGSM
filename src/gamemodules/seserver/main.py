@@ -198,7 +198,7 @@ def get_start_command(server):
         "-start",
     ]
     if IS_LINUX:
-        cmd = proton.wrap_command(
+        cmd = proton.wrap_xvfb_command(
             cmd,
             **_wine_launch_options(server),
         )
@@ -253,6 +253,7 @@ def checkvalue(server, key, *value):
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
     port_definitions=({"key": "port", "protocol": "udp"},),
     extra_env=_container_runtime_env,
+    extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 
 def get_container_spec(server):

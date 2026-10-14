@@ -148,6 +148,9 @@ def test_linux_headless_uses_supported_no_console_mode(server, tmp_path, monkeyp
     monkeypatch.setattr(module.proton, 'wrap_command', lambda command, **_: command)
     command, _ = module.get_start_command(server)
     assert '-noconsole' in command and '-console' not in command
+    assert command[:2] == ['xvfb-run', '-a']
+    assert 'WINEDLLOVERRIDES=' in command and 'SDL_VIDEODRIVER=x11' in command
+    assert any(item['id'] == 'xvfb-run' for item in module.get_runtime_requirements(server)['host_dependencies'])
 
 
 def test_process_launch_uses_prepared_wine_prefix_instead_of_empty_proton_prefix(server, tmp_path, monkeypatch):

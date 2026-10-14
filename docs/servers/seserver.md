@@ -14,11 +14,11 @@ so configuration, saves, and logs remain accessible there.
 
 ## Workshop validation checkpoint
 
-Native Workshop support is under validation as of 13 October 2026. Anonymous
+Native Workshop process support is under validation as of 14 October 2026. Anonymous
 downloads succeeded for consumer app `244850`, including the public
 [Modular Encounters Systems server framework](https://steamcommunity.com/sharedfiles/filedetails/?id=1521905890)
-(31,485,392 bytes). This proves content access; a complete modded lifecycle
-has not passed yet.
+(31,485,392 bytes). Focused Docker integration and smoke subsequently passed
+the complete modded lifecycle; process completion is still pending.
 
 The adapter manages Steam mod references in the configured world's
 `Sandbox.sbc` and `Sandbox_config.sbc`, preserving operator entries. A missing
@@ -35,10 +35,16 @@ existing operator prefixes are preserved. Linux uses the vendor-supported
 Existing Proton compatibility directories keep Proton when available; Wine
 fallback opens their existing inner `pfx` directory.
 
+Focused Docker integration and Workshop smoke passed the strict execution
+checks on 14 October 2026. Process CI progressed past the runtime check but
+exited during Steam initialization after binding its port. Process launch now
+uses `xvfb-run` and the same X11/SDL drivers as the passing Docker runtime;
+this additional correction awaits CI validation.
+
 Workshop integration and opt-in smoke require both `Game ready` and the MES
 script's own `MES Spawner / Startup: Active Debug ...` initialization message.
 An item ID, mod name, download, or world configuration alone does not prove
-engine execution. Process and Docker Workshop completion remain unverified.
+engine execution. Process Workshop completion remains unverified.
 The prior baseline classification above does not establish Workshop support.
 
 ## Requirements
@@ -46,7 +52,7 @@ The prior baseline classification above does not establish Workshop support.
 - Docker
 - Python packages from `requirements.txt`
 
-For a Linux process server, install Wine and the upstream Visual C++ runtime
+For a Linux process server, install Wine, `xvfb-run`, and the upstream Visual C++ runtime
 prerequisites in its private prefix. The AlphaGSM runtime image already
 prepares these prerequisites in `/opt/wine`; another prepared template may be
 selected with `ALPHAGSM_WINEPREFIX_TEMPLATE`. Existing prefixes are not changed
