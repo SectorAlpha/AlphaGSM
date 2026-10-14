@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-14
+- Agent content: detect Workshop download versus native activation capabilities,
+  preserve per-runtime validation limits and ownership, and account for optional
+  tModLoader, Squad RCON and Wreckfest UDP health support.
 - Agent assessments: keep requirements/health inspection from implicitly
   bootstrapping or recreating the Docker manager or acquiring runtime images.
 
