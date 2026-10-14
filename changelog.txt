@@ -18,8 +18,13 @@ Historical detail lives in git history. Keep this file focused on release-facing
   Anonymous process/Docker baselines now pass real A2S lifecycle checks in CI.
 - Squad 44: prefer the Steam SDK shipped with its server depot through a
   launch-only library path, preserving the operator's HOME and library paths.
+  Stock process/Docker integrations and Docker smoke now pass real A2S lifecycle
+  checks in CI; existing forced-stop fallback and pending Workshop load proof
+  remain documented. Successful output does not establish the loaded SDK hash
+  or prove the earlier query timeout's cause.
 - CI diagnostics: record Squad 44 SDK revisions and Wreckfest's actual IPv4,
-  IPv6 and socket options when native query readiness fails.
+  IPv6 and socket options when native query readiness fails. Observe bounded,
+  nonce-matched RakNet replies without replacing native readiness assertions.
 - Workshop tests: keep unverified ARK and obsolete Squad 44 fixtures separate
   from stock lifecycles; retain real engine-load and A2S requirements.
 - Wine containers: preserve Windows command-processor lookup instead of

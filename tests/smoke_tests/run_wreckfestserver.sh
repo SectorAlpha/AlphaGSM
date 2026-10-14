@@ -51,7 +51,7 @@ source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
 diagnose_wreckfest() {
   local container=""
-  local -a observation_args=("$QUERY_PORT" "$INSTALL_DIR")
+  local -a observation_args=("$QUERY_PORT" "$INSTALL_DIR" --game-port "$PORT")
   if [[ "${1:-}" == quick ]]; then observation_args+=(--quick); fi
   if [[ "$RUNTIME_BACKEND" == docker ]]; then
     local doctor_json

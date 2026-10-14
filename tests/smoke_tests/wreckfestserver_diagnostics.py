@@ -4,12 +4,15 @@ import argparse
 import json
 from pathlib import Path
 import re
+import secrets
 import shutil
 import socket
 import struct
 import subprocess
+import time
 
 INFO_REQUEST = b"\xff\xff\xff\xffTSource Engine Query\0"
+RAKNET_MAGIC = bytes.fromhex("00ffff00fefefefefdfdfdfd12345678")
 
 
 def probe_a2s(family, address, port, timeout=2):
@@ -35,6 +38,33 @@ def probe_a2s(family, address, port, timeout=2):
                 result.update(protocol="a2s", name=fields[0].decode("utf-8", "replace"),
                               map=fields[1].decode("utf-8", "replace"),
                               players=fields[4][2], max_players=fields[4][3])
+    except OSError as error:
+        result["error"] = f"{type(error).__name__}: {error}"
+    return result
+
+
+def probe_raknet(family, address, port, timeout=1):
+    """Observe a fresh offline pong; metadata remains uninterpreted diagnostic bytes."""
+    # Shipped RakPeer handler uses an 8-byte timestamp and echoes its bytes.
+    # Upstream: facebookarchive/RakNet Source/RakPeer.cpp, RakPeer::Ping and
+    # ProcessOfflineNetworkPacket. The ping does not allocate a player connection.
+    nonce = secrets.token_bytes(8)
+    request = b"\x01" + nonce + RAKNET_MAGIC + secrets.token_bytes(8)
+    result = {"family": "ipv6" if family == socket.AF_INET6 else "ipv4",
+              "address": address, "port": port, "nonce": nonce.hex()}
+    try:
+        with socket.socket(family, socket.SOCK_DGRAM) as transport:
+            transport.settimeout(timeout)
+            transport.connect((address, port))
+            transport.send(request)
+            packet = transport.recv(4096)
+        result.update(packet_prefix=packet[:40].hex(), packet_bytes=len(packet))
+        if (len(packet) >= 33 and packet[0] == 0x1c and packet[1:9] == nonce
+                and packet[17:33] == RAKNET_MAGIC):
+            result.update(protocol="raknet", nonce_matched=True, server_guid=packet[9:17].hex(),
+                          payload_bytes=len(packet) - 33, payload_hex=packet[33:545].hex())
+        else:
+            result["error"] = "Response is not a nonce-correlated RakNet offline pong"
     except OSError as error:
         result["error"] = f"{type(error).__name__}: {error}"
     return result
@@ -115,9 +145,14 @@ def _socket_v6only(port):
     records = []
     try:
         with socket.socket(socket.AF_NETLINK, socket.SOCK_DGRAM, 4) as transport:
+            deadline = time.monotonic() + 2
             transport.settimeout(2)
             transport.sendto(header + request, (0, 0))
             for _ in range(8):
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return {"records": records, "error": "Socket diagnostic deadline exceeded"}
+                transport.settimeout(remaining)
                 packet = transport.recv(65535)
                 offset = 0
                 while offset + 16 <= len(packet):
@@ -137,12 +172,16 @@ def _socket_v6only(port):
         return {"records": records, "error": f"{type(error).__name__}: {error}"}
 
 
-def snapshot(port, install, quick=False):
+def snapshot(port, install, quick=False, gameport=None):
     """Compare IPv4, IPv6 and mapped IPv4 from the current network namespace."""
+    endpoints = ((socket.AF_INET, "127.0.0.1"), (socket.AF_INET6, "::1"),
+                 (socket.AF_INET6, "::ffff:127.0.0.1"))
+    ports = list(dict.fromkeys(value for value in (port, gameport, 27017) if value is not None))
     result = {"phase": "post_start" if quick else "failure", "a2s": [
-        probe_a2s(family, address, port, timeout=0.25 if quick else 2) for family, address in (
-        (socket.AF_INET, "127.0.0.1"), (socket.AF_INET6, "::1"),
-        (socket.AF_INET6, "::ffff:127.0.0.1"))], **_native_details(install)}
+        probe_a2s(family, address, port, timeout=0.2 if quick else 1) for family, address in endpoints],
+              "raknet": [probe_raknet(family, address, candidate, timeout=0.2 if quick else 1)
+                         for candidate in ports for family, address in endpoints], **_native_details(install)}
+    # Worst-case socket waits: A2S <=6s, RakNet <=9s, netlink <=2s, ss <=5s.
     # This is only the namespace default; applications may override it per socket.
     result["bindv6only_default"] = _bounded_text(Path("/proc/sys/net/ipv6/bindv6only"), 40, tail=False).strip()
     result["query_socket_v6only"] = _socket_v6only(port)
@@ -159,18 +198,21 @@ def snapshot(port, install, quick=False):
     return result
 
 
-def collect_remote_diagnostics(port, install, container=None, quick=False):
+def collect_remote_diagnostics(port, install, container=None, quick=False, gameport=None):
     """Print observations without promoting a diagnostic response into readiness."""
-    print("[diagnostic] Wreckfest host address-family snapshot: " + json.dumps(snapshot(port, install, quick)), flush=True)
+    print("[diagnostic] Wreckfest host address-family snapshot: " +
+          json.dumps(snapshot(port, install, quick, gameport)), flush=True)
     if container:
         source = Path(__file__).read_text(encoding="utf-8")
         command = ["docker", "exec", "-i", container, "python3", "-", "--inside", str(port), "/srv/server"]
         if quick:
             command.append("--quick")
+        if gameport is not None:
+            command.extend(["--game-port", str(gameport)])
         try:
             result = subprocess.run(command, input=source, capture_output=True, text=True, check=False, timeout=30)
             print("[diagnostic] Wreckfest container address-family snapshot: " + json.dumps({
-                "returncode": result.returncode, "stdout": result.stdout[:18000], "stderr": result.stderr[:1000]}), flush=True)
+                "returncode": result.returncode, "stdout": result.stdout[:32000], "stderr": result.stderr[:1000]}), flush=True)
         except (OSError, subprocess.TimeoutExpired) as error:
             print(f"[diagnostic] Wreckfest container observation failed: {type(error).__name__}: {error}", flush=True)
 
@@ -183,13 +225,17 @@ def main():
     parser.add_argument("port", type=int)
     parser.add_argument("install")
     parser.add_argument("--container")
+    parser.add_argument("--game-port", type=int)
     arguments = parser.parse_args()
     if not 1 <= arguments.port <= 65535:
         parser.error("port must be between 1 and 65535")
+    if arguments.game_port is not None and not 1 <= arguments.game_port <= 65535:
+        parser.error("game port must be between 1 and 65535")
     if arguments.inside:
-        print(json.dumps(snapshot(arguments.port, arguments.install, arguments.quick)), flush=True)
+        print(json.dumps(snapshot(arguments.port, arguments.install, arguments.quick, arguments.game_port)), flush=True)
     else:
-        collect_remote_diagnostics(arguments.port, arguments.install, arguments.container, arguments.quick)
+        collect_remote_diagnostics(arguments.port, arguments.install, arguments.container,
+                                   arguments.quick, arguments.game_port)
 
 
 if __name__ == "__main__":

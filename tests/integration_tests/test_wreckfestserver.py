@@ -66,7 +66,7 @@ def _cleanup_wreckfest(env, server_name, workshop_fixture, original_error):
         assert_alphagsm_result_ok(stopped)
 
 
-def _diagnose_wreckfest(env, server_name, queryport, install_dir, backend, quick=False):
+def _diagnose_wreckfest(env, server_name, queryport, install_dir, backend, quick=False, gameport=None):
     """Observe the still-running failed server without replacing its failure."""
     try:
         container = None
@@ -75,7 +75,7 @@ def _diagnose_wreckfest(env, server_name, queryport, install_dir, backend, quick
                                   capture_diagnostics=False)
             if doctor.returncode == 0:
                 container = json.loads(doctor.stdout).get("runtime", {}).get("container_name")
-        collect_remote_diagnostics(queryport, install_dir, container, quick=quick)
+        collect_remote_diagnostics(queryport, install_dir, container, quick=quick, gameport=gameport)
     except Exception as error:
         print(f"[diagnostic] Wreckfest observation failed: {type(error).__name__}: {error}")
 
@@ -159,7 +159,7 @@ def _run_wreckfestserver_lifecycle(tmp_path, *, runtime_backend, workshop_fixtur
             run_and_assert_ok(env, server_name, "mod", "apply")
             run_and_assert_ok(env, server_name, "set", "track", TRACK)
         run_and_assert_ok(env, server_name, "start")
-        _diagnose_wreckfest(env, server_name, queryport, install_dir, backend, quick=True)
+        _diagnose_wreckfest(env, server_name, queryport, install_dir, backend, quick=True, gameport=port)
         wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
 
         run_and_assert_ok(env, server_name, "status")
@@ -191,7 +191,7 @@ def _run_wreckfestserver_lifecycle(tmp_path, *, runtime_backend, workshop_fixtur
             f"Expected reported info port {queryport}: {info_data!r}"
         )
     except BaseException:
-        _diagnose_wreckfest(env, server_name, queryport, install_dir, backend)
+        _diagnose_wreckfest(env, server_name, queryport, install_dir, backend, gameport=port)
         raise
     finally:
         _cleanup_wreckfest(env, server_name, workshop_fixture, sys.exc_info()[1])

@@ -3,6 +3,8 @@
 import socket
 import struct
 
+import pytest
+
 from tests.smoke_tests import wreckfestserver_diagnostics as diagnostics
 
 
@@ -76,3 +78,51 @@ def test_socket_diagnostic_reads_per_socket_v6only_without_inference():
 def test_native_log_tail_keeps_network_evidence_and_omits_secrets():
     source = "bind query port 27016\nAuth ticket=secret\npassword=secret port=27016\nIPv6 socket ready\nunrelated settings\n"
     assert diagnostics.safe_network_tail(source) == "bind query port 27016\nIPv6 socket ready"
+
+
+def test_raknet_observer_correlates_nonce_and_bounds_disposable_payload(monkeypatch):
+    nonce = b"N" * 8
+    payload = b"x" * 900
+    transport = _Socket([b"\x1c" + nonce + b"G" * 8 + diagnostics.RAKNET_MAGIC + payload])
+    monkeypatch.setattr(diagnostics.secrets, "token_bytes", lambda _length: nonce)
+    monkeypatch.setattr(diagnostics.socket, "socket", lambda *_: transport)
+    result = diagnostics.probe_raknet(socket.AF_INET6, "::1", 19642)
+    assert transport.sent == [b"\x01" + nonce + diagnostics.RAKNET_MAGIC + nonce]
+    assert result["protocol"] == "raknet"
+    assert result["nonce_matched"] is True
+    assert result["server_guid"] == (b"G" * 8).hex()
+    assert result["payload_bytes"] == 900
+    assert result["payload_hex"] == payload[:512].hex()
+
+
+@pytest.mark.parametrize("packet", [
+    b"\x1c" + b"X" * 8 + b"G" * 8 + bytes.fromhex("00ffff00fefefefefdfdfdfd12345678"),
+    b"\x1c" + b"N" * 8 + b"G" * 8 + b"bad-magic-padding",
+    b"\x1b" + b"N" * 8 + b"G" * 8 + bytes.fromhex("00ffff00fefefefefdfdfdfd12345678"),
+    b"\x1c" + b"N" * 8,
+])
+def test_raknet_observer_rejects_stale_or_unrelated_datagrams(monkeypatch, packet):
+    transport = _Socket([packet])
+    monkeypatch.setattr(diagnostics.secrets, "token_bytes", lambda _length: b"N" * 8)
+    monkeypatch.setattr(diagnostics.socket, "socket", lambda *_: transport)
+    result = diagnostics.probe_raknet(socket.AF_INET, "127.0.0.1", 27017)
+    assert "protocol" not in result
+    assert "payload_hex" not in result
+
+
+def test_snapshot_observes_three_raknet_ports_in_each_address_family(monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr(diagnostics, "probe_a2s", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(diagnostics, "probe_raknet", lambda family, address, port, **kwargs:
+                        calls.append((family, address, port, kwargs["timeout"])) or {})
+    monkeypatch.setattr(diagnostics, "_native_details", lambda _: {})
+    monkeypatch.setattr(diagnostics, "_bounded_text", lambda *_args, **_kwargs: "0")
+    monkeypatch.setattr(diagnostics, "_socket_v6only", lambda _: {})
+    monkeypatch.setattr(diagnostics.shutil, "which", lambda _: None)
+    result = diagnostics.snapshot(19642, tmp_path, quick=True, gameport=28752)
+    assert len(result["raknet"]) == 9
+    assert {(family, address, port) for family, address, port, _timeout in calls} == {
+        (family, address, port) for port in (19642, 28752, 27017) for family, address in (
+            (socket.AF_INET, "127.0.0.1"), (socket.AF_INET6, "::1"),
+            (socket.AF_INET6, "::ffff:127.0.0.1"))}
+    assert all(timeout == 0.2 for _, _, _, timeout in calls)

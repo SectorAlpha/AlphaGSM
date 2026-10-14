@@ -2,15 +2,14 @@
 
 This guide covers the `squad44server` module in AlphaGSM.
 
-`squad44server` has a previously passed Ubuntu 24.04 Linux baseline. The current
-CI failure remains under investigation: the stock engine loads its world, but
-the integration-container A2S query times out. Host smoke reached A2S before
-failing its obsolete Workshop fixture check. Clean baseline CI initialized the
-Steam API and loaded the world, but still timed out on A2S. A candidate now
-prefers the SDK redistributable shipped in the server depot using a launch-time
-library path, preserving the existing process library path and leaving HOME
-unchanged. This candidate is pending CI; the SDK revision has not been proven
-to cause the timeout. Real A2S, query/info and shutdown checks remain required.
+`squad44server` passed stock process and Docker integration plus Docker smoke
+on Ubuntu 24.04 in CI run `38537399526` on 2026-10-14. Both runtimes load a
+native world and answer real A2S query, info and JSON requests; shutdown is
+verified. Docker smoke reported `Veghel Offensive Random 01` with 0/80 players.
+
+AlphaGSM prefers the Steam SDK supplied with the dedicated server. Stop currently
+uses the existing forced-stop fallback; graceful saving is not established.
+Native Workshop loading remains pending separate validation.
 
 ## Requirements
 

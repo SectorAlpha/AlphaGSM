@@ -87,7 +87,7 @@ def test_workshop_cleanup_exception_does_not_replace_readiness_failure(integrati
 
 
 def test_failed_start_is_inside_cleanup_scope(integration, tmp_path, monkeypatch):
-    monkeypatch.setattr(integration, "_diagnose_wreckfest", lambda *_: None)
+    monkeypatch.setattr(integration, "_diagnose_wreckfest", lambda *_args, **_kwargs: None)
     for name in ("ALPHAGSM_WRECKFESTSERVER_TEST_INSTALL", "ALPHAGSM_WRECKFESTSERVER_TEST_CACHE"):
         monkeypatch.delenv(name, raising=False)
     for name in ("require_integration_opt_in", "require_steamcmd_opt_in", "require_proton"):
