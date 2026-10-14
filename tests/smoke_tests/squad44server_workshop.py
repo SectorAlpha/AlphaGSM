@@ -66,10 +66,13 @@ def assert_native_plugin_loaded(runtime_text, native_text, plugin):
     prefix = r"^(?:\[[^\]\r\n]*\])*"
     identity = r"(?<![A-Za-z0-9_-])" + re.escape(plugin) + r"(?![A-Za-z0-9_-])"
     plugin_path = r"[/\\]" + re.escape(plugin) + r"[/\\]"
+    evidence = "\n".join(line for line in text.splitlines() if any(
+        marker in line for marker in ("LogPakFile:", "LogModdingRuntimeModule:",
+                                      "LogLoad: Took", "LogWorld: Bringing World")))
     assert re.search(prefix + r"LogPakFile:.*\bMounted Pak file\b.*" + plugin_path + r".*\.pak\b",
-                     text, re.MULTILINE | re.IGNORECASE), "No native Workshop PAK mount"
+                     text, re.MULTILINE | re.IGNORECASE), "No native Workshop PAK mount\n" + evidence[-20000:]
     assert re.search(prefix + r"LogModdingRuntimeModule:.*\b(?:mounted|seriali[sz]ed)\b.*" + identity,
-                     text, re.MULTILINE | re.IGNORECASE), "No native Workshop plugin registration"
+                     text, re.MULTILINE | re.IGNORECASE), "No native Workshop plugin registration\n" + evidence[-20000:]
 
 
 def wait_for_native_map(log_dir, layer, timeout):

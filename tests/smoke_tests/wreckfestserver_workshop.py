@@ -46,13 +46,23 @@ def capture_workshop_registry(fetch_output, send_command, timeout_seconds=90, *,
     deadline = clock() + timeout_seconds
     before = fetch_output(timeout_seconds)
     send_command()
+    latest = ""
 
     def fresh_output(remaining):
+        nonlocal latest
         output = fetch_output(remaining)
         assert output.startswith(before), "Native console capture rotated during the Tracks request"
-        return output[len(before):]
+        latest = output[len(before):]
+        return latest
 
-    return wait_for_workshop_loaded(fresh_output, max(0, deadline - clock()), clock=clock, sleep=sleep)
+    try:
+        return wait_for_workshop_loaded(fresh_output, max(0, deadline - clock()), clock=clock, sleep=sleep)
+    except AssertionError:
+        # repr exposes terminal controls and empty captures in remote job logs;
+        # these diagnostic bytes never replace the required native registry.
+        print(f"[diagnostic] Wreckfest console before tracks: {len(before)} chars; tail={before[-2000:]!r}")
+        print(f"[diagnostic] Wreckfest fresh tracks response: {len(latest)} chars; tail={latest[-8000:]!r}")
+        raise
 
 
 def wait_for_workshop_loaded(fetch_output, timeout_seconds=90, *,

@@ -39,6 +39,23 @@ def test_native_tracks_section_accepts_ansi_terminal_formatting():
     assert_workshop_loaded("\x1b[0mTracks:\r\n\x1b[32m  crazy_2000_classic (CRAZY 2000)\x1b[0m\r\n")
 
 
+def test_failed_capture_reports_bounded_terminal_bytes_without_changing_failure(capsys):
+    before = "Wine startup\n"
+    elapsed = [0.0]
+    calls = []
+    def fetch(_remaining):
+        calls.append(True)
+        elapsed[0] += 0.6
+        return before if len(calls) == 1 else before + "\x1b[2Ktracks\r\n"
+    with pytest.raises(AssertionError, match="Timed out.*Tracks: registry section is missing"):
+        capture_workshop_registry(fetch, lambda: None, timeout_seconds=1,
+                                  clock=lambda: elapsed[0], sleep=lambda _: None)
+    diagnostic = capsys.readouterr().out
+    assert "[diagnostic] Wreckfest console before tracks:" in diagnostic
+    assert "Wine startup" in diagnostic
+    assert r"\x1b[2Ktracks\r\n" in diagnostic
+
+
 def test_native_tracks_section_accepts_exact_event_with_display_name():
     assert_workshop_loaded(
         "Server connected.\r\nTracks:\r\n"

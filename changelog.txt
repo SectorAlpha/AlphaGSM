@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-14
+- Workshop diagnostics: retain bounded native PAK/plugin rows and escaped
+  console response bytes when Squad 44 or Wreckfest load assertions fail in CI.
 - Workshop smoke CI: supply public fixtures for the eight runners whose
   item/collection variables are separate from their opt-in flags, preserving
   explicit overrides so a stock-only pass cannot replace Workshop validation.
