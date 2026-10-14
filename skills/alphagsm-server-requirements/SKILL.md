@@ -42,8 +42,11 @@ assessment into an installation question or an unsolicited install.
    complete port/IP claims, game settings, worlds and licenses. For an existing
    tag use `alphagsm <tag> doctor --json`, help and `set --list`; redact secrets.
    If using the Docker wrapper, inspect its route first: forwarded diagnostics
-   can start/recreate the manager. That managed behavior needs no separate
-   consent; source inspection is useful if the host lacks Docker.
+   can start/recreate the manager. For an inspection-only request, use a proven
+   diagnostic path into an already running manager, or inspect source/config and
+   report the unavailable live check. Do not bootstrap/recreate a manager or
+   pull/build images merely to produce an assessment. For requested operational
+   work, these managed steps still need no separate installation approval.
    Before a tag exists, use source/guide inspection instead of creating a probe
    tag. Check Docker CLI/daemon/Compose and local image identity without pulling.
 5. Research official upstream docs/releases for the exact version/platform when

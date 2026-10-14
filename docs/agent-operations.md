@@ -59,6 +59,9 @@ Ask “Use alphagsm-server-requirements. Check what this host needs for
 minecraft.vanilla version [my version].” The agent checks the exact type/version,
 platform, manager/installer tools, game runtime, resources, ports, settings,
 worlds, credentials and assets. It reports what exists and what is still needed.
+An assessment-only request does not start/recreate the Docker manager, download
+images or install game files. If live diagnostics are unavailable, the agent
+reports that limitation using source/config inspection.
 
 For every game type:
 

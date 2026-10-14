@@ -7,6 +7,10 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-14
+- Agent assessments: keep requirements/health inspection from implicitly
+  bootstrapping or recreating the Docker manager or acquiring runtime images.
+
 2026-10-12
 - Agent prerequisites: add per-game/version requirement discovery across manager,
   installer, runtime, provider/assets, configuration and host resources.

@@ -14,6 +14,11 @@ For a specific variant, match that canonical type; for a broad family request,
 retain the installed variants rather than treating them as interchangeable.
 Read-only requirements/health requests stay read-only and do not need an
 installation question merely because something is absent.
+That scope includes the manager: forwarded wrapper diagnostics can create state,
+pull/build images or start/recreate it. For inspection-only work, use verified
+existing-manager diagnostics or source/config inspection and report unavailable
+checks. Managed installation freedom applies to requested operational work,
+not unsolicited changes during an assessment.
 
 | User request and state | Next action |
 | --- | --- |
