@@ -25,14 +25,10 @@ SETUP_TIMEOUT = 3600
 
 
 @pytest.mark.timeout(SETUP_TIMEOUT + START_TIMEOUT + 600)
-def test_squad44server_lifecycle(tmp_path):
-    """Run the stock baseline once using the selected CI runtime."""
-    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend())
-    _run_squad44server_lifecycle(tmp_path, runtime_backend=runtime_backend)
-
-
-def _run_squad44server_lifecycle(tmp_path, *, runtime_backend, workshop=None):
+def test_squad44server_lifecycle(tmp_path, *, runtime_backend=None, workshop=None):
     """Require a stock native world, real A2S health and complete shutdown."""
+    runtime_backend = runtime_backend or os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend())
     require_integration_opt_in()
     require_steamcmd_opt_in()
     module_name = "squad44server"
@@ -114,4 +110,4 @@ def test_squad44server_native_workshop(tmp_path, runtime_backend):
         "ALPHAGSM_SQUAD44_WORKSHOP_ID and ALPHAGSM_SQUAD44_WORKSHOP_PLUGIN")
     item = normalize_workshop_identifier(item)
     assert item != "2909251852", "SquidBots has obsolete Engine=4.27.2; the current SDK uses 4.27.2.SQ44"
-    _run_squad44server_lifecycle(tmp_path, runtime_backend=runtime_backend, workshop=(item, plugin))
+    test_squad44server_lifecycle(tmp_path, runtime_backend=runtime_backend, workshop=(item, plugin))
