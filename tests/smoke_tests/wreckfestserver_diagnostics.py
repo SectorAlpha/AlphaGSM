@@ -68,9 +68,10 @@ def _native_details(install):
         except OSError:
             continue
     candidates = [install / "log.txt", install / "logs/connection_log.txt", install / "logs/console_log.txt"]
-    prefix = install / ".alphagsm-wineprefix/drive_c"
-    for steam_root in (prefix / "Program Files (x86)/Steam", prefix / "Program Files/Steam"):
-        candidates.extend(steam_root / "logs" / name for name in ("connection_log.txt", "console_log.txt"))
+    for relative in (".alphagsm-wineprefix/drive_c", ".alphagsm-wineprefix/pfx/drive_c"):
+        prefix = install / relative
+        for steam_root in (prefix / "Program Files (x86)/Steam", prefix / "Program Files/Steam"):
+            candidates.extend(steam_root / "logs" / name for name in ("connection_log.txt", "console_log.txt"))
     for candidate in candidates:
         if candidate.is_file() and candidate.resolve().is_relative_to(install):
             details["native_logs"].append({"path": str(candidate.relative_to(install)),
