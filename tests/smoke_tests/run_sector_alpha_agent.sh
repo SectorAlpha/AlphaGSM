@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Offline trusted agent-API origin upgrade, hostname preflight, consent and no-replay gates.
+# Offline approved player/query ports, API origin upgrade, hostname preflight and consent gates.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 PYTHONPATH=.:src "${PYTHON_BIN:-python3}" -m pytest \

@@ -556,12 +556,20 @@ after updating. Custom provider origins stay unchanged.
 The quoted `'*'` binds all
 eligible local servers, inferring their settings and registering website IDs
 automatically. Use `agent bind my-minecraft` for one server. Review the suggested
-public address, publication and remote actions before saving.
+public address, player port, query port, publication and remote actions before saving.
+The player port comes from the local game's main port; `--port` overrides the
+query port and `--connect-port` overrides the player port for NAT. For Minecraft,
+`--port` sets both unless `--connect-port` is also supplied. Existing bindings
+keep their saved metadata until you rebind and approve a player port. Binding
+does not enable reporting; approved endpoints are sent only in reports.
+Update the receiving service before creating or rebinding servers: older
+receivers reject the new player-port field. Existing saved bindings remain
+compatible until you approve the field through rebinding.
 
 Use `--host game.mygameserver.com` for an existing hostname. Public reports check
 that all its DNS addresses match this machine's expected public IPs; `--public-ip`
 provides an explicit override. `agent check-endpoint my-minecraft` tests the
-advertised game port separately.
+advertised query port separately.
 
 Multiple games can share one machine and public IP with separate subdomains:
 
@@ -570,7 +578,7 @@ alphagsm agent bind my-minecraft --host minecraft.mygameserver.com
 alphagsm agent bind my-tf2 --host tf2.mygameserver.com
 ```
 
-Each keeps its own configured port and permissions. Bulk binding also accepts
+Each keeps its own player/query ports and permissions. Bulk binding also accepts
 a different hostname at each server's endpoint prompt.
 Follow the [step-by-step subdomain setup](docs/sector-alpha-agent.md#multiple-game-subdomains-on-one-machine)
 for DNS records, NAT overrides, port checks and publication.

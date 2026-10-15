@@ -83,7 +83,7 @@ def test_guided_bind_infers_metadata_and_registers_only_scoped_hash(tmp_path, lo
     item = next(iter(cfg.load()['bindings'].values()))
     assert item == dict(tag='world', epoch=3, actions=[], publication=False,
                         metadata=dict(game_id='minecraft.vanilla', host='8.8.8.8', port=25565,
-                                      name='Local world', capacity=20))
+                                      connect_port=25565, name='Local world', capacity=20))
     assert provider == [('https://control.example', 'POST', '/v1/agent/bindings', {
         'credential': {'key_id': 'report-key', 'secret': 'r' * 43},
         'payload': {'scope': 'reporting', 'binding_ref': hashlib.sha256(b'world').hexdigest()}})]
@@ -93,7 +93,8 @@ def test_guided_bind_infers_metadata_and_registers_only_scoped_hash(tmp_path, lo
 def test_bulk_preserves_existing_binding_and_policy_on_rerun(tmp_path, local_servers, provider, monkeypatch):
     cfg = enrolled(tmp_path)
     cfg.bind('approved', 'world', 7, actions=['status'], publication=True,
-             metadata=dict(game_id='minecraft.vanilla', host='approved.example', port=30000, name='Approved', capacity=30))
+             metadata=dict(game_id='minecraft.vanilla', host='approved.example', port=30000,
+                           connect_port=30001, name='Approved', capacity=30))
     old = cfg.load()
     answers(monkeypatch, ['', '', '', 'y'])
     assert cli.run(['bind', '*'], root=cfg.root) == 0
@@ -136,6 +137,7 @@ def test_setup_enrolls_once_then_binds_all_private_without_starting(tmp_path, lo
     assert len(value['bindings']) == 2
     assert not value['reporting_enabled'] and not value['management_enabled']
     assert {b['metadata']['port'] for b in value['bindings'].values()} == {25565, 27025}
+    assert {b['metadata']['connect_port'] for b in value['bindings'].values()} == {25565, 27015}
     assert all(not b['publication'] and not b['actions'] for b in value['bindings'].values())
     assert [call[2] for call in provider] == ['/v1/agent/enroll', '/v1/agent/bindings', '/v1/agent/bindings']
 

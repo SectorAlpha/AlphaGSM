@@ -30,7 +30,7 @@ def test_inventory_excludes_secrets_links_invalid_and_cross_user(tmp_path, monke
     items, failures = inventory.inventory()
     assert [item['tag'] for item in items] == ['world']
     assert 'NEVER' not in repr((items, failures))
-    assert set(items[0]) == {'tag', 'game_id', 'name', 'port', 'capacity', 'publicip', 'externalip', 'hostip'}
+    assert set(items[0]) == {'tag', 'game_id', 'name', 'port', 'connect_port', 'capacity', 'publicip', 'externalip', 'hostip'}
     assert all('secrets' not in tag for tag, reason in failures)
 
 

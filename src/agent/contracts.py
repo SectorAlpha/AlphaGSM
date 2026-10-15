@@ -93,6 +93,7 @@ def validate_job(value):
 
 
 def validate_metadata(value):
+    optional = ("connect_port",) if type(value) is dict and "connect_port" in value else ()
     exact(
         value,
         (
@@ -106,7 +107,7 @@ def validate_metadata(value):
             "capacity",
             "runtime_state",
             "allowed_actions",
-        ),
+        ) + optional,
     )
     identifier(value["binding_id"])
     integer(value["binding_epoch"])
@@ -115,6 +116,8 @@ def validate_metadata(value):
     for key in ("name", "game_id", "host"):
         text(value[key])
     integer(value["port"], 1, 65535)
+    if value.get("connect_port") is not None:
+        integer(value["connect_port"], 1, 65535)
     integer(value["capacity"], 0, 100000)
     enum(value["runtime_state"], STATES)
     actions = value["allowed_actions"]

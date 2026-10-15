@@ -54,7 +54,8 @@ def current_binding(item, value):
     binding = value['bindings'].get(item['binding_id'])
     if (not value['reporting_enabled'] or binding is None or not binding['publication']
             or binding['epoch'] != item['binding_epoch']
-            or any(binding['metadata'][key] != item[key] for key in ('game_id', 'host', 'port'))):
+            or any((key in binding['metadata'], binding['metadata'].get(key)) != (key in item, item.get(key))
+                   for key in ('game_id', 'host', 'port', 'connect_port'))):
         raise PreflightError("Local publication approval or endpoint changed; retry with the next report")
     if item['game_id'] not in PROFILES:
         raise PreflightError("This game has no supported public query profile; private binding remains available")

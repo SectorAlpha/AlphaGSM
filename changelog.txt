@@ -8,6 +8,13 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-15
+- Sector Alpha: approve player connection ports separately from query ports in
+  binding previews. Infer the primary game port and add --connect-port for NAT;
+  Minecraft --port follows both ports unless --connect-port overrides it.
+- Agent metadata: accept optional strict connect_port for every game, preserving
+  old reports and consent. Existing bindings gain it only after rebinding; endpoint
+  metadata reaches the API through reports after reporting is enabled. Update the
+  receiver before new bindings/rebinding, since old closed schemas reject the field.
 - Sector Alpha: use https://gameserver-api.sector-alpha.net as the single origin
   for enrollment, binding registration, reports and management. Public accounts
   and the directory remain on https://sector-alpha.net.
