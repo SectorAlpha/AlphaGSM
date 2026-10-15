@@ -9,7 +9,9 @@ directly to the terminal or CI log as they run.
 Current smoke tests:
 
 - `run_sector_alpha_agent.sh`
-  Exercises independent opt-ins, private credential storage, strict contracts,
+  Exercises the single `gameserver-api.sector-alpha.net` agent origin, trusted
+  local upgrades from the old official website origin, preserved custom providers,
+  independent opt-ins, private credential storage, strict contracts,
   local revocation, no-replay journaling, bounded lifecycle helper timeout and
   hostile public protocol parsing. Guided single/bulk binding uses isolated local
   inventories and mocked registration/address discovery; no public destination is contacted.

@@ -1147,8 +1147,19 @@ final online authorization and persists executing before lifecycle effects.
 reconciles unknown and never repeats effects. A global foreground-service lock
 prevents competing pollers. No secrets are accepted as CLI arguments.
 
-Guided enrollment defaults to `https://sector-alpha.net`; alternate origins must
-be HTTPS roots and normalize an optional trailing slash. `agent.inventory` reads
+The single default agent origin is `https://gameserver-api.sector-alpha.net` for
+enrollment, registration, reports and every management route. Public website,
+account and directory traffic remains at `https://sector-alpha.net`.
+`canonical_agent_origin()` applies an exact trusted local authority mapping from
+the old official HTTPS website origin (default/443 port, case and root-slash
+variants) before enrollment-code or credential submission. It does not follow
+network redirects or use domain suffix matching. `Config.load()` returns this
+normalized origin for existing installations; the next ordinary write persists
+it without changing IDs, keys, bindings or policy. Restart existing agent
+processes after upgrading. Explicit custom origins, including non-default ports,
+remain unchanged. There is one stored origin and one transport for all scopes.
+The generic origin syntax validator still requires HTTPS roots and normalizes an
+optional trailing slash. `agent.inventory` reads
 only owned current-user JSON datastores without constructing Server (which can
 migrate secrets or save runtime metadata). It exports an allowlist of module,
 port, name, capacity and networking hints. `agent.network` accepts only globally

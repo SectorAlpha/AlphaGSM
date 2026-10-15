@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Offline per-game subdomain binding, hostname preflight, consent and no-replay gates.
+# Offline trusted agent-API origin upgrade, hostname preflight, consent and no-replay gates.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 PYTHONPATH=.:src "${PYTHON_BIN:-python3}" -m pytest \

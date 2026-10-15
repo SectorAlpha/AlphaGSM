@@ -9,18 +9,16 @@ import warnings
 from server.public_query import PROFILES
 from utils.state_io import state_lock
 from .lifecycle import AlphaRuntime
-from .config import ConfigError, origin
+from .config import DEFAULT_ORIGIN, ConfigError, canonical_agent_origin
 from .contracts import exact, identifier, integer, validate_metadata
 from .choices import next_steps, permissions, require_capabilities
 from .inventory import inventory, read_local
 from .network import global_ip, suggest_public_host
 from .publication_config import local_publication
 
-DEFAULT_ORIGIN = "https://sector-alpha.net"
-
 
 def enroll(cfg, api_origin, transport):
-    api_origin = origin(api_origin or DEFAULT_ORIGIN)
+    api_origin = canonical_agent_origin(api_origin or DEFAULT_ORIGIN)
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", getpass.GetPassWarning)
@@ -119,7 +117,7 @@ def guided(cfg, options, transport):
     if options.binding_id is not None:
         identifier(options.binding_id)
     if options.origin is not None:
-        selected_origin = origin(options.origin)
+        selected_origin = canonical_agent_origin(options.origin)
         if value['origin'] is not None and selected_origin != value['origin']:
             raise ConfigError("Existing enrollment uses a different origin")
     bulk = options.command == 'setup' or options.target == '*'

@@ -65,14 +65,14 @@ def test_root_origin_slash_is_normalized_in_storage_and_transport(tmp_path):
     cfg = Config(tmp_path / 'agent')
     cfg.enroll('https://sector-alpha.net/', dict(schema_version=1, installation_id='i', credential_generation=1,
                reporting=None, management=None))
-    assert cfg.load()['origin'] == 'https://sector-alpha.net'
-    assert Transport('https://sector-alpha.net/').origin == 'https://sector-alpha.net'
+    assert cfg.load()['origin'] == 'https://gameserver-api.sector-alpha.net'
+    assert Transport('https://sector-alpha.net/').origin == 'https://gameserver-api.sector-alpha.net'
 
 
 def test_enroll_default_only_prompts_for_hidden_code(tmp_path, provider, monkeypatch):
     monkeypatch.setattr('builtins.input', lambda prompt: pytest.fail('unexpected visible prompt'))
     assert cli.run(['enroll'], root=tmp_path / 'agent') == 0
-    assert provider == [('https://sector-alpha.net', 'POST', '/v1/agent/enroll', {'payload': {'code': 'hidden-code'}})]
+    assert provider == [('https://gameserver-api.sector-alpha.net', 'POST', '/v1/agent/enroll', {'payload': {'code': 'hidden-code'}})]
     assert not Config(tmp_path / 'agent').load()['management_enabled']
 
 

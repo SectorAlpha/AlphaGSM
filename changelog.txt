@@ -8,6 +8,12 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-15
+- Sector Alpha: use https://gameserver-api.sector-alpha.net as the single origin
+  for enrollment, binding registration, reports and management. Public accounts
+  and the directory remain on https://sector-alpha.net.
+- Agent upgrades: normalize the old official website origin locally without
+  re-enrollment or changing IDs, credentials or consent. Restart the agent after
+  upgrading; explicitly configured custom providers keep their origins.
 - Documentation: add a step-by-step same-machine subdomain setup with DNS records,
   individual and bulk binding, public-IP overrides, endpoint checks and reporting.
 - Sector Alpha: document and verify separate per-game subdomains on one machine,
@@ -19,7 +25,7 @@ Historical detail lives in git history. Keep this file focused on release-facing
   check-endpoint command for bounded native game-protocol diagnostics.
 - DNS validation: use pinned dnspython with complete A/AAAA checks, hard lifetimes
   and bounded concurrent work; include its dynamic protocol modules in binaries.
-- Sector Alpha: default enrollment to https://sector-alpha.net, register bindings
+- Sector Alpha: default enrollment to https://gameserver-api.sector-alpha.net, register bindings
   automatically, and support guided single-server binding and `agent bind '*'`
   for all eligible local servers. Infer each server's game, port, name and capacity;
   suggest its public IP with explicit host/port overrides and operator confirmation.
