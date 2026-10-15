@@ -8,6 +8,12 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-15
+- Sector Alpha: validate existing server hostnames against this machine's public
+  IPs before public report renewals. Withhold mismatched/unavailable names without
+  changing local consent. Add repeatable --public-ip overrides and an explicit
+  check-endpoint command for bounded native game-protocol diagnostics.
+- DNS validation: use pinned dnspython with complete A/AAAA checks, hard lifetimes
+  and bounded concurrent work; include its dynamic protocol modules in binaries.
 - Sector Alpha: default enrollment to https://sector-alpha.net, register bindings
   automatically, and support guided single-server binding and `agent bind '*'`
   for all eligible local servers. Infer each server's game, port, name and capacity;

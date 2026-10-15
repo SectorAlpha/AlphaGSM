@@ -144,8 +144,9 @@ class Config:
             value[scope] = {"key_id": key_id, "secret": secret}
             self._write(value)
 
-    def bind(self, binding_id, tag, epoch, *, actions, publication, metadata):
+    def bind(self, binding_id, tag, epoch, *, actions, publication, metadata, expected_public_ips=None):
         from server.public_query import PROFILES
+        from .publication_config import local_publication
 
         if publication is True and metadata.get("game_id") not in PROFILES:
             raise ConfigError("This game has no supported public query profile")
@@ -179,6 +180,7 @@ class Config:
                 "actions": actions,
                 "publication": publication,
                 "metadata": metadata,
+                **local_publication(expected_public_ips, value["bindings"].get(binding_id)),
             }
             if value["bindings"].get(binding_id) == binding:
                 return

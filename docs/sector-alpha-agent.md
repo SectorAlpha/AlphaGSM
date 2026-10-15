@@ -28,10 +28,34 @@ The guided preview reads each server's configured game, query/game port, name an
 capacity. It suggests a public numerical IP from configured networking details,
 the outbound interface, or a bounded HTTPS address lookup. Confirm the advertised
 host and port: NAT, VPNs and port forwarding can make the suggested endpoint wrong.
-Use `--host game.example.net` to override the host and avoid address discovery;
+Use `--host game.example.net` to override the host and avoid address discovery during binding;
 use `--port 25566` when binding one server with a different public port.
 Bulk binding keeps individual server ports. Unreadable or unconfigured servers
 are reported with a reason and can be retried after fixing their local settings.
+
+For an existing domain/subdomain pointing to this machine:
+
+```sh
+alphagsm agent bind my-minecraft --host game.mygameserver.com
+alphagsm agent check-endpoint my-minecraft
+```
+
+Before every public report, the agent checks fresh A and AAAA records. Every
+advertised address must be globally routable and match this machine's configured
+or detected public IP. For NAT or multiple public addresses, supply `--public-ip
+YOUR_PUBLIC_IP` when binding; repeat the option for each expected address. These
+expectations stay in local configuration. DNS checks still run when `--host` is
+explicit. An unavailable lookup or mismatch withholds only that server's outgoing
+publication; reporting continues for other bindings. Stored consent is retained,
+so a later matching DNS check can restore publication. Private bindings remain
+usable while DNS is being corrected. No DNS records are created or modified.
+
+`check-endpoint` additionally tests the advertised port through the supported
+native game protocol, using only matched numerical addresses. It does not change
+publication or permissions. A failure may mean a stopped game, wrong forwarded
+port, firewall, or missing NAT loopback support; an external test is still needed
+when the router cannot reach its own public address. The website's separate
+ownership challenge and isolated query checks remain required.
 
 New bindings default to private with no allowed remote actions. The prompts let
 you choose publication and actions; repeat runs preserve your previous choices.

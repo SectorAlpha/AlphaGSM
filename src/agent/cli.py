@@ -8,6 +8,9 @@ from .contracts import ACTIONS
 from .service import Service
 from .transport import Transport, TransportError
 from . import onboarding
+from .publication_config import PublicationConfigError, local_publication
+from .dns_lookup import PreflightError
+from . import endpoint_check
 
 
 def run(args, *, root=None):
@@ -45,9 +48,13 @@ def run(args, *, root=None):
         publication.add_argument("--private", action="store_false", dest="publish")
         bind.add_argument("--game")
         bind.add_argument("--host")
+        bind.add_argument("--public-ip", action="append", help="Expected public machine IP; repeat for multiple IPs")
         bind.add_argument("--port", type=int)
         bind.add_argument("--name")
         bind.add_argument("--capacity", type=int)
+    check = commands.add_parser("check-endpoint")
+    check.add_argument("local_tag")
+    check.add_argument("--public-ip", action="append")
     unbind = commands.add_parser("unbind")
     unbind.add_argument("binding_id")
     publication = commands.add_parser("publication")
@@ -97,10 +104,18 @@ def run(args, *, root=None):
                     "name": options.name,
                     "capacity": options.capacity or 0,
                 },
+                **local_publication(options.public_ip),
             )
             print("Exact local binding saved. Only the selected operations are permitted.")
             if "stop" in (options.actions or []) or "restart" in (options.actions or []):
                 print("Normal AlphaGSM stop may force termination after graceful shutdown attempts.")
+        elif options.command == "check-endpoint":
+            tag = local_tag(options.local_tag)
+            matches = [binding for binding in cfg.load()['bindings'].values() if binding['tag'] == tag]
+            if len(matches) != 1:
+                raise ConfigError("Bind this exact local server tag before checking its public endpoint")
+            endpoint_check.check_endpoint(matches[0], options.public_ip)
+            print("Public endpoint check passed for " + tag + ". The central ownership challenge is still required.")
         elif options.command == "unbind":
             cfg.unbind(options.binding_id)
         elif options.command == "publication":
@@ -140,7 +155,7 @@ def run(args, *, root=None):
         elif options.command == "forget":
             cfg.forget()
         return 0
-    except ConfigError as exc:
+    except (ConfigError, PreflightError, PublicationConfigError) as exc:
         print("Agent operation rejected: " + str(exc))
         return 1
     except (ValueError, OSError, RuntimeError, EOFError):

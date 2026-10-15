@@ -14,6 +14,7 @@ from .contracts import exact, identifier, integer, validate_metadata
 from .choices import next_steps, permissions, require_capabilities
 from .inventory import inventory, read_local
 from .network import global_ip, suggest_public_host
+from .publication_config import local_publication
 
 DEFAULT_ORIGIN = "https://sector-alpha.net"
 
@@ -93,7 +94,7 @@ def candidate(local, value, options, suggest=suggest_public_host):
     validate_metadata({'binding_id': binding_id or 'pending', 'binding_epoch': epoch, 'publication': publication,
                        'allowed_actions': actions, 'runtime_state': 'unknown', **metadata})
     return {'tag': local['tag'], 'binding_id': binding_id, 'epoch': epoch, 'actions': actions,
-            'publication': publication, 'metadata': metadata}
+            'publication': publication, 'metadata': metadata, **local_publication(options.public_ip, previous)}
 
 
 def register(transport, value, tag):
@@ -111,6 +112,7 @@ def register(transport, value, tag):
 
 def guided(cfg, options, transport):
     value = cfg.load()
+    local_publication(options.public_ip)
     require_capabilities(value, options.publish is True, options.actions or [])
     if options.host is not None:
         host(options.host)
@@ -165,7 +167,8 @@ def guided(cfg, options, transport):
               " | capacity=" + str(metadata["capacity"]) + " | publication=" + ('yes' if item['publication'] else 'no') +
               " | actions=" + (','.join(item['actions']) or 'none') +
               " | binding=" + (item['binding_id'] or 'pending provider registration') +
-              " | epoch=" + (str(item['epoch']) if item['binding_id'] else 'pending'))
+              " | epoch=" + (str(item['epoch']) if item['binding_id'] else 'pending') +
+              " | machine IPs=" + (','.join(item.get('expected_public_ips', [])) or 'automatic'))
     if input("Save these exact bindings? [no]: ").strip().lower() not in ('y', 'yes'):
         print("Cancelled. Local bindings are unchanged.")
         return 1
@@ -208,10 +211,11 @@ def save_candidates(cfg, value, candidates, transport):
                 if previous is not None and previous['tag'] != item['tag']:
                     raise ConfigError('Provider binding ID is already assigned to another local server')
                 planned = {'tag': item['tag'], 'epoch': epoch, 'actions': item['actions'],
-                           'publication': item['publication'], 'metadata': item['metadata']}
+                           'publication': item['publication'], 'metadata': item['metadata'],
+                           **local_publication(item.get('expected_public_ips'), previous)}
                 if previous != planned:
                     cfg.bind(binding_id, item['tag'], epoch, actions=item['actions'], publication=item['publication'],
-                             metadata=item['metadata'])
+                             metadata=item['metadata'], **local_publication(item.get('expected_public_ips'), previous))
                 value = cfg.load()
             print("Bound " + item['tag'] + " (" + binding_id + ").")
         except (OSError, ValueError, RuntimeError):

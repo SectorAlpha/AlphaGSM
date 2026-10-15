@@ -53,7 +53,7 @@ def pyinstaller_arguments():
         "--workpath", str(BUILD_DIR), "--specpath", str(BUILD_DIR),
         "--paths", str(REPO_ROOT / "src"),
     ]
-    for package in PACKAGES:
+    for package in (*PACKAGES, "dns"):
         args.extend(["--collect-submodules", package])
     for source, destination in collect_runtime_data():
         args.extend(["--add-data", f"{source}{os.pathsep}{destination}"])

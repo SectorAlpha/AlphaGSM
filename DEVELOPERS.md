@@ -1036,10 +1036,36 @@ and sends no agent credentials. Explicit `--host` bypasses discovery.
 bindings before registration or config writes. The portal's authenticated
 `POST /v1/agent/bindings` accepts only a selected enrolled scope and SHA256 of the
 local tag; it derives installation ownership from that scoped credential and
-returns an idempotent binding ID/epoch. Local tags and datastore secrets never
-cross that boundary. Registration grants no actions or publication. Existing
+returns an idempotent binding ID/epoch. Registration sends only the tag reference;
+later reports contain approved display metadata, whose name may match the tag.
+Datastore secrets stay local. Registration grants no actions or publication. Existing
 bindings retain their approved values on repeat runs; capabilities require
 separate local enablement. Games outside the public query registry remain private.
+
+`agent.preflight` applies hostname checks to copied public report items immediately
+before transport. Optional per-binding `expected_public_ips` is local policy only;
+it never enters metadata, registration or wire schemas. Automatic expectations
+read allowlisted local network hints and use one route/IP lookup per batch. Fresh
+complete A/AAAA answers must all be global and match expected machine addresses.
+`agent.dns_lookup` uses pinned dnspython async resolution with absolute lifetimes,
+an eight-worker bound and a 30-second batch ceiling. Timeout or mismatch changes
+only the outgoing publication flag; later repair can restore publication without
+rewriting consent. Numeric/private reports keep their existing behavior.
+
+After DNS, the service rechecks current publication, endpoint, expected IPs and
+provider relationship under the config lock, then sends with the current reporting
+key before releasing the lock. Report POSTs have a hard ten-second HTTPS budget,
+including DNS, TLS, headers and body. Expiry closes active sockets; a stalled system
+resolver cannot later connect or accumulate additional workers. A service instance
+retains its initial origin/installation relationship and must restart after local
+re-enrollment before sending any new relationship's credentials.
+
+The explicit `check-endpoint` diagnostic additionally probes only pinned matched
+addresses through the immutable native registry, retaining the original SLP
+virtual host and sharing a five-second protocol budget. It does not run as a
+publication renewal hook, avoiding NAT-loopback failures turning into publication
+flapping. Neither local check grants central endpoint verification. Standalone
+builds collect `dns` dynamic protocol modules as well as the agent package.
 
 Trusted local runtime helpers run in separate process groups with bounded
 state/operation deadlines. `held_descriptor`/`inherited_state_lock` hand the

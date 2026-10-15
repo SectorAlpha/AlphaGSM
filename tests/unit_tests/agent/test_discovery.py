@@ -264,3 +264,27 @@ def test_stalled_dns_is_bounded_and_cannot_connect_after_cancellation(monkeypatc
         assert time.monotonic() < deadline, 'Cancelled DNS worker did not finish when the resolver returned'
         time.sleep(.01)
     assert all(connection.closed for connection in sockets)
+
+
+def test_repeated_lookup_does_not_accumulate_workers_while_system_dns_is_stalled(monkeypatch):
+    import threading
+    import time
+    network = module('network')
+    release = threading.Event()
+    calls = []
+    def stalled(budget):
+        calls.append(budget)
+        assert release.wait(2)
+        return None
+    monkeypatch.setattr(network, 'LOOKUP_TIMEOUT', .03)
+    monkeypatch.setattr(network, '_lookup_exchange', stalled)
+    try:
+        assert network.lookup_ip() is None
+        assert network.lookup_ip() is None
+        assert len(calls) == 1, 'A timed-out system resolver spawned another uncancellable worker'
+    finally:
+        release.set()
+    deadline = time.monotonic() + 1
+    while any(worker.name == 'alphagsm-public-ip' for worker in threading.enumerate()):
+        assert time.monotonic() < deadline
+        time.sleep(.01)

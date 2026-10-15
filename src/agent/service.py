@@ -7,6 +7,7 @@ from utils.state_io import state_lock
 from .journal import Journal
 from .lifecycle import AlphaRuntime, Executor
 from .reporting import policy_snapshot, report_snapshot
+from .preflight import final_report, preflight_report
 from .transport import Transport, TransportError
 
 
@@ -15,6 +16,7 @@ class Service:
         self.config = config
         self.runtime = runtime or AlphaRuntime()
         cfg = config.load()
+        self.relationship = (cfg["origin"], cfg["installation_id"])
         self.transport = transport or Transport(cfg["origin"])
         self.journal = Journal(config.root / "journal.json")
         self.session_id = secrets.token_hex(16)
@@ -22,14 +24,28 @@ class Service:
 
     def report_once(self):
         cfg = self.config.load()
-        if not cfg["reporting"]:
+        if not cfg["reporting"] or (cfg["origin"], cfg["installation_id"]) != self.relationship:
             return None
         payload = report_snapshot(self.config, self.runtime)
-        return self.transport.request("POST", "/v1/agent/reports", credential=cfg["reporting"], payload=payload)
+        checked = self.config.load()
+        payload, failures = preflight_report(payload, checked)
+        # DNS is outside the policy lock. The final approval check and send are
+        # serialized with local consent, endpoint and credential mutations.
+        with state_lock(self.config.path):
+            current = self.config.load()
+            if (not current['reporting'] or (current['origin'], current['installation_id']) != self.relationship
+                    or current['origin'] != checked['origin']
+                    or current['installation_id'] != payload['installation_id']):
+                return None
+            payload, changed = final_report(payload, checked, current)
+            failures.update(changed)
+            for binding_id, reason in failures.items():
+                print("Publication withheld for " + binding_id + ": " + reason)
+            return self.transport.request("POST", "/v1/agent/reports", credential=current["reporting"], payload=payload)
 
     def management_once(self):
         cfg = self.config.load()
-        if not cfg["management_enabled"]:
+        if not cfg["management_enabled"] or (cfg["origin"], cfg["installation_id"]) != self.relationship:
             return None
         credential = cfg["management"]
         self.transport.request("POST", "/v1/agent/policy", credential=credential, payload=policy_snapshot(cfg))
@@ -50,7 +66,8 @@ class Service:
 
         def authorize(value):
             latest = self.config.load()
-            if not latest["management_enabled"]:
+            if (not latest["management_enabled"]
+                    or (latest["origin"], latest["installation_id"]) != self.relationship):
                 return False
             result = self.transport.request(
                 "POST",

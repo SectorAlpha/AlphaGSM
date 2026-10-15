@@ -13,6 +13,8 @@ Current smoke tests:
   local revocation, no-replay journaling, bounded lifecycle helper timeout and
   hostile public protocol parsing. Guided single/bulk binding uses isolated local
   inventories and mocked registration/address discovery; no public destination is contacted.
+  Hostname publication checks cover complete DNS/machine-IP matching, withdrawal,
+  repair, bounded DNS lifetimes and explicit pinned endpoint diagnostics.
   The Minecraft integration test also proves inferred binding, agent restart and duplicate delivery
   against the selected process/Docker runtime.
 
