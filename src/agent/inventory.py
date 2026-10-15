@@ -10,6 +10,11 @@ from .contracts import text
 
 MAX_SERVERS = 100
 MAX_DATA_BYTES = 1024 * 1024
+# These modules' primary setting is an admin/query endpoint or a client role,
+# not a known player listener. Explicit --connect-port remains an operator choice.
+NON_PLAYER_PRIMARY_PORTS = frozenset({
+    "trackmaniaserver", "enshrouded", "arma3.headless", "arma3headlessserver",
+})
 
 
 def number(value, minimum, maximum):
@@ -49,7 +54,8 @@ def read_local(tag):
     return {
         "tag": tag, "game_id": game, "name": name,
         "port": number(data.get("queryport"), 1, 65535) or number(data.get("port"), 1, 65535),
-        "connect_port": number(data.get("port"), 1, 65535),
+        "connect_port": (None if game in NON_PLAYER_PRIMARY_PORTS
+                         else number(data.get("port"), 1, 65535)),
         "capacity": number(data.get("maxplayers"), 0, 100000) or 0,
         **{key: data.get(key) if isinstance(data.get(key), str) else None
            for key in ("publicip", "externalip", "hostip")},

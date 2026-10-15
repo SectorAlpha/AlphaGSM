@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-15
+- Sector Alpha: never infer a player port from Trackmania XML-RPC, Enshrouded
+  query-only settings or Arma headless client roles. Use --connect-port only
+  after confirming an actual public player listener. Existing approvals remain.
 - Sector Alpha: approve player connection ports separately from query ports in
   binding previews. Infer the primary game port and add --connect-port for NAT;
   Minecraft --port follows both ports unless --connect-port overrides it.
