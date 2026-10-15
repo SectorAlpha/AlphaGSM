@@ -8,6 +8,10 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-15
+- Workshop validation: ARK, Space Engineers, TF2 and Wreckfest pass native
+  process/Docker integration in CI run 38748333313. TF2 smoke now waits for
+  its fresh Screen response; Wreckfest accepts prompt redraws in earlier
+  registry rows while requiring the exact unchanged Workshop track identifier.
 - ARK Workshop: use Windows-cooked content with the native Linux dedicated
   server, matching upstream tooling's fix for Linux-cooked map load crashes.
 - Wine prefixes: allow normal current-user profile initialization after copying

@@ -209,11 +209,17 @@ map ready, and a fresh console `status` showing that same canonical map running.
 The check first requests `tf_workshop_map_sync` and waits for native `ready`
 status before sending `changelevel`, which otherwise blocks the engine's command
 loop while a download is pending. Both download and execution checks share a
-ten-minute deadline, and each console probe uses a new response token. A failed
+ten-minute deadline, and each console probe uses a new response token. Smoke
+waits up to 15 seconds for that token's complete response before replacing it,
+so delayed Screen log writes cannot make it abandon every valid response. A failed
 Docker check includes bounded native Steam Workshop/content log tails and the
-managed library mapping for diagnosis. The 2026-10-15 Docker recheck downloaded
-and committed the fixture successfully but never reported native readiness;
-the init-process and consumer-app library corrections still need CI validation.
+managed library mapping for diagnosis. CI run
+[`38748333313`](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38748333313)
+passed both process and Docker lifecycle and Workshop integration cases on
+2026-10-15, including exact canonical ready/current-map evidence and real A2S.
+Its TF2 smoke case loaded the same custom map but failed because each probe
+abandoned its token before Screen flushed the response. The bounded response
+wait correction still needs a fresh smoke pass.
 A pending `workshop/ITEM_ID` advertisement cannot satisfy it. TF2 resolves its
 Workshop BSP through Steam's native item-install API rather than requiring the
 item directory in the engine's search paths. The check also requires full CLI

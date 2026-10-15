@@ -3,7 +3,9 @@
 The `asrdserver` module installs the anonymous Windows dedicated-server files and
 runs them through Wine on Linux. The baseline is `PASSED`: process and Docker
 integration lifecycles plus Docker smoke passed in CI on 2026-10-14.
-Workshop load validation remains opt-in and unverified.
+Native Workshop load integration passed in both runtimes on 2026-10-15 in
+[CI run 38748333313](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38748333313).
+Workshop tests remain opt-in outside the required CI campaign.
 
 ## Requirements
 
@@ -77,6 +79,7 @@ The public [Nest fixture](https://steamcommunity.com/sharedfiles/filedetails/?id
 is a small multiplayer campaign. Its opt-in test requires the running engine's
 `rd_dump_workshop_mapping_server maps/` output to attribute an actual map to this
 item, executes that map, and checks real A2S before shutdown and owned cleanup.
+Both process and Docker integration cases passed these checks in that CI run.
 The probe uses a generated local RCON password, separate from provider credentials.
 Remote-client content delivery has not been verified.
 

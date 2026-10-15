@@ -103,6 +103,8 @@ def test_native_tracks_section_accepts_ansi_terminal_formatting():
     ('Tracks:', '>    stock_event (STOCK EVENT)'),
     ('Tracks:', '    stock_event (STOCK > EVENT)'),
     ('Tracks:', '    bigstadium_figure_8 (MADMAN STADIUM - FIGURE 8>)'),
+    ('Tracks:', '    bigstadium_>figure_8 (MADMAN STADIUM - FIGURE 8)'),
+    ('Tracks:', '    bigstadium_figure_8> (MADMAN STADIUM - FIGURE 8)'),
 ])
 def test_native_prompt_redraw_does_not_hide_later_exact_registry_row(header, stock):
     assert_workshop_loaded(f' tracks\n{header}\n{stock}\n    crazy_2000_classic (CRAZY 2000)\n')
@@ -111,6 +113,18 @@ def test_native_prompt_redraw_does_not_hide_later_exact_registry_row(header, sto
 def test_prompted_stock_registry_still_requires_the_actual_workshop_event():
     with pytest.raises(AssertionError, match='exact Workshop event'):
         assert_workshop_loaded('>Tracks:\n>    stock_event (STOCK EVENT)\n')
+
+
+@pytest.mark.parametrize('identifier', ['crazy_>2000_classic', 'crazy_2000_classic>'])
+def test_prompt_corruption_cannot_reconstruct_the_required_native_event(identifier):
+    with pytest.raises(AssertionError, match='exact Workshop event'):
+        assert_workshop_loaded(f'Tracks:\n    {identifier} (CRAZY 2000)\n')
+
+
+def test_prompt_tolerance_does_not_cross_a_non_registry_response_boundary():
+    with pytest.raises(AssertionError, match='exact Workshop event'):
+        assert_workshop_loaded('Tracks:\n    stock>_event (STOCK EVENT)\n'
+                               'Unrelated output\n    crazy_2000_classic (CRAZY 2000)\n')
 
 
 def test_failed_capture_reports_bounded_terminal_bytes_without_changing_failure(capsys):

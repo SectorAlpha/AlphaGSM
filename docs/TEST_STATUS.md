@@ -43,6 +43,14 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- Full run `38748333313` has no persistent integration failures. Exact JUnit
+  artifacts confirm baseline and native Workshop cases passed in both runtimes
+  for ARK, Space Engineers, TF2 and Wreckfest, including every previously failing
+  case. All 330 expected artifacts were retained. JC3 process and Avorion Docker
+  recovered on isolated rechecks. Only TF2 and Wreckfest smoke remain failing:
+  delayed Screen log frames and a prompt redraw inside an earlier stock track
+  identifier rejected already-loaded native content. Replacement smoke fixes
+  retain fresh responses and exact engine-load proof; remote validation is pending.
 - Full PR run `38702811625` passed 9,693 Linux units, lint 10.00/10, coverage,
   native Windows cases, binaries and shared backends, retaining all 336 expected
   artifacts. The five Source smoke failures are resolved. ARK and Wreckfest smoke

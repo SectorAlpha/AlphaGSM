@@ -14,11 +14,12 @@ so configuration, saves, and logs remain accessible there.
 
 ## Workshop validation checkpoint
 
-Native Workshop process support is under validation as of 15 October 2026. Anonymous
+Native Workshop process and Docker integrations passed on 15 October 2026 in
+CI run `38748333313`. Anonymous
 downloads succeeded for consumer app `244850`, including the public
 [Modular Encounters Systems server framework](https://steamcommunity.com/sharedfiles/filedetails/?id=1521905890)
 (31,485,392 bytes). Focused Docker integration and smoke subsequently passed
-the complete modded lifecycle; process completion is still pending.
+the complete modded lifecycle; the later full run also passed process execution.
 
 The adapter manages Steam mod references in the configured world's
 `Sandbox.sbc` and `Sandbox_config.sbc`, preserving operator entries. A missing
@@ -48,15 +49,16 @@ builder's `.update-timestamp`, which can cause Wine to skip shell-folder setup
 when the copy runs under another account. Fresh template copies now discard
 that copied marker so Wine initializes the receiving user's profile normally;
 the template and existing operator prefixes retain their markers. This
-correction still needs a process CI lifecycle pass. See Wine's
+correction passed process baseline and native MES integration in run
+`38748333313`. See Wine's
 [prefix update logic](https://github.com/wine-mirror/wine/blob/wine-9.0/programs/wineboot/wineboot.c#L1457)
 and [shell-folder creation](https://github.com/wine-mirror/wine/blob/wine-9.0/dlls/shell32/shellpath.c#L2901).
 
 Workshop integration and opt-in smoke require both `Game ready` and the MES
 script's own `MES Spawner / Startup: Active Debug ...` initialization message.
 An item ID, mod name, download, or world configuration alone does not prove
-engine execution. Process Workshop completion remains unverified.
-The prior baseline classification above does not establish Workshop support.
+engine execution. Both runtime integrations passed these strict checks in
+run `38748333313`.
 
 ## Requirements
 

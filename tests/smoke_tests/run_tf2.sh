@@ -27,6 +27,27 @@ run_alphagsm() {
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
 }
 
+capture_native_workshop_probe() {
+  local probe_deadline=$((SECONDS + 15))
+  (( probe_deadline > WORKSHOP_DEADLINE )) && probe_deadline="$WORKSHOP_DEADLINE"
+  local probe_token
+  probe_token="AlphaGSM-TF2-$("$PYTHON_BIN" -c 'import uuid; print(uuid.uuid4().hex)')"
+  run_alphagsm "$SERVER_NAME" send "echo BEGIN-$probe_token; tf_workshop_map_status; status; echo END-$probe_token" || return
+  # Screen can buffer output beyond the first read. Keep this token until its
+  # response arrives; replacing it on every read permanently outruns the log.
+  while (( SECONDS < probe_deadline )); do
+    run_alphagsm "$SERVER_NAME" logs -n 20000 > "$WORK_DIR/workshop-path.log" || return
+    if "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/tf2_workshop.py" \
+      "$WORK_DIR/workshop-path.log" "$WORKSHOP_ITEM" "$WORKSHOP_MAP" "$probe_token" "$@" \
+      2> "$WORK_DIR/workshop-probe-error.log"; then
+      return 0
+    fi
+    sleep 1
+  done
+  cat "$WORK_DIR/workshop-probe-error.log" >&2
+  return 1
+}
+
 # shellcheck source=tests/smoke_tests/steamcmd_helpers.sh
 source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
 
@@ -128,11 +149,7 @@ if [[ -n "${WORKSHOP_IDS:-}" ]]; then
   WORKSHOP_DEADLINE=$((SECONDS + 600))
   while (( SECONDS < WORKSHOP_DEADLINE )); do
     if [[ "$WORKSHOP_CHANGE_REQUESTED" == "0" ]]; then
-      PROBE_TOKEN="AlphaGSM-TF2-$("$PYTHON_BIN" -c 'import uuid; print(uuid.uuid4().hex)')"
-      run_alphagsm "$SERVER_NAME" send "echo BEGIN-$PROBE_TOKEN; tf_workshop_map_status; status; echo END-$PROBE_TOKEN"
-      sleep 1
-      run_alphagsm "$SERVER_NAME" logs -n 20000 > "$WORK_DIR/workshop-path.log"
-      if "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/tf2_workshop.py" "$WORK_DIR/workshop-path.log" "$WORKSHOP_ITEM" "$WORKSHOP_MAP" "$PROBE_TOKEN" --ready-only; then
+      if capture_native_workshop_probe --ready-only; then
         run_alphagsm "$SERVER_NAME" send "changelevel workshop/$WORKSHOP_ITEM"
         WORKSHOP_CHANGE_REQUESTED=1
       fi
@@ -149,11 +166,7 @@ assert data["protocol"] == "a2s" and data["port"] == int(sys.argv[4]), data
 assert data["map"] in (sys.argv[2], canonical, canonical.removeprefix("workshop/")), data
 PYMAP
       then
-        PROBE_TOKEN="AlphaGSM-TF2-$("$PYTHON_BIN" -c 'import uuid; print(uuid.uuid4().hex)')"
-        run_alphagsm "$SERVER_NAME" send "echo BEGIN-$PROBE_TOKEN; tf_workshop_map_status; status; echo END-$PROBE_TOKEN"
-        sleep 1
-        run_alphagsm "$SERVER_NAME" logs -n 20000 > "$WORK_DIR/workshop-path.log"
-        if "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/tf2_workshop.py" "$WORK_DIR/workshop-path.log" "$WORKSHOP_ITEM" "$WORKSHOP_MAP" "$PROBE_TOKEN"; then
+        if capture_native_workshop_probe; then
           WORKSHOP_MAP_LOADED=1
           break
         fi

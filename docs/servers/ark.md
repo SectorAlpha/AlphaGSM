@@ -156,8 +156,9 @@ alphagsm myserver info --json
 
 CI run `38702811625` downloaded and staged the map, then both native runtime
 tests crashed with `LinkerLoad: Bad name index` while using `LinuxNoEditor`.
-Fresh CI must verify the corrected Windows-cooked branch can serve the custom
-world in both runtimes.
+Run `38748333313` passed both process/Docker native integrations and Docker
+smoke with the corrected Windows-cooked branch, requiring the exact custom
+world startup and real A2S map identity.
 
 `mod remove workshop ID_OR_URL` followed by `mod apply` removes selected owned
 content and activation IDs. `mod cleanup` clears all desired Workshop items.

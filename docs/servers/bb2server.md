@@ -153,10 +153,11 @@ content delivery configuration. AlphaGSM does not configure automatic Workshop
 client delivery for these maps.
 
 The public [Frozen Heart fixture](https://steamcommunity.com/sharedfiles/filedetails/?id=710060895)
-was checked against Valve metadata for AppID `346330` on 2026-10-13. The process
-lifecycle passed on 2026-10-13, with real A2S reporting `bbc_frozenheart`,
-verified shutdown and owned-asset cleanup. Docker validation is pending an
-SSD-backed Docker endpoint. Opt-in lifecycle tests load this custom map
+was checked against Valve metadata for AppID `346330` on 2026-10-13. Process and
+Docker Workshop lifecycles passed on 2026-10-15 in
+[CI run 38748333313](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38748333313),
+with real A2S reporting `bbc_frozenheart`, verified shutdown and owned-asset
+cleanup. Opt-in lifecycle tests load this custom map
 through the running engine and require real A2S `info --json` to report its name;
 file staging alone cannot pass the load check.
 

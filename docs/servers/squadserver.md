@@ -3,9 +3,9 @@
 This guide covers the `squadserver` module in AlphaGSM.
 
 `squadserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline.
-The current anonymous Workshop lifecycle passed in process mode on 2026-10-13.
-Workshop validation in Docker remains pending. Local runs use the process runtime
-unless you select Docker.
+The anonymous Workshop lifecycle passed in both process and Docker runtimes on
+2026-10-15 in [CI run 38748333313](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38748333313).
+Local runs use the process runtime unless you select Docker.
 
 ## Requirements
 
@@ -112,7 +112,7 @@ Use the live command list for ports and other supported settings.
 - **Map directory**: Check game documentation
 - **Mod directory**: Check game documentation
 - **Workshop support**: anonymous native Unreal plugin staging and engine loading
-  verified in process mode; Docker Workshop validation remains pending.
+  verified in process and Docker runtimes.
 
 ## Workshop plugins and maps
 
@@ -133,11 +133,12 @@ The engine discovers these plugins at startup. Select the appropriate mod layer
 using the game's normal layer rotation or admin commands. A downloaded plugin
 does not establish that the current server build can load its SDK version.
 
-The process integration used ModLoader `3516838562`, verified its native PAK and
+The process and Docker integrations used ModLoader `3516838562`, verified its native PAK and
 IOStore mounts, successful serialization and registered game layer, then checked
 `query` and `info` through native RCON. Cleanup followed by a fresh restart found
-zero mod descriptors and no ModLoader mount. Both shutdowns used the existing
-one-minute timeout and kill fallback; graceful saving was not verified.
+zero mod descriptors and no ModLoader mount. The earlier process validation used
+the existing one-minute timeout and kill fallback; graceful saving remains
+unverified.
 
 `mod remove workshop ID_OR_URL` followed by `mod apply` removes selected owned
 files. `mod cleanup` clears the desired list and removes unchanged files owned

@@ -25,9 +25,10 @@ THQN networking. The baseline additionally requires a fresh native
 Stock process and Docker integrations plus Docker smoke passed these checks.
 
 Workshop checks still require fresh native track-registry output beyond the
-baseline connectivity check. Automated capture and the complete modded lifecycle
-remain unverified; download, configuration and old console snapshots do not
-satisfy that requirement. A Unix terminal and Docker console FIFO alone did
+baseline connectivity check. Both process and Docker native Workshop integrations
+passed in CI run `38748333313`, including fresh capture and complete shutdown;
+download, configuration and old console snapshots cannot satisfy that proof.
+A Unix terminal and Docker console FIFO alone did
 not expose Wreckfest's separately allocated Win32 console in CI. Native
 Workshop validation now attaches a small Windows probe to the exact running
 server executable inside its private Wine prefix. The probe clears old display
@@ -38,8 +39,13 @@ attachment and stock registry output, with prompt redraws embedded in the
 header and rows. Capture now retains every newly rendered row even when the
 input cursor moves backwards, and validation accepts that leading prompt.
 CI run `38702811625` captured the complete stock registry in both runtimes;
-the requested Workshop event was still missing. Fresh CI must verify the
-profile initialization flow below and exact Workshop registration.
+the requested Workshop event was still missing. The later integration run
+`38748333313` passed the profile initialization flow and exact registration.
+The subsequent smoke run `38748333313` captured all three Crazy 2000 events
+after profile initialization. Its assertion stopped at a prompt redraw inside
+an earlier stock event identifier. The parser now continues past that row;
+the required Workshop identifier must still appear exactly as emitted by the
+engine. Full smoke completion remains pending.
 Shutdown checks include owned Wine processes and TCP/UDP port closure.
 
 Newly created AlphaGSM servers use `<install_dir>/savegame/` and pass

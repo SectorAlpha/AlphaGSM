@@ -113,7 +113,10 @@ def assert_workshop_loaded(log_text):
     found = False
     row_count = 0
     for line in log_text[header.end():].splitlines():
-        row = re.fullmatch(r"[ \t]*>?[ \t]+([A-Za-z0-9_-]+)[ \t]+\(([^()\r\n]+)\)[ \t]*", line)
+        # The native input prompt can redraw inside an earlier stock identifier.
+        # Keep reading that row without repairing it: the requested event must
+        # still appear later as its exact, unmodified native identifier.
+        row = re.fullmatch(r"[ \t]*>?[ \t]+([A-Za-z0-9_-]+(?:>[A-Za-z0-9_-]*)?)[ \t]+\(([^()\r\n]+)\)[ \t]*", line)
         if row is None:
             break
         assert row_count < 1024, "Native Tracks: registry exceeds 1024 rows"

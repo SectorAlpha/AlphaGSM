@@ -33,11 +33,12 @@ plugin loader are refused. Files edited outside AlphaGSM are preserved and
 reported as a conflict.
 
 The public [Mars Abandoned Frontier world](https://steamcommunity.com/sharedfiles/filedetails/?id=3779655608)
-was downloaded anonymously and loaded through the process lifecycle on
-13 October 2026. Its native log confirmed package loading and construction of
-the `AbandonedMars` world; the engine-created save contains that world setting
-and its structures. Workshop Docker validation is pending the test host's
-SSD-backed Docker endpoint.
+was downloaded anonymously and loaded through both process and Docker
+lifecycles on 15 October 2026 in
+[CI run 38748333313](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38748333313).
+Its native log confirmed package loading and construction of the `AbandonedMars`
+world; the engine-created save contains that world setting and its structures.
+Both cases also verified query/info, shutdown and managed activation cleanup.
 
 For a **new save**, select its world before starting:
 
@@ -151,4 +152,5 @@ alphagsm myserver set KEY VALUE
 
 - **Map directory**: Check game documentation
 - **Mod directory**: Check game documentation
-- **Workshop support**: No
+- **Workshop support**: Anonymous native XML packages and multiplayer worlds,
+  verified in process and Docker runtimes.
