@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-15
+- Documentation: add a step-by-step same-machine subdomain setup with DNS records,
+  individual and bulk binding, public-IP overrides, endpoint checks and reporting.
 - Sector Alpha: document and verify separate per-game subdomains on one machine,
   including wildcard endpoint prompts, preserved bindings and independent DNS
   publication checks for games sharing a public IP.
