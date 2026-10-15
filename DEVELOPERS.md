@@ -1042,6 +1042,14 @@ Datastore secrets stay local. Registration grants no actions or publication. Exi
 bindings retain their approved values on repeat runs; capabilities require
 separate local enablement. Games outside the public query registry remain private.
 
+Hostnames are scoped to bindings, not installations or numerical machine IPs.
+Different game tags may advertise different subdomains that resolve to the same
+IP; each retains its own game profile, public/query port, expected-IP policy,
+publication consent and central ownership challenge. Single-server rebinding
+does not mutate siblings, and wildcard endpoint prompts preserve per-server
+hostnames on repeat runs. The agent neither provisions DNS nor routes traffic
+between processes; a hostname alone cannot multiplex a shared numerical port.
+
 `agent.preflight` applies hostname checks to copied public report items immediately
 before transport. Optional per-binding `expected_public_ips` is local policy only;
 it never enters metadata, registration or wire schemas. Automatic expectations

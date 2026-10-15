@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-15
+- Sector Alpha: document and verify separate per-game subdomains on one machine,
+  including wildcard endpoint prompts, preserved bindings and independent DNS
+  publication checks for games sharing a public IP.
 - Sector Alpha: validate existing server hostnames against this machine's public
   IPs before public report renewals. Withhold mismatched/unavailable names without
   changing local consent. Add repeatable --public-ip overrides and an explicit

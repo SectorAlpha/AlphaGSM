@@ -140,6 +140,54 @@ def test_setup_enrolls_once_then_binds_all_private_without_starting(tmp_path, lo
     assert [call[2] for call in provider] == ['/v1/agent/enroll', '/v1/agent/bindings', '/v1/agent/bindings']
 
 
+def test_individual_games_keep_distinct_subdomains_on_one_machine(tmp_path, local_servers, provider, monkeypatch):
+    local_servers[1]('tf2', module='teamfortress2', queryport=27025, port=27015)
+    cfg = enrolled(tmp_path)
+    endpoints = {'world': ('minecraft.mygameserver.com', 25565), 'tf2': ('tf2.mygameserver.com', 27025)}
+    for tag, (hostname, _) in endpoints.items():
+        answers(monkeypatch, ['', 'y'])
+        assert cli.run(['bind', tag, '--host', hostname, '--public-ip', '1.1.1.1',
+                        '--publish', '--actions', 'status'], root=cfg.root) == 0
+    before = cfg.load()['bindings']
+    by_tag = {item['tag']: item for item in before.values()}
+    assert set(by_tag) == set(endpoints) and len(provider) == 2
+    for tag, endpoint in endpoints.items():
+        assert (by_tag[tag]['metadata']['host'], by_tag[tag]['metadata']['port']) == endpoint
+        assert by_tag[tag]['expected_public_ips'] == ['1.1.1.1']
+        assert by_tag[tag]['publication'] and by_tag[tag]['actions'] == ['status']
+    # Editing Minecraft's public endpoint cannot overwrite TF2 or register new IDs.
+    answers(monkeypatch, ['', '', '', 'y'])
+    assert cli.run(['bind', 'world', '--host', 'survival.mygameserver.com', '--port', '25566'], root=cfg.root) == 0
+    after = cfg.load()['bindings']
+    assert set(after) == set(before) and len(provider) == 2
+    assert next(item for item in after.values() if item['tag'] == 'tf2') == by_tag['tf2']
+    world = next(item for item in after.values() if item['tag'] == 'world')
+    assert (world['metadata']['host'], world['metadata']['port']) == ('survival.mygameserver.com', 25566)
+    assert world['expected_public_ips'] == ['1.1.1.1'] and world['publication']
+
+
+def test_bulk_prompts_bind_per_game_subdomains_and_preserve_them_on_rerun(tmp_path, local_servers, provider, monkeypatch):
+    local_servers[1]('world', publicip='1.1.1.1')
+    local_servers[1]('tf2', module='teamfortress2', queryport=27025, port=27015, publicip='1.1.1.1')
+    cfg = enrolled(tmp_path)
+    original = {path.name: path.read_bytes() for path in local_servers[0].glob('*.json')}
+    endpoints = {'tf2': 'tf2.mygameserver.com:27025', 'world': 'minecraft.mygameserver.com:25565'}
+    def reply(prompt):
+        for tag, endpoint in endpoints.items():
+            if prompt.startswith('Confirm public host:port for ' + tag + ' '):
+                return endpoint
+        return 'y' if prompt.startswith('Save these exact') else ''
+    monkeypatch.setattr('builtins.input', reply)
+    assert cli.run(['bind', '*', '--public-ip', '1.1.1.1', '--publish', '--actions', 'status'], root=cfg.root) == 0
+    before = cfg.path.read_bytes()
+    assert {item['tag']: item['metadata']['host'] + ':' + str(item['metadata']['port'])
+            for item in cfg.load()['bindings'].values()} == endpoints
+    answers(monkeypatch, ['', '', '', '', '', '', 'y'])
+    assert cli.run(['bind', '*'], root=cfg.root) == 0
+    assert cfg.path.read_bytes() == before and len(provider) == 2
+    assert {path.name: path.read_bytes() for path in local_servers[0].glob('*.json')} == original
+
+
 def test_explicit_host_bypasses_every_discovery_and_nat_port_override(tmp_path, local_servers, provider, monkeypatch):
     from agent import onboarding
     cfg = enrolled(tmp_path)

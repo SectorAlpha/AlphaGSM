@@ -536,6 +536,16 @@ that all its DNS addresses match this machine's expected public IPs; `--public-i
 provides an explicit override. `agent check-endpoint my-minecraft` tests the
 advertised game port separately.
 
+Multiple games can share one machine and public IP with separate subdomains:
+
+```sh
+alphagsm agent bind my-minecraft --host minecraft.mygameserver.com
+alphagsm agent bind my-tf2 --host tf2.mygameserver.com
+```
+
+Each keeps its own configured port and permissions. Bulk binding also accepts
+a different hostname at each server's endpoint prompt.
+
 See [the connection guide](docs/sector-alpha-agent.md). The open source project’s
 home is https://alphagsm.sector-alpha.net/; the gaming community and server
 directory belong on https://sector-alpha.net/.
