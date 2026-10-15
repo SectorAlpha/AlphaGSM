@@ -33,7 +33,11 @@ Workshop validation now attaches a small Windows probe to the exact running
 server executable inside its private Wine prefix. The probe clears old display
 contents, sends only `tracks`, and writes newly produced console rows to a
 unique evidence file. Validation still requires the exact
-`crazy_2000_classic` registry row. This capture correction needs CI validation.
+`crazy_2000_classic` registry row. CI run `38655040006` confirmed native console
+attachment and stock registry output, with prompt redraws embedded in the
+header and rows. Capture now retains every newly rendered row even when the
+input cursor moves backwards, and validation accepts that leading prompt.
+The corrected capture and exact Workshop registration still need CI validation.
 Shutdown checks include owned Wine processes and TCP/UDP port closure.
 
 ## Requirements

@@ -6,7 +6,7 @@ import subprocess
 import time
 import uuid
 
-from tests.smoke_tests.tf2_workshop import assert_native_map
+from tests.smoke_tests.tf2_workshop import assert_native_map, assert_native_ready
 
 import pytest
 
@@ -248,11 +248,28 @@ def _verify_native_workshop_map(env, server_name, item_ids, port):
     item = os.environ.get('ALPHAGSM_TF2_WORKSHOP_LOAD_ITEM', item_ids[0])
     expected_map = os.environ.get('ALPHAGSM_TF2_WORKSHOP_MAP', 'cp_orange_x3')
     assert item in item_ids and item.isdigit()
-    run_and_assert_ok(env, server_name, 'send', f'changelevel workshop/{item}')
+    # Valve's changelevel blocks the engine command loop until the download
+    # completes. Sync in the background first so a stalled transfer still has
+    # fresh, inspectable native status instead of queuing every later probe.
+    run_and_assert_ok(env, server_name, 'send', f'tf_workshop_map_sync {item}')
     token = 'AlphaGSM-TF2-' + uuid.uuid4().hex
     error, output = None, ''
+    change_requested = False
     deadline = time.monotonic() + 600
     while time.monotonic() < deadline:
+        if not change_requested:
+            try:
+                run_and_assert_ok(env, server_name, 'send',
+                                  f'echo BEGIN-{token}; tf_workshop_map_status; status; echo END-{token}')
+                time.sleep(1)
+                output = run_and_assert_ok(env, server_name, 'logs', '-n', '20000').stdout
+                assert_native_ready(output, item, expected_map, token)
+                run_and_assert_ok(env, server_name, 'send', f'changelevel workshop/{item}')
+                change_requested = True
+            except AssertionError as exc:
+                error = exc
+            time.sleep(2)
+            continue
         response = run_alphagsm(env, server_name, 'info', '--json')
         if response.returncode == 0:
             try:
@@ -276,7 +293,14 @@ def _verify_native_workshop_map(env, server_name, item_ids, port):
     output = run_and_assert_ok(env, server_name, 'logs', '-n', '20000').stdout
     try:
         doctor = run_alphagsm(env, server_name, 'doctor', '--json', timeout=15)
-        print('[diagnostic] TF2 Workshop runtime launch context: ' + doctor.stdout[-16000:])
-    except (OSError, subprocess.SubprocessError) as exc:
+        print('[diagnostic] TF2 Workshop runtime launch context')
+        log_command_result('alphagsm doctor', doctor, label='TF2 Workshop runtime launch context')
+        runtime = json.loads(doctor.stdout).get('runtime', {}) if doctor.returncode == 0 else {}
+        if runtime.get('resolved_runtime') == 'docker' and runtime.get('container_name'):
+            from tests.integration_tests.runtime_diagnostics import collect_docker_runtime_diagnostics
+            for label, result in collect_docker_runtime_diagnostics(runtime['container_name']):
+                print('[diagnostic] ' + label)
+                log_command_result('docker', result, label=label)
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
         print(f'[diagnostic] TF2 runtime context unavailable: {exc}')
     pytest.fail(f'TF2 native Workshop map execution evidence missing: {error}\n{output[-20000:]}')

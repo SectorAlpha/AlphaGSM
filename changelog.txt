@@ -8,6 +8,18 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-15
+- Source smoke: keep progress banners on stderr so redirected CLI JSON remains
+  valid for BrainBread 2, Day of Infamy, Insurgency, NMRIH and TF2 checks.
+- ARK Workshop: accept native zero-length optional Unreal metadata strings
+  while retaining bounded decoding and exact custom-map validation.
+- Wreckfest validation: capture the whole fresh native track registry despite
+  console cursor redraws; retain exact Workshop event registration requirements.
+- TF2 validation: wait for asynchronous native Workshop download readiness
+  before changing maps, and retain bounded Steam download failure diagnostics.
+- Space Engineers diagnostics: retain CI process Wine exceptions and bounded,
+  redacted native runtime details for comparison with the passing Docker lane.
+- Workshop validation: NS2 Docker and Squad 44 process/Docker native-load
+  lifecycles passed in GitHub CI run 38655040006; seven integration cases remain.
 - TF2 Docker: launch with the host's identity, a writable private Steam home
   and an absolute container UGC path so Workshop library metadata can initialize.
 - Space Engineers process: use the same virtual display and X11 drivers as

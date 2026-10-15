@@ -105,12 +105,18 @@ def test_prestart_reconciles_native_maps_even_when_steamclient_link_already_matc
 
 
 def test_native_map_probe_requires_ready_exact_id_and_actual_current_canonical_map():
-    from tests.smoke_tests.tf2_workshop import assert_native_map
+    from tests.smoke_tests.tf2_workshop import assert_native_map, assert_native_ready
     frame = ('BEGIN-fresh\nFileID Map Name Status\n'
              '454299390 workshop/cp_orange_x3.ugc454299390 ready\n'
              'map     : workshop/cp_orange_x3.ugc454299390 at: 0 x, 0 y, 0 z\n'
              'END-fresh\n')
     assert assert_native_map(frame, '454299390', 'cp_orange_x3', 'fresh') == 'workshop/cp_orange_x3.ugc454299390'
+    stock = frame.replace('map     : workshop/cp_orange_x3.ugc454299390', 'map     : cp_dustbowl')
+    assert assert_native_ready(stock, '454299390', 'cp_orange_x3', 'fresh') == 'workshop/cp_orange_x3.ugc454299390'
+    with pytest.raises(AssertionError):
+        assert_native_map(stock, '454299390', 'cp_orange_x3', 'fresh')
+    with pytest.raises(AssertionError):
+        assert_native_ready(frame.replace('ready', 'downloading'), '454299390', 'cp_orange_x3', 'fresh')
     for text in (frame.replace('ready', 'downloading'),
                  frame.replace('454299390', '4542993900'),
                  frame.replace('map     : workshop/cp_orange_x3.ugc454299390', 'map     : cp_dustbowl'),
@@ -127,8 +133,9 @@ def test_native_map_probe_requires_ready_exact_id_and_actual_current_canonical_m
 
 @pytest.mark.parametrize('advertised_map', ['cp_orange_x3', 'workshop/454299390'])
 @pytest.mark.parametrize('pending_frames', [0, 2])
+@pytest.mark.parametrize('pending_map_frames', [0, 2])
 def test_workshop_lifecycle_requires_execution_instead_of_pending_a2s_map(
-        monkeypatch, advertised_map, pending_frames):
+        monkeypatch, advertised_map, pending_frames, pending_map_frames):
     from tests.integration_tests import conftest as helpers
     monkeypatch.setitem(sys.modules, 'conftest', helpers)
     path = Path(__file__).resolve().parents[2] / 'integration_tests/test_tf2.py'
@@ -137,7 +144,7 @@ def test_workshop_lifecycle_requires_execution_instead_of_pending_a2s_map(
     spec.loader.exec_module(lifecycle)
     monkeypatch.setenv('ALPHAGSM_TF2_WORKSHOP_LOAD_ITEM', '454299390')
     monkeypatch.setenv('ALPHAGSM_TF2_WORKSHOP_MAP', 'cp_orange_x3')
-    ticks = iter([0, 1, 2, 3, 601])
+    ticks = iter([*range(12), 601])
     monkeypatch.setattr(lifecycle, 'time', SimpleNamespace(monotonic=lambda: next(ticks), sleep=lambda _: None))
     monkeypatch.setattr(lifecycle, 'uuid', SimpleNamespace(uuid4=lambda: SimpleNamespace(hex='fresh')))
     commands = []
@@ -149,17 +156,22 @@ def test_workshop_lifecycle_requires_execution_instead_of_pending_a2s_map(
     def command(_env, _server, action, *args):
         commands.append((action, args))
         log_reads = sum(action == 'logs' for action, _args in commands)
+        changed = ('send', ('changelevel workshop/454299390',)) in commands
         if action == 'logs' and log_reads <= pending_frames:
-            # First read races an unfinished frame; the next has the old map.
+            # Download in progress must not enter blocking changelevel. Every
+            # attempt needs a new complete native frame reporting ready.
             text = frame.removesuffix('END-AlphaGSM-TF2-fresh\n') if log_reads == 1 else frame.replace(
-                'map : workshop/cp_orange_x3.ugc454299390', 'map : cp_dustbowl')
+                'ready', 'downloading')
+        elif action == 'logs' and changed and log_reads - pending_frames - 1 <= pending_map_frames:
+            # A ready download does not prove the map switch has finished.
+            text = frame.replace('map : workshop/cp_orange_x3.ugc454299390', 'map : cp_dustbowl')
         else:
             text = frame
-        return SimpleNamespace(returncode=0, stdout=text)
+        return SimpleNamespace(returncode=0, stdout=text, stderr='')
 
     def info(*_args, **_kwargs):
         commands.append(('info', ('--json',)))
-        return SimpleNamespace(returncode=0, stdout=json.dumps(
+        return SimpleNamespace(returncode=0, stderr='', stdout=json.dumps(
             {'protocol': 'a2s', 'port': 27015, 'map': advertised_map}))
 
     monkeypatch.setattr(lifecycle, 'run_and_assert_ok', command)
@@ -169,10 +181,13 @@ def test_workshop_lifecycle_requires_execution_instead_of_pending_a2s_map(
             lifecycle._verify_native_workshop_map({}, 'tf2', ['454299390'], 27015)
     else:
         assert lifecycle._verify_native_workshop_map({}, 'tf2', ['454299390'], 27015) == advertised_map
-    assert commands[0] == ('send', ('changelevel workshop/454299390',))
-    assert commands[1] == ('info', ('--json',))
-    probes = [args for action, args in commands if action == 'send'][1:]
+    assert commands[0] == ('send', ('tf_workshop_map_sync 454299390',))
+    change_index = commands.index(('send', ('changelevel workshop/454299390',)))
+    assert sum(action == 'logs' for action, _args in commands[:change_index]) == pending_frames + 1
+    assert all(action != 'info' for action, _args in commands[:change_index])
+    assert commands[change_index + 1] == ('info', ('--json',))
+    probes = [args for action, args in commands[change_index + 1:] if action == 'send']
     if advertised_map.startswith('workshop/'):
         assert not probes
     else:
-        assert probes == [('echo BEGIN-AlphaGSM-TF2-fresh; tf_workshop_map_status; status; echo END-AlphaGSM-TF2-fresh',)] * (pending_frames + 1)
+        assert probes == [('echo BEGIN-AlphaGSM-TF2-fresh; tf_workshop_map_status; status; echo END-AlphaGSM-TF2-fresh',)] * (pending_map_frames + 1)

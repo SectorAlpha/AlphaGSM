@@ -127,6 +127,8 @@ Stackable gameplay mods (`ModType=1`) and custom maps (`ModType=2`) require
 `LinuxNoEditor` content. Total conversions and Windows-only payloads are rejected.
 Custom-map metadata must declare a safe map name that resolves to exactly one
 staged native `.umap`; missing or ambiguous maps fail before publication.
+Optional native metadata strings may use Unreal's zero-length empty-string
+encoding. String bounds, terminators and map-name validation still apply.
 
 Compressed `.z` assets are decompressed with checked chunk sizes and bounded
 output. Native assets and a binary `.mod` descriptor are published under

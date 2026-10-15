@@ -29,14 +29,14 @@ Earlier stock-only smoke results for those runners are not Workshop evidence.
 | Conan Exiles | 440900 | Verified | Passed | Passed |
 | ARK: Survival Evolved | 346110 | Verified | In progress | In progress |
 | Squad | 393380 | Verified | Passed | Awaiting SSD Docker endpoint |
-| Squad 44 | 736220 | Verified | In progress | In progress |
+| Squad 44 | 736220 | Verified | Passed | Passed |
 | Colony Survival | 366090 | Blocked: missing Workshop decryption key | Not validated | Not validated |
 | No More Room in Hell | 224260 | Verified | Passed | Awaiting SSD Docker endpoint |
 | BrainBread 2 | 346330 | Verified | Passed | Awaiting SSD Docker endpoint |
 | Team Fortress 2 | 440 | Verified native map download without GSLT | Passed | Awaiting SSD Docker endpoint |
 | Killing Floor 2 | 232090 | Verified map download | In progress | Awaiting SSD Docker endpoint |
 | Rising Storm 2: Vietnam | 418460 | Verified map download | In progress | Awaiting SSD Docker endpoint |
-| Natural Selection 2 | 4920 | Verified map and server-plugin downloads | Passed | In progress |
+| Natural Selection 2 | 4920 | Verified map and server-plugin downloads | Passed | Passed |
 | Terraria tModLoader | 1281930 | Verified | Passed | Passed |
 | rFactor 2 | 365960 | Verified free Studio 397 package | In progress | Awaiting SSD Docker endpoint |
 | Alien Swarm: Reactive Drop | 563560 | Native loader documented; validation pending | Pending | Pending |
@@ -52,13 +52,19 @@ Earlier stock-only smoke results for those runners are not Workshop evidence.
   on `FlatMap`. Compatibility and both runtime load results remain pending CI.
 - Space Engineers' Docker smoke and both baseline/native integrations passed
   MES script execution in CI run `38649280824`. Process startup progressed
-  beyond the VC prerequisite check but exited during Steam initialization;
-  matching the passing container's virtual display remains under validation.
-- NS2's process native Workshop integration passed in run `38649280824`.
-  Its Docker engine rejected wildcard web-admin binding; the replacement
-  transport retains authenticated loopback inside the managed container.
+  beyond the VC prerequisite check but still exited before readiness in run
+  `38655040006`, despite matching the container's virtual display. CI now retains
+  Wine exception traces and comparable native runtime details; the cause remains open.
+- NS2's process and Docker native Workshop integrations passed in run
+  `38655040006`, including the Docker authenticated loopback admin transport,
+  exact native map origin, map-change execution, real A2S and shutdown.
 - Wreckfest's stock process and Docker integrations plus Docker smoke passed in CI run `38545270577` on 2026-10-14. These require fresh native startup, runtime liveness, limited UDP reachability and complete shutdown; they do not establish game metadata or Workshop loading. Its Workshop row remains in progress until fresh native registry capture passes the stricter fixture check.
-- Squad 44's stock process and Docker integrations plus Docker smoke passed in CI run `38537399526` on 2026-10-14, with real A2S and shutdown checks after depot-SDK launch preference was added. The loaded SDK hash was not retained in successful captured output; this does not prove the previous timeout's cause. Stop retains its existing forced-stop fallback. CI now selects Ramelle `2387944294`, whose author advertises Linux content, and checks the staged plugin's exact Workshop and current SDK identity. Anonymous access and native plugin-load proof for this fixture remain pending, so its Workshop load row is unchanged.
+- Squad 44's Ramelle `2387944294` native Workshop integration passed in both
+  runtimes in run `38655040006`, together with Docker Workshop smoke. Checks
+  require exact staged Workshop/SDK identity, native PAK precacher registration,
+  successful mod serialization, constructed `Ramelle_Offensive_01` world and
+  matching real A2S metadata, followed by shutdown. Stop retains its existing
+  forced-stop fallback; graceful saving is not established.
 - Reactive Drop's anonymous stock baseline passed process and Docker integrations plus Docker smoke in CI on 2026-10-14. This validates the server and terminal correction; its Workshop load row remains pending actual item execution.
 - L4D2: Back To School collection `121115793` and Admin System `214630948`; fresh engine load order enumerates all 11 VPKs, and Admin System execution was observed. Unavailable original collection `3819008159` is not a passing fixture.
 - Garry's Mod: ULib/ULX collection `2886432224`; fresh native VFS CRCs and both live Lua APIs.

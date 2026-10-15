@@ -184,8 +184,8 @@ available. See [Valve's native map-loader update](https://www.teamfortress.com/p
 AlphaGSM supplies an absolute `-ugcpath` under the install's `steamapps/workshop`
 directory while native Workshop maps are enabled. Docker uses the mounted
 container path and the host user's identity, with a private writable HOME and
-Steam library metadata, so the native downloader sees the same initialized
-library layout as a process server.
+Steam library metadata. Native download readiness still needs to be confirmed
+by the engine.
 
 Apply while stopped. AlphaGSM refuses a preexisting unowned sync configuration
 and externally edited managed files. `mod cleanup` removes only its unchanged
@@ -200,6 +200,11 @@ verification; owned configuration cleanup also passed.
 Its opt-in check requires actual custom-map A2S responses together with a fresh
 `tf_workshop_map_status` row marking the exact item and canonical `.ugcITEM_ID`
 map ready, and a fresh console `status` showing that same canonical map running.
+The check first requests `tf_workshop_map_sync` and waits for native `ready`
+status before sending `changelevel`, which otherwise blocks the engine's command
+loop while a download is pending. Both download and execution checks share a
+ten-minute deadline. A failed Docker check includes bounded native Steam
+Workshop/content log tails from the managed container for diagnosis.
 A pending `workshop/ITEM_ID` advertisement cannot satisfy it. TF2 resolves its
 Workshop BSP through Steam's native item-install API rather than requiring the
 item directory in the engine's search paths. The check also requires full CLI

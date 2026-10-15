@@ -22,8 +22,8 @@ require_cmd() {
 }
 
 run_alphagsm() {
-  echo
-  echo "=== alphagsm $* ==="
+  echo >&2
+  echo "=== alphagsm $* ===" >&2
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
 }
 
@@ -121,10 +121,24 @@ if [[ -n "${WORKSHOP_IDS:-}" ]]; then
   WORKSHOP_ITEM="${TF2_WORKSHOP_LOAD_ITEM:-${WORKSHOP_IDS%% *}}"
   [[ "$WORKSHOP_ITEM" =~ ^[0-9]+$ ]] || exit 1
   [[ "$WORKSHOP_MAP" =~ ^[a-zA-Z0-9_-]+$ ]] || exit 1
-  run_alphagsm "$SERVER_NAME" send "changelevel workshop/$WORKSHOP_ITEM"
+  # Download asynchronously while the engine can still answer native probes.
+  run_alphagsm "$SERVER_NAME" send "tf_workshop_map_sync $WORKSHOP_ITEM"
   PROBE_TOKEN="AlphaGSM-TF2-$("$PYTHON_BIN" -c 'import uuid; print(uuid.uuid4().hex)')"
+  WORKSHOP_CHANGE_REQUESTED=0
   WORKSHOP_MAP_LOADED=0
-  for (( attempt=0; attempt<300; attempt++ )); do
+  WORKSHOP_DEADLINE=$((SECONDS + 600))
+  while (( SECONDS < WORKSHOP_DEADLINE )); do
+    if [[ "$WORKSHOP_CHANGE_REQUESTED" == "0" ]]; then
+      run_alphagsm "$SERVER_NAME" send "echo BEGIN-$PROBE_TOKEN; tf_workshop_map_status; status; echo END-$PROBE_TOKEN"
+      sleep 1
+      run_alphagsm "$SERVER_NAME" logs -n 20000 > "$WORK_DIR/workshop-path.log"
+      if "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/tf2_workshop.py" "$WORK_DIR/workshop-path.log" "$WORKSHOP_ITEM" "$WORKSHOP_MAP" "$PROBE_TOKEN" --ready-only; then
+        run_alphagsm "$SERVER_NAME" send "changelevel workshop/$WORKSHOP_ITEM"
+        WORKSHOP_CHANGE_REQUESTED=1
+      fi
+      sleep 2
+      continue
+    fi
     if run_alphagsm "$SERVER_NAME" info --json > "$WORK_DIR/workshop-info.json"; then
       if "$PYTHON_BIN" - "$WORK_DIR/workshop-info.json" "$WORKSHOP_MAP" "$WORKSHOP_ITEM" "$PORT" <<'PYMAP'
 import json, sys

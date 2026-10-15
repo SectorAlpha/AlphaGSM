@@ -39,7 +39,11 @@ Focused Docker integration and Workshop smoke passed the strict execution
 checks on 14 October 2026. Process CI progressed past the runtime check but
 exited during Steam initialization after binding its port. Process launch now
 uses `xvfb-run` and the same X11/SDL drivers as the passing Docker runtime;
-this additional correction awaits CI validation.
+CI run `38655040006` still exited before `Game ready` after that correction.
+The native log reports Windows 7 and Mono 6.13.0 but contains no exception
+or crash dump evidence. Process integration now enables Wine exception
+diagnostics in CI and prints bounded native runtime details for both runtimes
+to compare the failure with the passing Docker launch.
 
 Workshop integration and opt-in smoke require both `Game ready` and the MES
 script's own `MES Spawner / Startup: Active Debug ...` initialization message.

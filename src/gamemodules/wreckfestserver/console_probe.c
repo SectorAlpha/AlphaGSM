@@ -58,10 +58,17 @@ static DWORD selected_process(const WCHAR *expected)
     return matches == 1 ? found : 0;
 }
 
-static int write_rows(HANDLE file, const WCHAR *buffer, unsigned int last_row)
+static int write_rows(HANDLE file, const WCHAR *buffer)
 {
-    unsigned int row;
+    unsigned int row, last_cell = CELLS, last_row;
     DWORD written;
+    /* Wreckfest redraws its input prompt at a saved cursor position while the
+     * registry prints. The live cursor can therefore precede fresh output.
+     * Every cell was blanked before tracks, so the last nonblank cell is the
+     * fresh display boundary; no old screen rows can enter this capture.
+     */
+    while (last_cell && (buffer[last_cell - 1] == L' ' || buffer[last_cell - 1] == L'\0')) last_cell--;
+    last_row = last_cell ? (last_cell - 1) / WIDTH : 0;
     for (row = 0; row <= last_row && row < HEIGHT; row++)
     {
         const WCHAR *line = buffer + row * WIDTH;
@@ -84,9 +91,8 @@ static int capture(HANDLE file, const WCHAR *executable)
     CONSOLE_SCREEN_BUFFER_INFO info;
     COORD origin = {0, 0}, size = {WIDTH, HEIGHT};
     DWORD pid = selected_process(executable), count;
-    WCHAR *buffer;
+    WCHAR *buffer, *previous_buffer;
     ULONGLONG deadline, stable_since = 0;
-    COORD previous = {-1, -1};
     int result = 1;
     BOOL read_ok = FALSE;
     unsigned int i;
@@ -131,6 +137,8 @@ static int capture(HANDLE file, const WCHAR *executable)
     }
     buffer = calloc(CELLS + 1, sizeof(WCHAR));
     if (!buffer) goto cleanup;
+    previous_buffer = calloc(CELLS + 1, sizeof(WCHAR));
+    if (!previous_buffer) { free(buffer); goto cleanup; }
     deadline = GetTickCount64() + CAPTURE_MS;
     while (GetTickCount64() < deadline)
     {
@@ -138,9 +146,9 @@ static int capture(HANDLE file, const WCHAR *executable)
             !ReadConsoleOutputCharacterW(output, buffer, CELLS, origin, &count) || count != CELLS)
             break;
         read_ok = TRUE;
-        if (info.dwCursorPosition.X != previous.X || info.dwCursorPosition.Y != previous.Y)
+        if (memcmp(buffer, previous_buffer, CELLS * sizeof(WCHAR)))
         {
-            previous = info.dwCursorPosition;
+            memcpy(previous_buffer, buffer, CELLS * sizeof(WCHAR));
             stable_since = GetTickCount64();
         }
         if (wcsstr(buffer, L"Tracks:") && GetTickCount64() - stable_since >= 1000)
@@ -150,7 +158,8 @@ static int capture(HANDLE file, const WCHAR *executable)
         }
         Sleep(100);
     }
-    if (read_ok && write_rows(file, buffer, (unsigned int)info.dwCursorPosition.Y)) result = 1;
+    if (read_ok && write_rows(file, buffer)) result = 1;
+    free(previous_buffer);
     free(buffer);
     if (result) fail(file, "Native capture failed: no complete fresh Tracks response before deadline\n");
 cleanup:

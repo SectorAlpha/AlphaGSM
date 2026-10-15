@@ -80,7 +80,8 @@ def collect_process_diagnostics(proc_root="/proc", home_roots=None):
     seen = set()
     for home in home_roots:
         for relative in (".steam/steam/logs", ".steam/steamcmd/logs", "Steam/logs", ".local/share/Steam/logs"):
-            for filename in ("connection_log.txt", "console_log.txt", "stderr.txt", "appinfo_log.txt"):
+            for filename in ("workshop_log.txt", "content_log.txt", "connection_log.txt",
+                             "console_log.txt", "stderr.txt", "appinfo_log.txt"):
                 path = Path(home) / relative / filename
                 if len(log_rows) >= 8 or str(path) in seen:
                     continue

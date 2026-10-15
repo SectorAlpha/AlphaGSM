@@ -22,8 +22,8 @@ require_cmd() {
 }
 
 run_alphagsm() {
-  echo
-  echo "=== alphagsm $* ==="
+  echo >&2
+  echo "=== alphagsm $* ===" >&2
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
 }
 

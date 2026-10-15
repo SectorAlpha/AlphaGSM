@@ -80,13 +80,13 @@ def assert_workshop_loaded(log_text):
     assert not re.search(r"(?i)\b(?:unknown command|error|failed to load|not found)\b", log_text), (
         "Native track capture contains a command or load error")
     header = None
-    for match in re.finditer(r"(?m)^[ \t]*Tracks:[ \t]*\r?(?:\n|$)", log_text):
+    for match in re.finditer(r"(?m)^[ \t]*>?[ \t]*Tracks:[ \t]*\r?(?:\n|$)", log_text):
         header = match
     assert header is not None, "Native Tracks: registry section is missing"
     found = False
     row_count = 0
     for line in log_text[header.end():].splitlines():
-        row = re.fullmatch(r"[ \t]+([A-Za-z0-9_-]+)[ \t]+\(([^()\r\n]+)\)[ \t]*", line)
+        row = re.fullmatch(r"[ \t]*>?[ \t]+([A-Za-z0-9_-]+)[ \t]+\(([^()\r\n]+)\)[ \t]*", line)
         if row is None:
             break
         assert row_count < 1024, "Native Tracks: registry exceeds 1024 rows"

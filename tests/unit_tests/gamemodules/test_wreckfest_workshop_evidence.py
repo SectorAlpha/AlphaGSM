@@ -39,6 +39,21 @@ def test_native_tracks_section_accepts_ansi_terminal_formatting():
     assert_workshop_loaded("\x1b[0mTracks:\r\n\x1b[32m  crazy_2000_classic (CRAZY 2000)\x1b[0m\r\n")
 
 
+@pytest.mark.parametrize('header,stock', [
+    ('>Tracks:', '    stock_event (STOCK EVENT)'),
+    ('Tracks:', '>    stock_event (STOCK EVENT)'),
+    ('Tracks:', '    stock_event (STOCK > EVENT)'),
+    ('Tracks:', '    bigstadium_figure_8 (MADMAN STADIUM - FIGURE 8>)'),
+])
+def test_native_prompt_redraw_does_not_hide_later_exact_registry_row(header, stock):
+    assert_workshop_loaded(f' tracks\n{header}\n{stock}\n    crazy_2000_classic (CRAZY 2000)\n')
+
+
+def test_prompted_stock_registry_still_requires_the_actual_workshop_event():
+    with pytest.raises(AssertionError, match='exact Workshop event'):
+        assert_workshop_loaded('>Tracks:\n>    stock_event (STOCK EVENT)\n')
+
+
 def test_failed_capture_reports_bounded_terminal_bytes_without_changing_failure(capsys):
     before = "Wine startup\n"
     elapsed = [0.0]

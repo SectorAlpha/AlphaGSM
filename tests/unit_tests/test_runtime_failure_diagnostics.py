@@ -88,6 +88,21 @@ def test_process_probe_retains_evidence_when_other_home_is_inaccessible(tmp_path
     assert all("private home" in row["error"] for row in result["steam_state"])
 
 
+def test_workshop_download_diagnostics_keep_bounded_native_job_results(tmp_path):
+    home = tmp_path / 'home'
+    logs = home / '.steam/steam/logs'
+    logs.mkdir(parents=True)
+    for filename in ('workshop_log.txt', 'content_log.txt'):
+        (logs / filename).write_text('old-line\n' * 200 + 'Get details for item failed : Timeout\n')
+    (logs / 'config.vdf').write_text('credential-never-read')
+    evidence = _helpers().collect_process_diagnostics(proc_root=tmp_path / 'proc', home_roots=[home])
+    assert {Path(row['path']).name for row in evidence['steam_logs']} == {'workshop_log.txt', 'content_log.txt'}
+    for row in evidence['steam_logs']:
+        assert row['tail'].endswith('Get details for item failed : Timeout\n')
+        assert len(row['tail'].splitlines()) <= 30
+    assert 'credential-never-read' not in json.dumps(evidence)
+
+
 def test_process_probe_lists_only_local_listeners_and_bound_udp_ports(tmp_path):
     net = tmp_path / "net"
     net.mkdir()

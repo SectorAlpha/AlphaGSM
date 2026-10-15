@@ -184,8 +184,8 @@ The opt-in check downloads public [ns2_Jambi](https://steamcommunity.com/sharedf
 starts on a stock map, waits for the real engine web API, requests the custom map
 through web admin, and requires both custom-map A2S and `Server.GetMapModId`
 attribution through `getmaplist`. File existence alone cannot satisfy it.
-The native Workshop process lifecycle passed in GitHub CI on 2026-10-14.
-The Docker loopback API transport awaits CI validation.
+The native Workshop process and Docker lifecycles passed in GitHub CI run
+`38655040006` on 2026-10-15, including the Docker loopback API transport.
 
 ```bash
 ALPHAGSM_WORK_DIR=/path/on/large/disk \

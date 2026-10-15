@@ -9,7 +9,8 @@ verified. Docker smoke reported `Veghel Offensive Random 01` with 0/80 players.
 
 AlphaGSM prefers the Steam SDK supplied with the dedicated server. Stop currently
 uses the existing forced-stop fallback; graceful saving is not established.
-Native Workshop loading remains pending separate validation.
+Native Ramelle Workshop loading passed process and Docker integration plus
+Docker smoke in CI run `38655040006` on 2026-10-15.
 
 ## Requirements
 
@@ -139,7 +140,7 @@ SquidBots fixture (`2909251852`) was rejected by the engine: its `.mi` declares
 is Ramelle (`2387944294`), whose author advertises Linux support. The test derives
 its plugin name from staged metadata and requires the matching Workshop ID and
 current SDK identity before engine checks. Anonymous access and process/Docker
-native-load proof for this replacement fixture are still pending.
+native-load proof passed in CI run `38655040006`.
 
 For an explicitly requested local run, set `ALPHAGSM_RUN_SQUAD44_WORKSHOP=1`.
 Override `ALPHAGSM_SQUAD44_WORKSHOP_ID` (ID or URL) and optionally
@@ -152,5 +153,5 @@ the managed runtime output and the engine log: early startup output can precede
 the opening of the engine log file. The test also requires fresh native world
 construction and completed `LoadMap` evidence for that layer, plus
 the same layer reported by real A2S metadata. Startup and query timeouts remain
-failures. CI enables this check automatically; replacement-fixture results remain
-pending.
+failures. CI enables this check automatically; both runtimes and Docker smoke
+passed these checks in run `38655040006`.

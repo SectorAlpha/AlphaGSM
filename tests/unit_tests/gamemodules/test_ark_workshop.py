@@ -1,6 +1,7 @@
 """ARK compressed content, binary descriptor and native activation regressions."""
 
 from importlib import import_module
+import io
 import struct
 import zlib
 
@@ -14,6 +15,39 @@ def fstring(value):
     """Build fixture metadata in Unreal's documented ANSI string representation."""
     raw = value.encode() + b"\0"
     return struct.pack("<I", len(raw)) + raw
+
+
+@pytest.mark.parametrize("encoded", [struct.pack("<i", 0), fstring(""), struct.pack("<i", -1) + b"\0\0"])
+def test_native_empty_fstring_encodings_preserve_the_following_field(encoded):
+    adapter = import_module("gamemodules.ark.workshop")
+    stream = io.BytesIO(encoded + fstring("FlatMap"))
+    assert adapter._string(stream) == ""
+    assert stream.tell() == len(encoded)
+    assert adapter._string(stream) == "FlatMap"
+    assert stream.read() == b""
+
+
+@pytest.mark.parametrize("size", [65537, -32769, 2**31 - 1, -(2**31)])
+def test_oversized_signed_fstrings_fail_before_reading_the_claimed_payload(size):
+    adapter = import_module("gamemodules.ark.workshop")
+    stream = io.BytesIO(struct.pack("<i", size) + b"untrusted payload")
+    with pytest.raises(ServerError, match="Invalid ARK metadata string length"):
+        adapter._string(stream)
+    assert stream.tell() == 4
+
+
+@pytest.mark.parametrize("encoded,error", [
+    (b"\0\0\0", "Truncated"),
+    (struct.pack("<i", 4) + b"ab", "Truncated"),
+    (struct.pack("<i", 3) + b"abc", "terminator"),
+    (struct.pack("<i", 4) + b"a\0b\0", "embedded NUL"),
+    (struct.pack("<i", 2) + b"\xff\0", "encoding"),
+    (struct.pack("<i", -2) + b"\0\xd8\0\0", "encoding"),
+])
+def test_empty_string_support_keeps_truncation_encoding_and_terminator_checks(encoded, error):
+    adapter = import_module("gamemodules.ark.workshop")
+    with pytest.raises(ServerError, match=error):
+        adapter._string(io.BytesIO(encoded))
 
 
 def make_adapter(tmp_path, monkeypatch):
@@ -217,4 +251,34 @@ def test_custom_map_catalog_does_not_claim_operator_active_mod_ids(tmp_path, mon
     assert "ActiveMods=111,999" in config.read_text()
     assert "OperatorValue=keep" in config.read_text()
     assert server.data["mods"]["ark_workshop_maps"] == {}
+    assert not (tmp_path / "ShooterGame/Content/Mods/111.mod").exists()
+
+
+def test_map_with_zero_length_optional_metadata_strings_stages_and_cleans_safely(tmp_path, monkeypatch):
+    """An empty Unreal FString is its zero prefix alone, without a NUL payload."""
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    (payload / "mod.info").write_bytes(struct.pack("<iI", 0, 1) + fstring("FlatMap"))
+    metadata = (struct.pack("<I", 2) + fstring("ModType") + fstring("2")
+                + fstring("Description") + struct.pack("<i", 0))
+    (payload / "modmeta.info").write_bytes(metadata)
+    (payload / "FlatMap.umap").write_bytes(b"cooked native world")
+    config = tmp_path / adapter.CONFIG
+    config.parent.mkdir(parents=True)
+    config.write_text("[ServerSettings]\nActiveMods=999\nOperatorValue=keep\n")
+    adapter.configure_workshop(server, ["111"])
+    assert server.data["mods"]["ark_workshop_maps"] == {"111": {"FlatMap": "/Game/Mods/111/FlatMap"}}
+    descriptor = tmp_path / "ShooterGame/Content/Mods/111.mod"
+    assert descriptor.read_bytes().endswith(b"\x33\xff\x22\xff\x02\0\0\0\x01" + metadata)
+    assert "ActiveMods=999" in config.read_text()
+    adapter.configure_workshop(server, [])
+    assert not descriptor.exists()
+    assert "ActiveMods=999" in config.read_text() and "OperatorValue=keep" in config.read_text()
+
+
+def test_zero_length_map_identity_is_rejected_by_map_semantics(tmp_path, monkeypatch):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    (payload / "mod.info").write_bytes(struct.pack("<iIi", 0, 1, 0))
+    (payload / "modmeta.info").write_bytes(struct.pack("<I", 1) + fstring("ModType") + fstring("2"))
+    with pytest.raises(ServerError, match="safe native map names"):
+        adapter.configure_workshop(server, ["111"])
     assert not (tmp_path / "ShooterGame/Content/Mods/111.mod").exists()

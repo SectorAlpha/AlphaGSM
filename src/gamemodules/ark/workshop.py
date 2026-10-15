@@ -29,9 +29,15 @@ def _read_exact(handle, size):
 
 def _string(handle):
     """Read a bounded Unreal FString without trusting its size prefix."""
+    offset = handle.tell()
     size = struct.unpack("<i", _read_exact(handle, 4))[0]
-    if not size or not -32768 <= size <= 65536:
-        raise ServerError("Invalid ARK metadata string length")
+    # Unreal serializes an empty FString as int32(0), with no terminator bytes.
+    # ARK metadata readers also accept this for optional mod names/values:
+    # Bletch1971/ServerManagers, Utils/ModUtils.cs::ReadUE4String.
+    if size == 0:
+        return ""
+    if not -32768 <= size <= 65536:
+        raise ServerError(f"Invalid ARK metadata string length {size} at byte {offset}")
     raw = _read_exact(handle, size if size > 0 else -2 * size)
     encoding, terminator = ("utf-8", b"\0") if size > 0 else ("utf-16-le", b"\0\0")
     if not raw.endswith(terminator):

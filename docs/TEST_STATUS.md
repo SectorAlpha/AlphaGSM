@@ -43,6 +43,14 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- Full PR run `38655040006` retained all 336 expected artifacts. NS2 Docker
+  and Squad 44 process/Docker native Workshop lifecycles now pass. Seven
+  integration cases remain: ARK Workshop in both runtimes, Space Engineers
+  process baseline/Workshop, TF2 Docker Workshop and Wreckfest Workshop in both
+  runtimes. JC3 recovered on recheck. Seven smoke scenarios failed: ARK,
+  BrainBread 2, Day of Infamy, Insurgency, NMRIH, TF2 and Wreckfest. Replacement
+  metadata, JSON-output, download sequencing and console-capture fixes await CI;
+  Space Engineers process now retains additional crash evidence. No local tests ran.
 - Replacement changes passed lint, Linux units and coverage in GitHub run
   `38651680142`. Focused run `38649280824` passed Space Engineers' Docker MES
   smoke and NS2's process native Workshop integration. ARK's Linux engine
@@ -316,7 +324,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | sonsoftheforestserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; AlphaGSM writes the managed JSON `user-data/dedicatedserver.cfg`, seeds `ownerswhitelist.txt`, starts Xvfb from the shared container entrypoint, and validates A2S on the managed `queryport`. CI now routes one Docker-default heavy lifecycle instead of duplicating the currently failing forced host-process Wine lane. |
 | solserver | SteamCMD |
 | subsistenceserver | Docker runtime (Wine/Proton) — PASSED 2026-06-03; fresh focused integration plus smoke now prove the earlier DirectX-only disabled note was stale. Anonymous SteamCMD setup for app `1362640` installs the full Windows dedicated payload, AlphaGSM launches the upstream `Binaries/Win64/UDK.exe` dedicated host inside the shared `wine-proton` runtime, hands Docker the bare Windows command so the shared entrypoint can seed the Wine prefix and Xvfb correctly, syncs the real UDK config layer so the managed `queryport` becomes authoritative before start, and validates `query`, `info`, and `info --json` over A2S on the managed query port |
-| squad44server | SteamCMD — stock process and Docker integrations plus Docker smoke PASSED 2026-10-14 in CI run `38537399526`; native world, real A2S query/info/JSON and shutdown verified with depot-SDK launch preference. Existing forced-stop fallback remains; the replacement Ramelle Linux fixture/native-load proof remains pending. |
+| squad44server | SteamCMD — stock and Ramelle Workshop process/Docker integrations plus Docker smoke PASSED 2026-10-15 in CI run `38655040006`; exact native PAK registration/serialization, custom world, real A2S query/info/JSON and shutdown verified. Existing forced-stop fallback remains; graceful saving is not established. |
 | squadserver | SteamCMD — anonymous Workshop process lifecycle PASSED 2026-10-13 with native PAK/IoStore mount, serialization and layer registration, real Squad RCON population/map/layer queries, cleanup and fresh unmodded restart. Workshop Docker validation awaits the SSD endpoint; existing forced-stop fallback does not prove graceful saving. |
 | stationeersserver | SteamCMD — PASSED 2026-05-29; smoke and focused integration now both pass on the post-September-2025 Linux dedicated-server contract (`rocketstation_DedicatedServer.x86_64 -file start ... -logFile ./server.log -settings ... UseSteamP2P false LocalIpAddress 0.0.0.0`), with the shared setup port-retry helper covering the colliding default `updateport` and generic `udp` `query` / `info` on the managed game port. Anonymous Workshop process validation also passed 2026-10-13: the Mars Abandoned Frontier fixture produced a fresh native save with its exact custom world ID and Structure prefabs; CLI shutdown and owned-mod cleanup passed. Workshop Docker validation awaits an SSD-backed endpoint. |
 | starruptureserver | Docker runtime (Wine/Proton) — PASSED 2026-06-01; fresh focused integration plus follow-up smoke validation now prove the old timeout-only skip was stale: anonymous SteamCMD setup for app `3809400` installs the real Windows dedicated payload, AlphaGSM launches `StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe` inside the shared `wine-proton` runtime, stages root `DSSettings.txt` from the checked-in template before launch, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed main game port |
