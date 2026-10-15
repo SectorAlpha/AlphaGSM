@@ -256,6 +256,57 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
         assert _info_data.get("players_max") == 20, (
             f"Expected max-players=20 (Minecraft vanilla default): {_info_data!r}"
         )
+
+        if os.environ.get("ALPHAGSM_VALIDATE_AGENT") == "1":
+            from unittest.mock import patch
+
+            with patch.dict(os.environ, {"ALPHAGSM_CONFIG_LOCATION": str(config_path)}):
+                # The optional agent uses the same fixed lifecycle via bounded helpers,
+                # with durable no-replay intent and the normal local CLI lock.
+                from datetime import datetime, timedelta, timezone
+                from agent.config import Config
+                from agent.cli import run as agent_cli
+                from agent.journal import Journal
+                from agent.lifecycle import AlphaRuntime, Executor
+                import server.server as server_module
+                from utils.state_io import state_lock
+
+                cfg = Config(home_dir / "agent")
+                cfg.enroll("https://control.example", {
+                    "schema_version": 1, "installation_id": "integration-install",
+                    "credential_generation": 1, "reporting": None,
+                    "management": {"key_id": "integration-key", "secret": "x" * 43},
+                })
+                # Infer the real configured game/port without querying private fields.
+                with patch.object(server_module, "DATAPATH", str(home_dir / "conf")), \
+                     patch("builtins.input", side_effect=["", "yes"]):
+                    assert agent_cli(["bind", server_name, "--binding-id", "integration-binding",
+                                      "--host", "game.example", "--private", "--actions", "restart", "status"],
+                                     root=cfg.root) == 0
+                inferred = cfg.load()["bindings"]["integration-binding"]
+                assert inferred["metadata"]["game_id"] == module_name
+                assert inferred["metadata"]["port"] == port
+                assert inferred["publication"] is False
+                assert cfg.load()["management_enabled"] is False
+                cfg.enable(management=True)
+                runtime = AlphaRuntime()
+                runtime.lock_path = lambda tag: home_dir / "conf" / (tag + ".json")
+                if os.environ.get("ALPHAGSM_BINARY"):
+                    runtime.helper_command = lambda tag, action: [
+                        os.environ["ALPHAGSM_BINARY"], "--_agent-runtime", tag, action,
+                    ]
+                now = datetime.now(timezone.utc)
+                job = {"schema_version": 1, "job_id": "integration-restart",
+                       "installation_id": "integration-install", "binding_id": "integration-binding",
+                       "binding_epoch": 1, "action": "restart", "policy_version": cfg.load()["policy_version"],
+                       "credential_generation": 1, "requested_by": "integration-owner",
+                       "issued_at": now.isoformat(), "expires_at": (now + timedelta(seconds=120)).isoformat()}
+                executor = Executor(cfg, Journal(cfg.root / "journal.json"), runtime, lambda value: True)
+                result = executor.run(job)
+                assert result["outcome"] == "succeeded", result
+                assert executor.run(job) == result
+                wait_for_info_protocol(env, server_name, "slp", START_TIMEOUT_SECONDS, expected_port=port)
+
     finally:
         stop_result = capture_alphagsm_stop(
             env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT_SECONDS

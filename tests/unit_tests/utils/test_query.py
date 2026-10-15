@@ -411,6 +411,9 @@ def test_slp_info_extracts_all_fields(monkeypatch):
             self._pos = 0
             self._sent = []
 
+        def settimeout(self, timeout):
+            pass
+
         def sendall(self, data):
             self._sent.append(data)
 

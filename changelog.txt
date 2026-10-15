@@ -7,6 +7,60 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-15
+- Sector Alpha: never infer a player port from Trackmania XML-RPC, Enshrouded
+  query-only settings or Arma headless client roles. Use --connect-port only
+  after confirming an actual public player listener. Existing approvals remain.
+- Sector Alpha: approve player connection ports separately from query ports in
+  binding previews. Infer the primary game port and add --connect-port for NAT;
+  Minecraft --port follows both ports unless --connect-port overrides it.
+- Agent metadata: accept optional strict connect_port for every game, preserving
+  old reports and consent. Existing bindings gain it only after rebinding; endpoint
+  metadata reaches the API through reports after reporting is enabled. Update the
+  receiver before new bindings/rebinding, since old closed schemas reject the field.
+- Sector Alpha: use https://gameserver-api.sector-alpha.net as the single origin
+  for enrollment, binding registration, reports and management. Public accounts
+  and the directory remain on https://sector-alpha.net.
+- Agent upgrades: normalize the old official website origin locally without
+  re-enrollment or changing IDs, credentials or consent. Restart the agent after
+  upgrading; explicitly configured custom providers keep their origins.
+- Documentation: add a step-by-step same-machine subdomain setup with DNS records,
+  individual and bulk binding, public-IP overrides, endpoint checks and reporting.
+- Sector Alpha: document and verify separate per-game subdomains on one machine,
+  including wildcard endpoint prompts, preserved bindings and independent DNS
+  publication checks for games sharing a public IP.
+- Sector Alpha: validate existing server hostnames against this machine's public
+  IPs before public report renewals. Withhold mismatched/unavailable names without
+  changing local consent. Add repeatable --public-ip overrides and an explicit
+  check-endpoint command for bounded native game-protocol diagnostics.
+- DNS validation: use pinned dnspython with complete A/AAAA checks, hard lifetimes
+  and bounded concurrent work; include its dynamic protocol modules in binaries.
+- Sector Alpha: default enrollment to https://gameserver-api.sector-alpha.net, register bindings
+  automatically, and support guided single-server binding and `agent bind '*'`
+  for all eligible local servers. Infer each server's game, port, name and capacity;
+  suggest its public IP with explicit host/port overrides and operator confirmation.
+- Existing games without a public query profile can use private bindings. Bulk
+  binding preserves existing permissions and never enables capabilities itself.
+- Sector Alpha: retry reporting after temporary configuration-lock contention
+  during long lifecycle operations, keeping the reporting thread alive.
+
+2026-10-13
+- Sector Alpha: add an optional outbound HTTPS agent with separate reporting and
+  management opt-ins, exact local server bindings, private scoped credentials,
+  and durable results that prevent replay of lifecycle effects after a crash.
+- Remote actions are limited to status/start/stop/restart. Normal stop can fall
+  back to forceful termination; restart requires a running server. Both
+  capabilities remain disabled until explicitly enabled by the operator.
+- Public query interface: reviewed A2S_INFO and Minecraft Java SLP profiles with
+  pinned numerical destinations, total deadlines, bounded fragments/decompression
+  and JSON framing, and scalar observations without player names or credentials.
+- Credential rotation: independently replace reporting or management keys through
+  hidden local prompts, retaining existing bindings and capability opt-ins.
+- Lifecycle: POSIX port checks ignore closed TCP connections in TIME_WAIT while
+  continuing to reject active listeners; Windows keeps exclusive port probes.
+- Packaging/lint/coverage include the new agent package. Agent credential storage
+  currently supports POSIX; Windows enrollment fails closed pending an ACL adapter.
+
 2026-10-11
 - Agent workflows: add 26 focused operations and development skills alongside
   the nine existing repository skills, with task routing and evidence handoffs.

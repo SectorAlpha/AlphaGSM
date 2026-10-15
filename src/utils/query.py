@@ -25,9 +25,10 @@ Game modules may optionally define ``get_query_address(server)`` returning a
 TCP ping on the main port.
 """
 
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines,unidiomatic-typecheck
 
 import bz2
+import zlib
 import json
 import re
 import socket
@@ -271,90 +272,91 @@ def source_rcon_info(
     raise QueryError("Source RCON query timed out after retries") from last_error
 
 
-def _recv_a2s_packet(sock):
-    """Receive one A2S UDP response, reassembling multi-packet fragments.
+def _remaining(deadline):
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise QueryError("Query total deadline exceeded")
+    return remaining
 
-    Uses a 65535-byte buffer (maximum UDP payload) so that large single-packet
-    responses are never silently truncated.  Multi-packet responses (indicated
-    by the ``\\xfe\\xff\\xff\\xff`` header) are fully reassembled from all
-    fragments before returning.
 
-    Returns the raw payload bytes with the 4-byte simple-packet header stripped.
-    """
-    data = sock.recv(65535)
-    if data[:4] == _HEADER_SIMPLE:
-        return data[4:]
-    if data[:4] == _HEADER_MULTI:
-        # Fragment header layout (all little-endian):
-        #   uint32  message_id   – high bit set when payload is bz2-compressed
-        #   uint8   total        – total number of fragments
-        #   uint8   frag_id      – zero-based index of this fragment
-        #   uint16  mtu          – max fragment size (informational)
-        # If compressed, two more fields follow before the payload:
-        #   uint32  decompressed_size
-        #   uint32  crc32
-        _FRAG_HDR = struct.Struct("<IBBH")
-
-        def _parse_fragment(raw):
-            msg_id, total, frag_id, _ = _FRAG_HDR.unpack_from(raw)
-            offset = _FRAG_HDR.size
-            if msg_id & (1 << 15):  # compressed
-                offset += 8  # skip decompressed_size + crc32
-                payload = bz2.decompress(raw[offset:])
-            else:
-                payload = raw[offset:]
-            return total, frag_id, payload
-
-        total, frag_id, payload = _parse_fragment(data[4:])
-        fragments = {frag_id: payload}
-        while len(fragments) < total:
-            pkt = sock.recv(65535)
-            _, fid, fpayload = _parse_fragment(pkt[4:])
-            fragments[fid] = fpayload
-        reassembled = b"".join(fragments[i] for i in range(total))
-        if reassembled[:4] == _HEADER_SIMPLE:
-            reassembled = reassembled[4:]
-        return reassembled
-    raise QueryError("A2S query failed: Unexpected response header " + repr(data[:4]))
+def _recv_a2s_packet(sock, deadline=None, max_bytes=256 * 1024):
+    """Validate Source split framing before bounded aggregate decompression."""
+    deadline = deadline if deadline is not None else time.monotonic() + 2.0
+    fragments = {}
+    identity = None
+    total_size = 0
+    expected_size = checksum = None
+    for _ in range(16):
+        sock.settimeout(_remaining(deadline))
+        data = sock.recv(65535)
+        _remaining(deadline)
+        if data[:4] == _HEADER_SIMPLE and not fragments:
+            if len(data) > max_bytes:
+                raise QueryError("A2S response exceeds byte limit")
+            return data[4:]
+        if data[:4] != _HEADER_MULTI or len(data) < 12:
+            raise QueryError("A2S query failed: Unexpected response header")
+        message_id, total, index, mtu = struct.unpack_from("<IBBH", data, 4)
+        if not 1 <= total <= 16 or index >= total or not 1 <= mtu <= 65535:
+            raise QueryError("Invalid A2S fragment header")
+        key = (message_id, total, mtu)
+        if identity is not None and identity != key:
+            raise QueryError("Mismatched A2S fragment identity")
+        identity = key
+        if index in fragments:
+            raise QueryError("Duplicate A2S fragment")
+        payload = data[12:]
+        if message_id & 0x80000000 and index == 0:
+            if len(payload) < 8:
+                raise QueryError("Missing A2S compression metadata")
+            expected_size, checksum = struct.unpack_from("<II", payload)
+            if expected_size > max_bytes:
+                raise QueryError("A2S decompressed size exceeds byte limit")
+            payload = payload[8:]
+        total_size += len(payload)
+        if total_size > max_bytes or len(payload) > mtu:
+            raise QueryError("A2S fragments exceed byte limit")
+        fragments[index] = payload
+        if len(fragments) == total:
+            assembled = b"".join(fragments[i] for i in range(total))
+            if message_id & 0x80000000:
+                try:
+                    decompressor = bz2.BZ2Decompressor()
+                    assembled = decompressor.decompress(assembled, max_length=max_bytes + 1)
+                    if (len(assembled) > max_bytes or not decompressor.eof or decompressor.unused_data
+                            or len(assembled) != expected_size or zlib.crc32(assembled) != checksum):
+                        raise QueryError("Invalid bounded A2S compressed response")
+                except (OSError, EOFError, ValueError) as exc:
+                    raise QueryError("Invalid A2S compression") from exc
+            _remaining(deadline)
+            return assembled[4:] if assembled[:4] == _HEADER_SIMPLE else assembled
+    raise QueryError("Too many A2S fragments")
 
 
 def a2s_info(host, port, timeout=2.0, phase2_timeout=None):
-    """Send an A2S_INFO packet to *host*:*port* and return the raw response.
+    """Query one connected UDP endpoint with a total monotonic byte/time budget.
 
-    Handles the modern Steam challenge-response handshake: if the server
-    responds with a challenge (header byte 0x41) the request is re-sent with
-    the 4-byte challenge appended and the final info response is returned.
-    Multi-packet (fragmented) responses are automatically reassembled.
-
-    *timeout* is the socket timeout for Phase 1 (waiting for the initial
-    challenge or response).  *phase2_timeout* is the socket timeout for
-    Phase 2 (waiting for the info response after sending the challenge);
-    defaults to *timeout* when not specified.  Use a longer *phase2_timeout*
-    when querying Source/SRCDS servers in hibernation mode: Phase 1 catches
-    the server during a brief wake window, while Phase 2 must wait an entire
-    hibernation cycle for the server to wake again.
-
-    Raises :class:`QueryError` on timeout, socket error, or an unexpected
-    response header.
+    Explicit longer phase-two budgets support local hibernating Source servers.
+    Public callers supply only timeout, giving a five-second total budget.
     """
-    if phase2_timeout is None:
-        phase2_timeout = timeout
+    deadline = time.monotonic() + (timeout + phase2_timeout if phase2_timeout is not None else timeout)
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.settimeout(timeout)
+            sock.settimeout(min(timeout, _remaining(deadline)))
+            sock.connect((host, int(port)))
             sock.sendto(_A2S_REQUEST, (host, int(port)))
-            data = _recv_a2s_packet(sock)
-            # Some modern servers respond with a challenge before sending info.
-            if len(data) >= 5 and data[0] == _A2S_CHALLENGE_TYPE:
-                challenge = data[1:5]
-                sock.settimeout(phase2_timeout)
-                sock.sendto(_A2S_REQUEST + challenge, (host, int(port)))
-                data = _recv_a2s_packet(sock)
+            data = _recv_a2s_packet(sock, deadline)
+            if data and data[0] == _A2S_CHALLENGE_TYPE:
+                if len(data) != 5:
+                    raise QueryError("Invalid A2S challenge")
+                sock.settimeout(_remaining(deadline))
+                sock.sendto(_A2S_REQUEST + data[1:5], (host, int(port)))
+                data = _recv_a2s_packet(sock, deadline)
     except OSError as exc:
         raise QueryError("A2S query failed: " + str(exc)) from exc
     if not data or data[0] != _A2S_RESPONSE_TYPE:
         raise QueryError("Unexpected A2S response header")
-    return b"\xff\xff\xff\xff" + data
+    return _HEADER_SIMPLE + data
 
 
 def _read_cstring(data, pos):
@@ -494,94 +496,119 @@ def bedrock_info(host, port, timeout=5.0):
     }
 
 
-def slp_info(host, port, timeout=5.0):
-    """Send a Minecraft Server List Ping to *host*:*port* and return a dict.
+def _encode_varint(value):
+    buf = bytearray()
+    while True:
+        byte = value & 0x7F
+        value >>= 7
+        buf.append(byte | (0x80 if value else 0))
+        if not value:
+            return bytes(buf)
 
-    The returned dict contains at minimum: ``description`` (str),
-    ``players_online`` (int), ``players_max`` (int), ``version`` (str).
-    When online players are listed, ``player_names`` (list[str]) is also
-    included.
 
-    Raises :class:`QueryError` on connection failure or unexpected response.
+def _json_depth_bounded(payload, maximum=16):
+    depth = 0
+    in_string = escaped = False
+    for char in payload:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == 92:
+                escaped = True
+            elif char == 34:
+                in_string = False
+        elif char == 34:
+            in_string = True
+        elif char in (91, 123):
+            depth += 1
+            if depth > maximum:
+                raise QueryError("SLP JSON nesting exceeds limit")
+        elif char in (93, 125):
+            depth -= 1
+
+
+def slp_info(host, port, timeout=5.0, *, virtual_host=None, max_bytes=256 * 1024):
+    """Read exactly one bounded SLP frame under a total deadline.
+
+    A public worker connects to a validated numeric host and separately supplies
+    the original hostname for Minecraft's virtual-host handshake.
     """
-    import json as _json
+    deadline = time.monotonic() + timeout
 
-    def _encode_varint(value):
-        buf = bytearray()
-        while True:
-            temp = value & 0x7F
-            value >>= 7
-            if value != 0:
-                temp |= 0x80
-            buf.append(temp)
-            if value == 0:
-                return bytes(buf)
+    def recv_exact(sock, count):
+        result = bytearray()
+        while len(result) < count:
+            sock.settimeout(_remaining(deadline))
+            chunk = sock.recv(count - len(result))
+            _remaining(deadline)
+            if not chunk:
+                raise QueryError("Connection closed while reading SLP payload")
+            result.extend(chunk)
+        return bytes(result)
 
-    def _read_varint(sock):
-        num_read = 0
-        result = 0
-        while True:
-            raw = sock.recv(1)
-            if not raw:
-                raise QueryError("Connection closed while reading VarInt")
-            byte = raw[0]
-            result |= (byte & 0x7F) << (7 * num_read)
-            num_read += 1
-            if num_read > 5:
+    def read_varint(read):
+        value = 0
+        for i in range(5):
+            byte = read(1)[0]
+            if i == 4 and byte > 7:
                 raise QueryError("VarInt too large")
-            if (byte & 0x80) == 0:
-                return result
+            value |= (byte & 127) << (i * 7)
+            if not byte & 128:
+                return value
+        raise QueryError("VarInt too large")
 
+    host_bytes = (virtual_host if virtual_host is not None else host).encode("utf-8")
+    if not 1 <= len(host_bytes) <= 255:
+        raise QueryError("Invalid SLP virtual host")
     try:
-        with socket.create_connection((host, int(port)), timeout=timeout) as sock:
-            host_bytes = host.encode("utf-8")
-            handshake = b"".join([
-                _encode_varint(0),        # packet id 0 = handshake
-                _encode_varint(760),      # protocol version (servers accept any)
-                _encode_varint(len(host_bytes)),
-                host_bytes,
-                struct.pack(">H", int(port)),
-                _encode_varint(1),        # next state = status
-            ])
+        with socket.create_connection((host, int(port)), timeout=_remaining(deadline)) as sock:
+            sock.settimeout(_remaining(deadline))
+            handshake = (b"\x00" + _encode_varint(760) + _encode_varint(len(host_bytes)) + host_bytes
+                         + struct.pack(">H", int(port)) + b"\x01")
             sock.sendall(_encode_varint(len(handshake)) + handshake)
-            sock.sendall(_encode_varint(1) + _encode_varint(0))  # status request
-            _read_varint(sock)   # packet length (ignored)
-            packet_id = _read_varint(sock)
-            if packet_id != 0:
-                raise QueryError(f"Unexpected SLP packet id: {packet_id}")
-            payload_length = _read_varint(sock)
-            payload = bytearray()
-            while len(payload) < payload_length:
-                chunk = sock.recv(payload_length - len(payload))
-                if not chunk:
-                    raise QueryError("Connection closed while reading SLP payload")
-                payload.extend(chunk)
-    except QueryError:
-        raise
+            sock.settimeout(_remaining(deadline))
+            sock.sendall(b"\x01\x00")
+            size = read_varint(lambda n: recv_exact(sock, n))
+            if not 3 <= size <= max_bytes:
+                raise QueryError("SLP packet length exceeds limit")
+            frame = recv_exact(sock, size)
     except OSError as exc:
         raise QueryError("SLP query failed: " + str(exc)) from exc
+    position = 0
 
-    try:
-        raw = _json.loads(payload.decode("utf-8"))
-    except Exception as exc:
-        raise QueryError("Failed to parse SLP JSON: " + str(exc)) from exc
+    def frame_read(n):
+        nonlocal position
+        if position + n > len(frame):
+            raise QueryError("Truncated SLP frame")
+        part = frame[position:position + n]
+        position += n
+        return part
 
+    if read_varint(frame_read) != 0:
+        raise QueryError("Unexpected SLP packet id")
+    size = read_varint(frame_read)
+    if size != len(frame) - position:
+        raise QueryError("Invalid SLP string framing")
+    payload = frame_read(size)
+    _json_depth_bounded(payload)
     try:
+        raw = json.loads(payload.decode("utf-8"))
+        players, capacity = raw["players"]["online"], raw["players"]["max"]
+        if type(players) is not int or type(capacity) is not int or not 0 <= players <= capacity <= 100000:
+            raise QueryError("Invalid SLP player counts")
         desc = raw.get("description", "")
         if isinstance(desc, dict):
             desc = desc.get("text", "")
-        result = {
-            "description": str(desc),
-            "players_online": int(raw["players"]["online"]),
-            "players_max": int(raw["players"]["max"]),
-            "version": str(raw["version"]["name"]),
-        }
-        sample = raw.get("players", {}).get("sample", [])
+        result = {"description": desc if type(desc) is str else "", "players_online": players,
+                      "players_max": capacity, "version": raw["version"]["name"]}
+        sample = raw["players"].get("sample", [])
         if sample:
-            result["player_names"] = [p["name"] for p in sample if "name" in p]
+            result["player_names"] = [p["name"] for p in sample[:256]
+                                      if isinstance(p, dict) and isinstance(p.get("name"), str)]
+        _remaining(deadline)
         return result
-    except (KeyError, TypeError, ValueError) as exc:
-        raise QueryError("Unexpected SLP response structure: " + str(exc)) from exc
+    except (KeyError, TypeError, ValueError, UnicodeError, RecursionError) as exc:
+        raise QueryError("Unexpected SLP response structure") from exc
 
 
 def _format_http_host(host):

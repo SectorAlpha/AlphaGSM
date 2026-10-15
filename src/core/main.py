@@ -58,6 +58,10 @@ def main(name, args):
     The main role of this function is to sanitize the command input from the user.
     """
 
+    if args and args[0].lower() == "agent":
+        from agent.cli import run as run_agent
+        return run_agent(args[1:])
+
     if len(args) == 1 and args[0].lower() in ("-v", "--version", "version"):
         print("AlphaGSM %s" % (get_version(),))
         return 0
@@ -101,6 +105,7 @@ def main(name, args):
             "compose",
             "ps",
             "self-update",
+            "agent",
         )
         + Server.default_commands
     )
@@ -322,6 +327,9 @@ def _run_one_unlocked(name, server, cmd, args):
             #  try running the command
             try:
                 server.run_command(cmd, *args, **opts)
+                if cmd in ("set", "start", "stop", "restart", "setup"):
+                    from agent.cli import notify_success
+                    notify_success(tag)
                 #  developers: be sure to check if command_functions dictionary
                 #  has been filled, otherwise the error called here will make
                 #  no sense

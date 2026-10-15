@@ -472,6 +472,11 @@ def probe_live_listener(ip, port):
         for family, stype, proto, _canon, sockaddr in infos:
             sock = socket.socket(family, stype, proto)
             try:
+                # Closed TCP connections can remain in TIME_WAIT after stop.
+                # Reuse permits those ports while active listeners still conflict.
+                # UDP deliberately keeps exclusive-bind behavior.
+                if os.name == "posix" and stype == socket.SOCK_STREAM:
+                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 sock.bind(sockaddr)
             except OSError as exc:
                 if getattr(exc, "errno", None) == errno.EADDRNOTAVAIL:
