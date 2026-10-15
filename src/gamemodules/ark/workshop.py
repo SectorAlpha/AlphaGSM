@@ -145,9 +145,12 @@ def _prepare_files(payloads, scratch, *, map_catalog=None):
                 raise ServerError("ARK Workshop payload exceeds file limit")
         if len(entries) > 10000 or payload.is_symlink() or any(path.is_symlink() for path in entries):
             raise ServerError("ARK Workshop payload contains symlinks or exceeds file limit")
-        root = payload / "LinuxNoEditor"
+        # ARK's native Linux dedicated server loads the Windows-cooked branch.
+        # arkmanager/ark-server-tools defaults mod_branch to Windows and warns
+        # that LinuxNoEditor assets crash the server (LinkerLoad bad name index).
+        root = payload / "WindowsNoEditor"
         if not root.is_dir():
-            raise ServerError("ARK Workshop mod has no native LinuxNoEditor content")
+            raise ServerError("ARK Workshop mod has no WindowsNoEditor content required by the Linux server")
         files[f"ShooterGame/Content/Mods/{item}.mod"] = _descriptor(
             item, root, declared_maps=declared_maps)
         size = 0

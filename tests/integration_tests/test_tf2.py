@@ -252,13 +252,13 @@ def _verify_native_workshop_map(env, server_name, item_ids, port):
     # completes. Sync in the background first so a stalled transfer still has
     # fresh, inspectable native status instead of queuing every later probe.
     run_and_assert_ok(env, server_name, 'send', f'tf_workshop_map_sync {item}')
-    token = 'AlphaGSM-TF2-' + uuid.uuid4().hex
     error, output = None, ''
     change_requested = False
     deadline = time.monotonic() + 600
     while time.monotonic() < deadline:
         if not change_requested:
             try:
+                token = 'AlphaGSM-TF2-' + uuid.uuid4().hex
                 run_and_assert_ok(env, server_name, 'send',
                                   f'echo BEGIN-{token}; tf_workshop_map_status; status; echo END-{token}')
                 time.sleep(1)
@@ -280,6 +280,7 @@ def _verify_native_workshop_map(env, server_name, item_ids, port):
                 assert name in (expected_map, canonical, canonical.removeprefix('workshop/')), data
                 # A2S can advertise a map before its load finishes. Refresh the
                 # native frame on every candidate so an earlier pending frame expires.
+                token = 'AlphaGSM-TF2-' + uuid.uuid4().hex
                 run_and_assert_ok(env, server_name, 'send',
                                   f'echo BEGIN-{token}; tf_workshop_map_status; status; echo END-{token}')
                 time.sleep(1)

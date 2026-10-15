@@ -43,6 +43,19 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- Full PR run `38702811625` passed 9,693 Linux units, lint 10.00/10, coverage,
+  native Windows cases, binaries and shared backends, retaining all 336 expected
+  artifacts. The five Source smoke failures are resolved. ARK and Wreckfest smoke
+  still fail, together with the same seven integration cases listed below;
+  JC3 again recovered on recheck. ARK now reaches engine loading and crashes on
+  Linux-cooked assets; the replacement uses Windows-cooked content as required
+  by upstream tooling. Space Engineers process lacks a fresh user's LocalLow
+  folder, while Docker passes with the same OS/CLR. TF2 downloads successfully
+  but its console relay stalls after orphaned Steam uploaders exit; replacement
+  changes enable Docker init and register the Workshop consumer library.
+  Wreckfest captures its complete stock-only registry; replacement tests perform
+  the documented first-start native profile initialization before the final
+  engine-load assertion. These fixes await remote validation.
 - Full PR run `38655040006` retained all 336 expected artifacts. NS2 Docker
   and Squad 44 process/Docker native Workshop lifecycles now pass. Seven
   integration cases remain: ARK Workshop in both runtimes, Space Engineers

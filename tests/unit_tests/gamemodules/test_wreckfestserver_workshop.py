@@ -20,7 +20,8 @@ def adapter():
 @pytest.fixture
 def server(tmp_path, monkeypatch):
     monkeypatch.setattr(module.runtime_module, "check_server_running", lambda _: False)
-    return SimpleNamespace(name="wf", data=DummyData(dir=str(tmp_path), configfile="server_config.cfg"), module=module)
+    return SimpleNamespace(name="wf", data=DummyData(
+        dir=str(tmp_path), configfile="server_config.cfg", wreckfest_private_profile=True), module=module)
 
 
 def payload(root):
@@ -166,7 +167,7 @@ def test_linux_console_inherits_cmd_console_and_refuses_shell_metacharacters(ser
     monkeypatch.setattr(module.proton, "wrap_command", lambda command, **_: command)
     command, directory = module.get_start_command(server)
     assert command[:2] == ["script", "-qefc"]
-    assert shlex.split(command[2])[-5:-2] == ["cmd.exe", "/c", "Wreckfest_x64.exe"]
+    assert shlex.split(command[2])[-6:-3] == ["cmd.exe", "/c", "Wreckfest_x64.exe"]
     assert directory == str(tmp_path)
     server.data["configfile"] = "config&other.cfg"
     with pytest.raises(ServerError, match="console"):
@@ -199,6 +200,7 @@ def test_native_container_command_resolves_windows_builtin_cmd(server, tmp_path,
     assert shlex.split(spec["command"][2]) == [
         "/usr/local/bin/alphagsm-wine-proton-entrypoint",
         "cmd.exe", "/c", "Wreckfest_x64.exe", "-s", "server_config=server_config.cfg",
+        "--save-dir=savegame",
     ]
     assert spec["working_dir"] == "/srv/server"
     assert spec["stdin_open"] and spec["stop_mode"] == "exec-console"
@@ -206,6 +208,54 @@ def test_native_container_command_resolves_windows_builtin_cmd(server, tmp_path,
     requirements = module.get_runtime_requirements(server)
     assert requirements["stdin_open"] and requirements["stop_mode"] == "exec-console"
     assert any(item["id"] == "script" for item in requirements["host_dependencies"])
+
+
+@pytest.mark.parametrize("linux", [False, True])
+def test_native_save_directory_is_existing_private_and_preserves_operator_profile(server, tmp_path, monkeypatch, linux):
+    (tmp_path / "Wreckfest_x64.exe").write_bytes(b"fixture exe")
+    monkeypatch.setattr(module, "IS_LINUX", linux)
+    command, directory = module._native_start_command(server)
+    assert command[-1] == "--save-dir=savegame"
+    assert directory == str(tmp_path)
+    profile = tmp_path / "savegame/modlist.mods"
+    assert profile.parent.is_dir()
+    profile.write_bytes(b"operator native mod profile")
+    module._native_start_command(server)
+    assert profile.read_bytes() == b"operator native mod profile"
+
+
+def test_existing_datastore_keeps_implicit_profile_without_a_private_save_directory(server, tmp_path, monkeypatch):
+    del server.data["wreckfest_private_profile"]
+    (tmp_path / "Wreckfest_x64.exe").write_bytes(b"fixture exe")
+    (tmp_path / "server_config.cfg").write_text("server_name=Existing operator\n")
+    monkeypatch.setattr(module, "IS_LINUX", True)
+    command, directory = module._native_start_command(server)
+    assert command == ["cmd.exe", "/c", "Wreckfest_x64.exe", "-s", "server_config=server_config.cfg"]
+    assert directory == str(tmp_path)
+    assert not (tmp_path / "savegame").exists()
+    module.prestart(server)
+    assert "wreckfest_private_profile" not in server.data
+
+
+def test_native_save_directory_refuses_symlink_escape(server, tmp_path):
+    (tmp_path / "Wreckfest_x64.exe").write_bytes(b"fixture exe")
+    outside = tmp_path / "operator-profile"
+    outside.mkdir()
+    (tmp_path / "savegame").symlink_to(outside, target_is_directory=True)
+    with pytest.raises(ServerError, match="symlink"):
+        module._native_start_command(server)
+
+
+@pytest.mark.parametrize("profile_name", ["modlist.mods", "dedicated.ddst"])
+def test_native_save_files_cannot_write_through_operator_symlinks(server, tmp_path, profile_name):
+    (tmp_path / "Wreckfest_x64.exe").write_bytes(b"fixture exe")
+    original = tmp_path / "operator-profile.bin"
+    original.write_bytes(b"operator native data")
+    (tmp_path / "savegame").mkdir()
+    (tmp_path / "savegame" / profile_name).symlink_to(original)
+    with pytest.raises(ServerError, match="symlink"):
+        module._native_start_command(server)
+    assert original.read_bytes() == b"operator native data"
 
 
 @pytest.mark.parametrize("desired", [["456"], []])

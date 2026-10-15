@@ -139,6 +139,11 @@ def prepare_wineprefix(wineprefix, *, template=None):
     if not (source / "system.reg").is_file():
         return False
     shutil.copytree(source, target, symlinks=True, dirs_exist_ok=True)
+    # Wine's wineboot skips profile and shell-folder initialization when this
+    # image-build timestamp matches wine.inf (or contains "disable"). A fresh
+    # copy may run as a different user, whose LocalLow folder does not exist.
+    # Let Wine initialize that account while retaining installed prerequisites.
+    (target / ".update-timestamp").unlink(missing_ok=True)
     return True
 
 

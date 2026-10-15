@@ -12,6 +12,7 @@ import pytest
 from gamemodules import teamfortress2 as module
 from server import ServerError
 from server.modsupport import workshop
+from server import runtime as runtime_module
 
 
 class Data(dict):
@@ -48,9 +49,11 @@ def test_id_url_collection_native_sync_and_cleanup_preserve_engine_cache(adapter
     assert native[native.index('-ugcpath') + 1] == '/srv/server/steamapps/workshop'
     assert str(Path(server.data['dir']) / 'steamapps/workshop') not in native
     assert spec['run_as_host_user'] and spec['container_home'] == '/home/alphagsm'
+    assert spec['init'] is True
     assert spec['env']['HOME'] == '/home/alphagsm'
     requirements = module.get_runtime_requirements(server)
     assert requirements['run_as_host_user'] and requirements['env']['HOME'] == '/home/alphagsm'
+    assert requirements['init'] is True
     assert any(mount['target'] == '/home/alphagsm' and mount['mode'] == 'rw' for mount in spec['mounts'])
     assert not any('steamaccount' in value or 'authkey' in value for value in command)
     cache=Path(server.data['dir'])/'steamapps/workshop/content/440/123/map.bsp'
@@ -72,6 +75,16 @@ def test_native_map_config_rejects_operator_collision_and_external_edits(adapter
     cfg.unlink(); mod(server,'apply'); cfg.write_text('// operator changed configuration\n')
     with pytest.raises(ServerError,match='modified'): mod(server,'cleanup')
     assert cfg.read_text()=='// operator changed configuration\n'
+
+
+def test_container_library_maps_dedicated_and_native_workshop_consumer_apps(adapter):
+    adapter.module = module
+    spec = dict(module.get_container_spec(adapter), runtime_family='steamcmd-linux')
+    library = runtime_module._steam_runtime_library_state(adapter, spec, 'runtime/tf2/home')
+    assert '"path" "/srv/server"' in library['content']
+    assert '"232250" "0"' in library['content']
+    assert '"440" "0"' in library['content']
+    assert 'appworkshop' not in library['relative_file']
 
 
 def test_wrong_game_and_cosmetics_cannot_activate_as_maps(adapter, monkeypatch):
@@ -134,8 +147,9 @@ def test_native_map_probe_requires_ready_exact_id_and_actual_current_canonical_m
 @pytest.mark.parametrize('advertised_map', ['cp_orange_x3', 'workshop/454299390'])
 @pytest.mark.parametrize('pending_frames', [0, 2])
 @pytest.mark.parametrize('pending_map_frames', [0, 2])
+@pytest.mark.parametrize('rotate_tokens', [False, True])
 def test_workshop_lifecycle_requires_execution_instead_of_pending_a2s_map(
-        monkeypatch, advertised_map, pending_frames, pending_map_frames):
+        monkeypatch, advertised_map, pending_frames, pending_map_frames, rotate_tokens):
     from tests.integration_tests import conftest as helpers
     monkeypatch.setitem(sys.modules, 'conftest', helpers)
     path = Path(__file__).resolve().parents[2] / 'integration_tests/test_tf2.py'
@@ -146,8 +160,10 @@ def test_workshop_lifecycle_requires_execution_instead_of_pending_a2s_map(
     monkeypatch.setenv('ALPHAGSM_TF2_WORKSHOP_MAP', 'cp_orange_x3')
     ticks = iter([*range(12), 601])
     monkeypatch.setattr(lifecycle, 'time', SimpleNamespace(monotonic=lambda: next(ticks), sleep=lambda _: None))
-    monkeypatch.setattr(lifecycle, 'uuid', SimpleNamespace(uuid4=lambda: SimpleNamespace(hex='fresh')))
     commands = []
+    token_ids = iter(f'fresh{index}' for index in range(20))
+    monkeypatch.setattr(lifecycle, 'uuid', SimpleNamespace(
+        uuid4=lambda: SimpleNamespace(hex=next(token_ids) if rotate_tokens else 'fresh')))
     frame = ('BEGIN-AlphaGSM-TF2-fresh\n'
              '454299390 workshop/cp_orange_x3.ugc454299390 ready\n'
              'map : workshop/cp_orange_x3.ugc454299390 at: 0 x, 0 y, 0 z\n'
@@ -155,6 +171,9 @@ def test_workshop_lifecycle_requires_execution_instead_of_pending_a2s_map(
 
     def command(_env, _server, action, *args):
         commands.append((action, args))
+        probe = next((arguments[0] for name, arguments in reversed(commands)
+                      if name == 'send' and arguments[0].startswith('echo BEGIN-')), '')
+        token = probe.split('BEGIN-', 1)[1].split(';', 1)[0] if probe else 'AlphaGSM-TF2-fresh'
         log_reads = sum(action == 'logs' for action, _args in commands)
         changed = ('send', ('changelevel workshop/454299390',)) in commands
         if action == 'logs' and log_reads <= pending_frames:
@@ -167,7 +186,7 @@ def test_workshop_lifecycle_requires_execution_instead_of_pending_a2s_map(
             text = frame.replace('map : workshop/cp_orange_x3.ugc454299390', 'map : cp_dustbowl')
         else:
             text = frame
-        return SimpleNamespace(returncode=0, stdout=text, stderr='')
+        return SimpleNamespace(returncode=0, stdout=text.replace('AlphaGSM-TF2-fresh', token), stderr='')
 
     def info(*_args, **_kwargs):
         commands.append(('info', ('--json',)))
@@ -190,4 +209,10 @@ def test_workshop_lifecycle_requires_execution_instead_of_pending_a2s_map(
     if advertised_map.startswith('workshop/'):
         assert not probes
     else:
-        assert probes == [('echo BEGIN-AlphaGSM-TF2-fresh; tf_workshop_map_status; status; echo END-AlphaGSM-TF2-fresh',)] * (pending_map_frames + 1)
+        assert len(probes) == pending_map_frames + 1
+        if rotate_tokens:
+            all_probes = [args[0] for action, args in commands
+                          if action == 'send' and args[0].startswith('echo BEGIN-')]
+            assert len(set(all_probes)) == len(all_probes)
+        else:
+            assert probes == [('echo BEGIN-AlphaGSM-TF2-fresh; tf_workshop_map_status; status; echo END-AlphaGSM-TF2-fresh',)] * (pending_map_frames + 1)

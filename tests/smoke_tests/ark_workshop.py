@@ -10,8 +10,8 @@ import time
 
 
 # Author: https://steamcommunity.com/sharedfiles/filedetails/?id=2041231763
-# Native map FlatMap; 3.372 MB listed Workshop payload. Linux content is checked
-# by the adapter and actual process/Docker compatibility remains a CI assertion.
+# Native map FlatMap; 3.372 MB listed Workshop payload. Windows-cooked content
+# is required by the native Linux engine; both runtime loads remain CI assertions.
 FIXTURE_ID = "2041231763"
 FIXTURE_MAP = "FlatMap"
 
@@ -21,7 +21,7 @@ def configured_fixture_map(server):
     state = server.data.get("mods", {})
     maps = state.get("ark_workshop_maps", {}).get(FIXTURE_ID, {})
     path = maps.get(FIXTURE_MAP, "")
-    assert path.startswith(f"/Game/Mods/{FIXTURE_ID}/"), "Fixture map is not staged native Linux content"
+    assert path.startswith(f"/Game/Mods/{FIXTURE_ID}/"), "Fixture map is not staged native server content"
     assert path.rsplit("/", 1)[-1] == FIXTURE_MAP, "Workshop descriptor selected the wrong native map"
     return path
 

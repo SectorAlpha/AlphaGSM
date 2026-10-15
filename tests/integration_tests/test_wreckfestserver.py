@@ -33,7 +33,9 @@ from conftest import (
     write_config,
 )
 from gamemodules.wreckfestserver import steam_app_id
-from tests.smoke_tests.wreckfestserver_workshop import FIXTURE_ID, TRACK, capture_native_registry
+from tests.smoke_tests.wreckfestserver_workshop import (
+    FIXTURE_ID, TRACK, capture_native_registry, warm_up_workshop_profile,
+)
 from tests.smoke_tests.wreckfestserver_diagnostics import collect_remote_diagnostics
 
 pytestmark = [pytest.mark.integration]
@@ -158,6 +160,15 @@ def _run_wreckfestserver_lifecycle(tmp_path, *, runtime_backend, workshop_fixtur
             run_and_assert_ok(env, server_name, "mod", "add", "workshop", FIXTURE_ID)
             run_and_assert_ok(env, server_name, "mod", "apply")
             run_and_assert_ok(env, server_name, "set", "track", TRACK)
+            warm_up_workshop_profile(
+                install_dir,
+                lambda: run_and_assert_ok(env, server_name, "start"),
+                lambda: wait_for_log_marker(
+                    install_dir / "log.txt", ["Server connected."], START_TIMEOUT,
+                    env=env, server_name=server_name),
+                lambda: run_and_assert_ok(env, server_name, "stop", timeout=STOP_TIMEOUT),
+                lambda: _wait_wreckfest_stopped(port, queryport, steamport),
+            )
         # This install is disposable and stopped; only its native log is rotated.
         native_log = install_dir / "log.txt"
         assert not native_log.is_symlink(), "Native test log must not be a symlink"
@@ -217,6 +228,13 @@ def _run_wreckfestserver_lifecycle(tmp_path, *, runtime_backend, workshop_fixtur
     assert "isn't running" in status.stdout
     if workshop_fixture:
         assert "alphagsm-" + FIXTURE_ID not in (install_dir / "server_config.cfg").read_text()
+
+
+def _wait_wreckfest_stopped(port, queryport, steamport):
+    """A profile warm-up must release every native listener before the real start."""
+    wait_for_tcp_closed("127.0.0.1", port, STOP_TIMEOUT)
+    for claimed_port in (port, queryport, steamport):
+        wait_for_generic_udp_closed("127.0.0.1", claimed_port, STOP_TIMEOUT)
 
 
 @pytest.mark.skipif(os.environ.get("ALPHAGSM_RUN_WORKSHOP") != "1",

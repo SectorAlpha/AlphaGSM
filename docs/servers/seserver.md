@@ -14,7 +14,7 @@ so configuration, saves, and logs remain accessible there.
 
 ## Workshop validation checkpoint
 
-Native Workshop process support is under validation as of 14 October 2026. Anonymous
+Native Workshop process support is under validation as of 15 October 2026. Anonymous
 downloads succeeded for consumer app `244850`, including the public
 [Modular Encounters Systems server framework](https://steamcommunity.com/sharedfiles/filedetails/?id=1521905890)
 (31,485,392 bytes). Focused Docker integration and smoke subsequently passed
@@ -40,10 +40,17 @@ checks on 14 October 2026. Process CI progressed past the runtime check but
 exited during Steam initialization after binding its port. Process launch now
 uses `xvfb-run` and the same X11/SDL drivers as the passing Docker runtime;
 CI run `38655040006` still exited before `Game ready` after that correction.
-The native log reports Windows 7 and Mono 6.13.0 but contains no exception
-or crash dump evidence. Process integration now enables Wine exception
-diagnostics in CI and prints bounded native runtime details for both runtimes
-to compare the failure with the passing Docker launch.
+CI run `38702811625` confirmed the passing Docker runtime uses the same
+Windows 7 and Mono 6.13.0 identity. Both failing process cases reported a
+missing Wine `LocalAppDataLow` folder followed by a handled access violation;
+no native crash dump was produced. The prepared prefix retained the image
+builder's `.update-timestamp`, which can cause Wine to skip shell-folder setup
+when the copy runs under another account. Fresh template copies now discard
+that copied marker so Wine initializes the receiving user's profile normally;
+the template and existing operator prefixes retain their markers. This
+correction still needs a process CI lifecycle pass. See Wine's
+[prefix update logic](https://github.com/wine-mirror/wine/blob/wine-9.0/programs/wineboot/wineboot.c#L1457)
+and [shell-folder creation](https://github.com/wine-mirror/wine/blob/wine-9.0/dlls/shell32/shellpath.c#L2901).
 
 Workshop integration and opt-in smoke require both `Game ready` and the MES
 script's own `MES Spawner / Startup: Active Debug ...` initialization message.

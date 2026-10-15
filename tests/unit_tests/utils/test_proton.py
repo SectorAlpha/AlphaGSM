@@ -44,6 +44,35 @@ def test_prepare_wineprefix_copies_runtime_template_into_fresh_prefix(tmp_path):
     assert (prefix / "drive_c/windows/system32/vcruntime140.dll").read_bytes() == b"native runtime"
 
 
+@pytest.mark.parametrize("timestamp", ["1712345678\n", "disable\n"])
+def test_prepare_wineprefix_reinitializes_copied_user_profile(tmp_path, timestamp):
+    template, prefix = tmp_path / "root-template", tmp_path / "private-prefix"
+    template.mkdir()
+    (template / "system.reg").write_text("installed native runtime")
+    (template / ".update-timestamp").write_text(timestamp)
+    (template / "user.reg").write_text("prepared application settings")
+
+    assert proton_module.prepare_wineprefix(prefix, template=template)
+
+    # Wine must run its normal profile/shell-folder setup for the receiving
+    # account instead of trusting the image builder's completed update.
+    assert not (prefix / ".update-timestamp").exists()
+    assert (template / ".update-timestamp").read_text() == timestamp
+    assert (prefix / "user.reg").read_text() == "prepared application settings"
+
+
+def test_prepare_wineprefix_preserves_existing_update_timestamp(tmp_path):
+    template, prefix = tmp_path / "template", tmp_path / "operator-prefix"
+    template.mkdir()
+    (template / "system.reg").write_text("template runtime")
+    prefix.mkdir()
+    (prefix / ".update-timestamp").write_text("disable\n")
+
+    assert not proton_module.prepare_wineprefix(prefix, template=template)
+    assert (prefix / ".update-timestamp").read_text() == "disable\n"
+    assert not (prefix / "system.reg").exists()
+
+
 @pytest.mark.parametrize("existing", ["system.reg", "operator.txt", "pfx/system.reg"])
 def test_prepare_wineprefix_preserves_existing_wine_or_proton_prefix(tmp_path, existing):
     template, prefix = tmp_path / "prepared", tmp_path / "prefix"

@@ -32,6 +32,8 @@ def test_configure_sets_wreckfest_defaults(tmp_path):
     assert server.data["queryport"] == "27016"
     assert server.data["steamport"] == "27015"
     assert server.data["maxplayers"] == "24"
+    assert server.data["wreckfest_private_profile"] is True
+    assert "wreckfest_private_profile" not in mod.config_sync_keys
 
 
 def test_sync_server_config_updates_official_keys(tmp_path):

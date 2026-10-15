@@ -37,8 +37,32 @@ unique evidence file. Validation still requires the exact
 attachment and stock registry output, with prompt redraws embedded in the
 header and rows. Capture now retains every newly rendered row even when the
 input cursor moves backwards, and validation accepts that leading prompt.
-The corrected capture and exact Workshop registration still need CI validation.
+CI run `38702811625` captured the complete stock registry in both runtimes;
+the requested Workshop event was still missing. Fresh CI must verify the
+profile initialization flow below and exact Workshop registration.
 Shutdown checks include owned Wine processes and TCP/UDP port closure.
+
+Newly created AlphaGSM servers use `<install_dir>/savegame/` and pass
+`--save-dir=savegame` to the native server in both runtimes. This keeps
+`dedicated.ddst` and `modlist.mods` with the installation and its backups,
+independent of a Wine user's default profile. Existing files are retained.
+Servers created before this change retain their previous implicit AppData
+profile; installation, updates and startup do not migrate or reset that profile.
+The vendor's installed `initial_server_config.cfg` documents this save-directory
+option and requires the directory to exist before launch; the
+[AMP template](https://github.com/CubeCoders/AMPTemplates/blob/main/wreckfest.kvp)
+also creates and selects a dedicated save directory.
+
+On a fresh mod profile, Wreckfest can persist the enabled mod list during the
+first launch and load its tracks only after a restart. A
+[dedicated mod author](https://steamcommunity.com/sharedfiles/filedetails/?id=1513691602)
+documents this restart requirement. After applying Workshop content to a newly
+created server, run one `start`, wait for `Server connected.`, then `stop`
+before the final `start`. The smoke and integration cases perform this initialization
+once when `savegame/modlist.mods` is absent. They require a native profile to
+be written, full listener shutdown, fresh final startup, and the exact
+`crazy_2000_classic` track response. They never retry a failed registry assertion
+or create the engine's binary mod profile themselves.
 
 ## Requirements
 

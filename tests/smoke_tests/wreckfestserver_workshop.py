@@ -16,6 +16,33 @@ TRACK = "crazy_2000_classic"
 NATIVE_PROBE = "/usr/local/lib/alphagsm/wreckfest-console-probe.exe"
 
 
+def warm_up_workshop_profile(install, launch, wait_ready, stop, wait_stopped):
+    """Initialize a fresh native modlist once, then require a complete shutdown.
+
+    Wreckfest persists requested mods on its first launch and can expose only
+    stock tracks until the next launch. Existing profiles are never reset.
+    The final launch and strict track-registry assertion remain the caller's.
+    """
+    profile = Path(install) / "savegame/modlist.mods"
+    assert not profile.parent.is_symlink() and not profile.is_symlink(), (
+        "Native Workshop profile must not be a symlink")
+    if profile.exists():
+        assert profile.is_file(), "Native Workshop profile is not a regular file"
+        return False
+    native_log = Path(install) / "log.txt"
+    assert not native_log.is_symlink(), "Native initialization log must not be a symlink"
+    native_log.unlink(missing_ok=True)
+    print("Initializing fresh Wreckfest Workshop profile through one AlphaGSM start/stop lifecycle")
+    launch()
+    wait_ready()
+    stop()
+    wait_stopped()
+    assert profile.is_file() and not profile.is_symlink() and profile.stat().st_size > 0, (
+        "Wreckfest did not persist a native Workshop profile during its initialization launch")
+    print(f"Native Workshop profile persisted ({profile.stat().st_size} bytes); final engine load remains required")
+    return True
+
+
 def _windows_path(path):
     return "Z:" + str(path).replace("/", "\\")
 

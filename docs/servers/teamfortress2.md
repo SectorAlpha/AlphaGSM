@@ -184,8 +184,14 @@ available. See [Valve's native map-loader update](https://www.teamfortress.com/p
 AlphaGSM supplies an absolute `-ugcpath` under the install's `steamapps/workshop`
 directory while native Workshop maps are enabled. Docker uses the mounted
 container path and the host user's identity, with a private writable HOME and
-Steam library metadata. Native download readiness still needs to be confirmed
-by the engine.
+Steam library metadata that identifies both dedicated-server app `232250` and
+Workshop consumer app `440`. Native download readiness still needs to be confirmed
+by the engine. TF2 containers also use Docker's init process so Steam crash
+uploaders are reaped independently of the console relay. With util-linux
+`2.39.3`, an orphaned uploader exiting while `script` is PID 1 can enter an
+incorrect child-wait loop and freeze console forwarding even though the game
+and Workshop transfer remain alive. See the upstream
+[child-wait implementation](https://github.com/util-linux/util-linux/blob/v2.39.3/lib/pty-session.c#L469).
 
 Apply while stopped. AlphaGSM refuses a preexisting unowned sync configuration
 and externally edited managed files. `mod cleanup` removes only its unchanged
@@ -203,8 +209,11 @@ map ready, and a fresh console `status` showing that same canonical map running.
 The check first requests `tf_workshop_map_sync` and waits for native `ready`
 status before sending `changelevel`, which otherwise blocks the engine's command
 loop while a download is pending. Both download and execution checks share a
-ten-minute deadline. A failed Docker check includes bounded native Steam
-Workshop/content log tails from the managed container for diagnosis.
+ten-minute deadline, and each console probe uses a new response token. A failed
+Docker check includes bounded native Steam Workshop/content log tails and the
+managed library mapping for diagnosis. The 2026-10-15 Docker recheck downloaded
+and committed the fixture successfully but never reported native readiness;
+the init-process and consumer-app library corrections still need CI validation.
 A pending `workshop/ITEM_ID` advertisement cannot satisfy it. TF2 resolves its
 Workshop BSP through Steam's native item-install API rather than requiring the
 item directory in the engine's search paths. The check also requires full CLI

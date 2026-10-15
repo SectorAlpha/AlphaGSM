@@ -8,6 +8,17 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-15
+- ARK Workshop: use Windows-cooked content with the native Linux dedicated
+  server, matching upstream tooling's fix for Linux-cooked map load crashes.
+- Wine prefixes: allow normal current-user profile initialization after copying
+  a fresh prepared template; preserve existing operator prefixes unchanged.
+- Steam containers: register the declared Workshop consumer AppID alongside
+  the dedicated-server depot AppID for native content library lookup.
+- TF2 Docker: use Docker's init process so orphaned Steam crash uploaders do
+  not stall the terminal relay; require a new response token for every probe.
+- Wreckfest: keep new servers' native profiles in their savegame directory;
+  initialize fresh Workshop test profiles through one real start/stop cycle
+  before requiring exact track registration on the final launch.
 - Source smoke: keep progress banners on stderr so redirected CLI JSON remains
   valid for BrainBread 2, Day of Infamy, Insurgency, NMRIH and TF2 checks.
 - ARK Workshop: accept native zero-length optional Unreal metadata strings

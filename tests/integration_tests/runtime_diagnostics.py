@@ -73,6 +73,8 @@ def collect_process_diagnostics(proc_root="/proc", home_roots=None):
             row = {"path": str(path)}
             try:
                 row["exists"] = path.exists()
+                if row["exists"] and relative.endswith("/libraryfolders.vdf"):
+                    row["content"] = read_text(path)
             except OSError as exc:
                 row.update(exists=None, error=str(exc))
             steam_state.append(row)

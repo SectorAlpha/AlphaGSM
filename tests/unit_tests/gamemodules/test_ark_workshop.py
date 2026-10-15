@@ -55,7 +55,7 @@ def make_adapter(tmp_path, monkeypatch):
     adapter = import_module("gamemodules.ark.workshop")
     server = DummyServer("arkworkshop")
     server.data["dir"] = str(tmp_path)
-    payload = tmp_path / ".alphagsm/fixtures/111/LinuxNoEditor"
+    payload = tmp_path / ".alphagsm/fixtures/111/WindowsNoEditor"
     payload.mkdir(parents=True)
     content = b"native-content-" * 10
     compressed = [zlib.compress(content[:75]), zlib.compress(content[75:])]
@@ -226,12 +226,30 @@ def test_duplicate_native_map_basenames_are_rejected_before_publication(tmp_path
         adapter.configure_workshop(server, ["111"])
 
 
-def test_windows_only_map_is_rejected_before_native_publication(tmp_path, monkeypatch):
+def test_linux_only_payload_is_rejected_before_native_publication(tmp_path, monkeypatch):
     adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
-    payload.rename(payload.with_name("WindowsNoEditor"))
-    with pytest.raises(ServerError, match="LinuxNoEditor"):
+    payload.rename(payload.with_name("LinuxNoEditor"))
+    with pytest.raises(ServerError, match="WindowsNoEditor"):
         adapter.configure_workshop(server, ["111"])
     assert not (tmp_path / "ShooterGame/Content/Mods/111.mod").exists()
+
+
+def test_linux_server_uses_windows_cooked_assets_and_metadata_when_both_branches_exist(tmp_path, monkeypatch):
+    """The Linux cooker branch produces LinkerLoad crashes on the Linux engine."""
+    adapter, server, payload, content = make_adapter(tmp_path, monkeypatch)
+    linux = payload.with_name("LinuxNoEditor")
+    linux.mkdir()
+    (linux / "mod.info").write_bytes(b"incompatible Linux metadata")
+    (linux / "modmeta.info").write_bytes(b"incompatible Linux metadata")
+    (linux / "Example.uasset").write_bytes(b"incompatible Linux cooked asset")
+    (linux / "LinuxOnly.uasset").write_bytes(b"must not leak into native server content")
+    adapter.configure_workshop(server, ["111"])
+    native = tmp_path / "ShooterGame/Content/Mods/111"
+    assert (native / "Example.uasset").read_bytes() == content
+    assert not (native / "LinuxOnly.uasset").exists()
+    descriptor = (native.parent / "111.mod").read_bytes()
+    assert fstring("FirstMap") + fstring("SecondMap") in descriptor
+    assert descriptor.endswith((payload / "modmeta.info").read_bytes())
 
 
 def test_custom_map_catalog_does_not_claim_operator_active_mod_ids(tmp_path, monkeypatch):

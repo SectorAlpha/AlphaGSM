@@ -191,11 +191,30 @@ if [[ "${ALPHAGSM_RUN_WORKSHOP:-0}" == 1 ]]; then
   run_alphagsm "$SERVER_NAME" mod apply
   run_alphagsm "$SERVER_NAME" set track crazy_2000_classic
 fi
+WORKSHOP_PROFILE_FRESH=0
+if [[ "$WORKSHOP_CONFIGURED" == 1 ]]; then
+  [[ ! -L "$INSTALL_DIR/savegame" && ! -L "$INSTALL_DIR/savegame/modlist.mods" ]]
+  if [[ ! -e "$INSTALL_DIR/savegame/modlist.mods" ]]; then WORKSHOP_PROFILE_FRESH=1; fi
+fi
 SERVER_STARTED=1
 [[ ! -L "$INSTALL_DIR/log.txt" ]]
 rm -f -- "$INSTALL_DIR/log.txt"
 run_alphagsm "$SERVER_NAME" start
 wait_for_glob_ready "$INSTALL_DIR/log.txt" "$START_TIMEOUT_SECONDS" "Server connected\."
+# The native engine writes its first modlist before the next launch consumes it.
+# Do one explicit initialization lifecycle, never retry a failed track assertion.
+if [[ "$WORKSHOP_PROFILE_FRESH" == 1 ]]; then
+  [[ ! -L "$INSTALL_DIR/savegame" && ! -L "$INSTALL_DIR/savegame/modlist.mods" ]]
+  run_alphagsm "$SERVER_NAME" stop
+  SERVER_STARTED=0
+  wait_for_owned_listeners_closed
+  [[ -s "$INSTALL_DIR/savegame/modlist.mods" ]]
+  [[ ! -L "$INSTALL_DIR/log.txt" ]]
+  rm -f -- "$INSTALL_DIR/log.txt"
+  SERVER_STARTED=1
+  run_alphagsm "$SERVER_NAME" start
+  wait_for_glob_ready "$INSTALL_DIR/log.txt" "$START_TIMEOUT_SECONDS" "Server connected\."
+fi
 # UDP silence counts as reachable; fresh native startup and runtime status are required.
 wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS" "$QUERY_PORT"
 if [[ "$WORKSHOP_CONFIGURED" == 1 ]]; then

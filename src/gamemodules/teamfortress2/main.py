@@ -559,7 +559,7 @@ get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
     port_definitions=({"key": "port", "protocol": "udp"}, {"key": "port", "protocol": "tcp"},
                       {"key": "port", "offset": 1, "protocol": "udp"},
                       {"key": "port", "offset": 5, "protocol": "udp"}),
-    extra={"run_as_host_user": True, "container_home": "/home/alphagsm"},
+    extra={"run_as_host_user": True, "container_home": "/home/alphagsm", "init": True},
 )
 
 def _get_container_start_command(server):
@@ -578,5 +578,7 @@ get_container_spec = gamemodule_common.make_container_spec_builder(
                       {"key": "port", "offset": 1, "protocol": "udp"},
                       {"key": "port", "offset": 5, "protocol": "udp"}),
     stdin_open=True,
-    extra={"run_as_host_user": True, "container_home": "/home/alphagsm"},
+    # script must not adopt Steam's orphaned crash-upload children as PID 1;
+    # util-linux 2.39.3 can spin in its SIGCHLD wait loop and freeze the relay.
+    extra={"run_as_host_user": True, "container_home": "/home/alphagsm", "init": True},
 )

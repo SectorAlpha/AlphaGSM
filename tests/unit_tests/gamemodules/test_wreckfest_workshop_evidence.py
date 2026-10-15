@@ -24,6 +24,65 @@ def test_capture_excludes_previous_registry_and_unrelated_startup_errors():
     assert commands == ["tracks"]
 
 
+def test_fresh_workshop_profile_has_one_ordered_initialization_lifecycle(tmp_path):
+    """Only the engine may create its modlist; final registry proof is separate."""
+    save = tmp_path / "savegame"
+    save.mkdir()
+    stale_log = tmp_path / "log.txt"
+    stale_log.write_text("Server connected. stale startup")
+    actions = []
+    def launch():
+        assert not stale_log.exists()
+        actions.append("start")
+    def ready():
+        actions.append("fresh startup")
+        (save / "modlist.mods").write_bytes(b"native engine profile")
+    result = module.warm_up_workshop_profile(
+        tmp_path, launch, ready, lambda: actions.append("stop"),
+        lambda: actions.append("all listeners closed"))
+    assert result is True
+    assert actions == ["start", "fresh startup", "stop", "all listeners closed"]
+    assert (save / "modlist.mods").read_bytes() == b"native engine profile"
+
+
+def test_existing_workshop_profile_is_never_reset_or_warmed_up(tmp_path):
+    profile = tmp_path / "savegame/modlist.mods"
+    profile.parent.mkdir()
+    profile.write_bytes(b"operator native profile")
+    def forbidden():
+        pytest.fail("Existing native profile must not trigger lifecycle commands")
+    assert module.warm_up_workshop_profile(tmp_path, forbidden, forbidden, forbidden, forbidden) is False
+    assert profile.read_bytes() == b"operator native profile"
+
+
+def test_profile_warmup_requires_native_persistence_and_does_not_retry(tmp_path):
+    actions = []
+    with pytest.raises(AssertionError, match="did not persist"):
+        module.warm_up_workshop_profile(
+            tmp_path, lambda: actions.append("start"), lambda: actions.append("ready"),
+            lambda: actions.append("stop"), lambda: actions.append("closed"))
+    assert actions == ["start", "ready", "stop", "closed"]
+
+
+def test_profile_warmup_propagates_failed_initialization_without_retry(tmp_path):
+    actions = []
+    def failed_ready():
+        raise RuntimeError("native startup failed")
+    with pytest.raises(RuntimeError, match="native startup failed"):
+        module.warm_up_workshop_profile(
+            tmp_path, lambda: actions.append("start"), failed_ready,
+            lambda: actions.append("stop"), lambda: actions.append("closed"))
+    assert actions == ["start"]
+
+
+def test_profile_warmup_refuses_operator_symlinks(tmp_path):
+    operator = tmp_path / "operator"
+    operator.mkdir()
+    (tmp_path / "savegame").symlink_to(operator, target_is_directory=True)
+    with pytest.raises(AssertionError, match="symlink"):
+        module.warm_up_workshop_profile(tmp_path, lambda: None, lambda: None, lambda: None, lambda: None)
+
+
 def test_capture_does_not_accept_stale_registry_without_new_native_output():
     stale = "Tracks:\n  crazy_2000_classic (OLD)\n"
     elapsed = [0.0]

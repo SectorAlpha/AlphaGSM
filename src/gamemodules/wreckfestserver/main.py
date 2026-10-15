@@ -129,6 +129,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Wreckfest_x64.exe")
             "servername": "AlphaGSM %s" % (server.name,),
             "serverpassword": "",
             "maxplayers": "24",
+            "wreckfest_private_profile": True,
         },
     )
     gamemodule_common.ensure_backup_config(
@@ -315,6 +316,16 @@ def _native_start_command(server):
         "-s",
         "server_config=%s" % (server.data.get("configfile", DEFAULT_CONFIGFILE),),
     ]
+    # Only newly created servers opt into a private native profile. Existing
+    # datastores retain their implicit AppData profile and original argv.
+    if server.data.get("wreckfest_private_profile") is True:
+        # The vendor requires this directory to exist. A relative Windows path
+        # works in both runtime cwds without embedding host paths in Docker.
+        save_dir = safe_server_path(server, "savegame")
+        save_dir.mkdir(parents=True, exist_ok=True)
+        for profile_name in ("modlist.mods", "dedicated.ddst"):
+            safe_server_path(server, "savegame/" + profile_name)
+        cmd.append("--save-dir=savegame")
     if IS_LINUX:
         if not all(re.fullmatch(r"[A-Za-z0-9_. /=-]+", token) for token in cmd):
             raise ServerError("Wreckfest console launch does not support shell metacharacters")

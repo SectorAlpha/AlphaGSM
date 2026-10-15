@@ -47,14 +47,17 @@ Earlier stock-only smoke results for those runners are not Workshop evidence.
 ## Fixture evidence and limitations
 
 - ARK: Very Flat Map `2041231763` replaces the unsupported Linux `GetAll`
-  introspection probe. The adapter must validate native Linux map metadata and
-  its exact staged world path; fresh engine startup and real A2S must then agree
-  on `FlatMap`. Compatibility and both runtime load results remain pending CI.
+  introspection probe. Run `38702811625` passes metadata/decompression but the
+  Linux-cooked branch crashes in native `LinkerLoad`. The adapter now follows
+  [ARK Server Tools](https://github.com/arkmanager/ark-server-tools/blob/master/tools/arkmanager)
+  and selects Windows-cooked content for the native Linux server. Fresh startup
+  and real A2S must agree on `FlatMap`; both runtime load results remain pending.
 - Space Engineers' Docker smoke and both baseline/native integrations passed
   MES script execution in CI run `38649280824`. Process startup progressed
   beyond the VC prerequisite check but still exited before readiness in run
-  `38655040006`, despite matching the container's virtual display. CI now retains
-  Wine exception traces and comparable native runtime details; the cause remains open.
+  `38702811625`, despite matching the container's virtual display. New Wine traces
+  show a missing current-user LocalLow directory. Fresh template copies now allow
+  normal Wine profile initialization; the process result remains pending CI.
 - NS2's process and Docker native Workshop integrations passed in run
   `38655040006`, including the Docker authenticated loopback admin transport,
   exact native map origin, map-change execution, real A2S and shutdown.

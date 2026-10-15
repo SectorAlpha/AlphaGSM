@@ -124,7 +124,10 @@ alphagsm myserver start
 AlphaGSM validates items against ARK: Survival Evolved game AppID `346110`,
 downloads anonymously, and validates native `mod.info` and `modmeta.info`.
 Stackable gameplay mods (`ModType=1`) and custom maps (`ModType=2`) require
-`LinuxNoEditor` content. Total conversions and Windows-only payloads are rejected.
+`WindowsNoEditor` cooked content, which the native Linux dedicated server also
+uses. AlphaGSM follows [ARK Server Tools' Windows mod-branch default](https://github.com/arkmanager/ark-server-tools/blob/master/tools/arkmanager),
+whose upstream warning identifies the Linux-cooked branch as a server crash
+source. Linux-only payloads and total conversions are rejected.
 Custom-map metadata must declare a safe map name that resolves to exactly one
 staged native `.umap`; missing or ambiguous maps fail before publication.
 Optional native metadata strings may use Unreal's zero-length empty-string
@@ -151,8 +154,10 @@ alphagsm myserver start
 alphagsm myserver info --json
 ```
 
-Fresh CI still needs to prove the current public payload contains compatible
-Linux map content and that both runtimes can serve the custom world.
+CI run `38702811625` downloaded and staged the map, then both native runtime
+tests crashed with `LinkerLoad: Bad name index` while using `LinuxNoEditor`.
+Fresh CI must verify the corrected Windows-cooked branch can serve the custom
+world in both runtimes.
 
 `mod remove workshop ID_OR_URL` followed by `mod apply` removes selected owned
 content and activation IDs. `mod cleanup` clears all desired Workshop items.

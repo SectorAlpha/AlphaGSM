@@ -123,12 +123,12 @@ if [[ -n "${WORKSHOP_IDS:-}" ]]; then
   [[ "$WORKSHOP_MAP" =~ ^[a-zA-Z0-9_-]+$ ]] || exit 1
   # Download asynchronously while the engine can still answer native probes.
   run_alphagsm "$SERVER_NAME" send "tf_workshop_map_sync $WORKSHOP_ITEM"
-  PROBE_TOKEN="AlphaGSM-TF2-$("$PYTHON_BIN" -c 'import uuid; print(uuid.uuid4().hex)')"
   WORKSHOP_CHANGE_REQUESTED=0
   WORKSHOP_MAP_LOADED=0
   WORKSHOP_DEADLINE=$((SECONDS + 600))
   while (( SECONDS < WORKSHOP_DEADLINE )); do
     if [[ "$WORKSHOP_CHANGE_REQUESTED" == "0" ]]; then
+      PROBE_TOKEN="AlphaGSM-TF2-$("$PYTHON_BIN" -c 'import uuid; print(uuid.uuid4().hex)')"
       run_alphagsm "$SERVER_NAME" send "echo BEGIN-$PROBE_TOKEN; tf_workshop_map_status; status; echo END-$PROBE_TOKEN"
       sleep 1
       run_alphagsm "$SERVER_NAME" logs -n 20000 > "$WORK_DIR/workshop-path.log"
@@ -149,6 +149,7 @@ assert data["protocol"] == "a2s" and data["port"] == int(sys.argv[4]), data
 assert data["map"] in (sys.argv[2], canonical, canonical.removeprefix("workshop/")), data
 PYMAP
       then
+        PROBE_TOKEN="AlphaGSM-TF2-$("$PYTHON_BIN" -c 'import uuid; print(uuid.uuid4().hex)')"
         run_alphagsm "$SERVER_NAME" send "echo BEGIN-$PROBE_TOKEN; tf_workshop_map_status; status; echo END-$PROBE_TOKEN"
         sleep 1
         run_alphagsm "$SERVER_NAME" logs -n 20000 > "$WORK_DIR/workshop-path.log"
