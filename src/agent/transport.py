@@ -8,7 +8,7 @@ import time
 import threading
 import urllib.error
 import urllib.request
-from .config import origin
+from .config import canonical_agent_origin
 from .http_deadline import DeadlineBudget, DeadlineHTTPSHandler, bounded_exchange
 
 REPORT_TIMEOUT = 10
@@ -25,7 +25,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 class Transport:
     def __init__(self, api_origin, *, context=None):
-        self.origin = origin(api_origin)
+        self.origin = canonical_agent_origin(api_origin)
         self.report_lock = threading.Lock()
         self.opener = urllib.request.build_opener(
             urllib.request.ProxyHandler({}),

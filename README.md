@@ -526,7 +526,13 @@ alphagsm agent enroll
 alphagsm agent bind '*'
 ```
 
-Enrollment defaults to `https://sector-alpha.net`. The quoted `'*'` binds all
+Enrollment, binding registration, reports and management use
+`https://gameserver-api.sector-alpha.net`. Public accounts and the directory stay
+at `https://sector-alpha.net`. Existing official connections normalize to the API
+origin on upgrade, preserving IDs, credentials and permissions; restart the agent
+after updating. Custom provider origins stay unchanged.
+
+The quoted `'*'` binds all
 eligible local servers, inferring their settings and registering website IDs
 automatically. Use `agent bind my-minecraft` for one server. Review the suggested
 public address, publication and remote actions before saving.

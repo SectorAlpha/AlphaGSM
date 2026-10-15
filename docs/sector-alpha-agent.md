@@ -6,7 +6,8 @@ management are independent opt-ins, and publication is chosen for each server.
 Public player-stat queries support Minecraft Java vanilla/Paper and Team Fortress 2.
 Other managed games can use private reporting and permitted remote actions.
 
-On a compatible Sector Alpha website, sign into the verified operator account
+On the Sector Alpha website at `https://sector-alpha.net`, or a compatible
+provider website, sign into the verified operator account
 with MFA, choose capabilities and create a ten-minute enrollment code. Locally:
 
 ```sh
@@ -14,9 +15,20 @@ alphagsm agent enroll
 alphagsm agent bind '*'
 ```
 
-Enter the enrollment code at its hidden prompt. The default website is
-`https://sector-alpha.net`; use `agent enroll --origin https://your-site.example`
-for another compatible service. Never put codes or credentials in shell arguments.
+Enter the enrollment code at its hidden prompt. Enrollment, binding registration,
+reporting and remote management all use the single default API origin
+`https://gameserver-api.sector-alpha.net`. Public accounts and the server directory
+remain at `https://sector-alpha.net`. Use `agent enroll --origin
+https://your-site.example` for another compatible service. Never put codes or
+credentials in shell arguments.
+
+After upgrading AlphaGSM, restart the foreground agent (or its user service).
+Existing connections using the old official `https://sector-alpha.net` origin
+normalize locally to the API origin, including equivalent host casing, `:443`
+and a root trailing slash. Enrollment IDs, binding IDs, credentials and local
+permissions are preserved. This requires no network redirect or re-enrollment;
+the normalized origin is saved on the next ordinary configuration write.
+Explicitly configured custom provider origins remain unchanged.
 
 `agent bind '*'` discovers all eligible servers owned by your local AlphaGSM user,
 registers their website bindings, and saves the returned IDs automatically. Quote

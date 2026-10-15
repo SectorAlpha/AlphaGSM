@@ -9,6 +9,8 @@ from urllib.parse import urlsplit
 from utils.state_io import atomic_write_text, state_lock
 from .contracts import ACTIONS, identifier, integer, validate_metadata, exact
 
+DEFAULT_ORIGIN = "https://gameserver-api.sector-alpha.net"
+
 
 class ConfigError(ValueError):
     """Invalid local configuration or unsupported permission boundary."""
@@ -32,6 +34,15 @@ def origin(value):
     if parsed.port is not None and not 1 <= parsed.port <= 65535:
         raise ConfigError("Invalid HTTPS port")
     return value[:-1] if parsed.path == "/" else value
+
+
+def canonical_agent_origin(value):
+    """Map only trusted official HTTPS authorities locally, without redirects."""
+    selected = origin(value)
+    parsed = urlsplit(selected)
+    if parsed.hostname in ('sector-alpha.net', 'gameserver-api.sector-alpha.net') and parsed.port in (None, 443):
+        return DEFAULT_ORIGIN
+    return selected
 
 
 def local_tag(value):
@@ -94,13 +105,15 @@ class Config:
         exact(value, self.defaults())
         if value["schema_version"] != 1:
             raise ConfigError("Unsupported local configuration")
+        if value["origin"] is not None:
+            value["origin"] = canonical_agent_origin(value["origin"])
         return value
 
     def _write(self, value):
         atomic_write_text(self.path, json.dumps(value, sort_keys=True), mode=0o600)
 
     def enroll(self, api_origin, response):
-        api_origin = origin(api_origin)
+        api_origin = canonical_agent_origin(api_origin)
         exact(response, ("schema_version", "installation_id", "credential_generation", "reporting", "management"))
         integer(response["schema_version"], 1, 1)
         identifier(response["installation_id"])
