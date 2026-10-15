@@ -55,6 +55,13 @@ The host and query port identify its statistics endpoint; players connect to
 `tf2.mygameserver.com:30015`. Every game can carry a player port, including private
 bindings without native public statistics. An unavailable primary port is shown
 as unknown; use `--connect-port` if you know the public player port.
+Trackmania's primary `port` is XML-RPC, Enshrouded's configured port is query-only,
+and Arma headless roles do not accept player joins. These never infer a player
+port. For Trackmania, approve the actual game listener explicitly, for example
+`agent bind my-trackmania --host track.example.com --connect-port 2350` after
+checking the dedicated server configuration and NAT mapping. Do not use XML-RPC
+port 5000 as the player port. Existing approvals are preserved; rebind with an
+explicit corrected player port if an earlier preview approved the admin port.
 Bulk binding keeps individual server ports. Unreadable or unconfigured servers
 are reported with a reason and can be retried after fixing their local settings.
 Registration sends only a scoped binding reference. Approved host and ports go

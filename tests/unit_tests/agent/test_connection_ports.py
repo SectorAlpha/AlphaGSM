@@ -228,3 +228,22 @@ def test_player_port_presence_change_during_dns_withdraws_then_reports_current_c
     assert ('connect_port' in sent[1]['bindings'][0]) is not initial_present
     if not initial_present:
         assert sent[1]['bindings'][0]['connect_port'] is None
+
+
+@pytest.mark.parametrize('game', ['trackmaniaserver', 'enshrouded', 'arma3.headless', 'arma3headlessserver'])
+def test_non_player_primary_ports_are_not_advertised_as_player_endpoints(local_servers, game):
+    local_servers[1]('special', module=game, port=5000, queryport=5001)
+    selected = read_local('special')
+    assert selected['connect_port'] is None
+    assert selected['port'] == 5001
+
+
+@pytest.mark.parametrize('flags,expected', [([], None), (['--connect-port', '2350'], 2350)])
+def test_trackmania_requires_explicit_player_port_approval(tmp_path, local_servers, provider, monkeypatch,
+                                                         flags, expected):
+    local_servers[1]('track', module='trackmaniaserver', port=5000)
+    cfg = enrolled(tmp_path)
+    answers(monkeypatch, ['', '', 'y'])
+    assert cli.run(['bind', 'track', '--host', 'game.example'] + flags, root=cfg.root) == 0
+    selected = next(iter(cfg.load()['bindings'].values()))['metadata']
+    assert selected['port'] == 5000 and selected['connect_port'] == expected
