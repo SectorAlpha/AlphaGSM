@@ -49,6 +49,7 @@ def read_local(tag):
     return {
         "tag": tag, "game_id": game, "name": name,
         "port": number(data.get("queryport"), 1, 65535) or number(data.get("port"), 1, 65535),
+        "connect_port": number(data.get("port"), 1, 65535),
         "capacity": number(data.get("maxplayers"), 0, 100000) or 0,
         **{key: data.get(key) if isinstance(data.get(key), str) else None
            for key in ("publicip", "externalip", "hostip")},

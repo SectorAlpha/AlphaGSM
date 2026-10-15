@@ -11,6 +11,7 @@ from . import onboarding
 from .publication_config import PublicationConfigError, local_publication
 from .dns_lookup import PreflightError
 from . import endpoint_check
+from .binding_ports import selected_ports
 
 
 def run(args, *, root=None):
@@ -49,7 +50,8 @@ def run(args, *, root=None):
         bind.add_argument("--game")
         bind.add_argument("--host")
         bind.add_argument("--public-ip", action="append", help="Expected public machine IP; repeat for multiple IPs")
-        bind.add_argument("--port", type=int)
+        bind.add_argument("--port", type=int, help="Advertised query port; Minecraft also uses it for players")
+        bind.add_argument("--connect-port", type=int, help="Advertised player connection port (for example NAT)")
         bind.add_argument("--name")
         bind.add_argument("--capacity", type=int)
     check = commands.add_parser("check-endpoint")
@@ -84,13 +86,13 @@ def run(args, *, root=None):
             if options.publish is True and options.game not in onboarding.PROFILES:
                 raise ConfigError("This game has no supported public query profile")
             # Verify that the local target exists under this user's normal AlphaGSM namespace.
-            from server.server import Server
             from .lifecycle import AlphaRuntime
 
             with AlphaRuntime().lock(local_tag(options.local_tag)):
-                server = Server(options.local_tag)
-                if server.data["module"] != options.game:
+                local = onboarding.read_local(options.local_tag)
+                if local['game_id'] != options.game:
                     raise ConfigError("Selected game does not match the local server module")
+            ports = selected_ports(local, {}, options)
             cfg.bind(
                 options.target,
                 options.local_tag,
@@ -100,13 +102,15 @@ def run(args, *, root=None):
                 metadata={
                     "game_id": options.game,
                     "host": options.host,
-                    "port": options.port,
+                    **ports,
                     "name": options.name,
                     "capacity": options.capacity or 0,
                 },
                 **local_publication(options.public_ip),
             )
             print("Exact local binding saved. Only the selected operations are permitted.")
+            print("Advertised host=" + options.host + " | player port=" + str(ports['connect_port'] or 'unknown') +
+                  " | query port=" + str(ports['port']))
             if "stop" in (options.actions or []) or "restart" in (options.actions or []):
                 print("Normal AlphaGSM stop may force termination after graceful shutdown attempts.")
         elif options.command == "check-endpoint":

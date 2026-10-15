@@ -15,6 +15,7 @@ from .choices import next_steps, permissions, require_capabilities
 from .inventory import inventory, read_local
 from .network import global_ip, suggest_public_host
 from .publication_config import local_publication
+from .binding_ports import selected_ports
 
 
 def enroll(cfg, api_origin, transport):
@@ -78,14 +79,17 @@ def candidate(local, value, options, suggest=suggest_public_host):
     address = options.host if options.host is not None else approved.get('host')
     if address is None:
         address = suggest(local)
-    port = options.port if options.port is not None else approved.get('port', local['port'])
+    ports = selected_ports(local, approved, options)
+    port = ports['port']
     if port is None:
         raise ConfigError("No valid configured port; set a local port or use --port")
     label = ("[" + address + "]" if address and ':' in address else address) if address else "<public host>"
-    response = input("Confirm public host:port for " + local['tag'] + " [" + label + ":" + str(port) + "]: ").strip()
+    response = input("Confirm public host:port for " + local['tag'] + " [" + label + ":" + str(port) +
+                     "] (query endpoint): ").strip()
     address, port = endpoint(response, address, port)
+    ports = selected_ports(local, approved, options, query_port=port)
     publication, actions = permissions(game, previous, value, options)
-    metadata = {"game_id": game, "host": address, "port": port,
+    metadata = {"game_id": game, "host": address, **ports,
                 "name": options.name if options.name is not None else approved.get('name', local['name']),
                 "capacity": options.capacity if options.capacity is not None else approved.get('capacity', local['capacity'])}
     epoch = previous['epoch'] if previous else options.epoch
@@ -112,6 +116,8 @@ def guided(cfg, options, transport):
     value = cfg.load()
     local_publication(options.public_ip)
     require_capabilities(value, options.publish is True, options.actions or [])
+    if options.connect_port is not None:
+        integer(options.connect_port, 1, 65535)
     if options.host is not None:
         host(options.host)
     if options.binding_id is not None:
@@ -127,8 +133,8 @@ def guided(cfg, options, transport):
         locals_, failures = inventory()
     else:
         locals_, failures = [read_local(options.target)], []
-    if bulk and options.port is not None and len(locals_) > 1:
-        raise ConfigError("Use per-server public endpoint prompts or bind one tag when overriding --port")
+    if bulk and (options.port is not None or options.connect_port is not None) and len(locals_) > 1:
+        raise ConfigError("Please bind one tag when overriding --port or --connect-port")
     for tag, reason in failures:
         print("Skipped " + tag + ": " + reason)
     if not locals_:
@@ -149,7 +155,8 @@ def guided(cfg, options, transport):
     candidates = []
     for local in locals_:
         print("Local server: " + local['tag'] + " | " + local['name'] + " | " + local['game_id'] +
-              " | port=" + str(local['port']) + " | capacity=" + str(local['capacity']))
+              " | player port=" + str(local['connect_port'] or 'unknown') + " | query port=" + str(local['port']) +
+              " | capacity=" + str(local['capacity']))
         existing = any(item['tag'] == local['tag'] for item in value['bindings'].values())
         if bulk and options.port is None and local['port'] is None and not existing:
             failures.append((local['tag'], 'No valid configured port; set a local port or use --port'))
@@ -161,6 +168,7 @@ def guided(cfg, options, transport):
     for item in candidates:
         metadata = item['metadata']
         print("Preview: " + item['tag'] + " -> " + metadata['host'] + ":" + str(metadata['port']) +
+              " | player port=" + str(metadata['connect_port'] or 'unknown') + " | query port=" + str(metadata['port']) +
               " | game=" + metadata["game_id"] + " | name=" + metadata["name"] +
               " | capacity=" + str(metadata["capacity"]) + " | publication=" + ('yes' if item['publication'] else 'no') +
               " | actions=" + (','.join(item['actions']) or 'none') +

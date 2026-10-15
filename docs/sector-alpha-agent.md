@@ -36,14 +36,35 @@ registers their website bindings, and saves the returned IDs automatically. Quot
 For one server use `alphagsm agent bind my-minecraft`. `alphagsm agent setup`
 combines bulk binding with enrollment if needed. Existing bindings are reused.
 
-The guided preview reads each server's configured game, query/game port, name and
-capacity. It suggests a public numerical IP from configured networking details,
+The guided preview reads each server's configured game, player connection port,
+query port, name and capacity. The player port comes from the primary local
+`port`; the query port uses `queryport` when valid, otherwise the primary port.
+It suggests a public numerical IP from configured networking details,
 the outbound interface, or a bounded HTTPS address lookup. Confirm the advertised
-host and port: NAT, VPNs and port forwarding can make the suggested endpoint wrong.
+host/IP and both ports: NAT, VPNs and port forwarding can make the suggested endpoint wrong.
 Use `--host game.example.net` to override the host and avoid address discovery during binding;
-use `--port 25566` when binding one server with a different public port.
+use `--port` for a different public query port and `--connect-port` for a different
+public player port. For Minecraft, `--port 25566` sets both ports unless you also
+provide `--connect-port`. For example, a TF2 server with separate NAT mappings:
+
+```sh
+alphagsm agent bind my-tf2 --host tf2.mygameserver.com --port 30025 --connect-port 30015
+```
+
+The host and query port identify its statistics endpoint; players connect to
+`tf2.mygameserver.com:30015`. Every game can carry a player port, including private
+bindings without native public statistics. An unavailable primary port is shown
+as unknown; use `--connect-port` if you know the public player port.
 Bulk binding keeps individual server ports. Unreadable or unconfigured servers
 are reported with a reason and can be retried after fixing their local settings.
+Registration sends only a scoped binding reference. Approved host and ports go
+to the API through reports after you enable reporting. Existing saved bindings
+keep their old metadata on upgrade; bind them again and approve the preview to
+add the player port. Rebinding does not enable reporting or management.
+Deploy the updated Sector Alpha receiver (or confirm your custom provider accepts
+optional `connect_port`) before creating or rebinding with this client. Older
+receivers use a closed schema and reject reports containing the new field.
+Existing saved bindings remain compatible until a confirmed rebind adds it.
 
 For an existing domain/subdomain pointing to this machine:
 
@@ -62,7 +83,7 @@ publication; reporting continues for other bindings. Stored consent is retained,
 so a later matching DNS check can restore publication. Private bindings remain
 usable while DNS is being corrected. No DNS records are created or modified.
 
-`check-endpoint` additionally tests the advertised port through the supported
+`check-endpoint` additionally tests the advertised query port through the supported
 native game protocol, using only matched numerical addresses. It does not change
 publication or permissions. A failure may mean a stopped game, wrong forwarded
 port, firewall, or missing NAT loopback support; an external test is still needed
@@ -91,7 +112,7 @@ the enrollment instructions above and run `alphagsm agent enroll` first.
    the new records resolve correctly before checking the endpoints.
 
 2. **Bind each local game to its subdomain.** Each command infers that server's
-   configured public/query port, name and capacity. Replace the example tags with
+   configured player and query ports, name and capacity. Replace the example tags with
    your existing local server tags:
 
    ```sh
@@ -99,9 +120,10 @@ the enrollment instructions above and run `alphagsm agent enroll` first.
    alphagsm agent bind my-tf2 --host tf2.mygameserver.com --publish
    ```
 
-   Review the host, port, publication and allowed remote actions in each preview
-   before saving. If a forwarded public port differs from the local setting, add
-   `--port 25566` to that individual server's command, using its actual public port.
+   Review the host/IP, player port, query port, publication and allowed remote
+   actions in each preview before saving. Use `--port` for a forwarded query port
+   and `--connect-port` for a forwarded player port. Minecraft's `--port 25566`
+   also sets its player port unless `--connect-port` is supplied.
    For NAT or multiple public addresses, add `--public-ip YOUR_PUBLIC_IPV4` to each
    binding; repeat `--public-ip` for additional expected machine addresses.
 
@@ -137,10 +159,14 @@ alphagsm agent bind '*'
 ```
 
 Enter a different `hostname:port` at each server's endpoint prompt, such as
-`minecraft.mygameserver.com:25565` and `tf2.mygameserver.com:27015`, replacing the
-ports with your configured public/query ports. Choose publication and actions for
+`minecraft.mygameserver.com:25565` and `tf2.mygameserver.com:27025`, replacing the
+ports with your public query ports. Player ports are inferred independently;
+rebind one server with `--connect-port` when its NAT mapping differs. Choose publication and actions for
 each game and review every mapping in the final preview. Repeating the command
 preserves existing hostnames, ports and approvals.
+When editing Minecraft's query endpoint at the prompt, a shared player port
+follows it. A previously approved distinct player port stays unchanged; use
+`--connect-port` to change that separate mapping explicitly.
 
 Every hostname is checked against the same machine independently. A DNS mismatch,
 endpoint edit or publication opt-out for one binding does not change the other
@@ -167,7 +193,7 @@ The full explicit form remains available for an existing website binding:
 
 ```sh
 alphagsm agent bind BINDING_ID my-minecraft --epoch 1 \
-  --game minecraft.vanilla --host game.example.net --port 25565 \
+  --game minecraft.vanilla --host game.example.net --port 25565 --connect-port 25565 \
   --name 'Our Minecraft world' --capacity 20 --publish \
   --actions status start stop restart
 ```
@@ -178,7 +204,8 @@ can be managed without a directory listing. Run remains an explicit foreground
 service; install it under a user service manager if continuous operation is wanted.
 No background service is installed automatically. Reporting reconciles approved
 local name/capacity after successful local changes and every roughly 60 seconds.
-Advertised host/port remain an explicit local choice. The compatible service
+Advertised host, player port and query port remain explicit local choices; local
+port changes never replace them during background metadata refresh. The compatible service
 requires a separate public-name challenge before granting endpoint verification.
 Reporting retries temporary configuration-lock timeouts during long lifecycle
 operations and resumes when the lock is released; a busy lifecycle does not

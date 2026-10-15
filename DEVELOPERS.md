@@ -1039,7 +1039,7 @@ The generic origin syntax validator still requires HTTPS roots and normalizes an
 optional trailing slash. `agent.inventory` reads
 only owned current-user JSON datastores without constructing Server (which can
 migrate secrets or save runtime metadata). It exports an allowlist of module,
-port, name, capacity and networking hints. `agent.network` accepts only globally
+query port, primary player port, name, capacity and networking hints. `agent.network` accepts only globally
 routable numerical suggestions, uses bounded TLS for its fixed address lookup,
 and sends no agent credentials. Explicit `--host` bypasses discovery.
 
@@ -1053,9 +1053,28 @@ Datastore secrets stay local. Registration grants no actions or publication. Exi
 bindings retain their approved values on repeat runs; capabilities require
 separate local enablement. Games outside the public query registry remain private.
 
+Version-one report metadata has optional `connect_port`: a strict integer from
+1 through 65535 or null. Existing required `port` remains the query port; unknown
+metadata fields still fail validation. Missing `connect_port` remains valid for
+legacy reports/configurations. Omission preserves the receiver's existing player
+port; explicit null clears it.
+Both presence and value participate in the final publication approval check.
+Inventory infers it from the primary local `port`, independently of `queryport`;
+guided and explicit binding approve it for every
+canonical game. `--connect-port` overrides the advertised player port, while a
+Minecraft `--port` override sets both unless the player override is explicit.
+The final guided preview shows host/IP and both ports before saving. Existing
+bindings acquire the field only through rebinding; runtime metadata refresh
+never infers or changes either approved port. Registration remains scope/ref
+only, and endpoint metadata uses the opted-in report channel. This does not add
+public query profiles, client launch schemes or Steam client IDs.
+Deploy the receiver's updated shared contract before clients create/rebind
+servers with this field; old closed-schema receivers reject it. Existing saved
+bindings keep omitting it until a confirmed rebind, preserving their wire format.
+
 Hostnames are scoped to bindings, not installations or numerical machine IPs.
 Different game tags may advertise different subdomains that resolve to the same
-IP; each retains its own game profile, public/query port, expected-IP policy,
+IP; each retains its own game profile, player port, query port, expected-IP policy,
 publication consent and central ownership challenge. Single-server rebinding
 does not mutate siblings, and wildcard endpoint prompts preserve per-server
 hostnames on repeat runs. The agent neither provisions DNS nor routes traffic
