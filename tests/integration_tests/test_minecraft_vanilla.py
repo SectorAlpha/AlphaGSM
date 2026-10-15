@@ -265,8 +265,10 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
                 # with durable no-replay intent and the normal local CLI lock.
                 from datetime import datetime, timedelta, timezone
                 from agent.config import Config
+                from agent.cli import run as agent_cli
                 from agent.journal import Journal
                 from agent.lifecycle import AlphaRuntime, Executor
+                import server.server as server_module
                 from utils.state_io import state_lock
 
                 cfg = Config(home_dir / "agent")
@@ -275,9 +277,17 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
                     "credential_generation": 1, "reporting": None,
                     "management": {"key_id": "integration-key", "secret": "x" * 43},
                 })
-                cfg.bind("integration-binding", server_name, 1, actions=["restart", "status"],
-                         publication=False, metadata={"name": "integration", "game_id": module_name,
-                         "host": "game.example", "port": port, "capacity": 20})
+                # Infer the real configured game/port without querying private fields.
+                with patch.object(server_module, "DATAPATH", str(home_dir / "conf")), \
+                     patch("builtins.input", side_effect=["", "yes"]):
+                    assert agent_cli(["bind", server_name, "--binding-id", "integration-binding",
+                                      "--host", "game.example", "--private", "--actions", "restart", "status"],
+                                     root=cfg.root) == 0
+                inferred = cfg.load()["bindings"]["integration-binding"]
+                assert inferred["metadata"]["game_id"] == module_name
+                assert inferred["metadata"]["port"] == port
+                assert inferred["publication"] is False
+                assert cfg.load()["management_enabled"] is False
                 cfg.enable(management=True)
                 runtime = AlphaRuntime()
                 runtime.lock_path = lambda tag: home_dir / "conf" / (tag + ".json")

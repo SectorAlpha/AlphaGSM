@@ -11,8 +11,9 @@ Current smoke tests:
 - `run_sector_alpha_agent.sh`
   Exercises independent opt-ins, private credential storage, strict contracts,
   local revocation, no-replay journaling, bounded lifecycle helper timeout and
-  hostile public protocol parsing. No enrollment or public destination is contacted.
-  The Minecraft integration test also proves agent restart and duplicate delivery
+  hostile public protocol parsing. Guided single/bulk binding uses isolated local
+  inventories and mocked registration/address discovery; no public destination is contacted.
+  The Minecraft integration test also proves inferred binding, agent restart and duplicate delivery
   against the selected process/Docker runtime.
 
 - `run_minecraft_vanilla.sh`

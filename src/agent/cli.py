@@ -7,6 +7,7 @@ from .config import Config, ConfigError, local_tag
 from .contracts import ACTIONS
 from .service import Service
 from .transport import Transport, TransportError
+from . import onboarding
 
 
 def run(args, *, root=None):
@@ -23,20 +24,30 @@ def run(args, *, root=None):
         "report-once",
         "forget",
     ):
-        commands.add_parser(command)
+        command_parser = commands.add_parser(command)
+        if command == "enroll":
+            command_parser.add_argument("--origin")
     replacement = commands.add_parser("replace-credential")
     replacement.add_argument("scope", choices=("reporting", "management"))
-    bind = commands.add_parser("bind")
-    bind.add_argument("binding_id")
-    bind.add_argument("local_tag")
-    bind.add_argument("--epoch", type=int, default=1)
-    bind.add_argument("--actions", nargs="*", choices=sorted(ACTIONS), default=[])
-    bind.add_argument("--publish", action="store_true")
-    bind.add_argument("--game", required=True, choices=("teamfortress2", "minecraft.vanilla", "minecraft.paper"))
-    bind.add_argument("--host", required=True)
-    bind.add_argument("--port", required=True, type=int)
-    bind.add_argument("--name", required=True)
-    bind.add_argument("--capacity", type=int, default=0)
+    for command in ("bind", "setup"):
+        bind = commands.add_parser(command)
+        if command == "bind":
+            bind.add_argument("target", help="One local tag, '*' for all, or a legacy binding ID")
+            bind.add_argument("local_tag", nargs="?", help="Legacy exact local tag")
+        else:
+            bind.set_defaults(target="*", local_tag=None)
+        bind.add_argument("--binding-id")
+        bind.add_argument("--origin")
+        bind.add_argument("--epoch", type=int, default=1)
+        bind.add_argument("--actions", nargs="*", choices=sorted(ACTIONS))
+        publication = bind.add_mutually_exclusive_group()
+        publication.add_argument("--publish", action="store_true", default=None)
+        publication.add_argument("--private", action="store_false", dest="publish")
+        bind.add_argument("--game")
+        bind.add_argument("--host")
+        bind.add_argument("--port", type=int)
+        bind.add_argument("--name")
+        bind.add_argument("--capacity", type=int)
     unbind = commands.add_parser("unbind")
     unbind.add_argument("binding_id")
     publication = commands.add_parser("publication")
@@ -49,18 +60,22 @@ def run(args, *, root=None):
     try:
         cfg = Config(root)
         if options.command == "enroll":
-            api_origin = input("Compatible HTTPS origin: ").strip()
-            code = getpass.getpass("Single-use enrollment code: ").strip()
-            response = Transport(api_origin).request("POST", "/v1/agent/enroll", payload={"code": code})
-            cfg.enroll(api_origin, response)
-            print("Enrolled. Reporting and management remain disabled until you enable each locally.")
+            onboarding.enroll(cfg, options.origin, Transport)
         elif options.command == "replace-credential":
             key_id = input("Rotated key ID: ").strip()
             secret = getpass.getpass("Rotated credential secret: ").strip()
             generation = int(input("New management generation: ")) if options.scope == "management" else None
             cfg.replace_credential(options.scope, key_id, secret, generation=generation)
             print("Selected credential replaced. Existing local permissions are unchanged.")
-        elif options.command == "bind":
+        elif options.command in ("bind", "setup"):
+            if options.local_tag is None:
+                return onboarding.guided(cfg, options, Transport)
+            if options.binding_id is not None or any(
+                getattr(options, key) is None for key in ("game", "host", "port", "name")
+            ):
+                raise ConfigError("Legacy bind requires exact game, host, port and name")
+            if options.publish is True and options.game not in onboarding.PROFILES:
+                raise ConfigError("This game has no supported public query profile")
             # Verify that the local target exists under this user's normal AlphaGSM namespace.
             from server.server import Server
             from .lifecycle import AlphaRuntime
@@ -70,21 +85,21 @@ def run(args, *, root=None):
                 if server.data["module"] != options.game:
                     raise ConfigError("Selected game does not match the local server module")
             cfg.bind(
-                options.binding_id,
+                options.target,
                 options.local_tag,
                 options.epoch,
-                actions=options.actions,
-                publication=options.publish,
+                actions=options.actions or [],
+                publication=options.publish is True,
                 metadata={
                     "game_id": options.game,
                     "host": options.host,
                     "port": options.port,
                     "name": options.name,
-                    "capacity": options.capacity,
+                    "capacity": options.capacity or 0,
                 },
             )
             print("Exact local binding saved. Only the selected operations are permitted.")
-            if "stop" in options.actions or "restart" in options.actions:
+            if "stop" in (options.actions or []) or "restart" in (options.actions or []):
                 print("Normal AlphaGSM stop may force termination after graceful shutdown attempts.")
         elif options.command == "unbind":
             cfg.unbind(options.binding_id)
@@ -125,7 +140,10 @@ def run(args, *, root=None):
         elif options.command == "forget":
             cfg.forget()
         return 0
-    except (ConfigError, ValueError, OSError, RuntimeError):
+    except ConfigError as exc:
+        print("Agent operation rejected: " + str(exc))
+        return 1
+    except (ValueError, OSError, RuntimeError, EOFError):
         print("Agent operation rejected; check local policy, permissions and provider availability.")
         return 1
     except KeyboardInterrupt:
