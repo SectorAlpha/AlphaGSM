@@ -545,6 +545,8 @@ alphagsm agent bind my-tf2 --host tf2.mygameserver.com
 
 Each keeps its own configured port and permissions. Bulk binding also accepts
 a different hostname at each server's endpoint prompt.
+Follow the [step-by-step subdomain setup](docs/sector-alpha-agent.md#multiple-game-subdomains-on-one-machine)
+for DNS records, NAT overrides, port checks and publication.
 
 See [the connection guide](docs/sector-alpha-agent.md). The open source project’s
 home is https://alphagsm.sector-alpha.net/; the gaming community and server

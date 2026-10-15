@@ -57,21 +57,78 @@ port, firewall, or missing NAT loopback support; an external test is still neede
 when the router cannot reach its own public address. The website's separate
 ownership challenge and isolated query checks remain required.
 
-For different games on the same machine, each local server tag has its own
-hostname, public/query port and permissions.
-Point your subdomains at the same machine's public IP, then bind each game:
+## Multiple game subdomains on one machine
+
+This example connects existing AlphaGSM servers tagged `my-minecraft` and
+`my-tf2` to separate subdomains on the same public IP. Run the commands as the
+AlphaGSM user who owns those servers. If this machine is not enrolled yet, follow
+the enrollment instructions above and run `alphagsm agent enroll` first.
+
+1. **Point both subdomains at the game host.** In your DNS provider, create these
+   records, replacing `YOUR_PUBLIC_IPV4` with the machine's actual public IPv4:
+
+   | Type | Name | Value |
+   | --- | --- | --- |
+   | A | `minecraft.mygameserver.com` | `YOUR_PUBLIC_IPV4` |
+   | A | `tf2.mygameserver.com` | `YOUR_PUBLIC_IPV4` |
+
+   Use your own domain in place of `mygameserver.com`. Add AAAA records only when
+   the machine has a reachable public IPv6 address supported by that game's query
+   profile. The TF2/A2S public profile currently requires IPv4-only DNS answers.
+   Every A/AAAA answer must match the host's expected public addresses. Wait until
+   the new records resolve correctly before checking the endpoints.
+
+2. **Bind each local game to its subdomain.** Each command infers that server's
+   configured public/query port, name and capacity. Replace the example tags with
+   your existing local server tags:
+
+   ```sh
+   alphagsm agent bind my-minecraft --host minecraft.mygameserver.com --publish
+   alphagsm agent bind my-tf2 --host tf2.mygameserver.com --publish
+   ```
+
+   Review the host, port, publication and allowed remote actions in each preview
+   before saving. If a forwarded public port differs from the local setting, add
+   `--port 25566` to that individual server's command, using its actual public port.
+   For NAT or multiple public addresses, add `--public-ip YOUR_PUBLIC_IPV4` to each
+   binding; repeat `--public-ip` for additional expected machine addresses.
+
+3. **Check both advertised endpoints.** Start the games through your normal
+   AlphaGSM workflow and allow/forward their configured ports through the firewall
+   and router. Then run:
+
+   ```sh
+   alphagsm agent check-endpoint my-minecraft
+   alphagsm agent check-endpoint my-tf2
+   ```
+
+   Correct DNS or port errors before continuing. A router without NAT loopback
+   may require a separate external connectivity test. The website still requires
+   its own ownership challenge and isolated query verification for each endpoint.
+
+4. **Enable and keep reporting running.** Once the previews and checks are correct:
+
+   ```sh
+   alphagsm agent enable-reporting
+   alphagsm agent report-once
+   alphagsm agent run
+   ```
+
+   `run` stays in the foreground; use your user service manager for continuous
+   operation. Complete each endpoint's ownership challenge in the website to
+   obtain verified public statistics. Reporting does not enable remote management.
+
+You can also configure all local games in one guided pass:
 
 ```sh
-alphagsm agent bind my-minecraft --host minecraft.mygameserver.com
-alphagsm agent bind my-tf2 --host tf2.mygameserver.com
-alphagsm agent check-endpoint my-minecraft
-alphagsm agent check-endpoint my-tf2
+alphagsm agent bind '*'
 ```
 
-The ports are inferred independently from each server's local settings. Use
-`--port` on an individual bind if its public port differs. For `agent bind '*'`,
-enter a different `hostname:port` at each server's endpoint prompt; the final
-preview lists every mapping. Repeating the command preserves these mappings.
+Enter a different `hostname:port` at each server's endpoint prompt, such as
+`minecraft.mygameserver.com:25565` and `tf2.mygameserver.com:27015`, replacing the
+ports with your configured public/query ports. Choose publication and actions for
+each game and review every mapping in the final preview. Repeating the command
+preserves existing hostnames, ports and approvals.
 
 Every hostname is checked against the same machine independently. A DNS mismatch,
 endpoint edit or publication opt-out for one binding does not change the other
@@ -79,6 +136,8 @@ games' approvals. Complete the website's ownership challenge for each endpoint.
 DNS names do not select a local process or translate ports: each game needs its
 configured port reachable through the firewall/NAT. Sharing the same IP and port
 requires a game-compatible proxy; configuring one is outside agent binding.
+
+## Reporting and management permissions
 
 New bindings default to private with no allowed remote actions. The prompts let
 you choose publication and actions; repeat runs preserve your previous choices.
