@@ -89,7 +89,8 @@ def lifecycle(request, monkeypatch, tmp_path):
                         "port": query_port,
                         "players": 0,
                         "name": "AlphaGSM Conan IT",
-                        "map": "fixture",
+                        "map": "mp_airfield" if name == "codwawserver" else "fixture",
+                        "max_players": 16,
                     }
                 )
             elif protocol in ("tcp", "udp"):

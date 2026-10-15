@@ -8,6 +8,13 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-15
+- CoDWaW: expose explicit LAN/Internet dedicated modes while preserving legacy
+  launch arguments. Disposable CI uses LAN mode with native map/status and
+  shutdown checks, avoiding external DemonWare DNS/authentication dependencies.
+- CS2 integration: allow a large-depot setup budget without retrying a timed-out
+  updater; setup timeouts fail with diagnostics instead of skipping the test.
+- Workshop validation: all 21 required suites now pass process/Docker native
+  integration and matching smoke scenarios in GitHub run 38775144746.
 - Workshop validation: ARK, Space Engineers, TF2 and Wreckfest pass native
   process/Docker integration in CI run 38748333313. TF2 smoke now waits for
   its fresh Screen response; Wreckfest accepts prompt redraws in earlier

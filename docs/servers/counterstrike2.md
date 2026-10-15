@@ -62,6 +62,19 @@ Setup configures:
 - the launcher defaults to `game/cs2.sh`
 - Source config is written under `game/csgo/cfg/server.cfg`
 
+CI's anonymous app `730` install downloaded 73.4 GB and took about 22 minutes
+20 seconds in the successful
+[smoke run on 2026-10-15](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38775144746).
+Integration setup now
+allows one bounded hour for that download. A timeout fails the test and retains
+captured output, bounded Steam content-log tails, download counters and free
+disk space; it no longer starts a short retry against a possibly active
+SteamCMD child or reports a timeout as a skip. The longer integration setup
+budget still needs a fresh CI lifecycle pass. This lifecycle also has its own
+outer test deadline covering setup, all three readiness waits, shutdown and
+command overhead, so the ordinary 20-minute integration default cannot abort
+the download first.
+
 ## Notes
 
 - Module name: `counterstrike2`

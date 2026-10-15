@@ -161,7 +161,7 @@ alphagsm myserver set KEY VALUE
 - **Map directory**: Check game documentation
 - **Curated mod directories**: `tf/addons` and `tf/cfg`
 - **Curated mod examples**: `sourcemod`, `metamod`
-- **Workshop support**: Native multiplayer maps with verified anonymous process activation.
+- **Workshop support**: Native multiplayer maps with verified anonymous process and Docker activation.
 
 
 ## Native Workshop multiplayer maps
@@ -217,9 +217,11 @@ managed library mapping for diagnosis. CI run
 [`38748333313`](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38748333313)
 passed both process and Docker lifecycle and Workshop integration cases on
 2026-10-15, including exact canonical ready/current-map evidence and real A2S.
-Its TF2 smoke case loaded the same custom map but failed because each probe
-abandoned its token before Screen flushed the response. The bounded response
-wait correction still needs a fresh smoke pass.
+The bounded response wait correction passed the complete Screen Workshop
+[smoke case in run `38775144746`](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38775144746/job/116564198683)
+on PR head `6a446839`, including fresh native ready/current-map frames, real
+A2S, shutdown and configuration cleanup. The same run retained passing process
+and Docker native Workshop integrations.
 A pending `workshop/ITEM_ID` advertisement cannot satisfy it. TF2 resolves its
 Workshop BSP through Steam's native item-install API rather than requiring the
 item directory in the engine's search paths. The check also requires full CLI
@@ -238,4 +240,4 @@ make smoke-test SMOKE_TEST=run_tf2.sh
 A collection override uses `ALPHAGSM_TF2_WORKSHOP_COLLECTION`; select its test map
 with `ALPHAGSM_TF2_WORKSHOP_LOAD_ITEM` and `ALPHAGSM_TF2_WORKSHOP_MAP`. Smoke accepts
 `TF2_WORKSHOP_COLLECTION`, `TF2_WORKSHOP_LOAD_ITEM`, and `TF2_WORKSHOP_MAP`.
-Docker validation remains pending an SSD-backed Docker endpoint.
+Process and Docker validation above ran in GitHub CI.

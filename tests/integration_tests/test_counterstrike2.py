@@ -2,6 +2,9 @@
 
 import json
 import os
+from pathlib import Path
+import re
+import shutil
 import subprocess
 
 import pytest
@@ -17,7 +20,6 @@ from conftest import (
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
-    skip_for_known_steamcmd_issue,
     wait_for_info_protocol,
     read_info_json,
     find_source_server_cfg,
@@ -34,40 +36,75 @@ pytestmark = pytest.mark.integration
 
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
-SETUP_TIMEOUT = 900
-SETUP_RETRY_TIMEOUT = 240
+# Run 38775144746 installed the 73.4 GB depot in 1340s, longer than the
+# former 900s initial limit plus its 240s retry allowance combined.
+SETUP_TIMEOUT = 3600
 
 
-def _run_setup_with_retry(env, server_name, port, install_dir):
+def _log_setup_download_diagnostics(env, install_dir):
+    """Retain bounded native progress without reading Steam account state."""
+    install_dir = Path(install_dir)
+    home = Path(env.get('HOME') or Path.home())
+    roots = [home / 'Steam', home / '.local/share/Steam']
+    if env.get('ALPHAGSM_WORK_DIR'):
+        roots.insert(0, Path(env['ALPHAGSM_WORK_DIR']) / 'steamcmd')
+    payload = {'steam_logs': [], 'app_manifests': []}
+    try:
+        disk = shutil.disk_usage(install_dir.parent)
+        payload['disk'] = {'total_bytes': disk.total, 'free_bytes': disk.free}
+    except OSError as exc:
+        payload['disk'] = {'error': str(exc)}
+    for root in roots:
+        path = root / 'logs/content_log.txt'
+        try:
+            with path.open('rb') as handle:
+                handle.seek(0, os.SEEK_END)
+                handle.seek(max(0, handle.tell() - 8192))
+                text = handle.read(8192).decode('utf-8', errors='replace')
+            payload['steam_logs'].append({'path': str(path), 'tail': '\n'.join(text.splitlines()[-30:])})
+        except OSError:
+            continue
+    for root in [install_dir, *roots]:
+        path = root / f'steamapps/appmanifest_{steam_app_id}.acf'
+        try:
+            with path.open('rb') as handle:
+                text = handle.read(16384).decode('utf-8', errors='replace')
+        except OSError:
+            continue
+        # Counters and result flags explain download, staging or disk failures;
+        # do not dump manifests' arbitrary strings or Steam's credential files.
+        counters = dict(re.findall(
+            r'"(StateFlags|UpdateResult|SizeOnDisk|BytesToDownload|BytesDownloaded|BytesToStage|BytesStaged)"\s+"([0-9]{1,20})"', text))
+        payload['app_manifests'].append({'path': str(path), 'counters': counters})
+    log_command_result('CS2 SteamCMD download diagnostics', subprocess.CompletedProcess(
+        ['CS2 SteamCMD download diagnostics'], 0, json.dumps(payload), ''))
+
+
+def _run_setup(env, server_name, port, install_dir):
+    """Give the full CS2 depot one bounded attempt; timeouts remain failures."""
     args = (server_name, "setup", "-n", str(port), str(install_dir))
     try:
         result = run_alphagsm(env, *args, timeout=SETUP_TIMEOUT)
     except subprocess.TimeoutExpired as exc:
+        output = exc.stdout.decode(errors='replace') if isinstance(exc.stdout, bytes) else exc.stdout or ''
+        error = exc.stderr.decode(errors='replace') if isinstance(exc.stderr, bytes) else exc.stderr or ''
         log_command_result(
             "alphagsm " + " ".join(args) + " [timed out]",
-            subprocess.CompletedProcess(
-                exc.cmd,
-                124,
-                exc.stdout or "",
-                exc.stderr or f"Timed out after {SETUP_TIMEOUT}s",
-            ),
+            subprocess.CompletedProcess(exc.cmd, 124, output,
+                                        f'Timed out after {SETUP_TIMEOUT}s\n' + error),
         )
-        try:
-            result = run_alphagsm(env, *args, timeout=SETUP_RETRY_TIMEOUT)
-        except subprocess.TimeoutExpired:
-            pytest.skip(
-                "Counter-Strike 2 setup stalled twice under SteamCMD in CI; rerun individually to diagnose"
-            )
-        log_command_result("alphagsm " + " ".join(args) + " [retry]", result)
-    else:
-        log_command_result("alphagsm " + " ".join(args), result)
+        _log_setup_download_diagnostics(env, install_dir)
+        pytest.fail(f'Counter-Strike 2 setup exceeded {SETUP_TIMEOUT}s; '
+                    'see captured SteamCMD output and native download diagnostics')
 
+    log_command_result("alphagsm " + " ".join(args), result)
     if result.returncode != 0:
-        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+        _log_setup_download_diagnostics(env, install_dir)
     assert result.returncode == 0, result.stderr or result.stdout
     return result
 
 
+@pytest.mark.timeout(SETUP_TIMEOUT + 3 * START_TIMEOUT + STOP_TIMEOUT + 600)
 def test_counterstrike2_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -100,7 +137,7 @@ def test_counterstrike2_lifecycle(tmp_path):
 
     run_and_assert_ok(env, server_name, "create", module_name)
 
-    _run_setup_with_retry(env, server_name, port, install_dir)
+    _run_setup(env, server_name, port, install_dir)
 
     server_cfg_path = find_source_server_cfg(install_dir)
     set_source_hibernation(server_cfg_path, enabled=False)

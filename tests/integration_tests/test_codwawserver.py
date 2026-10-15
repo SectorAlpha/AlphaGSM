@@ -60,6 +60,9 @@ def test_codwawserver_lifecycle(tmp_path):
     # create
     run_and_assert_ok(env, server_name, "create", module_name)
     run_and_assert_ok(env, server_name, "set", "image", image)
+    # This disposable local lifecycle must not require DemonWare master DNS or
+    # Internet authentication. Public servers retain dedicated=2 by default.
+    run_and_assert_ok(env, server_name, "set", "dedicated", "1")
 
     # setup
     result = run_and_assert_ok(env, server_name, "setup", "-n", str(port), str(install_dir))
@@ -100,6 +103,9 @@ def test_codwawserver_lifecycle(tmp_path):
         assert _info_data.get("players") == 0, (
             f"Expected no players on the fresh server: {_info_data!r}"
         )
+        assert _info_data.get("map") == "mp_airfield", _info_data
+        assert isinstance(_info_data.get("max_players"), int), _info_data
+        assert _info_data["max_players"] > 0, _info_data
     finally:
         # stop
         stop_result = capture_alphagsm_stop(

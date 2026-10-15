@@ -49,6 +49,18 @@ wait_for_log_ready() { wait_for_ready "$@"; }
 wait_for_info_protocol() { echo "protocol $2" >> "$COMMANDS"; return "$QUERY_RC"; }
 run_stop_or_skip() { echo stop >> "$COMMANDS"; }
 '''
+    if module == "codwawserver":
+        prelude += '''PYTHON_BIN=python3
+run_alphagsm() {
+  echo "$*" >> "$COMMANDS"
+  if [[ "${2:-}" == info && "${3:-}" == --json ]]; then
+    echo '{"protocol":"quake","port":27015,"map":"mp_airfield","players":0,"max_players":16}'
+  elif [[ "${2:-}" == status ]]; then
+    echo "Server isn't running"
+  fi
+}
+wait_for_codwaw_stopped() { echo closed >> "$COMMANDS"; }
+'''
     result = subprocess.run(["bash", "-c", prelude + lifecycle], capture_output=True,
                             env=dict(os.environ, LOG_PATH=str(log), COMMANDS=str(commands),
                                      QUERY_RC=str(query_rc), PORT="27015",

@@ -2,14 +2,15 @@
 
 This guide covers the `wreckfestserver` module in AlphaGSM.
 
-Status: `PASSED` for stock process and Docker startup, connectivity and shutdown
-on 2026-10-14 (CI run `38545270577`). Workshop loading remains unverified.
+Status: `PASSED` for stock and native Workshop process/Docker lifecycles.
+CI run `38775144746` on PR head `6a446839` also passed complete Docker Workshop
+smoke, including registry proof, connectivity, shutdown and cleanup.
 
 ## Workshop validation checkpoint
 
-Native Workshop support remains under validation as of 14 October 2026.
-Anonymous consumer-app `228380` downloads succeeded. Diagnostic native console
-inspection listed events from the public
+Native Workshop support passed process and Docker integration validation on
+15 October 2026. Anonymous consumer-app `228380` downloads and fresh native
+console inspection establish registration of events from the public
 [Crazy 2025 track pack](https://steamcommunity.com/sharedfiles/filedetails/?id=3428792631),
 including `crazy_2000_classic`, its reversed event, and its deathloop event.
 The adapter preserves operator mod folders and config entries while managing
@@ -34,18 +35,14 @@ Workshop validation now attaches a small Windows probe to the exact running
 server executable inside its private Wine prefix. The probe clears old display
 contents, sends only `tracks`, and writes newly produced console rows to a
 unique evidence file. Validation still requires the exact
-`crazy_2000_classic` registry row. CI run `38655040006` confirmed native console
-attachment and stock registry output, with prompt redraws embedded in the
-header and rows. Capture now retains every newly rendered row even when the
-input cursor moves backwards, and validation accepts that leading prompt.
-CI run `38702811625` captured the complete stock registry in both runtimes;
-the requested Workshop event was still missing. The later integration run
-`38748333313` passed the profile initialization flow and exact registration.
-The subsequent smoke run `38748333313` captured all three Crazy 2000 events
-after profile initialization. Its assertion stopped at a prompt redraw inside
-an earlier stock event identifier. The parser now continues past that row;
-the required Workshop identifier must still appear exactly as emitted by the
-engine. Full smoke completion remains pending.
+`crazy_2000_classic` registry row. Capture retains every newly rendered row even
+when the input cursor moves backwards. Parsing accepts native prompt redraws
+in earlier stock rows while requiring the exact, unmodified Workshop identifier.
+The full Docker Workshop
+[smoke case passed in run `38775144746`](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38775144746/job/116564198854)
+on PR head `6a446839`, including profile initialization, fresh registry proof,
+query/info, shutdown and cleanup. The same run retained passing process and
+Docker native Workshop integrations.
 Shutdown checks include owned Wine processes and TCP/UDP port closure.
 
 Newly created AlphaGSM servers use `<install_dir>/savegame/` and pass
@@ -167,8 +164,7 @@ AlphaGSM keeps these upstream config keys in sync inside `server_config.cfg`:
 - Module name: `wreckfestserver`
 - Main game port default: `33540`
 - Linux query/info uses the limited UDP reachability surface described above.
-- Native console capture corrections remain under validation: Workshop tests
-  still require the fresh engine track registry from an AlphaGSM console command.
+- Workshop tests require the fresh engine track registry from an AlphaGSM console command.
   Neither a config echo nor an open TCP port satisfies the Workshop check.
 
 <!-- alphagsm-server-variables:start -->

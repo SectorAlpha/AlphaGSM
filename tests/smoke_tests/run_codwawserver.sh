@@ -21,8 +21,8 @@ require_cmd() {
 }
 
 run_alphagsm() {
-  echo
-  echo "=== alphagsm $* ==="
+  echo >&2
+  echo "=== alphagsm $* ===" >&2
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
 }
 
@@ -42,6 +42,39 @@ resolve_docker_image() {
 
 # shellcheck source=smoke_tests/steamcmd_helpers.sh
 source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
+
+
+wait_for_codwaw_stopped() {
+  "$PYTHON_BIN" - "$PORT" "$STOP_TIMEOUT_SECONDS" <<'PYCLOSED'
+import socket
+import sys
+import time
+
+port, timeout = map(int, sys.argv[1:])
+pending = {"tcp", "udp"}
+deadline = time.monotonic() + timeout
+while pending and time.monotonic() < deadline:
+    for protocol in tuple(pending):
+        try:
+            if protocol == "tcp":
+                with socket.create_connection(("127.0.0.1", port), timeout=1):
+                    pass
+            else:
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                    sock.settimeout(1)
+                    sock.connect(("127.0.0.1", port))
+                    sock.send(b"\xff\xff\xff\xffgetstatus\n")
+                    sock.recv(4096)
+        except ConnectionRefusedError:
+            pending.remove(protocol)
+        except socket.timeout:
+            pass
+    if pending:
+        time.sleep(1)
+if pending:
+    raise SystemExit(f"CoDWaW listeners still open after stop: {sorted(pending)}")
+PYCLOSED
+}
 
 
 cleanup() {
@@ -102,16 +135,30 @@ echo "Using port: $PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create codwawserver
 run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
+# The isolated local server uses native LAN mode; Internet mode depends on
+# DemonWare authentication and DNS. Operator servers retain default mode 2.
+run_alphagsm "$SERVER_NAME" set dedicated 1
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_info_protocol "$SERVER_NAME" "quake" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "quake" "$START_TIMEOUT_SECONDS" "$PORT"
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info
-run_alphagsm "$SERVER_NAME" info --json
+INFO_JSON="$(run_alphagsm "$SERVER_NAME" info --json)"
+printf '%s\n' "$INFO_JSON"
+"$PYTHON_BIN" -c '
+import json, sys
+data = json.load(sys.stdin)
+assert data["protocol"] == "quake" and data["port"] == int(sys.argv[1]), data
+assert data["map"] == "mp_airfield" and data["players"] == 0, data
+assert isinstance(data["max_players"], int) and data["max_players"] > 0, data
+' "$PORT" <<< "$INFO_JSON"
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 
-run_alphagsm "$SERVER_NAME" status
+wait_for_codwaw_stopped
+STATUS_OUTPUT="$(run_alphagsm "$SERVER_NAME" status)"
+printf '%s\n' "$STATUS_OUTPUT"
+[[ "$STATUS_OUTPUT" == *"isn't running"* ]]

@@ -7,8 +7,11 @@ Items and collections use numeric IDs or official Steam Community Workshop URLs.
 CI now enables all 21 existing public anonymous Workshop integration suites,
 their smoke scenarios and isolated rechecks. Required cases must run: a skip
 fails CI. Each integration suite selects its explicit process or Docker lane;
-local runs retain download opt-ins. This scheduling change does not promote
-pending native-load results in the matrix below.
+local runs retain download opt-ins. Run
+[`38775144746`](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38775144746)
+on PR head `6a446839` passed all 21 required Workshop integration suites in both
+runtimes and their smoke scenarios. Separate unresolved candidates remain
+identified in the matrix below.
 
 The CI wrapper also supplies the existing public fixtures for Reactive Drop,
 BrainBread 2, Day of Infamy, Garry's Mod, Insurgency, No More Room in Hell,
@@ -67,8 +70,9 @@ Earlier stock-only smoke results for those runners are not Workshop evidence.
 - Wreckfest's process and Docker native Workshop integrations passed in run
   `38748333313`, after one real initialization lifecycle for a fresh engine profile.
   Both require the exact `crazy_2000_classic` native registry row and complete
-  shutdown. Docker smoke captured all custom tracks but rejected a prompt redraw
-  in an earlier stock row; its formatting correction remains under validation.
+  shutdown. Docker Workshop smoke passed in
+  [run `38775144746`](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38775144746/job/116564198854),
+  including the fresh registry assertion, query/info, shutdown and cleanup.
 - Squad 44's Ramelle `2387944294` native Workshop integration passed in both
   runtimes in run `38655040006`, together with Docker Workshop smoke. Checks
   require exact staged Workshop/SDK identity, native PAK precacher registration,
@@ -91,8 +95,10 @@ Earlier stock-only smoke results for those runners are not Workshop evidence.
 - BrainBread 2: Frozen Heart `710060895`; the vendor's existing per-item Workshop search path loads `bbc_frozenheart`, confirmed by real A2S, followed by normal shutdown and cleanup in the process runtime.
 - Team Fortress 2: Orange X3 `454299390`; process and Docker native integration
   passed in run `38748333313`, requiring fresh ready/current canonical
-  `workshop/cp_orange_x3.ugc454299390` frames and real A2S. The Screen smoke case
-  also executes the map but needs a bounded wait for delayed fresh log frames.
+  `workshop/cp_orange_x3.ugc454299390` frames and real A2S. Screen Workshop smoke
+  passed in [run `38775144746`](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38775144746/job/116564198683),
+  including bounded fresh response capture, native ready/current-map proof,
+  real A2S, shutdown and cleanup.
   No Steam account or GSLT is used; existing stop fallbacks remain documented.
 - tModLoader: Census `2687866031` on release `v2026.08.3.0`; fresh `TownProgress` command output from the actual loaded mod, native Terraria handshake and shutdown verification in both runtimes. Baseline lifecycles also passed.
 - Stationeers: Mars Abandoned Frontier `3779655608`; a fresh native save contains its exact `AbandonedMars` world identity and loaded Structure prefabs. Native query/info, shutdown and removal of the managed mod configuration passed in the process runtime.
@@ -101,13 +107,14 @@ Earlier stock-only smoke results for those runners are not Workshop evidence.
 
 Lifecycle success and port closure do not by themselves establish graceful save completion. Existing timeout/kill fallbacks occurred in some validated runs, including Conan Exiles and the Insurgency/Day of Infamy cases. Match each server guide's recorded limitations.
 
-Run `38748333313` retained passing native integration cases in both runtimes
-for all 21 required anonymous Workshop suites. Avorion Docker recovered on its
-isolated recheck; this does not erase that initial failure. Squad, NMRIH,
-BrainBread 2 and Stationeers now have Docker proof beyond their earlier process
-results. TF2 and Wreckfest smoke completion remains pending the response-capture
-fixes above. KF2, Rising Storm 2 and rFactor 2 retain their separate unresolved
-limitations; Colony Survival's anonymous content download remains blocked.
+Run `38775144746` retained passing native integration cases in both runtimes
+and passing smoke scenarios for all 21 required anonymous Workshop suites.
+The preceding run `38748333313` also passed those native integrations; its
+Avorion Docker recovery on an isolated recheck remains historical flaky
+evidence. Squad, NMRIH, BrainBread 2 and Stationeers have Docker proof beyond
+their earlier process results. KF2, Rising Storm 2 and rFactor 2 retain their
+separate unresolved limitations; Colony Survival's anonymous content download
+remains blocked.
 All replacement validation runs in GitHub CI; no local Docker testing is used.
 
 DST, Arma 3, DayZ, Starbound and Stormworks remain outside this no-auth campaign. CS2 public hosting has an account-bound GSLT requirement; its existing generic staging commands do not establish no-credential public hosting or arbitrary Workshop-map activation.

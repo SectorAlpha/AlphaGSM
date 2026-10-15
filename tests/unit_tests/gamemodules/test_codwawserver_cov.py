@@ -26,6 +26,7 @@ def test_configure_uses_linuxgsm_archive_defaults(tmp_path):
 
     assert server.data["url"] == mod.CODWAW_SERVER_URL
     assert server.data["download_name"] == mod.CODWAW_SERVER_NAME
+    assert server.data["dedicated"] == 2
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda prompt: "")
@@ -120,10 +121,41 @@ def test_get_start_command_prefers_resolved_nested_launcher(tmp_path):
 
 
 def test_setting_schema_exposes_codwaw_launch_tokens():
+    assert mod.setting_schema["dedicated"].launch_arg_tokens == ("+set", "dedicated")
+    assert mod.setting_schema["dedicated"].apply_to == ("datastore", "launch_args")
+    assert "dedicated" not in mod.config_sync_keys
     assert mod.setting_schema["fs_game"].canonical_key == "moddir"
     assert mod.setting_schema["fs_game"].launch_arg_tokens == ("+set", "fs_game")
     assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
     assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
+
+
+@pytest.mark.parametrize("mode", [1, 2])
+def test_dedicated_mode_reaches_process_and_container_before_map(tmp_path, mode):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=28960, dir=str(tmp_path))
+    (tmp_path / "codwaw_lnxded").write_text("")
+    server.data["dedicated"] = mod.checkvalue(server, ("dedicated",), str(mode))
+
+    process, _ = mod.get_start_command(server)
+    container = mod.get_container_spec(server)["command"]
+
+    for command in (process, container):
+        assert command[1:4] == ["+set", "dedicated", str(mode)]
+        assert command.count("dedicated") == 1
+        assert command.index("dedicated") < command.index("+map")
+    assert server.data["dedicated"] == mode
+
+
+@pytest.mark.parametrize("value", ["0", "3", "-1", "1.5", "invalid", "1;quit", "", True, None])
+def test_dedicated_mode_rejects_listen_invalid_or_injected_modes(value, tmp_path):
+    server = DummyServer()
+    with pytest.raises(ServerError, match="dedicated must be 1.*2"):
+        mod.checkvalue(server, ("dedicated",), value)
+    server.data.update(dir=str(tmp_path), exe_name="codwaw_lnxded", dedicated=value)
+    (tmp_path / "codwaw_lnxded").write_text("")
+    with pytest.raises(ServerError, match="dedicated must be 1.*2"):
+        mod.get_start_command(server)
 
 
 def test_sync_server_config_updates_mod_server_cfg(tmp_path):
