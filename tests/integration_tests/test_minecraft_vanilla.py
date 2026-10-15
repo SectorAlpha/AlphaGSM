@@ -291,6 +291,10 @@ def test_minecraft_vanilla_download_install_and_start(tmp_path):
                 cfg.enable(management=True)
                 runtime = AlphaRuntime()
                 runtime.lock_path = lambda tag: home_dir / "conf" / (tag + ".json")
+                if os.environ.get("ALPHAGSM_BINARY"):
+                    runtime.helper_command = lambda tag, action: [
+                        os.environ["ALPHAGSM_BINARY"], "--_agent-runtime", tag, action,
+                    ]
                 now = datetime.now(timezone.utc)
                 job = {"schema_version": 1, "job_id": "integration-restart",
                        "installation_id": "integration-install", "binding_id": "integration-binding",

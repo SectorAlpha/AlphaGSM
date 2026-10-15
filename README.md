@@ -552,6 +552,11 @@ eligible local servers, inferring their settings and registering website IDs
 automatically. Use `agent bind my-minecraft` for one server. Review the suggested
 public address, publication and remote actions before saving.
 
+Use `--host game.mygameserver.com` for an existing hostname. Public reports check
+that all its DNS addresses match this machine's expected public IPs; `--public-ip`
+provides an explicit override. `agent check-endpoint my-minecraft` tests the
+advertised game port separately.
+
 See [the connection guide](docs/sector-alpha-agent.md). The open source project’s
 home is https://alphagsm.sector-alpha.net/; the gaming community and server
 directory belong on https://sector-alpha.net/.

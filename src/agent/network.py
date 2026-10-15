@@ -1,6 +1,5 @@
 """Bounded public-address suggestions without credentials, proxies or redirects."""
 
-import http.client
 import ipaddress
 import queue
 import socket
@@ -10,10 +9,12 @@ import time
 import urllib.request
 
 from .transport import NoRedirect
+from .http_deadline import DeadlineBudget, DeadlineHTTPSHandler
 
 LOOKUP_URL = "https://api.ipify.org"
 LOOKUP_TIMEOUT = 5
 LOOKUP_BYTES = 64
+_LOOKUP_LOCK = threading.Lock()
 
 
 def global_ip(value):
@@ -40,92 +41,14 @@ def routing_ip():
         return None
 
 
-class _LookupBudget:
-    """One deadline owns every socket, including connect, handshake and headers."""
-
+class _LookupBudget(DeadlineBudget):
     def __init__(self):
-        self.deadline = time.monotonic() + LOOKUP_TIMEOUT
-        self.lock = threading.Lock()
-        self.cancelled = False
-        self.connection = None
-
-    def remaining(self):
-        remaining = self.deadline - time.monotonic()
-        if self.cancelled or remaining <= 0:
-            raise TimeoutError("Public-address lookup deadline exceeded")
-        return remaining
-
-    def track(self, connection):
-        with self.lock:
-            try:
-                self.remaining()
-            except TimeoutError:
-                connection.close()
-                raise
-            self.connection = connection
-        return connection
-
-    def connect(self, address, timeout=None, source_address=None):
-        # System DNS can outlive a socket timeout. The caller remains bounded;
-        # once cancelled, this worker cannot open any connection after DNS returns.
-        self.remaining()
-        choices = socket.getaddrinfo(*address, family=socket.AF_INET, type=socket.SOCK_STREAM)
-        failure = OSError("Public-address endpoint is unavailable")
-        for family, kind, protocol, _, destination in choices:
-            connection = self.track(socket.socket(family, kind, protocol))
-            try:
-                connection.settimeout(self.remaining())
-                if source_address:
-                    connection.bind(source_address)
-                connection.connect(destination)
-                return connection
-            except OSError as exc:
-                connection.close()
-                failure = exc
-        raise failure
-
-    def cancel(self):
-        with self.lock:
-            self.cancelled = True
-            connection, self.connection = self.connection, None
-        if connection is not None:
-            try:
-                connection.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
-            connection.close()
-
-
-class _DeadlineHTTPSConnection(http.client.HTTPSConnection):
-    def __init__(self, budget, host, **kwargs):
-        super().__init__(host, **kwargs)
-        self.budget = budget
-        self._create_connection = budget.connect
-
-    def connect(self):
-        http.client.HTTPConnection.connect(self)
-        # Register the TLS socket before handshaking so cancellation also closes
-        # an active TLS handshake, rather than only a detached raw socket.
-        self.sock = self.budget.track(self._context.wrap_socket(
-            self.sock, server_hostname=self.host, do_handshake_on_connect=False))
-        self.sock.settimeout(self.budget.remaining())
-        self.sock.do_handshake()
-
-
-class _DeadlineHTTPSHandler(urllib.request.HTTPSHandler):
-    def __init__(self, budget):
-        super().__init__(context=ssl.create_default_context())
-        self.budget = budget
-
-    def https_open(self, req):
-        def connection(host, **kwargs):
-            return _DeadlineHTTPSConnection(self.budget, host, **kwargs)
-        return self.do_open(connection, req, context=self._context, check_hostname=self._check_hostname)
+        super().__init__(LOOKUP_TIMEOUT, family=socket.AF_INET)
 
 
 def _lookup_exchange(budget):
     opener = urllib.request.build_opener(
-        urllib.request.ProxyHandler({}), NoRedirect(), _DeadlineHTTPSHandler(budget),
+        urllib.request.ProxyHandler({}), NoRedirect(), DeadlineHTTPSHandler(budget),
     )
     request = urllib.request.Request(LOOKUP_URL, headers={"Accept": "text/plain"}, method="GET")
     with opener.open(request, timeout=budget.remaining()) as response:
@@ -146,6 +69,10 @@ def _lookup_exchange(budget):
 
 def lookup_ip():
     """Bound all phases, close active I/O at expiry, and return no offline hint."""
+    # At most one fallback worker may exist, even if system DNS is stuck across
+    # repeated report renewals. Explicit IP expectations remain usable.
+    if not _LOOKUP_LOCK.acquire(blocking=False):
+        return None
     budget = _LookupBudget()
     result = queue.Queue(maxsize=1)
 
@@ -154,6 +81,8 @@ def lookup_ip():
             result.put(_lookup_exchange(budget))
         except Exception:  # Cancellation may interrupt any urllib/TLS operation.
             result.put(None)
+        finally:
+            _LOOKUP_LOCK.release()
 
     worker = threading.Thread(target=exchange, daemon=True, name="alphagsm-public-ip")
     worker.start()
