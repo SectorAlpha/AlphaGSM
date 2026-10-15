@@ -15,6 +15,8 @@ Current smoke tests:
   inventories and mocked registration/address discovery; no public destination is contacted.
   Hostname publication checks cover complete DNS/machine-IP matching, withdrawal,
   repair, bounded DNS lifetimes and explicit pinned endpoint diagnostics.
+  Individual and wildcard binding cover distinct Minecraft/TF2 subdomains on one
+  public IP, per-game ports, preserved repeat runs and independent endpoint edits.
   The Minecraft integration test also proves inferred binding, agent restart and duplicate delivery
   against the selected process/Docker runtime.
 

@@ -57,6 +57,29 @@ port, firewall, or missing NAT loopback support; an external test is still neede
 when the router cannot reach its own public address. The website's separate
 ownership challenge and isolated query checks remain required.
 
+For different games on the same machine, each local server tag has its own
+hostname, public/query port and permissions.
+Point your subdomains at the same machine's public IP, then bind each game:
+
+```sh
+alphagsm agent bind my-minecraft --host minecraft.mygameserver.com
+alphagsm agent bind my-tf2 --host tf2.mygameserver.com
+alphagsm agent check-endpoint my-minecraft
+alphagsm agent check-endpoint my-tf2
+```
+
+The ports are inferred independently from each server's local settings. Use
+`--port` on an individual bind if its public port differs. For `agent bind '*'`,
+enter a different `hostname:port` at each server's endpoint prompt; the final
+preview lists every mapping. Repeating the command preserves these mappings.
+
+Every hostname is checked against the same machine independently. A DNS mismatch,
+endpoint edit or publication opt-out for one binding does not change the other
+games' approvals. Complete the website's ownership challenge for each endpoint.
+DNS names do not select a local process or translate ports: each game needs its
+configured port reachable through the firewall/NAT. Sharing the same IP and port
+requires a game-compatible proxy; configuring one is outside agent binding.
+
 New bindings default to private with no allowed remote actions. The prompts let
 you choose publication and actions; repeat runs preserve your previous choices.
 Enrollment and binding leave reporting and management disabled. Enable the

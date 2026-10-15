@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Offline binding, hostname preflight, consent, protocol and no-replay gates.
+# Offline per-game subdomain binding, hostname preflight, consent and no-replay gates.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 PYTHONPATH=.:src "${PYTHON_BIN:-python3}" -m pytest \
