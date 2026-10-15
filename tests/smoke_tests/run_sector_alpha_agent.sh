@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Offline opt-in, strict contract, hostile protocol, no-replay and reporting-retry gates.
+# Offline guided/bulk binding, consent, hostile protocol and no-replay gates.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 PYTHONPATH=.:src "${PYTHON_BIN:-python3}" -m pytest \

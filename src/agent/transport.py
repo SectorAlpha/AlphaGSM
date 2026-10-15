@@ -31,6 +31,7 @@ class Transport:
     def request(self, method, path, *, credential=None, payload=None, session_id=None, timeout=10):
         if path not in (
             "/v1/agent/enroll",
+            "/v1/agent/bindings",
             "/v1/agent/reports",
             "/v1/agent/policy",
             "/v1/agent/jobs",

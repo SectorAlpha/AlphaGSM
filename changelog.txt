@@ -8,6 +8,12 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-15
+- Sector Alpha: default enrollment to https://sector-alpha.net, register bindings
+  automatically, and support guided single-server binding and `agent bind '*'`
+  for all eligible local servers. Infer each server's game, port, name and capacity;
+  suggest its public IP with explicit host/port overrides and operator confirmation.
+- Existing games without a public query profile can use private bindings. Bulk
+  binding preserves existing permissions and never enables capabilities itself.
 - Sector Alpha: retry reporting after temporary configuration-lock contention
   during long lifecycle operations, keeping the reporting thread alive.
 

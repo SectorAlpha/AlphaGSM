@@ -1024,6 +1024,23 @@ final online authorization and persists executing before lifecycle effects.
 reconciles unknown and never repeats effects. A global foreground-service lock
 prevents competing pollers. No secrets are accepted as CLI arguments.
 
+Guided enrollment defaults to `https://sector-alpha.net`; alternate origins must
+be HTTPS roots and normalize an optional trailing slash. `agent.inventory` reads
+only owned current-user JSON datastores without constructing Server (which can
+migrate secrets or save runtime metadata). It exports an allowlist of module,
+port, name, capacity and networking hints. `agent.network` accepts only globally
+routable numerical suggestions, uses bounded TLS for its fixed address lookup,
+and sends no agent credentials. Explicit `--host` bypasses discovery.
+
+`agent bind TAG`, `agent bind '*'` and `agent setup` preview and confirm exact
+bindings before registration or config writes. The portal's authenticated
+`POST /v1/agent/bindings` accepts only a selected enrolled scope and SHA256 of the
+local tag; it derives installation ownership from that scoped credential and
+returns an idempotent binding ID/epoch. Local tags and datastore secrets never
+cross that boundary. Registration grants no actions or publication. Existing
+bindings retain their approved values on repeat runs; capabilities require
+separate local enablement. Games outside the public query registry remain private.
+
 Trusted local runtime helpers run in separate process groups with bounded
 state/operation deadlines. `held_descriptor`/`inherited_state_lock` hand the
 existing datastore sidecar lock to the child after an inode check. The helper

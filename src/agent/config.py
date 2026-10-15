@@ -15,13 +15,15 @@ class ConfigError(ValueError):
 
 
 def origin(value):
+    if type(value) is not str or any(ord(c) <= 32 for c in value) or "?" in value or "#" in value:
+        raise ConfigError("Configure one fixed HTTPS origin without credentials or paths")
     parsed = urlsplit(value)
     invalid = (
         parsed.scheme != "https",
         not parsed.hostname,
         parsed.username,
         parsed.password,
-        parsed.path,
+        parsed.path not in ("", "/"),
         parsed.query,
         parsed.fragment,
     )
@@ -29,7 +31,7 @@ def origin(value):
         raise ConfigError("Configure one fixed HTTPS origin without credentials or paths")
     if parsed.port is not None and not 1 <= parsed.port <= 65535:
         raise ConfigError("Invalid HTTPS port")
-    return value
+    return value[:-1] if parsed.path == "/" else value
 
 
 def local_tag(value):
@@ -98,7 +100,7 @@ class Config:
         atomic_write_text(self.path, json.dumps(value, sort_keys=True), mode=0o600)
 
     def enroll(self, api_origin, response):
-        origin(api_origin)
+        api_origin = origin(api_origin)
         exact(response, ("schema_version", "installation_id", "credential_generation", "reporting", "management"))
         integer(response["schema_version"], 1, 1)
         identifier(response["installation_id"])
@@ -143,6 +145,10 @@ class Config:
             self._write(value)
 
     def bind(self, binding_id, tag, epoch, *, actions, publication, metadata):
+        from server.public_query import PROFILES
+
+        if publication is True and metadata.get("game_id") not in PROFILES:
+            raise ConfigError("This game has no supported public query profile")
         identifier(binding_id)
         local_tag(tag)
         integer(epoch)
@@ -167,13 +173,16 @@ class Config:
                 raise ConfigError("Too many selected bindings")
             if any(b["tag"] == tag and key != binding_id for key, b in value["bindings"].items()):
                 raise ConfigError("Only one management binding per local server")
-            value["bindings"][binding_id] = {
+            binding = {
                 "tag": tag,
                 "epoch": epoch,
                 "actions": actions,
                 "publication": publication,
                 "metadata": metadata,
             }
+            if value["bindings"].get(binding_id) == binding:
+                return
+            value["bindings"][binding_id] = binding
             value["policy_version"] += 1
             value["dirty_at"] = __import__("time").time()
             self._write(value)
@@ -203,6 +212,8 @@ class Config:
             self._write(value)
 
     def publication(self, binding_id, enabled):
+        from server.public_query import PROFILES
+
         identifier(binding_id)
         if type(enabled) is not bool:
             raise ConfigError("Publication selection must be boolean")
@@ -210,6 +221,8 @@ class Config:
             value = self.load()
             if binding_id not in value["bindings"]:
                 raise ConfigError("Unknown local binding")
+            if enabled and value["bindings"][binding_id]["metadata"]["game_id"] not in PROFILES:
+                raise ConfigError("This game has no supported public query profile")
             value["bindings"][binding_id]["publication"] = enabled
             value["dirty_at"] = __import__("time").time()
             self._write(value)

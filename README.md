@@ -521,6 +521,16 @@ Reporting and remote management are separate opt-ins and stay disabled until
 you enable them locally. You choose each published server and which of status,
 start, stop and restart it permits. Local AlphaGSM works without a connection.
 
+```sh
+alphagsm agent enroll
+alphagsm agent bind '*'
+```
+
+Enrollment defaults to `https://sector-alpha.net`. The quoted `'*'` binds all
+eligible local servers, inferring their settings and registering website IDs
+automatically. Use `agent bind my-minecraft` for one server. Review the suggested
+public address, publication and remote actions before saving.
+
 See [the connection guide](docs/sector-alpha-agent.md). The open source project’s
 home is https://alphagsm.sector-alpha.net/; the gaming community and server
 directory belong on https://sector-alpha.net/.
