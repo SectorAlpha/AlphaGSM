@@ -117,7 +117,23 @@ Tag: **`byossdq3`**. Install: `<SSD test root>/servers/q3`. Backend: **process**
 - Actual endpoint: **UDP `127.0.0.1:27960`**, protocol **`quake`**. Returned name `AlphaGSM byossdq3`, map **`q3dm17`**, **0/8 players**.
 - Final verification: no owned executable process remains, UDP 27960 can be bound again, status reports not running.
 - Docker was **NOT_RUN**. No external/public endpoint validation was performed. Existing native query/info hooks needed no network-related changes.
-- Q3 Steam source `live_validated` is true; manual source and other games remain unvalidated.
+- Q3 Steam source `live_validated` is true; its manual source remains unvalidated.
+
+## RTCW results: completed and stopped
+
+Tag: **`byossdrtcw`**. Install: `<SSD test root>/servers/rtcw`. Backend: **process**. Steam source: AppID **9010**, platform **windows**, private profile **owned**. Port **27961** because `byossdq3` still claims 27960.
+
+- Authenticated setup imported the allowlisted packs. The first start exited because ioRTCW 1.51c's dedicated `FS_CheckPak0` requires retail `main/pak0.pk3` even after all six `mp_pak` files are present. `patch-data-141.zip` was not merged: overlapping installed multiplayer packs already matched that archive, and the zip also contains PunkBuster and client binaries.
+- The managed recipe now requires `main/pak0.pk3` plus the 14 multiplayer PK3 files. A second authenticated setup added the 315,823,656-byte retail pack (4,775 packed files) and preserved every earlier pack hash. Repeat setup then skipped SteamCMD. Staging was removed. `assets check` was ready.
+- The dedicated engine install omits known loose client executables, renderers and client-only modules. `fs_basepath` and `fs_homepath` are `.` so process and Docker launches stay inside the install directory. The existing `~/.wolf` tree was unchanged.
+- Native lifecycle passed: start, running status, `query`, `info`, `info --json`, stop.
+- Actual endpoint: **UDP `127.0.0.1:27961`**, protocol **`quake`**. Returned name `AlphaGSM byossdrtcw`, map **`mp_beach`**, **0/20 players**. A direct A2S probe timed out while the Quake status response succeeded.
+- The install retains 15 multiplayer BSP maps and the retail pack's 32 campaign BSP maps. Only `mp_beach` was loaded in the live query.
+- Final verification: no owned `iowolfded.x86_64` process remains and UDP 27961 can be bound again.
+- Docker was **NOT_RUN**. No external/public endpoint validation was performed.
+- RTCW Steam source `live_validated` is true; its manual source remains unvalidated.
+
+Credential-free evidence under `<SSD test root>/results/rtcwserver/`: `lifecycle-pak0.json`, `setup-auth.log`, `setup-pak0.log`, `setup-reuse.log`, `assets-check.json`, `query-pak0.log`, `info-pak0.log`, `info-json-pak0.log`, `status-pak0.log`, and `stop-pak0.log`.
 
 Credential-free evidence under `<SSD test root>/results/q3server/`:
 
@@ -137,15 +153,13 @@ Canonical campaign files in the managed worktree:
 - `docs/superpowers/specs/2026-10-16-auth-first-byo-setup-design.md`
 - `docs/superpowers/plans/2026-10-16-auth-first-byo-setup.md`
 
-The JSON has all 42 exact module/tag/manifest/guide/directory/source records, independent acquisition/file/lifecycle/Docker/content results, and explicit network/status/module-review fields. Only Q3 has passing outcomes. Preserve order and evidence.
+The JSON has all 42 exact module/tag/manifest/guide/directory/source records, independent acquisition/file/lifecycle/Docker/content results, and explicit network/status/module-review fields. Q3 and RTCW have passing process outcomes. Preserve order and evidence.
 
-First six: Q3 2200 → **RTCW 9010** → CoD 2620 → CoD United Offensive base assets 2620 → CoD2 2630 → CoD4 7940. All declared sources use Windows owned-game assets. UO still requires its separate expansion distribution; downloading original CoD base files is not a full UO pass.
+First six: Q3 2200 → RTCW 9010 → **CoD 2620** → CoD United Offensive base assets 2620 → CoD2 2630 → CoD4 7940. All declared sources use Windows owned-game assets. UO still requires its separate expansion distribution; downloading original CoD base files is not a full UO pass.
 
 Next three: ET:Legacy owned ET assets, ETS2 client exports, ATS client exports. Steam login cannot generate truck-simulator `export_server_packages` outputs. The remaining 33 require complete manual distributions until their source/layout is verified. Three non-file prerequisites (Astroneer endpoint, Quake Live entitlement, Life is Feudal database) are outside the 42-file-helper queue.
 
-Next selected row is RTCW, tag `byossdrtcw`, SSD `servers/rtcw`. Read its recipe/guide/install code and upstream documentation before acquisition; inspect actual tags/config and free port claims before creating/configuring it. Keep one active game at a time. It needs 14 declared multiplayer PK3s and compatible patch data as documented.
-
-**Protocol audit is required:** RTCW's checked-in integration currently expects A2S, while CoD-family hooks/tests currently use TCP. These expectations are not validated here and must not be accepted as genuine game-status proof. Determine the real installed engine protocol, then fix module/shared query wiring and tests if needed. Do not widen assertions to accept fallback protocols.
+Next selected row is original Call of Duty, tag `byossdcod`, module `codserver`, Steam AppID 2620. It has not been acquired or tested in this campaign. Read its recipe, installation and real query protocol before acquisition. CoD-family hooks and integration tests currently expect TCP. That expectation is not validated and must not be accepted as genuine game-status proof. Keep one active SteamCMD acquisition at a time.
 
 For each row: inspect recipe/help/settings and disk budget → configure a unique stopped SSD instance → preferred authenticated setup (or its legitimate local/export source) → verify complete server files/content → doctor → bounded real native protocol readiness, status/query/info/JSON → fix/retest code when needed → finally stop and prove all owned processes/listeners gone → update queue, guide, tracker/changelog. External missing input is an explicit blocker, never a pass. Keep secrets out of evidence.
 

@@ -20,7 +20,8 @@
 - The existing interactive session successfully acquired owned Quake III files. This verifies access to AppID 2200 for this test; ownership of other queued apps remains unverified.
 - Fixed shared defect in `0da848f3`: recognize `home/Steam/config/config.vdf` as well as the legacy runtime cache, preserving private-path checks. The existing `owned` session reports present and subsequently acquired AppID 2200 successfully.
 - `byossdq3` completed authenticated setup, native Quake UDP query/info and verified shutdown on the SSD. Nine owned PK3 files passed ownership hashes; repeat setup skipped SteamCMD. Docker remains NOT_RUN. Evidence: SSD `results/q3server/2026-10-16-auth-first.json`.
-- The approved auth-first setup implementation precedes the selected Q3 attempt. No background loop or other game acquisition is scheduled.
+- `byossdrtcw` completed authenticated setup for Steam AppID 9010, native Quake UDP query/info and verified shutdown on the SSD. Retail `main/pak0.pk3` plus 14 multiplayer PK3 files passed ownership hashes; repeat setup skipped SteamCMD. Docker remains NOT_RUN. Evidence: SSD `results/rtcwserver/lifecycle-pak0.json`.
+- The approved auth-first setup implementation precedes these attempts. No background loop or other game acquisition is scheduled.
 
 The JSON file beside this plan is the machine-readable queue. It contains no account identifier or secret material. Preserve exact module IDs, tags, order and per-row evidence. Source instructions are checked-in metadata, not proof that a historical URL currently works; verify upstream availability at each row before downloading.
 
@@ -95,7 +96,11 @@ regressions are checked in; authenticated CI integration remains deferred.
 Q3 already satisfies the local process checks: UDP `127.0.0.1:27960`, protocol
 `quake`, running status, native query/info for `q3dm17`, 0/8 players, then stopped
 status with no owned process and UDP port released. Its existing query/info
-hooks required no network-related code change. RTCW remains next in the queue.
+hooks required no network-related code change. RTCW satisfies the same local
+process checks on UDP `127.0.0.1:27961`, protocol `quake`, map `mp_beach`,
+0/20 players, then stopped with no owned process and the UDP port released.
+Its module now exposes explicit Quake query/info hooks. Call of Duty remains
+next in the queue.
 
 ## Task 0: Repair and verify isolated Steam cache discovery
 
@@ -139,7 +144,7 @@ Rows 1–6 exercise authenticated acquisition. Rows 7–9 use managed imports fr
 | # | Module / test tag | File prerequisite / acquisition focus | Initial state |
 | --- | --- | --- | --- |
 | 1 | `q3server` / `byossdq3` | baseq3/pak0.pk3 — Steam 2200 (Windows owned data) | COMPLETE_PROCESS_DOCKER_NOT_RUN |
-| 2 | `rtcwserver` / `byossdrtcw` | 14 declared multiplayer PK3 files; separate compatible patch data — Steam 9010 (Windows owned data) | NOT_STARTED |
+| 2 | `rtcwserver` / `byossdrtcw` | retail main/pak0.pk3 plus 14 multiplayer PK3 files — Steam 9010 (Windows owned data) | COMPLETE_PROCESS_DOCKER_NOT_RUN |
 | 3 | `codserver` / `byossdcod` | main/*.pk3 — Steam 2620 (Windows owned data) | NOT_STARTED |
 | 4 | `coduoserver` / `byossdcoduo` | main/pak0.pk3 OR main/default_mp.cfg — Steam 2620 (Windows owned data) | NOT_STARTED |
 | 5 | `cod2server` / `byossdcod2` | main/localized_*.iwd OR main/default_localize_mp.cfg; main/*.iwd — Steam 2630 (Windows owned data) | NOT_STARTED |
@@ -231,7 +236,7 @@ Use try/finally around the started interval during execution. Q3 requires real Q
 
 ### Protocol audit before any lifecycle pass
 
-`tests/integration_tests/test_q3server.py` already expects Quake UDP. In the current tree, RTCW's integration test expects A2S, while CoD-family query/info hooks and integration tests expect TCP. Those expectations have not been validated in this campaign and must not be accepted as proof that the game actually speaks them.
+`tests/integration_tests/test_q3server.py` and `tests/integration_tests/test_rtcwserver.py` expect Quake UDP. RTCW's ioRTCW 1.51c dedicated binary answered `getstatus` and did not answer A2S during the local process run. CoD-family query/info hooks and integration tests currently expect TCP. Those CoD expectations have not been validated in this campaign and must not be accepted as proof that the game actually speaks them.
 
 At the selected row, establish the real protocol from the installed engine and authoritative upstream documentation, and observe a valid native response. If existing hooks/tests disagree, correct the shared/module protocol wiring, add a regression, retain Docker wrappers, and update smoke/integration expectations together. Do not broaden assertions to several protocols, accept a TCP fallback as game readiness, or count a log marker as query success.
 
@@ -272,4 +277,4 @@ Rows with known platform/distribution uncertainty include Aloft, FOUNDRY, GRAV, 
 
 ## Execution boundary
 
-This plan does not execute all 42 automatically. The shared cache-path fix is complete. The auth-first changes passed full tests/review and the selected Q3 process row is complete. RTCW is next in the queue; no other game acquisition has started. Reuse the existing login cache; only ask for a local interactive login if Valve access later requires it. Passwords and Guard codes are never requested in chat.
+This plan does not execute all 42 automatically. The shared cache-path fix is complete. The auth-first changes passed full tests/review and the Q3 and RTCW process rows are complete. Call of Duty is next in the queue; no other game acquisition has started. Reuse the existing login cache; only ask for a local interactive login if Valve access later requires it. Passwords and Guard codes are never requested in chat.

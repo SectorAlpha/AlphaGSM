@@ -114,7 +114,7 @@ The current `steam-owned` source declarations are:
 | `cod4server` | Original Call of Duty 4, 7940 | required config, `main/` IWD files and declared `zone/` fastfiles |
 | `coduoserver` | Original Call of Duty, 2620 | base `main/` data; the expansion's `uo/` files are separate |
 | `q3server` | Quake III Arena, 2200 | `baseq3/pak0.pk3` and applicable `pak1` through `pak8` data |
-| `rtcwserver` | Return to Castle Wolfenstein, 9010 | declared multiplayer PK3 files, normalized into `main/` |
+| `rtcwserver` | Return to Castle Wolfenstein, 9010 | retail `main/pak0.pk3` plus the declared multiplayer PK3 set |
 
 These source identities and file-selection paths have synthetic test coverage;
 authenticated downloads and real game lifecycles have not been validated here.
@@ -153,5 +153,8 @@ or running process alone does not complete that game.
 Quake III Arena was validated locally on 2026-10-16 through authenticated
 setup, nine allowlisted PK3 files, repeat setup without Steam acquisition,
 a dedicated engine payload with all 36 maps retained, native Quake UDP
-query/info, and verified shutdown. Docker and the other
-authenticated game sources remain untested in this local campaign.
+query/info, and verified shutdown. Return to Castle Wolfenstein was validated
+the same day through authenticated setup, retail `main/pak0.pk3` plus 14
+multiplayer PK3 files, repeat setup without Steam acquisition, native Quake
+UDP query/info, and verified shutdown. Docker and the other authenticated
+game sources remain untested in this local campaign.

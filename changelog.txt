@@ -11,6 +11,12 @@ Historical detail lives in git history. Keep this file focused on release-facing
 - Local tests: add scripts/run_local_auth_tests.sh for Steam-auth and BYO unit
   and integration runs. CI does not collect local_tests/, and auth material
   stays gitignored.
+- RTCW install: require retail main/pak0.pk3 for the dedicated binary, keep the
+  multiplayer PK3 set intact, and omit loose client and renderer files from the
+  ioRTCW engine archive.
+- RTCW query: use native Quake UDP getstatus for query and info. Local
+  authenticated setup, profile reuse, lifecycle and shutdown were validated;
+  Docker was not rerun.
 - BYO validation: require native port queries, running/stopped status, server
   info and verified shutdown per game; record module fixes and retest failures.
 - Quake III install: keep the dedicated engine and complete owned map/content

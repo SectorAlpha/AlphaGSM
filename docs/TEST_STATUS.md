@@ -505,7 +505,7 @@ URLs.
 | q3server | owned base-game assets; local authenticated Steam setup and native Quake UDP lifecycle validated 2026-10-16, including dedicated-only engine selection and 36 retained maps, with stopped process/listener verification; Docker not rerun in this local campaign |
 | q4server | direct archive URL or staged Quake 4 Linux dedicated server tree |
 | qlserver | authenticated entitlement plus server auth/config |
-| rtcwserver | owned base-game assets |
+| rtcwserver | owned base-game assets; local authenticated Steam setup and native Quake UDP lifecycle validated 2026-10-16, including required retail `main/pak0.pk3`, dedicated-only engine selection and stopped process/listener verification; Docker not rerun in this local campaign |
 | sampserver | direct archive URL or staged SA-MP Linux dedicated server tree |
 | sfcserver | official SourceForts Classic ModDB full-version tree staged under `sfclassic/` |
 | skyrimtogetherrebornserver | direct archive URL or staged Skyrim Together Reborn server tree |

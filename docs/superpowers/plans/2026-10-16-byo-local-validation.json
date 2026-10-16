@@ -115,6 +115,10 @@
       "validation": "declared-files-and-content-sentinels",
       "requirements": [
         {
+          "path": "main/pak0.pk3",
+          "kind": "file"
+        },
+        {
           "path": "main/mp_bin.pk3",
           "kind": "file"
         },
@@ -176,15 +180,15 @@
         {
           "id": "manual",
           "kind": "operator-files",
-          "instructions": "Copy the original RTCW Main/ multiplayer PK3 files, not single-player pak0.pk3. Merge the matching patch-data-141.zip from iortcw releases separately when required.",
+          "instructions": "Copy legitimate main/pak0.pk3 plus the original multiplayer PK3 set (mp_bin.pk3, mp_pak0.pk3 through mp_pak5.pk3, and mp_pakmaps0.pk3 through mp_pakmaps6.pk3). The ioRTCW dedicated binary refuses to start without retail pak0.pk3. Do not merge all of patch-data-141.zip: an owned 1.41 install already contains the matching multiplayer packs, and that archive also includes PunkBuster and client binaries.",
           "live_validated": false,
           "url": "https://github.com/iortcw/iortcw/blob/master/README.md"
         },
         {
           "id": "steam-owned",
           "kind": "steamcmd",
-          "instructions": "Copy the original RTCW Main/ multiplayer PK3 files, not single-player pak0.pk3. Merge the matching patch-data-141.zip from iortcw releases separately when required.",
-          "live_validated": false,
+          "instructions": "Copy legitimate main/pak0.pk3 plus the original multiplayer PK3 set (mp_bin.pk3, mp_pak0.pk3 through mp_pak5.pk3, and mp_pakmaps0.pk3 through mp_pakmaps6.pk3). The ioRTCW dedicated binary refuses to start without retail pak0.pk3. Do not merge all of patch-data-141.zip: an owned 1.41 install already contains the matching multiplayer packs, and that archive also includes PunkBuster and client binaries.",
+          "live_validated": true,
           "app_id": 9010,
           "platform": "windows",
           "authentication": "required",
@@ -192,28 +196,63 @@
         }
       ],
       "selected_source": "steam-owned",
-      "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
-      "lifecycle_result": "NOT_RUN",
+      "acquisition_result": "PASSED",
+      "file_check_result": "PASSED",
+      "lifecycle_result": "PASSED_PROCESS_QUAKE_UDP",
       "docker_result": "NOT_RUN",
-      "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
       "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
-      "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED",
+      "tested_commit": "1368f5aa",
+      "evidence": [
+        "SSD results/rtcwserver/lifecycle-pak0.json",
+        "Retail main/pak0.pk3 plus 14 multiplayer PK3 hashes match the manifest; no staging leftovers.",
+        "Repeat setup reused the remembered owned profile without SteamCMD.",
+        "Native query/info: quake, mp_beach, 0/20 players. Direct A2S timed out.",
+        "Stopped; no owned iowolfded process and UDP 27961 available.",
+        "Validated on uncommitted worktree changes after 1368f5aa."
+      ],
+      "reusable_installer_result": "IMPLEMENTED_AUTH_AND_LOCAL_IMPORT",
+      "content_result": "COMPLETE_DEDICATED_ENGINE_PAK0_AND_14_MP_PK3_15_MP_MAPS",
+      "installed_map_count": 15,
       "network_checks": {
-        "endpoints": [],
-        "protocol": null,
-        "probe_scope": null,
-        "port_query_result": "NOT_RUN",
-        "status_result": "NOT_RUN",
-        "info_result": "NOT_RUN",
-        "shutdown_result": "NOT_RUN"
+        "endpoints": [
+          {
+            "roles": [
+              "game",
+              "query"
+            ],
+            "host": "127.0.0.1",
+            "port": 27961,
+            "transport": "udp"
+          }
+        ],
+        "protocol": "quake",
+        "probe_scope": "HOST_LOOPBACK",
+        "port_query_result": "PASSED",
+        "status_result": "PASSED_RUNNING_AND_STOPPED",
+        "info_result": "PASSED_NATIVE_QUAKE",
+        "shutdown_result": "PASSED_PROCESS_AND_UDP_RELEASE",
+        "observed_server": {
+          "name": "AlphaGSM byossdrtcw",
+          "map": "mp_beach",
+          "players": 0,
+          "max_players": 20
+        },
+        "evidence": [
+          "SSD results/rtcwserver/status-pak0.log",
+          "SSD results/rtcwserver/query-pak0.log",
+          "SSD results/rtcwserver/info-json-pak0.log",
+          "SSD results/rtcwserver/lifecycle-pak0.json"
+        ]
       },
-      "module_review_result": "NOT_ASSESSED",
-      "module_changes": []
+      "module_review_result": "QUERY_HOOKS_AND_REQUIRED_PAK0_FIXED",
+      "module_changes": [
+        "Explicit Quake UDP query and info hooks",
+        "Required retail main/pak0.pk3 in the managed recipe and start guard",
+        "Dedicated engine install omits loose client and renderer files",
+        "Relative fs_basepath and fs_homepath for process and Docker launches"
+      ]
     },
     {
       "order": 3,

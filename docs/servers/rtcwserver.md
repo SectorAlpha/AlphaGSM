@@ -12,7 +12,8 @@ into the Docker backend.
 
 - `screen`
 - Python packages from `requirements.txt`
-- Original Return to Castle Wolfenstein multiplayer assets in `main/`
+- Original Return to Castle Wolfenstein assets in `main/`
+  - `pak0.pk3` (the retail pack; the dedicated binary refuses to start without it)
   - `mp_bin.pk3`
   - `mp_pak0.pk3` through `mp_pak5.pk3`
   - `mp_pakmaps0.pk3` through `mp_pakmaps6.pk3`
@@ -34,7 +35,8 @@ alphagsm myrtcwserv setup --auth-profile owned
 
 Enter credentials only at the local SteamCMD prompts. For an existing local
 Steam library, use `setup --steam-dir /path/to/SteamLibrary/steamapps` instead.
-The authenticated download path still needs local validation.
+Authenticated setup and the native process lifecycle were validated locally on
+2026-10-16; Docker was not rerun in that local test.
 
 Start it:
 
@@ -60,12 +62,18 @@ Setup configures:
 
 - the game port (default 27960)
 - the install directory
-- downloads and extracts the server archive
+- downloads the ioRTCW Linux engine archive and installs its dedicated executable and multiplayer game module
+- keeps retail `pak0.pk3` and the multiplayer PK3 set intact
+- omits the known loose client executables, renderers and client-only engine modules
+
+The dedicated server answers Quake UDP `getstatus` on its game port. `query` and `info` use that protocol.
 
 This server is supported in `ENABLED (BYO)` mode. When using setup without an
-asset source or saved profile, copy the original RTCW multiplayer PK3 set into the install's
-`main/` directory. The public ioRTCW engine release is not enough by itself for
-the dedicated multiplayer server.
+asset source or saved profile, copy retail `main/pak0.pk3` and the original
+RTCW multiplayer PK3 set into the install's `main/` directory. The public
+ioRTCW engine release is not enough by itself. Do not merge all of
+`patch-data-141.zip`: an owned 1.41 install already contains the matching
+multiplayer packs, and that archive also includes PunkBuster and client binaries.
 
 ## Useful Commands
 
