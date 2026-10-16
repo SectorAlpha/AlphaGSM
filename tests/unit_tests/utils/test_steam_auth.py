@@ -345,10 +345,10 @@ def test_session_cleanup_rejects_hard_links_without_chmodding_target(auth, tmp_p
 
 
 def test_bootstrap_failure_is_reported_without_raw_installer_details(auth, monkeypatch):
-    from downloader import DownloaderError
     monkeypatch.setattr(auth.sys.stdin, 'isatty', lambda: True)
     def fail(_profile):
-        raise DownloaderError('raw bootstrap detail')
+        # Downloader tests reload the package; match the dependency captured by auth.
+        raise auth.DownloaderError('raw bootstrap detail')
     monkeypatch.setattr(auth, '_install_runtime', fail)
     with pytest.raises(auth.SteamAuthError, match='login failed') as error:
         auth.login('owned', 'account_name')
