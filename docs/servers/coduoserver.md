@@ -23,11 +23,16 @@ Create the server:
 alphagsm mycoduoser create coduoserver
 ```
 
-Run setup:
+For an owned Steam copy, sign in once and let setup acquire the declared files:
 
 ```bash
-alphagsm mycoduoser setup
+alphagsm steam-auth login owned your_steam_username
+alphagsm mycoduoser setup --auth-profile owned
 ```
+
+Enter credentials only at the local SteamCMD prompts. For an existing local
+Steam library, use `setup --steam-dir /path/to/SteamLibrary/steamapps` instead.
+The authenticated download path still needs local validation.
 
 Start it:
 
@@ -61,7 +66,7 @@ Setup configures:
 binary for Call of Duty: United Offensive, but the archive still depends on
 owned base Call of Duty multiplayer files that are not bundled.
 
-Before `start`, copy the required files from a legitimate base Call of Duty
+If using setup without an asset source or saved profile, before `start` copy the required files from a legitimate base Call of Duty
 installation into the AlphaGSM server tree:
 
 ```text
@@ -72,7 +77,7 @@ installation into the AlphaGSM server tree:
 The current blocker is satisfied by the base Call of Duty multiplayer assets,
 not by files copied only into the `uo/` expansion directory.
 
-Minimal operator flow:
+Manual-copy alternative:
 
 ```bash
 alphagsm mycoduoser create coduoserver
@@ -171,7 +176,11 @@ alphagsm mycoduoser mod cleanup
 Inspect this game's required files, source instructions and destinations with
 `alphagsm <server-name> assets requirements`; check the declared files with
 `alphagsm <server-name> assets check`. File checks do not establish game readiness.
-This module has an allowlisted local import recipe. It also declares `steam-owned` for explicit acquisition with
-`alphagsm <server-name> assets fetch steam-owned --auth-profile <profile>`.
+The preferred Steam-owned path is `alphagsm steam-auth login owned <username>`,
+then `alphagsm <server-name> setup --auth-profile owned`. Setup remembers the
+profile name and fetches missing required files before installing the engine.
+Use `setup --steam-dir /path/to/SteamLibrary/steamapps` to import from an existing
+Steam library instead. Direct file acquisition remains available through
+`assets fetch steam-owned --auth-profile owned`.
 Authenticated downloads remain unverified here.
 See [BYO files and private SteamCMD acquisition](../byo-files.md).

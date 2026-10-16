@@ -1,0 +1,1937 @@
+{
+  "schema_version": 1,
+  "updated": "2026-10-16",
+  "mode": "SELECTED_ROW_COMPLETE",
+  "scope": "All 42 checked-in file-based BYO helpers; one game at a time",
+  "code_root": "/home/cosmosquark/.codex/worktrees/byo-file-helpers/AlphaGSM",
+  "branch": "codex/byo-file-helpers",
+  "baseline_commit": "1bb6c646",
+  "ssd_root": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers",
+  "private_profile": "owned",
+  "active_module": null,
+  "shared_blocker": null,
+  "rows": [
+    {
+      "order": 1,
+      "module": "q3server",
+      "tag": "byossdq3",
+      "phase": "steamcmd",
+      "manifest": "src/gamemodules/q3server/byo_assets.json",
+      "guide": "docs/servers/q3server.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/q3",
+      "managed_import": true,
+      "validation": "declared-files-and-content-sentinels",
+      "requirements": [
+        {
+          "path": "baseq3/pak0.pk3",
+          "kind": "file"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Copy baseq3/pak0.pk3 from an owned Steam, GOG or CD installation. Retain compatible pak1.pk3 through pak8.pk3 patch data from the game/official point release; engine binaries are separate.",
+          "live_validated": false,
+          "url": "https://ioquake3.org/help/players-guide/"
+        },
+        {
+          "id": "steam-owned",
+          "kind": "steamcmd",
+          "instructions": "Copy baseq3/pak0.pk3 from an owned Steam, GOG or CD installation. Retain compatible pak1.pk3 through pak8.pk3 patch data from the game/official point release; engine binaries are separate.",
+          "live_validated": true,
+          "app_id": 2200,
+          "platform": "windows",
+          "authentication": "required",
+          "url": "https://store.steampowered.com/app/2200/"
+        }
+      ],
+      "selected_source": "steam-owned",
+      "acquisition_result": "PASSED",
+      "file_check_result": "PASSED",
+      "lifecycle_result": "PASSED_PROCESS_QUAKE_UDP",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
+      "blocker": null,
+      "tested_commit": "a1e2aebb",
+      "evidence": [
+        "SSD results/q3server/2026-10-16-auth-first.json",
+        "Nine owned PK3 hashes match manifest; no staging leftovers.",
+        "Repeat setup reused remembered owned profile without SteamCMD.",
+        "Native query/info: quake, q3dm17, 0/8 players.",
+        "Stopped; no owned executable process and UDP 27960 available.",
+        "Dedicated-only engine install omitted 11 loose client components, retained 36 maps and passed repeated native lifecycle/shutdown."
+      ],
+      "reusable_installer_result": "IMPLEMENTED_AUTH_AND_LOCAL_IMPORT",
+      "content_result": "COMPLETE_DEDICATED_ENGINE_NINE_PK3_36_MAPS",
+      "installed_map_count": 36
+    },
+    {
+      "order": 2,
+      "module": "rtcwserver",
+      "tag": "byossdrtcw",
+      "phase": "steamcmd",
+      "manifest": "src/gamemodules/rtcwserver/byo_assets.json",
+      "guide": "docs/servers/rtcwserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/rtcw",
+      "managed_import": true,
+      "validation": "declared-files-and-content-sentinels",
+      "requirements": [
+        {
+          "path": "main/mp_bin.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "main/mp_pak0.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "main/mp_pak1.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "main/mp_pak2.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "main/mp_pak3.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "main/mp_pak4.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "main/mp_pak5.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "main/mp_pakmaps0.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "main/mp_pakmaps1.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "main/mp_pakmaps2.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "main/mp_pakmaps3.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "main/mp_pakmaps4.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "main/mp_pakmaps5.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "main/mp_pakmaps6.pk3",
+          "kind": "file"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Copy the original RTCW Main/ multiplayer PK3 files, not single-player pak0.pk3. Merge the matching patch-data-141.zip from iortcw releases separately when required.",
+          "live_validated": false,
+          "url": "https://github.com/iortcw/iortcw/blob/master/README.md"
+        },
+        {
+          "id": "steam-owned",
+          "kind": "steamcmd",
+          "instructions": "Copy the original RTCW Main/ multiplayer PK3 files, not single-player pak0.pk3. Merge the matching patch-data-141.zip from iortcw releases separately when required.",
+          "live_validated": false,
+          "app_id": 9010,
+          "platform": "windows",
+          "authentication": "required",
+          "url": "https://store.steampowered.com/app/9010/"
+        }
+      ],
+      "selected_source": "steam-owned",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 3,
+      "module": "codserver",
+      "tag": "byossdcod",
+      "phase": "steamcmd",
+      "manifest": "src/gamemodules/codserver/byo_assets.json",
+      "guide": "docs/servers/codserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/cod",
+      "managed_import": true,
+      "validation": "declared-files-and-content-sentinels",
+      "requirements": [
+        {
+          "path": "main/*.pk3",
+          "kind": "archive-member",
+          "member_any_of": [
+            "maps/mp/{startmap}.bsp",
+            "maps/mp/{startmap}.d3dbsp"
+          ],
+          "member_case_insensitive": true
+        }
+      ],
+      "defaults": {
+        "startmap": "mp_carentan"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Use main/ from an owned original Call of Duty installation. Its PK3 files must contain the configured multiplayer map; the public dedicated archive lacks map data.",
+          "live_validated": false
+        },
+        {
+          "id": "steam-owned",
+          "kind": "steamcmd",
+          "instructions": "Use main/ from an owned original Call of Duty installation. Its PK3 files must contain the configured multiplayer map; the public dedicated archive lacks map data. SteamCMD access requires the appropriate entitlement; it is not live validated.",
+          "live_validated": false,
+          "app_id": 2620,
+          "platform": "windows",
+          "authentication": "required",
+          "url": "https://store.steampowered.com/app/2620/"
+        }
+      ],
+      "selected_source": "steam-owned",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 4,
+      "module": "coduoserver",
+      "tag": "byossdcoduo",
+      "phase": "steamcmd",
+      "manifest": "src/gamemodules/coduoserver/byo_assets.json",
+      "guide": "docs/servers/coduoserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/coduo",
+      "managed_import": true,
+      "validation": "declared-files-and-content-sentinels",
+      "requirements": [
+        {
+          "any_of": [
+            "main/pak0.pk3",
+            "main/default_mp.cfg"
+          ],
+          "kind": "glob"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Use the original Call of Duty main/ files (Steam app 2620), alongside the United Offensive uo/ distribution. Expansion app 2640 alone does not supply the original base content.",
+          "live_validated": false,
+          "url": "https://store.steampowered.com/app/2640/"
+        },
+        {
+          "id": "steam-owned",
+          "kind": "steamcmd",
+          "instructions": "Use the original Call of Duty main/ files (Steam app 2620), alongside the United Offensive uo/ distribution. Expansion app 2640 alone does not supply the original base content. SteamCMD access requires the appropriate entitlement; it is not live validated.",
+          "live_validated": false,
+          "app_id": 2620,
+          "platform": "windows",
+          "authentication": "required",
+          "url": "https://store.steampowered.com/app/2620/"
+        }
+      ],
+      "selected_source": "steam-owned",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 5,
+      "module": "cod2server",
+      "tag": "byossdcod2",
+      "phase": "steamcmd",
+      "manifest": "src/gamemodules/cod2server/byo_assets.json",
+      "guide": "docs/servers/cod2server.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/cod2",
+      "managed_import": true,
+      "validation": "declared-files-and-content-sentinels",
+      "requirements": [
+        {
+          "any_of": [
+            "main/localized_*.iwd",
+            "main/default_localize_mp.cfg"
+          ],
+          "kind": "glob"
+        },
+        {
+          "path": "main/*.iwd",
+          "kind": "glob"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Copy the owned Call of Duty 2 main/ data. Localization config can reside inside an IWD; use the complete original main content, not only the dedicated Linux download.",
+          "live_validated": false
+        },
+        {
+          "id": "steam-owned",
+          "kind": "steamcmd",
+          "instructions": "Copy the owned Call of Duty 2 main/ data. Localization config can reside inside an IWD; use the complete original main content, not only the dedicated Linux download. SteamCMD access requires the appropriate entitlement; it is not live validated.",
+          "live_validated": false,
+          "app_id": 2630,
+          "platform": "windows",
+          "authentication": "required",
+          "url": "https://store.steampowered.com/app/2630/"
+        }
+      ],
+      "selected_source": "steam-owned",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 6,
+      "module": "cod4server",
+      "tag": "byossdcod4",
+      "phase": "steamcmd",
+      "manifest": "src/gamemodules/cod4server/byo_assets.json",
+      "guide": "docs/servers/cod4server.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/cod4",
+      "managed_import": true,
+      "validation": "declared-files-and-content-sentinels",
+      "requirements": [
+        {
+          "path": "fileSysCheck.cfg",
+          "kind": "file"
+        },
+        {
+          "path": "main/*.iwd",
+          "kind": "glob"
+        },
+        {
+          "path": "main/localized_*.iwd",
+          "kind": "glob"
+        },
+        {
+          "any_of": [
+            "zone/*.ff",
+            "zone/*/*.ff"
+          ],
+          "kind": "glob"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Obtain the original 2007 Call of Duty 4, not the remaster. Copy fileSysCheck.cfg, all main/*.iwd and the full compatible zone/ fastfiles. Do not replace existing server.cfg. Managed import selects only the declared IWD/config and recognized fastfile paths. Any additional zone content requires manual staging; file checks do not prove completeness.",
+          "live_validated": false,
+          "url": "https://github.com/callofduty4x/CoD4x_Server"
+        },
+        {
+          "id": "steam-owned",
+          "kind": "steamcmd",
+          "instructions": "Obtain the original 2007 Call of Duty 4, not the remaster. Copy fileSysCheck.cfg, all main/*.iwd and the full compatible zone/ fastfiles. Do not replace existing server.cfg. SteamCMD access requires the appropriate entitlement; it is not live validated. Managed import selects only the declared IWD/config and recognized fastfile paths. Any additional zone content requires manual staging; file checks do not prove completeness.",
+          "live_validated": false,
+          "app_id": 7940,
+          "platform": "windows",
+          "authentication": "required",
+          "url": "https://store.steampowered.com/app/7940/"
+        }
+      ],
+      "selected_source": "steam-owned",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 7,
+      "module": "etlegacyserver",
+      "tag": "byossdetlegacy",
+      "phase": "managed-local-import",
+      "manifest": "src/gamemodules/etlegacyserver/byo_assets.json",
+      "guide": "docs/servers/etlegacyserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/etlegacy",
+      "managed_import": true,
+      "validation": "declared-files-and-content-sentinels",
+      "requirements": [
+        {
+          "path": "etmain/pak0.pk3",
+          "kind": "file"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Use an original Enemy Territory installation or the upstream FAQ-linked free game distribution. Copy pak0.pk3 to etmain/; pak1.pk3 and pak2.pk3 may be needed by third-party mods. This is separate from the ET: Legacy engine download.",
+          "live_validated": false,
+          "url": "https://github.com/etlegacy/etlegacy/wiki/FAQ"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 8,
+      "module": "ets2server",
+      "tag": "byossdets2",
+      "phase": "managed-local-import",
+      "manifest": "src/gamemodules/ets2server/byo_assets.json",
+      "guide": "docs/servers/ets2server.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/ets2",
+      "managed_import": true,
+      "validation": "declared-files-and-content-sentinels",
+      "requirements": [
+        {
+          "path": "{configdir}/server_packages.sii",
+          "kind": "file"
+        },
+        {
+          "path": "{configdir}/server_packages.dat",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "configdir": ".local/share/Euro Truck Simulator 2"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "client-export",
+          "instructions": "In an owned Euro Truck Simulator 2 client, enable g_console, load the intended map and run export_server_packages. Supply the generated server_packages.sii and server_packages.dat from the client home. Authentication or dedicated-server downloads cannot generate these exports.",
+          "live_validated": false,
+          "url": "https://modding.scssoft.com/wiki/Documentation/Tools/Dedicated_Server"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 9,
+      "module": "atsserver",
+      "tag": "byossdats",
+      "phase": "managed-local-import",
+      "manifest": "src/gamemodules/atsserver/byo_assets.json",
+      "guide": "docs/servers/atsserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/ats",
+      "managed_import": true,
+      "validation": "declared-files-and-content-sentinels",
+      "requirements": [
+        {
+          "path": "{configdir}/server_packages.sii",
+          "kind": "file"
+        },
+        {
+          "path": "{configdir}/server_packages.dat",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "configdir": ".local/share/American Truck Simulator"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "client-export",
+          "instructions": "In an owned American Truck Simulator client, enable g_console, load the intended map and run export_server_packages. Supply the generated server_packages.sii and server_packages.dat from the client home. Authentication or dedicated-server downloads cannot generate these exports.",
+          "live_validated": false,
+          "url": "https://modding.scssoft.com/wiki/Documentation/Tools/Dedicated_Server"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 10,
+      "module": "ahlserver",
+      "tag": "byossdahl",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/ahlserver/byo_assets.json",
+      "guide": "docs/servers/ahlserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/ahl",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "action/maps/ahl_hydro.bsp",
+          "kind": "file"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Choose a complete compatible original Action Half-Life Linux server distribution; do not substitute AHL2 or an incompatible Deleted Scenes build. Stage the complete action/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+          "live_validated": false,
+          "url": "https://www.moddb.com/mods/action-half-life/downloads"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 11,
+      "module": "alienarenaserver",
+      "tag": "byossdalienarena",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/alienarenaserver/byo_assets.json",
+      "guide": "docs/servers/alienarenaserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/alienarena",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        },
+        {
+          "path": "data1",
+          "kind": "directory"
+        }
+      ],
+      "defaults": {
+        "exe_name": "crx-dedicated"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Obtain a complete compatible native distribution or build from upstream with game data and libraries. Current release executable naming needs verification; do not confuse a modern package with the legacy configured sentinel.",
+          "live_validated": false,
+          "url": "https://github.com/alienarena/alienarena"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 12,
+      "module": "aloftserver",
+      "tag": "byossdaloft",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/aloftserver/byo_assets.json",
+      "guide": "docs/servers/aloftserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/aloft",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "exe_name": "AloftServerNoGuiLoad.ps1"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Scripts come from the owned Windows game, not a separate server app. Preserve its full Unity game data and world script. Official instructions require Steam open at runtime; this module/platform path is not validated here.",
+          "live_validated": false,
+          "url": "https://aloft.wiki.gg/wiki/Dedicated_Server_how-to"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 13,
+      "module": "atlasserver",
+      "tag": "byossdatlas",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/atlasserver/byo_assets.json",
+      "guide": "docs/servers/atlasserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/atlas",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "ShooterGame/ServerGrid.json",
+          "kind": "file"
+        },
+        {
+          "path": "ShooterGame/ServerGrid.ServerOnly.json",
+          "kind": "file"
+        },
+        {
+          "path": "ShooterGame/ServerGrid",
+          "kind": "directory"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "client-export",
+          "instructions": "Generate/export the grid with the official ServerGridEditor and stage both JSON files plus the populated ServerGrid/ folder under ShooterGame/. Preserve the ServerOnly file as secret-bearing configuration; downloading the server does not generate this grid.",
+          "live_validated": false,
+          "url": "https://github.com/GrapeshotGames/ServerGridEditor"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 14,
+      "module": "bbserver",
+      "tag": "byossdbb",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/bbserver/byo_assets.json",
+      "guide": "docs/servers/bbserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/bb",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "brainbread/maps/bb_chp4_slaywatch.bsp",
+          "kind": "file"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Use the original BrainBread full server distribution, not BrainBread 2. Historical mirrors may need manual retrieval. Stage the complete brainbread/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+          "live_validated": false,
+          "url": "https://www.ironoak.ch/BB/index.php?page=files"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 15,
+      "module": "bf1942server",
+      "tag": "byossdbf1942",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/bf1942server/byo_assets.json",
+      "guide": "docs/servers/bf1942server.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/bf1942",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "exe_name": "bf1942_lnxded"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Supply your compatible archived complete Linux dedicated-server tree with game/mod data. No current authoritative downloadable archive has been verified.",
+          "live_validated": false
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 16,
+      "module": "bfvserver",
+      "tag": "byossdbfv",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/bfvserver/byo_assets.json",
+      "guide": "docs/servers/bfvserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/bfv",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "exe_name": "bfvietnam_lnxded"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Supply a compatible complete Linux dedicated-server archive/tree. The historical download page is not a validated direct artifact.",
+          "live_validated": false
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 17,
+      "module": "dstserver",
+      "tag": "byossddst",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/dstserver/byo_assets.json",
+      "guide": "docs/servers/dstserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/dst",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{confdir}/{cluster}/cluster_token.txt",
+          "kind": "file"
+        },
+        {
+          "path": "{confdir}/{cluster}/cluster.ini",
+          "kind": "file"
+        },
+        {
+          "path": "{confdir}/{cluster}/{shard}/server.ini",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "confdir": "DoNotStarveTogether",
+        "cluster": "{server_name}",
+        "shard": "Master"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "provider-config",
+          "instructions": "Generate the cluster token through Klei and create/export the matching cluster configuration. Place cluster.ini and cluster_token.txt in the configured cluster, and server.ini under the configured shard. Keep token contents private; SteamCMD cannot generate the token.",
+          "live_validated": false,
+          "url": "https://support.klei.com/hc/en-us/articles/360029556192-Dedicated-Server-Command-Line-Options-Guide"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 18,
+      "module": "foundryserver",
+      "tag": "byossdfoundry",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/foundryserver/byo_assets.json",
+      "guide": "docs/servers/foundryserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/foundry",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "exe_name": "FoundryDedicatedServer"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Official distribution instructions describe FoundryDedicatedServer.exe and companion Unity data. The existing module expects a native extensionless executable; that platform assumption remains unverified. Do not rename a Windows binary and claim Linux support.",
+          "live_validated": false,
+          "url": "https://dedicated.foundry-game.com/"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 19,
+      "module": "goldeneyesourceserver",
+      "tag": "byossdgoldeneyesource",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/goldeneyesourceserver/byo_assets.json",
+      "guide": "docs/servers/goldeneyesourceserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/goldeneyesource",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        },
+        {
+          "path": "gesource/gameinfo.txt",
+          "kind": "file"
+        },
+        {
+          "path": "gesource/maps/*.bsp",
+          "kind": "glob"
+        }
+      ],
+      "defaults": {
+        "exe_name": "srcds_run"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Obtain a complete compatible Source 2007/AppID 310 base and official full GoldenEye: Source server distribution. Retain top-level gesource/ and sibling engine files. Existing automated URLs have documented access failures; the current official page advertises Windows content and is not a direct Linux artifact.",
+          "live_validated": false,
+          "url": "https://www.geshl2.com/server-downloads/"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 20,
+      "module": "gravserver",
+      "tag": "byossdgrav",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/gravserver/byo_assets.json",
+      "guide": "docs/servers/gravserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/grav",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "exe_name": "CAGGameServer-Win32-Shipping"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Use the owned complete GRAV game tree and its Binaries/ server launch scripts. The configured flat extensionless executable is a legacy module assumption, not proof of a native Linux distribution.",
+          "live_validated": false,
+          "url": "https://steamcommunity.com/app/332500/discussions/4/496881136901566007/"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 21,
+      "module": "hogwarpserver",
+      "tag": "byossdhogwarp",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/hogwarpserver/byo_assets.json",
+      "guide": "docs/servers/hogwarpserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/hogwarp",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "exe_name": "HogWarpServer.exe"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Obtain the official authorized Windows dedicated-server distribution or a known compatible archive; preserve all companion runtime files. No direct current artifact/access flow is verified here.",
+          "live_validated": false,
+          "url": "https://hogwarp.com/"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 22,
+      "module": "identityserver",
+      "tag": "byossdidentity",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/identityserver/byo_assets.json",
+      "guide": "docs/servers/identityserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/identity",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "exe_name": "IdentityServer.x86_64"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Supply a known compatible complete Identity Linux dedicated server archive/tree and Unity runtime data. Current upstream binary availability has not been verified.",
+          "live_validated": false
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 23,
+      "module": "jk2server",
+      "tag": "byossdjk2",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/jk2server/byo_assets.json",
+      "guide": "docs/servers/jk2server.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/jk2",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        },
+        {
+          "path": "base/assets0.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "base/assets1.pk3",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "exe_name": "jk2mvded.x86_64"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Use a matching JK2MV dedicated release and owned Jedi Outcast GameData/base/assets0.pk3 and assets1.pk3. Retain assets2.pk3 for 1.03 or assets5.pk3 for 1.04 as appropriate. Match engine architecture and game version.",
+          "live_validated": false,
+          "url": "https://jk2mv.org/downloads/"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 24,
+      "module": "minecraft.custom",
+      "tag": "byossdminecraftcustom",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/minecraft/custom_byo_assets.json",
+      "guide": "docs/servers/minecraft-custom.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/minecraft.custom",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "exe_name": "minecraft_server.jar"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Obtain the server JAR and all companion libraries/mods/config from your chosen upstream project release. Place the real JAR at the configured exe_name. There is no universal custom-server download; preserve the EULA workflow.",
+          "live_validated": false
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 25,
+      "module": "minecraft.tekkit",
+      "tag": "byossdminecrafttekkit",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/minecraft/tekkit_byo_assets.json",
+      "guide": "docs/servers/minecraft-tekkit.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/minecraft.tekkit",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        },
+        {
+          "path": "mods",
+          "kind": "directory"
+        }
+      ],
+      "defaults": {
+        "exe_name": "Tekkit.jar"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Select the exact Technic Tekkit variant/version and use its Server Download. Preserve all bundled mods, libraries and config. A Tekkit.jar filename alone does not establish compatibility.",
+          "live_validated": false,
+          "url": "https://www.technicpack.net/modpack/tekkit"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 26,
+      "module": "mohaaserver",
+      "tag": "byossdmohaa",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/mohaaserver/byo_assets.json",
+      "guide": "docs/servers/mohaaserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/mohaa",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        },
+        {
+          "path": "main/*.pk3",
+          "kind": "glob"
+        }
+      ],
+      "defaults": {
+        "exe_name": "mohaa_lnxded"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Use owned MOHAA main/ game data and a compatible complete Linux dedicated server/runtime tree. OpenMoHAA is a separate engine choice, not an automatic substitute.",
+          "live_validated": false
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 27,
+      "module": "mxbikesserver",
+      "tag": "byossdmxbikes",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/mxbikesserver/byo_assets.json",
+      "guide": "docs/servers/mxbikesserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/mxbikes",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "exe_name": "mxbikes_dedicated"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Official instructions use the Windows mxbikes.exe -dedicated flow, dedicated.ini and full compatible package/content. The existing module native executable expectation is unverified; do not fabricate a Linux archive.",
+          "live_validated": false,
+          "url": "https://forum.mx-bikes.com/index.php?topic=197.0"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 28,
+      "module": "ndserver",
+      "tag": "byossdnd",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/ndserver/byo_assets.json",
+      "guide": "docs/servers/ndserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/nd",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "nucleardawn/maps/hydro.bsp",
+          "kind": "file"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Use a complete owned Nuclear Dawn installation/server content tree; the anonymous server download is partial. A current authoritative direct artifact is not verified. Stage the complete nucleardawn/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+          "live_validated": false
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 29,
+      "module": "nsserver",
+      "tag": "byossdns",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/nsserver/byo_assets.json",
+      "guide": "docs/servers/nsserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/ns",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "ns/maps/ns_hera.bsp",
+          "kind": "file"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Obtain a matching NS1 full install and native Linux server library. A server-only patch is not the complete content tree; do not substitute NS2. Stage the complete ns/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+          "live_validated": false,
+          "url": "https://github.com/ENSL/NS/releases"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 30,
+      "module": "q4server",
+      "tag": "byossdq4",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/q4server/byo_assets.json",
+      "guide": "docs/servers/q4server.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/q4",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        },
+        {
+          "path": "q4base/*.pk4",
+          "kind": "glob"
+        }
+      ],
+      "defaults": {
+        "exe_name": "q4ded.x86"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Supply a compatible complete Linux dedicated tree and q4base/ data from your owned Quake 4 installation. The previously configured public installer URL is not verified working; no replacement download is invented.",
+          "live_validated": false
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 31,
+      "module": "sampserver",
+      "tag": "byossdsamp",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/sampserver/byo_assets.json",
+      "guide": "docs/servers/sampserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/samp",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        },
+        {
+          "path": "gamemodes/*.amx",
+          "kind": "glob"
+        }
+      ],
+      "defaults": {
+        "exe_name": "samp03svr"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Supply a compatible original SA-MP Linux server distribution with gamemodes, scriptfiles and supporting runtime. Legacy download availability is unverified; open.mp is a separate replacement.",
+          "live_validated": false
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 32,
+      "module": "sfcserver",
+      "tag": "byossdsfc",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/sfcserver/byo_assets.json",
+      "guide": "docs/servers/sfcserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/sfc",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "sfclassic/maps/sf_astrodome.bsp",
+          "kind": "file"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Select the full SourceForts Classic release compatible with the configured module, not original SourceForts or an arbitrary prerelease. Stage the complete sfclassic/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+          "live_validated": false,
+          "url": "https://www.moddb.com/mods/sourceforts"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 33,
+      "module": "skyrimtogetherrebornserver",
+      "tag": "byossdskyrimtogetherreborn",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/skyrimtogetherrebornserver/byo_assets.json",
+      "guide": "docs/servers/skyrimtogetherrebornserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/skyrimtogetherreborn",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "exe_name": "SkyrimTogetherServer"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Obtain the complete matching official TiltedEvolution server release and config. The current documentation names Windows SkyrimTogetherServer.exe; native Linux artifact availability is unverified.",
+          "live_validated": false,
+          "url": "https://wiki.tiltedphoques.com/tilted-online/guides/server-guide"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 34,
+      "module": "sof2server",
+      "tag": "byossdsof2",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/sof2server/byo_assets.json",
+      "guide": "docs/servers/sof2server.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/sof2",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        },
+        {
+          "path": "base/*.pk3",
+          "kind": "glob"
+        }
+      ],
+      "defaults": {
+        "exe_name": "sof2ded"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Supply owned SOF2 base/ data plus a compatible complete Linux dedicated-server binary and runtime. No current authoritative downloadable server archive is verified.",
+          "live_validated": false
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 35,
+      "module": "ss14server",
+      "tag": "byossdss14",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/ss14server/byo_assets.json",
+      "guide": "docs/servers/ss14server.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/ss14",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "exe_name": "Robust.Server"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Supply a full compatible Linux x64 server build from the selected fork, including content assemblies/resources and matching client build. A fork release page is not a direct server artifact; the Wizard feed may be unavailable.",
+          "live_validated": false,
+          "url": "https://docs.spacestation14.com/en/general-development/setup/server-hosting-tutorial.html"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 36,
+      "module": "starbound",
+      "tag": "byossdstarbound",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/starbound/byo_assets.json",
+      "guide": "docs/servers/starbound.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/starbound",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        },
+        {
+          "path": "assets/packed.pak",
+          "kind": "file"
+        }
+      ],
+      "defaults": {
+        "exe_name": "linux64/starbound_server"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Copy a complete owned Starbound native server tree including linux64 runtime libraries and assets/packed.pak. A Windows executable alone cannot satisfy the native module.",
+          "live_validated": false,
+          "url": "https://starbounder.org/Guide:Setting_Up_Multiplayer"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 37,
+      "module": "stormworksserver",
+      "tag": "byossdstormworks",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/stormworksserver/byo_assets.json",
+      "guide": "docs/servers/stormworksserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/stormworks",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        },
+        {
+          "path": "data",
+          "kind": "directory"
+        }
+      ],
+      "defaults": {
+        "exe_name": "server64.exe"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "The developer included the dedicated exe in the owned base game and discontinued the separate tool. Obtain base game app 573090 Windows with full server data. Keep provider authentication requirements; old tool 1247090 is not the current source.",
+          "live_validated": false,
+          "url": "https://store.steampowered.com/news/posts/?appids=573090&enddate=1705078813&feed=steam_community_announcements"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 38,
+      "module": "subnauticaserver",
+      "tag": "byossdsubnautica",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/subnauticaserver/byo_assets.json",
+      "guide": "docs/servers/subnauticaserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/subnautica",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "Subnautica_Data/Managed/Assembly-CSharp.dll",
+          "kind": "file"
+        },
+        {
+          "path": "Subnautica_Data",
+          "kind": "directory"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Install the owned original Subnautica version required by the selected official Nitrox release and set SUBNAUTICA_INSTALLATION_PATH. Use a complete installation, not Below Zero or DLLs from arbitrary download sites. Current Nitrox supports newer game builds; do not universally force a legacy branch.",
+          "live_validated": false,
+          "url": "https://github.com/SubnauticaNitrox/Nitrox/releases"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 39,
+      "module": "tsserver",
+      "tag": "byossdts",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/tsserver/byo_assets.json",
+      "guide": "docs/servers/tsserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/ts",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "ts/maps/ts_neobaroque.bsp",
+          "kind": "file"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Obtain the matching The Specialists 3.0 full Linux server distribution, not only the Windows client. Stage the complete ts/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+          "live_validated": false,
+          "url": "https://www.moddb.com/mods/the-specialists/downloads"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 40,
+      "module": "ut3server",
+      "tag": "byossdut3",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/ut3server/byo_assets.json",
+      "guide": "docs/servers/ut3server.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/ut3",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "{exe_name}",
+          "kind": "file"
+        },
+        {
+          "path": "Engine",
+          "kind": "directory"
+        },
+        {
+          "path": "UTGame",
+          "kind": "directory"
+        }
+      ],
+      "defaults": {
+        "exe_name": "Binaries/ut3"
+      },
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Supply the complete compatible Linux dedicated-server distribution with Engine/, UTGame/, libraries and applicable patch/content. Owned Windows Steam files are not the native Linux server; no current immutable Linux archive is verified.",
+          "live_validated": false,
+          "url": "https://icculus.org/news/news.php?id=4104"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 41,
+      "module": "vsserver",
+      "tag": "byossdvs",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/vsserver/byo_assets.json",
+      "guide": "docs/servers/vsserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/vs",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "vs/maps/vs_frost.bsp",
+          "kind": "file"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Obtain the matching Chapter VI Linux server distribution; original mirror availability is unverified. Stage the complete vs/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+          "live_validated": false,
+          "url": "https://www.vsmod.co.uk/"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    },
+    {
+      "order": 42,
+      "module": "zmrserver",
+      "tag": "byossdzmr",
+      "phase": "manual-distribution",
+      "manifest": "src/gamemodules/zmrserver/byo_assets.json",
+      "guide": "docs/servers/zmrserver.md",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/zmr",
+      "managed_import": false,
+      "validation": "sentinel-only",
+      "requirements": [
+        {
+          "path": "zombie_master_reborn/maps/zm_docksofthedead.bsp",
+          "kind": "file"
+        }
+      ],
+      "defaults": {},
+      "sources": [
+        {
+          "id": "manual",
+          "kind": "operator-files",
+          "instructions": "Obtain the official compatible complete Linux release. Source SDK scaffold alone does not contain the real mod. Stage the complete zombie_master_reborn/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+          "live_validated": false,
+          "url": "https://zombiemaster.dev/blog/"
+        }
+      ],
+      "selected_source": "manual",
+      "acquisition_result": "NOT_ATTEMPTED",
+      "file_check_result": "NOT_RUN",
+      "lifecycle_result": "NOT_RUN",
+      "docker_result": "NOT_RUN",
+      "final_running_state": "NOT_CREATED",
+      "status": "NOT_STARTED",
+      "blocker": null,
+      "tested_commit": null,
+      "evidence": [],
+      "reusable_installer_result": "NOT_ASSESSED",
+      "content_result": "NOT_ASSESSED"
+    }
+  ],
+  "shared_auth_status": {
+    "local_session": "PRESENT",
+    "cache_fix_commit": "0da848f3",
+    "remote_entitlement": "VERIFIED_APP_2200_ONLY"
+  },
+  "next_module": "rtcwserver",
+  "content_policy": "Runnable dedicated server plus fullest compatible maps/content from declared legitimate source; reusable checked-in installer required; discard staging and unrelated client binaries."
+}

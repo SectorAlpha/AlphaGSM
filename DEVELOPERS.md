@@ -1216,3 +1216,40 @@ Unit tests use synthetic game files and fake SteamCMD child processes, including
 permission, cancellation, interrupted-parent locks, staging cleanup, failed
 publication and exact native filename cases. Later local validation must use
 one operator-selected game at a time with a real entitled session.
+
+### Auth-first BYO setup
+
+The setup source options `auth_profile`, `steam_dir` and `assets_source` are
+manager arguments, consumed before game configure/install hooks. Conflicting
+explicit selectors fail before configure. File preparation runs after existing
+host/port checks and before module.install, retaining stopped-instance and
+transactional importer guards. Without a selected source or remembered profile,
+existing module setup behavior stays unchanged.
+
+`steam_auth_profile` stores a validated profile reference only. It is manager
+metadata outside config_sync_keys and can be cleared with the shared `set` path.
+An explicit local source overrides it for one invocation. A complete installed
+file contract avoids a repeated full download; failures never trigger fallback.
+
+`utils.steam_library.find_installed_app` reads bounded public KeyValues app and
+library manifests, resolves only the declared AppID, and returns a source tree
+for the existing importer. Explicit steamapps paths restrict discovery to one
+library. Missing/ambiguous installs, unsafe metadata and installdir escapes
+fail before import; auth files and Steam content are never modified.
+
+BYO selection declarations should describe the complete runnable dedicated-server
+payload, not only the minimum `requirements` sentinels. Keep all compatible map
+and supporting resource sets from the declared source, including required game
+scripts and native libraries. Keep content archives intact. Omit known
+unrelated client engines/renderers during installation; never delete untracked
+operator content while tightening an existing recipe. A campaign row is only
+complete when the reproducible source-specific acquisition/install/import code
+and selection regression tests are checked in.
+
+`utils.archive_install.sync_tree(...)` and `install_archive(...)` accept optional
+keyword-only `skip_relative_files`, matching exact extracted-root-relative file
+paths. The default is empty for existing callers. Q3 declares its known loose
+client engine exclusions in `Q3_CLIENT_ONLY_ENGINE_FILES`; it retains an
+explicitly configured executable and never filters inside PK3 content archives.
+These exclusions control source publication and do not delete existing operator
+files during setup or updates.

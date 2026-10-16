@@ -25,9 +25,12 @@ The everyday flow is always the same:
 Then `stop`, `backup`, or `update` as needed. Pick a game from
 [the server guides](docs/README.md) if you want the exact module name.
 
-If a server needs files from a game you own, the [BYO file helpers](docs/byo-files.md)
-explain what to supply and where to get it. Supported recipes can also acquire
-owned files using a private SteamCMD session.
+For supported Steam-owned files, log in with `./alphagsm steam-auth login owned <username>`,
+then run `./alphagsm myserver setup --auth-profile owned`. Setup remembers that
+profile name. `--steam-dir /path/to/SteamLibrary/steamapps` uses installed files
+instead. The [BYO file helpers](docs/byo-files.md) explain supported sources,
+client exports and manual staging. Supported installs keep compatible maps and
+their supporting server content.
 
 You can also ask an AI agent with terminal access to do this work. Start with
 “Use alphagsm-agent-operations to run my server,” and give it the game, server

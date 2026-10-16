@@ -129,11 +129,11 @@ alphagsm '*' status
 `*` means every server for the current user. `username/server` runs as that
 user through `sudo` when permitted.
 
-## Not implemented yet
+## SteamCMD session profiles
 
-SteamCMD auth profiles (`alphagsm steam-auth login`) are planned so AUTH-gated
-Steam apps can `setup`. They are **not** a command today. See
-[SteamCMD Auth Profiles](steamcmd-auth.md).
+SteamCMD session profiles support explicit owned-file setup for declared BYO
+Steam sources. See [SteamCMD session profiles](steamcmd-auth.md) for their scope;
+legacy AUTH-gated modules are not automatically migrated.
 
 
 ## Game-specific BYO files
@@ -142,8 +142,10 @@ Steam apps can `setup`. They are **not** a command today. See
 alphagsm myserver assets requirements
 alphagsm myserver assets check --json
 alphagsm myserver assets import /path/to/owned-game
-alphagsm myserver assets fetch steam-owned --auth-profile owned
 alphagsm steam-auth login owned your_steam_username
+alphagsm myserver setup --auth-profile owned
+alphagsm myserver setup --steam-dir /path/to/SteamLibrary/steamapps
+alphagsm myserver assets fetch steam-owned --auth-profile owned
 alphagsm steam-auth status owned
 alphagsm steam-auth logout owned
 ```
@@ -153,3 +155,9 @@ The server must be stopped for those actions. `requirements` explains the
 game-specific source, files and destinations without login. `check` validates
 files, not server readiness. See [BYO files](byo-files.md) and
 [private SteamCMD sessions](steamcmd-auth.md).
+
+`setup --auth-profile NAME` remembers the profile name per server and downloads
+missing declared files. `setup --steam-dir PATH` locates the installed source
+app by AppID and imports its allowlisted files. It overrides remembered auth
+for that run, as does `--assets PATH`; explicit source options are mutually
+exclusive. Clear remembered auth with `set steam_auth_profile DELETE`.

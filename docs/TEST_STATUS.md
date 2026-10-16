@@ -502,7 +502,7 @@ URLs.
 | mxbikesserver | user-supplied dedicated archive URL |
 | ndserver | staged Nuclear Dawn content tree |
 | nsserver | owned Natural Selection mod content tree |
-| q3server | owned base-game assets |
+| q3server | owned base-game assets; local authenticated Steam setup and native Quake UDP lifecycle validated 2026-10-16, including dedicated-only engine selection and 36 retained maps, with stopped process/listener verification; Docker not rerun in this local campaign |
 | q4server | direct archive URL or staged Quake 4 Linux dedicated server tree |
 | qlserver | authenticated entitlement plus server auth/config |
 | rtcwserver | owned base-game assets |

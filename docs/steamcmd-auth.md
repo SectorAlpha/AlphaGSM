@@ -22,7 +22,11 @@ installer runs on the Linux host; selecting Docker for a game does not move
 this login into a container. SteamCMD's usual Linux runtime libraries are still
 required. The first interactive login downloads Valve's Linux SteamCMD bootstrap.
 
-A supported acquisition helper must explicitly select the profile for its
+Select a profile with `alphagsm myserver setup --auth-profile owned` for a
+managed Steam-backed BYO recipe. Setup remembers its name and reuses it when
+required files are missing; clear it with `set steam_auth_profile DELETE`.
+`assets fetch steam-owned --auth-profile owned` remains the explicit file-only
+refresh command. A supported acquisition helper selects the profile for its
 download. Those downloads reuse the cached session with prompts disabled, never
 fall back to anonymous, and suppress raw SteamCMD output that could contain
 session details. Missing, expired, or unentitled sessions fail with a prompt to
@@ -31,8 +35,9 @@ every existing AUTH-gated module to profiles. Password-protected beta branches
 are not supported through profiles; branch passwords are never placed in their
 process arguments.
 
-`status` reports only whether local profile metadata and SteamCMD cache files
-exist. It does not contact Valve or prove authentication, ownership, or app
+`status` reports only whether local profile metadata and a nonempty SteamCMD
+cache exist. It recognizes both the isolated `home/Steam/config/config.vdf`
+layout and the legacy `runtime/config/config.vdf` layout inside the profile. It does not contact Valve or prove authentication, ownership, or app
 access. `logout` removes the selected local cached profile and its isolated
 runtime. It does not revoke sessions remotely at Valve. Login, download, and
 logout hold a per-profile lock; if another operation is using it, retry later.

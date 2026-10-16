@@ -25,11 +25,16 @@ Create the server:
 alphagsm mycodserve create codserver
 ```
 
-Run setup:
+For an owned Steam copy, sign in once and let setup acquire the declared files:
 
 ```bash
-alphagsm mycodserve setup
+alphagsm steam-auth login owned your_steam_username
+alphagsm mycodserve setup --auth-profile owned
 ```
+
+Enter credentials only at the local SteamCMD prompts. For an existing local
+Steam library, use `setup --steam-dir /path/to/SteamLibrary/steamapps` instead.
+The authenticated download path still needs local validation.
 
 Start it:
 
@@ -146,8 +151,12 @@ alphagsm mycodserve mod cleanup
 Inspect this game's required files, source instructions and destinations with
 `alphagsm <server-name> assets requirements`; check the declared files with
 `alphagsm <server-name> assets check`. File checks do not establish game readiness.
-This module has an allowlisted local import recipe. It also declares `steam-owned` for explicit acquisition with
-`alphagsm <server-name> assets fetch steam-owned --auth-profile <profile>`.
+The preferred Steam-owned path is `alphagsm steam-auth login owned <username>`,
+then `alphagsm <server-name> setup --auth-profile owned`. Setup remembers the
+profile name and fetches missing required files before installing the engine.
+Use `setup --steam-dir /path/to/SteamLibrary/steamapps` to import from an existing
+Steam library instead. Direct file acquisition remains available through
+`assets fetch steam-owned --auth-profile owned`.
 Authenticated downloads remain unverified here.
 The base-file helper checks PK3 archives for the configured multiplayer map in
 `.bsp` or `.d3dbsp` format. Archive member names may vary in case or use either

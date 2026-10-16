@@ -12,10 +12,10 @@ backend.
 
 - `screen`
 - Python packages from `requirements.txt`
-- a legitimate Quake III Arena `baseq3/pak0.pk3` copied into the installed server after setup
+- legitimate Quake III Arena data, acquired from an owned Steam copy or imported locally
 
-AlphaGSM currently downloads the public ioquake3 Linux engine build only. The
-licensed Quake III base game data is not bundled with that engine download.
+The public ioquake3 Linux engine build does not bundle licensed Quake III
+base game data. Authenticated setup acquires the declared owned files separately.
 Without `baseq3/pak0.pk3`, the dedicated server exits immediately before it can
 reach a playable or queryable state.
 
@@ -27,11 +27,17 @@ Create the server:
 alphagsm myq3server create q3server
 ```
 
-Run setup:
+For an owned Steam copy, sign in once and let setup acquire the declared files:
 
 ```bash
-alphagsm myq3server setup
+alphagsm steam-auth login owned your_steam_username
+alphagsm myq3server setup --auth-profile owned
 ```
+
+Enter credentials only at the local SteamCMD prompts. For an existing local
+Steam library, use `setup --steam-dir /path/to/SteamLibrary/steamapps` instead.
+Authenticated setup and the native process lifecycle were validated locally on
+2026-10-16; Docker was not rerun in that local test.
 
 Start it:
 
@@ -57,9 +63,12 @@ Setup configures:
 
 - the game port (default 27960)
 - the install directory
-- downloads and extracts the ioquake3 Linux engine archive
+- downloads the ioquake3 Linux engine archive and installs its dedicated engine/server game code
+- keeps all nine base/patch PK3 packs intact, including their 36 maps and supporting content
+- omits the known loose client executable, renderers and client-only engine modules
 
-This server is supported in `ENABLED (BYO)` mode. After setup, copy your legitimate Quake III `pak0.pk3` into
+This server is supported in `ENABLED (BYO)` mode. When using setup without an
+asset source or saved profile, copy your legitimate Quake III `pak0.pk3` into
 `<install_dir>/baseq3/` before running `start`. Upstream also recommends adding
 the freely available Quake III 1.32 point-release patch data (`pak1.pk3`
 through `pak8.pk3`) alongside it.
@@ -148,7 +157,18 @@ alphagsm myserver set KEY VALUE
 Inspect this game's required files, source instructions and destinations with
 `alphagsm <server-name> assets requirements`; check the declared files with
 `alphagsm <server-name> assets check`. File checks do not establish game readiness.
-This module has an allowlisted local import recipe. It also declares `steam-owned` for explicit acquisition with
-`alphagsm <server-name> assets fetch steam-owned --auth-profile <profile>`.
-Authenticated downloads remain unverified here.
+The preferred Steam-owned path is `alphagsm steam-auth login owned <username>`,
+then `alphagsm <server-name> setup --auth-profile owned`. Setup remembers the
+profile name and fetches missing required files before installing the engine.
+Use `setup --steam-dir /path/to/SteamLibrary/steamapps` to import from an existing
+Steam library instead. Direct file acquisition remains available through
+`assets fetch steam-owned --auth-profile owned`.
+Local validation on 2026-10-16 acquired `pak0.pk3` through `pak8.pk3`, passed
+file checks and doctor, reused the remembered profile without another Steam
+download, and verified native Quake UDP query/info on `q3dm17`. The test ended
+stopped with no owned process or bound UDP port; Docker was not rerun.
 See [BYO files and private SteamCMD acquisition](../byo-files.md).
+
+The dedicated-only engine install was also rechecked with the same native
+lifecycle. All nine PK3 hashes and 36 maps remained intact; 11 known loose
+client-only engine components were omitted.

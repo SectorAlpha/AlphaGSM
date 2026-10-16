@@ -8,6 +8,14 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-16
+- Quake III install: keep the dedicated engine and complete owned map/content
+  packs while omitting known loose client and renderer components.
+- Quake III BYO: validate authenticated Steam setup, remembered-profile reuse,
+  native Quake UDP lifecycle and complete shutdown locally on SSD storage.
+- BYO setup: acquire missing Steam-owned files with --auth-profile, remember the
+  profile name per server, and support explicit --steam-dir library imports.
+- SteamCMD auth: recognize session caches under the isolated home/Steam directory
+  as well as the legacy runtime config directory, retaining private-profile checks.
 - BYO files: check installed paths with native filename casing, accept equivalent
   CoD map archive formats, and inspect absolute ETS2/ATS configuration homes
   while keeping those external homes on the manual-staging path.

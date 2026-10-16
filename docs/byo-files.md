@@ -17,11 +17,73 @@ Requirements can be inspected before setup or login. Checks report whether
 declared files exist with the spelling required by the host filesystem; they
 do not start a server or prove game readiness. Source imports can accept
 case variations declared by a recipe and normalize the published filenames.
+The install selection aims for a complete dedicated server with the fullest
+compatible content available from its declared source. Keep all compatible maps,
+packages, scripts, required libraries and supporting data. The required-file
+checks are minimum readiness checks, not a reason to discard other usable maps
+or resources. Full client download staging is disposable; unrelated client
+executables and rendering components do not belong in the installed server.
+Game content archives stay intact so their maps and companion resources remain
+available. Each validated game should leave a checked-in reusable installer or
+import recipe that reproduces that result.
+
 Manual distributions are marked `sentinel-only`: a map or executable can identify
 a candidate tree, but cannot establish that all companion resources are present.
 Follow the recipe's instructions for the complete compatible distribution.
 
-## Import your existing files
+## Preferred Steam-owned setup
+
+For a managed recipe with a declared SteamCMD source, let AlphaGSM download the
+owned files during setup on Linux:
+
+```bash
+alphagsm steam-auth login owned your_steam_username
+alphagsm myserver setup --auth-profile owned
+alphagsm myserver assets check
+```
+
+Enter the password and Steam Guard directly in SteamCMD's terminal prompts.
+No desktop Steam installation is needed. The account must be entitled to the
+source app and its content. Local session presence does not prove that access.
+See [private session profiles](steamcmd-auth.md).
+
+Setup remembers only the profile name for this server. Later setup runs reuse
+it when required owned files are missing. Existing valid files avoid another
+full-app download. To replace the name, pass another `--auth-profile`; to clear
+it, run `alphagsm myserver set steam_auth_profile DELETE`.
+
+To explicitly refresh the declared files without installing an engine:
+
+```bash
+alphagsm myserver assets fetch steam-owned --auth-profile owned
+```
+
+SteamCMD downloads an app/depot into disposable staging. AlphaGSM validates and
+imports only the selected recipe files, then removes staging on success or
+failure. It does not promise to download only those files over the network.
+Setup and file acquisition do not start the game server.
+
+## Use an existing Steam library instead
+
+To copy the relevant files from a local Steam installation or library:
+
+```bash
+alphagsm myserver setup --steam-dir /path/to/Steam
+alphagsm myserver setup --steam-dir /path/to/SteamLibrary/steamapps
+```
+
+The helper locates the recipe's declared AppID using local install manifests.
+A Steam root can discover additional libraries; an explicit `steamapps` path
+selects only that library. Multiple matching installations require a more
+specific path. Steam and its installed files are read-only sources; only the
+recipe's allowlisted files reach the server.
+
+An explicit `--steam-dir` or `--assets` selects a local source for that run and
+overrides a remembered profile. The three explicit source options cannot be
+combined. An authentication/download failure never silently falls back to
+local files or anonymous access.
+
+## Import other existing files
 
 Where the recipe supports managed import, supply a local game directory, ZIP,
 or tar archive:
@@ -32,36 +94,16 @@ alphagsm myserver setup --assets /path/to/owned-game
 alphagsm myserver assets export /path/to/owned-game --output /path/to/assets.zip
 ```
 
-The server must be stopped before import. Configure an installation directory
-with setup first. Imports copy only allowlisted game files, record ownership,
-and refuse to replace unrelated or externally changed files. Selected content
-must satisfy the same game-specific requirements used by checks before it is
-published or exported. Existing recipes without richer requirements retain
-their declared required-file checks.
+The server must be stopped before file acquisition/import. Standalone asset
+commands need an installation directory configured first; setup configures it
+before its file phase. Imports record ownership and refuse to replace unrelated
+or externally changed files. Selected content must satisfy the same game
+requirements used by checks before publication or export.
 
-An import/export recipe can deliberately be unavailable for secret-bearing
-configuration or a distribution whose full layout is not yet understood. The
-helper explains the manual source and destination instead of guessing.
-
-## Obtain owned files with SteamCMD
-
-On Linux, supported recipes can use an existing private SteamCMD session:
-
-```bash
-alphagsm steam-auth login owned your_steam_username
-alphagsm myserver assets fetch steam-owned --auth-profile owned
-alphagsm myserver assets check
-```
-
-Enter the password and Steam Guard directly in SteamCMD's terminal prompts.
-No desktop Steam installation is needed for this acquisition path. The account
-must be entitled to the source app and its content. Local session presence is
-not proof that a download is authorized. See [private session profiles](steamcmd-auth.md).
-
-SteamCMD downloads an app/depot into disposable staging. AlphaGSM validates and
-imports only the selected recipe files and removes staging on success or
-failure. It does not promise to download only those individual files over the
-network. Acquisition never starts the game server.
+Recipes without managed import, Steam source metadata or a known complete
+layout keep their manual staging/export instructions. Steam login does not
+replace client exports or provider-specific tokens. Setup without any source
+selection or remembered profile keeps the existing module preparation flow.
 
 The current `steam-owned` source declarations are:
 
@@ -100,3 +142,9 @@ scratch directory. Keep the private auth profile separate from the server
 directory and exported assets. A successful file check establishes only the
 declared file contract; use that game's normal readiness, query/info and stop
 checks separately when validating its lifecycle.
+
+Quake III Arena was validated locally on 2026-10-16 through authenticated
+setup, nine allowlisted PK3 files, repeat setup without Steam acquisition,
+a dedicated engine payload with all 36 maps retained, native Quake UDP
+query/info, and verified shutdown. Docker and the other
+authenticated game sources remain untested in this local campaign.

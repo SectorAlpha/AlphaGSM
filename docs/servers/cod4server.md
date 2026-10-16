@@ -23,11 +23,16 @@ Create the server:
 alphagsm mycod4serv create cod4server
 ```
 
-Run setup:
+For an owned Steam copy, sign in once and let setup acquire the declared files:
 
 ```bash
-alphagsm mycod4serv setup
+alphagsm steam-auth login owned your_steam_username
+alphagsm mycod4serv setup --auth-profile owned
 ```
+
+Enter credentials only at the local SteamCMD prompts. For an existing local
+Steam library, use `setup --steam-dir /path/to/SteamLibrary/steamapps` instead.
+The authenticated download path still needs local validation.
 
 Start it:
 
@@ -61,7 +66,7 @@ Setup configures:
 dedicated binary for you, but the stock archive still does not include all of
 the owned multiplayer files the server expects at startup.
 
-Before `start`, copy the required owned files from a legitimate Call of Duty 4
+If using setup without an asset source or saved profile, before `start` copy the required owned files from a legitimate Call of Duty 4
 installation into the AlphaGSM server tree:
 
 ```text
@@ -69,7 +74,7 @@ installation into the AlphaGSM server tree:
 <install_dir>/main/localized_*.iwd
 ```
 
-Minimal operator flow:
+Manual-copy alternative:
 
 ```bash
 alphagsm mycod4serv create cod4server
@@ -172,7 +177,11 @@ alphagsm mycod4serv mod cleanup
 Inspect this game's required files, source instructions and destinations with
 `alphagsm <server-name> assets requirements`; check the declared files with
 `alphagsm <server-name> assets check`. File checks do not establish game readiness.
-This module has an allowlisted local import recipe. It also declares `steam-owned` for explicit acquisition with
-`alphagsm <server-name> assets fetch steam-owned --auth-profile <profile>`.
+The preferred Steam-owned path is `alphagsm steam-auth login owned <username>`,
+then `alphagsm <server-name> setup --auth-profile owned`. Setup remembers the
+profile name and fetches missing required files before installing the engine.
+Use `setup --steam-dir /path/to/SteamLibrary/steamapps` to import from an existing
+Steam library instead. Direct file acquisition remains available through
+`assets fetch steam-owned --auth-profile owned`.
 Authenticated downloads remain unverified here.
 See [BYO files and private SteamCMD acquisition](../byo-files.md).
