@@ -1,6 +1,7 @@
 """Unit tests for runtime metadata resolution and Docker command assembly."""
 
 import os
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -353,6 +354,303 @@ def test_build_steamcmd_linux_runtime_requirements_adds_steam_sdk_mounts(monkeyp
             "mode": "ro",
         },
     ]
+
+
+def _observe_docker_commands(monkeypatch):
+    """Record docker invocations without contacting a daemon."""
+
+    observed = []
+
+    def _fake_check_output(cmd, stderr=None, shell=False, text=False):
+        del stderr, shell
+        observed.append(list(cmd))
+        if cmd == ["docker", "info", "--format", "{{.OSType}}"]:
+            return "linux\n" if text else b"linux\n"
+        if cmd[:3] == ["docker", "image", "inspect"]:
+            return "existing-image\n" if text else b"existing-image\n"
+        if cmd[:2] == ["docker", "inspect"]:
+            return "false\n" if text else b"false\n"
+        return "container-id\n" if text else b"container-id\n"
+
+    monkeypatch.setattr(runtime_module.sp, "check_output", _fake_check_output)
+    return observed
+
+
+def _steam_auth_state_root(monkeypatch, state_root):
+    """Point the private profile root at a temp directory."""
+
+    state_root.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(
+        "utils.steam_auth._state_root",
+        lambda: Path(state_root),
+    )
+    return Path(state_root)
+
+
+def _docker_volume_args(command):
+    return [
+        command[index + 1]
+        for index, item in enumerate(command)
+        if item == "-v" and index + 1 < len(command)
+    ]
+
+
+def test_container_start_keeps_anonymous_sdk_mounts_outside_auth_profile(
+    monkeypatch, tmp_path
+):
+    _set_runtime_backend(monkeypatch, "docker")
+    state_root = _steam_auth_state_root(monkeypatch, tmp_path / "alphagsm")
+    steamcmd_root = tmp_path / "Steam"
+    linux64 = steamcmd_root / "linux64"
+    linux32 = steamcmd_root / "linux32"
+    linux64.mkdir(parents=True)
+    linux32.mkdir(parents=True)
+    (linux64 / "steamclient.so").write_text("64", encoding="utf-8")
+    (linux32 / "steamclient.so").write_text("32", encoding="utf-8")
+    monkeypatch.setattr(runtime_module.steamcmd_module, "STEAMCMD_DIR", str(steamcmd_root))
+    install_dir = tmp_path / "alphagsm-servers" / "game"
+    install_dir.mkdir(parents=True)
+    server = DummyServer(
+        data={"dir": str(install_dir), "port": 27015, "runtime": "docker"}
+    )
+    requirements = runtime_module.build_runtime_requirements(
+        server,
+        family="steamcmd-linux",
+        port_definitions=(("port", "udp"),),
+    )
+    server.module = SimpleNamespace(
+        get_container_spec=lambda _server: {
+            "container_name": "alphagsm-alpha",
+            "image": STEAMCMD_RUNTIME_IMAGE,
+            "runtime_family": "steamcmd-linux",
+            "working_dir": "/srv/server",
+            "mounts": requirements["mounts"],
+            "ports": requirements.get("ports", []),
+            "command": ["./srcds_run"],
+        }
+    )
+    observed = _observe_docker_commands(monkeypatch)
+
+    runtime_module.ContainerRuntime().start(server)
+
+    volumes = _docker_volume_args(observed[-1])
+    assert observed[-1][:3] == ["docker", "run", "-d"]
+    assert any(str(install_dir) in item and item.endswith(":/srv/server:rw") for item in volumes)
+    assert any(item.startswith(str(linux64) + ":") and item.endswith(":/root/.steam/sdk64:ro") for item in volumes)
+    assert any(item.startswith(str(linux32) + ":") and item.endswith(":/root/.steam/sdk32:ro") for item in volumes)
+    assert all("steam-auth" not in item for item in volumes)
+    assert state_root.name == "alphagsm"
+
+
+def test_container_start_rejects_server_directory_that_contains_auth_profile(
+    monkeypatch, tmp_path
+):
+    _set_runtime_backend(monkeypatch, "docker")
+    state_root = _steam_auth_state_root(monkeypatch, tmp_path / "alphagsm")
+    module = SimpleNamespace(
+        get_container_spec=lambda _server: {
+            "container_name": "alphagsm-alpha",
+            "image": STEAMCMD_RUNTIME_IMAGE,
+            "runtime_family": "steamcmd-linux",
+            "working_dir": "/srv/server",
+            "mounts": [
+                {"source": str(state_root), "target": "/srv/server", "mode": "rw"},
+            ],
+            "ports": [],
+            "command": ["./srcds_run"],
+        }
+    )
+    server = DummyServer(module=module, data={"runtime": "docker", "dir": str(state_root)})
+    observed = _observe_docker_commands(monkeypatch)
+
+    with pytest.raises(runtime_module.RuntimeError, match="private SteamCMD auth profile"):
+        runtime_module.ContainerRuntime().start(server)
+
+    assert not any(cmd[:3] == ["docker", "run", "-d"] for cmd in observed)
+    assert not any(cmd[:2] == ["docker", "rm"] for cmd in observed)
+
+
+def test_container_start_rejects_explicit_auth_profile_mount(monkeypatch, tmp_path):
+    _set_runtime_backend(monkeypatch, "docker")
+    state_root = _steam_auth_state_root(monkeypatch, tmp_path / "alphagsm")
+    install_dir = tmp_path / "game"
+    install_dir.mkdir()
+    profile_mount = state_root / "steam-auth" / "owned"
+    module = SimpleNamespace(
+        get_container_spec=lambda _server: {
+            "container_name": "alphagsm-alpha",
+            "image": STEAMCMD_RUNTIME_IMAGE,
+            "runtime_family": "steamcmd-linux",
+            "working_dir": "/srv/server",
+            "mounts": [
+                {"source": str(install_dir), "target": "/srv/server", "mode": "rw"},
+                {"source": str(profile_mount), "target": "/root/steam-profile", "mode": "ro"},
+            ],
+            "ports": [],
+            "command": ["./srcds_run"],
+        }
+    )
+    server = DummyServer(module=module, data={"runtime": "docker", "dir": str(install_dir)})
+    observed = _observe_docker_commands(monkeypatch)
+
+    with pytest.raises(
+        runtime_module.RuntimeError,
+        match="Docker mount exposes the private SteamCMD auth profile: " + str(profile_mount),
+    ):
+        runtime_module.ContainerRuntime().start(server)
+
+    assert not any(cmd[:3] == ["docker", "run", "-d"] for cmd in observed)
+
+
+def test_container_start_rejects_symlink_to_directory_that_contains_auth_profile(
+    monkeypatch, tmp_path
+):
+    _set_runtime_backend(monkeypatch, "docker")
+    state_root = _steam_auth_state_root(monkeypatch, tmp_path / "alphagsm")
+    (state_root / "steam-auth" / "owned").mkdir(parents=True)
+    server_link = tmp_path / "server-link"
+    server_link.symlink_to(state_root, target_is_directory=True)
+    module = SimpleNamespace(
+        get_container_spec=lambda _server: {
+            "container_name": "alphagsm-alpha",
+            "image": STEAMCMD_RUNTIME_IMAGE,
+            "runtime_family": "steamcmd-linux",
+            "working_dir": "/srv/server",
+            "mounts": [
+                {"source": str(server_link), "target": "/srv/server", "mode": "rw"},
+            ],
+            "ports": [],
+            "command": ["./srcds_run"],
+        }
+    )
+    server = DummyServer(module=module, data={"runtime": "docker", "dir": str(server_link)})
+    observed = _observe_docker_commands(monkeypatch)
+
+    with pytest.raises(runtime_module.RuntimeError, match="private SteamCMD auth profile"):
+        runtime_module.ContainerRuntime().start(server)
+
+    assert not any(cmd[:3] == ["docker", "run", "-d"] for cmd in observed)
+
+
+def test_container_start_rejects_symlink_to_auth_profile(monkeypatch, tmp_path):
+    _set_runtime_backend(monkeypatch, "docker")
+    state_root = _steam_auth_state_root(monkeypatch, tmp_path / "alphagsm")
+    profile = state_root / "steam-auth" / "owned"
+    profile.mkdir(parents=True)
+    profile_link = tmp_path / "profile-link"
+    profile_link.symlink_to(profile, target_is_directory=True)
+    install_dir = tmp_path / "game"
+    install_dir.mkdir()
+    module = SimpleNamespace(
+        get_container_spec=lambda _server: {
+            "container_name": "alphagsm-alpha",
+            "image": STEAMCMD_RUNTIME_IMAGE,
+            "runtime_family": "steamcmd-linux",
+            "working_dir": "/srv/server",
+            "mounts": [
+                {"source": str(install_dir), "target": "/srv/server", "mode": "rw"},
+                {"source": str(profile_link), "target": "/root/steam-profile", "mode": "ro"},
+            ],
+            "ports": [],
+            "command": ["./srcds_run"],
+        }
+    )
+    server = DummyServer(module=module, data={"runtime": "docker", "dir": str(install_dir)})
+    observed = _observe_docker_commands(monkeypatch)
+
+    with pytest.raises(runtime_module.RuntimeError, match="private SteamCMD auth profile"):
+        runtime_module.ContainerRuntime().start(server)
+
+    assert not any(cmd[:3] == ["docker", "run", "-d"] for cmd in observed)
+
+
+def test_container_start_rejects_host_visible_auth_profile_mount(monkeypatch, tmp_path):
+    _set_runtime_backend(monkeypatch, "docker")
+    state_root = _steam_auth_state_root(monkeypatch, tmp_path / "manager-home")
+    host_root = tmp_path / "host-home"
+    install_dir = tmp_path / "game"
+    install_dir.mkdir()
+    host_profile = host_root / "steam-auth" / "owned"
+
+    def _translate(path, *, _mount_snapshot=None):
+        del _mount_snapshot
+        text = os.path.abspath(str(path))
+        prefix = os.path.abspath(str(state_root))
+        if text == prefix or text.startswith(prefix + os.sep):
+            return os.path.abspath(str(host_root)) + text[len(prefix):]
+        return text
+
+    monkeypatch.setattr(runtime_module, "_translate_manager_container_path_to_host", _translate)
+    module = SimpleNamespace(
+        get_container_spec=lambda _server: {
+            "container_name": "alphagsm-alpha",
+            "image": STEAMCMD_RUNTIME_IMAGE,
+            "runtime_family": "steamcmd-linux",
+            "working_dir": "/srv/server",
+            "mounts": [
+                {"source": str(install_dir), "target": "/srv/server", "mode": "rw"},
+                {"source": str(host_profile), "target": "/root/steam-profile", "mode": "ro"},
+            ],
+            "ports": [],
+            "command": ["./srcds_run"],
+        }
+    )
+    server = DummyServer(module=module, data={"runtime": "docker", "dir": str(install_dir)})
+    observed = _observe_docker_commands(monkeypatch)
+
+    with pytest.raises(
+        runtime_module.RuntimeError,
+        match="private SteamCMD auth profile",
+    ):
+        runtime_module.ContainerRuntime().start(server)
+
+    assert not any(cmd[:3] == ["docker", "run", "-d"] for cmd in observed)
+
+
+def test_container_start_rejects_mount_that_translates_into_auth_profile(
+    monkeypatch, tmp_path
+):
+    _set_runtime_backend(monkeypatch, "docker")
+    state_root = _steam_auth_state_root(monkeypatch, tmp_path / "host-home")
+    container_view = tmp_path / "container-view"
+    install_dir = tmp_path / "game"
+    install_dir.mkdir()
+    container_profile = container_view / "steam-auth" / "owned"
+
+    def _translate(path, *, _mount_snapshot=None):
+        del _mount_snapshot
+        text = os.path.abspath(str(path))
+        prefix = os.path.abspath(str(container_view))
+        if text == prefix or text.startswith(prefix + os.sep):
+            return os.path.abspath(str(state_root)) + text[len(prefix):]
+        return text
+
+    monkeypatch.setattr(runtime_module, "_translate_manager_container_path_to_host", _translate)
+    module = SimpleNamespace(
+        get_container_spec=lambda _server: {
+            "container_name": "alphagsm-alpha",
+            "image": STEAMCMD_RUNTIME_IMAGE,
+            "runtime_family": "steamcmd-linux",
+            "working_dir": "/srv/server",
+            "mounts": [
+                {"source": str(install_dir), "target": "/srv/server", "mode": "rw"},
+                {
+                    "source": str(container_profile),
+                    "target": "/root/steam-profile",
+                    "mode": "ro",
+                },
+            ],
+            "ports": [],
+            "command": ["./srcds_run"],
+        }
+    )
+    server = DummyServer(module=module, data={"runtime": "docker", "dir": str(install_dir)})
+    observed = _observe_docker_commands(monkeypatch)
+
+    with pytest.raises(runtime_module.RuntimeError, match="private SteamCMD auth profile"):
+        runtime_module.ContainerRuntime().start(server)
+
+    assert not any(cmd[:3] == ["docker", "run", "-d"] for cmd in observed)
 
 
 def test_build_steamcmd_requirements_use_opted_in_home_for_sdk_and_runtime_data(

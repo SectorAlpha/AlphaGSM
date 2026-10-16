@@ -127,9 +127,12 @@ library call that later starts a Docker game server:
 ./alphagsm myserver setup --auth-profile owned
 ```
 
-The profile stays under `[core] alphagsm_path` on a Linux filesystem. It is
-not mounted into the game container. Keep the server install directory outside
-`steam-auth/`. See [SteamCMD session profiles](steamcmd-auth.md).
+The profile stays under `[core] alphagsm_path` on a Linux filesystem. AlphaGSM
+refuses to mount that `steam-auth/` directory, a parent that contains it, or a
+path inside it into the game container. The refusal happens before `docker run`.
+Anonymous SteamCMD SDK libraries outside the profile can still be mounted.
+Keep the server install directory outside `steam-auth/`. A login without a
+terminal is rejected. See [SteamCMD session profiles](steamcmd-auth.md).
 
 ## Notes
 

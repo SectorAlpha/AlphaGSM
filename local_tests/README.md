@@ -43,13 +43,12 @@ The same login is used when AlphaGSM itself is the host process and game
 servers use Docker. Set `ALPHAGSM_LOCAL_RUNTIME=docker` for that integration
 run. The profile is not mounted into the game container.
 
-When AlphaGSM is the manager container, open a terminal with
-`./alphagsm-docker shell` and run `python alphagsm steam-auth login owned YOUR_STEAM_USERNAME`
-there. Forwarded `./alphagsm-docker` commands currently disable the terminal,
-so the login has to happen in that shell. Later setup commands can use
-`./alphagsm-docker`. Keep the profile on the manager state directory, which is
-bind-mounted at the same absolute path, and keep server installs beside it
-rather than inside `steam-auth/`.
+When AlphaGSM is the manager container, log in from a terminal with
+`./alphagsm-docker steam-auth login owned YOUR_STEAM_USERNAME`. A login without
+a terminal is rejected. Later setup commands can use `./alphagsm-docker`. Keep
+the profile on the manager state directory, which is bind-mounted at the same
+absolute path, and keep server installs beside it rather than inside
+`steam-auth/`.
 
 A standalone `alphagsm` binary can run the same integration flow when
 `ALPHAGSM_BINARY` points at that executable.

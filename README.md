@@ -35,9 +35,9 @@ their supporting server content.
 On a host install, including one whose game servers run in Docker, type the
 login in a terminal before `start`. The game container does not receive the
 Steam session. Inside the AlphaGSM manager container, run
-`./alphagsm-docker shell` and use `python alphagsm steam-auth login owned <username>`
-there. [SteamCMD session profiles](docs/steamcmd-auth.md) has both command
-sequences. Live auth and owned-file tests stay on your machine:
+`./alphagsm-docker steam-auth login owned <username>` from a terminal. A login
+without a terminal is rejected. [SteamCMD session profiles](docs/steamcmd-auth.md)
+has both command sequences. Live auth and owned-file tests stay on your machine:
 `scripts/run_local_auth_tests.sh --help`.
 
 You can also ask an AI agent with terminal access to do this work. Start with

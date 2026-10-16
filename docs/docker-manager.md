@@ -147,23 +147,26 @@ the host Docker daemon and the manager container see the same absolute path.
 
 ## Trigger a SteamCMD login
 
-Owned-file setup can use a private SteamCMD profile. Forwarded manager
-commands do not allocate a terminal, so log in from the manager shell:
+Owned-file setup can use a private SteamCMD profile. From a terminal:
 
 ```bash
-./alphagsm-docker shell
-python alphagsm steam-auth login owned your_steam_username
-exit
+./alphagsm-docker steam-auth login owned your_steam_username
 ./alphagsm-docker myserver setup --auth-profile owned
 ./alphagsm-docker steam-auth status owned
 ```
 
-SteamCMD asks for the password and Steam Guard in that shell. AlphaGSM stores
+`steam-auth login` is the only forwarded command that receives a terminal.
+Without one, the wrapper rejects the login before it reaches the container.
+Other commands, including `status` and `setup --auth-profile`, stay
+non-interactive.
+
+SteamCMD asks for the password and Steam Guard in that terminal. AlphaGSM stores
 the profile name, not the password. The profile is created under
 `[core] alphagsm_path` on the bind-mounted state directory. Use a Linux
 filesystem that stores Unix ownership. Put server installs under
-`ALPHAGSM_HOME/servers`, not inside `steam-auth/`. The game container does not
-receive the profile. See [SteamCMD session profiles](steamcmd-auth.md).
+`ALPHAGSM_HOME/servers`, not inside `steam-auth/`. A game-container mount that
+would expose that profile is rejected before `docker run`. See
+[SteamCMD session profiles](steamcmd-auth.md).
 
 ## Host Preparation
 

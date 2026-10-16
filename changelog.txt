@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-16
+- Docker Steam auth: `./alphagsm-docker steam-auth login` is the only forwarded
+  command that gets a terminal, a non-terminal login is rejected, and a game
+  container cannot mount the private SteamCMD profile.
 - Local tests: add scripts/run_local_auth_tests.sh for Steam-auth and BYO unit
   and integration runs. CI does not collect local_tests/, and auth material
   stays gitignored.

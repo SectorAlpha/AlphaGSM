@@ -163,8 +163,9 @@ for that run, as does `--assets PATH`; explicit source options are mutually
 exclusive. Clear remembered auth with `set steam_auth_profile DELETE`.
 
 The same commands apply to a host binary and to a Python library call. When
-game servers use Docker, the login still runs in that AlphaGSM process. Inside
-the manager container, start the login from `./alphagsm-docker shell` because
-forwarded commands have no terminal. See
+game servers use Docker, the login still runs in that AlphaGSM process and the
+private profile is not mounted into the game container. Inside the manager
+container, run `./alphagsm-docker steam-auth login owned your_steam_username`
+from a terminal. A non-terminal login is rejected. See
 [SteamCMD session profiles](steamcmd-auth.md). Live auth and BYO tests run
 locally with `scripts/run_local_auth_tests.sh`.

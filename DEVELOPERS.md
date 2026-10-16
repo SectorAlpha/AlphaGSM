@@ -998,10 +998,12 @@ limits. Live Steam-auth and BYO lifecycle tests live in `local_tests/` and run
 through `scripts/run_local_auth_tests.sh`. `pytest.ini` excludes that directory
 from normal collection, and CI must not invoke the script. Profile directories,
 passwords, and tokens stay gitignored. When AlphaGSM launches a game container,
-the private `steam-auth/` directory is not a container mount. Anonymous
-SteamCMD SDK mounts are separate. The manager wrapper still forwards ordinary
-commands with `docker compose exec -T`; interactive login uses
-`./alphagsm-docker shell`. Local design notes under
+the private `steam-auth/` directory is not a container mount, and a mount that
+would expose it is rejected before `docker run`. Anonymous
+SteamCMD SDK mounts are separate. The manager wrapper forwards ordinary
+commands with `docker compose exec -T`. `./alphagsm-docker steam-auth login PROFILE USERNAME`
+uses `exec -it` when stdin is a terminal, and a non-terminal login exits before
+compose exec. Local design notes under
 `docs/superpowers/` are gitignored and are not part of the published docs.
 
 ## Repo Automation Files

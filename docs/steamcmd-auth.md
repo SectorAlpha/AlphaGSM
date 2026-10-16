@@ -34,21 +34,27 @@ directory. AlphaGSM does not mount `steam-auth/` into the game container.
 Anonymous SteamCMD client libraries mounted for a `steamcmd-linux` container
 are a different directory.
 
-When AlphaGSM itself is the manager container, forwarded commands currently
-run with `docker compose exec -T`, which cannot answer SteamCMD's password
-prompt. Open a terminal inside the manager and log in there:
+When AlphaGSM itself is the manager container, run the login through the
+wrapper from a terminal:
 
 ```bash
-./alphagsm-docker shell
-python alphagsm steam-auth login owned your_steam_username
-exit
+./alphagsm-docker steam-auth login owned your_steam_username
 ./alphagsm-docker myserver setup --auth-profile owned
+./alphagsm-docker steam-auth status owned
 ```
+
+The wrapper allocates a terminal only for `steam-auth login`. A login that is
+not attached to a terminal stops before `docker compose exec` and reports that
+SteamCMD login requires an interactive terminal. `status`, `logout`, and
+`setup --auth-profile` stay on `docker compose exec -T`.
 
 The profile is stored under `[core] alphagsm_path`, which the wrapper keeps on
 the bind-mounted state directory. That directory must record Unix owners and
 modes. Keep each server install beside that state directory, not inside
-`steam-auth/`. Direct Compose users omit `-T` for the login command:
+`steam-auth/`. AlphaGSM refuses a game-container mount whose source is the
+private profile, contains it, or sits inside it. That check happens before
+`docker run`. Direct Compose users must not pass `-T` for the login command;
+a non-terminal stdin is rejected:
 
 ```bash
 docker compose -f docker/manager/compose.yml exec alphagsm python alphagsm steam-auth login owned your_steam_username

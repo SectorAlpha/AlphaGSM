@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+import pty
 import subprocess
 import sys
 
@@ -299,6 +300,7 @@ def _run_wrapper(
     host_python3_missing=False,
     extra_env=None,
     wrapper_path=None,
+    use_tty=False,
 ):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(exist_ok=True)
@@ -332,16 +334,32 @@ def _run_wrapper(
     if extra_env:
         env.update(extra_env)
 
-    result = subprocess.run(
-        ["bash", str(wrapper_path or WRAPPER), *args],
-        cwd=str(REPO_ROOT),
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        timeout=60,
-        check=False,
-    )
+    run_kwargs = {
+        "cwd": str(REPO_ROOT),
+        "env": env,
+        "stdout": subprocess.PIPE,
+        "stderr": subprocess.PIPE,
+        "text": True,
+        "timeout": 60,
+        "check": False,
+    }
+    if use_tty:
+        master_fd, slave_fd = pty.openpty()
+        try:
+            result = subprocess.run(
+                ["bash", str(wrapper_path or WRAPPER), *args],
+                stdin=slave_fd,
+                **run_kwargs,
+            )
+        finally:
+            os.close(slave_fd)
+            os.close(master_fd)
+    else:
+        result = subprocess.run(
+            ["bash", str(wrapper_path or WRAPPER), *args],
+            stdin=subprocess.PIPE,
+            **run_kwargs,
+        )
     log_lines = []
     if log_path.exists():
         log_lines = log_path.read_text(encoding="utf-8").splitlines()
@@ -1383,3 +1401,71 @@ def test_wrapper_ps_keeps_port_mappings_for_stopped_containers(tmp_path):
     assert server_line is not None, result.stdout
     assert "stopped" in server_line
     assert "25565/tcp -> 0.0.0.0:25565" in server_line
+
+
+def test_wrapper_rejects_steam_auth_login_without_a_terminal(tmp_path):
+    result, _, log_entries = _run_wrapper(
+        tmp_path,
+        "steam-auth",
+        "login",
+        "owned",
+        "account",
+    )
+
+    assert result.returncode == 1, result.stdout
+    assert "FORWARDED:" not in result.stdout
+    assert "FORWARDED:" not in result.stderr
+    assert (
+        "SteamCMD login requires an interactive terminal for password and Steam Guard"
+        in result.stderr
+    )
+    assert not any("exec" in entry["argv"] for entry in log_entries)
+
+
+def test_wrapper_forwards_steam_auth_login_on_a_terminal(tmp_path):
+    result, _, _log_entries = _run_wrapper(
+        tmp_path,
+        "steam-auth",
+        "login",
+        "owned",
+        "account",
+        use_tty=True,
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert (
+        "FORWARDED:-it alphagsm python alphagsm steam-auth login owned account"
+        in result.stdout
+    )
+
+
+def test_wrapper_keeps_steam_auth_status_noninteractive_on_a_terminal(tmp_path):
+    result, _, _log_entries = _run_wrapper(
+        tmp_path,
+        "steam-auth",
+        "status",
+        "owned",
+        use_tty=True,
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert "FORWARDED:-T alphagsm python alphagsm steam-auth status owned" in result.stdout
+    assert "FORWARDED:-it" not in result.stdout
+
+
+def test_wrapper_keeps_setup_auth_profile_noninteractive_on_a_terminal(tmp_path):
+    result, _, _log_entries = _run_wrapper(
+        tmp_path,
+        "myserver",
+        "setup",
+        "--auth-profile",
+        "owned",
+        use_tty=True,
+    )
+
+    assert result.returncode == 0, result.stderr or result.stdout
+    assert (
+        "FORWARDED:-T alphagsm python alphagsm myserver setup --auth-profile owned"
+        in result.stdout
+    )
+    assert "FORWARDED:-it" not in result.stdout

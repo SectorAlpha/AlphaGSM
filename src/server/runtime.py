@@ -32,6 +32,7 @@ import screen
 from utils.settings import settings
 from utils.gamemodules import common as gamemodule_common
 from utils import proton
+from utils import steam_auth
 from utils import steamcmd as steamcmd_module
 from utils.platform_info import PLATFORM
 
@@ -1247,6 +1248,74 @@ def validate_mount_path_identity(mounts, *, _mount_snapshot=None):
         mounts,
         _mount_snapshot=_mount_snapshot,
     )
+
+
+def _path_forms(path):
+    """Return lexical and symlink-resolved forms of *path* without reading files."""
+
+    absolute = os.path.abspath(path)
+    forms = [absolute]
+    try:
+        resolved = os.path.realpath(path)
+    except OSError:
+        return forms
+    if os.path.abspath(resolved) != absolute:
+        forms.append(resolved)
+    return forms
+
+
+def _path_is_same_or_nested(parent, child):
+    """Return whether *child* is *parent* or a path inside it."""
+
+    parent = os.path.abspath(parent)
+    child = os.path.abspath(child)
+    try:
+        return os.path.commonpath([parent, child]) == parent
+    except ValueError:
+        return False
+
+
+def _paths_overlap(left, right):
+    """Return whether either path is the same as or inside the other."""
+
+    return _path_is_same_or_nested(left, right) or _path_is_same_or_nested(right, left)
+
+
+def reject_steam_auth_profile_mounts(mounts):
+    """Refuse Docker mounts that would publish the private SteamCMD profile.
+
+    The check compares paths only. It does not open, copy, or read session files.
+    """
+
+    roots = [str(steam_auth._state_root() / "steam-auth")]  # pylint: disable=protected-access
+    translated_root = _translate_manager_container_path_to_host(roots[0])
+    if translated_root and os.path.abspath(translated_root) != os.path.abspath(roots[0]):
+        roots.append(translated_root)
+    root_forms = []
+    for root in roots:
+        for form in _path_forms(root):
+            if form not in root_forms:
+                root_forms.append(form)
+    for mount in mounts or ():
+        source = _mount_source(mount)
+        if not source:
+            continue
+        candidates = [str(source)]
+        visible = _host_visible_mount_source(source)
+        if visible and os.path.abspath(str(visible)) != os.path.abspath(str(source)):
+            candidates.append(str(visible))
+        candidate_forms = []
+        for candidate in candidates:
+            for form in _path_forms(candidate):
+                if form not in candidate_forms:
+                    candidate_forms.append(form)
+        for candidate in candidate_forms:
+            for root in root_forms:
+                if _paths_overlap(candidate, root):
+                    raise RuntimeError(
+                        "Docker mount exposes the private SteamCMD auth profile: "
+                        + str(source)
+                    )
 
 
 def _host_visible_mount_source(source):
@@ -3448,6 +3517,7 @@ class ContainerRuntime(BaseRuntime):
             home_plan = _validate_host_user_container_home(server, spec, identity)
         snapshot_token = _ACTIVE_MOUNT_TRANSLATION_SNAPSHOT.set(mount_snapshot)
         try:
+            reject_steam_auth_profile_mounts(spec.get("mounts"))
             self._validate_mount_path_identity(spec)
         finally:
             _ACTIVE_MOUNT_TRANSLATION_SNAPSHOT.reset(snapshot_token)
