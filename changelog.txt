@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-16
+- Local tests: add scripts/run_local_auth_tests.sh for Steam-auth and BYO unit
+  and integration runs. CI does not collect local_tests/, and auth material
+  stays gitignored.
 - BYO validation: require native port queries, running/stopped status, server
   info and verified shutdown per game; record module fixes and retest failures.
 - Quake III install: keep the dedicated engine and complete owned map/content

@@ -145,6 +145,26 @@ ALPHAGSM_HOME=/srv/alphagsm ./alphagsm-docker up
 Keep Docker-backed server install paths under that same `ALPHAGSM_HOME` path so
 the host Docker daemon and the manager container see the same absolute path.
 
+## Trigger a SteamCMD login
+
+Owned-file setup can use a private SteamCMD profile. Forwarded manager
+commands do not allocate a terminal, so log in from the manager shell:
+
+```bash
+./alphagsm-docker shell
+python alphagsm steam-auth login owned your_steam_username
+exit
+./alphagsm-docker myserver setup --auth-profile owned
+./alphagsm-docker steam-auth status owned
+```
+
+SteamCMD asks for the password and Steam Guard in that shell. AlphaGSM stores
+the profile name, not the password. The profile is created under
+`[core] alphagsm_path` on the bind-mounted state directory. Use a Linux
+filesystem that stores Unix ownership. Put server installs under
+`ALPHAGSM_HOME/servers`, not inside `steam-auth/`. The game container does not
+receive the profile. See [SteamCMD session profiles](steamcmd-auth.md).
+
 ## Host Preparation
 
 Create the shared host directory:

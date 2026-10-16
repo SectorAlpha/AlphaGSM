@@ -22,5 +22,13 @@ dist-binary/
 /log_slow_*.txt
 
 # Private SteamCMD session material and disposable local game validation.
+# local_tests/ source is tracked. Never commit profiles, passwords, or tokens.
 steam-auth/
 .local-tests/
+.alphagsm-private/
+ssfn*
+local_tests/work/
+local_tests/state/
+local_tests/results/
+local_tests/**/profile.json
+local_tests/**/*.vdf

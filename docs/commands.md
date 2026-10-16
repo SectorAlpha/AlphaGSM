@@ -161,3 +161,10 @@ missing declared files. `setup --steam-dir PATH` locates the installed source
 app by AppID and imports its allowlisted files. It overrides remembered auth
 for that run, as does `--assets PATH`; explicit source options are mutually
 exclusive. Clear remembered auth with `set steam_auth_profile DELETE`.
+
+The same commands apply to a host binary and to a Python library call. When
+game servers use Docker, the login still runs in that AlphaGSM process. Inside
+the manager container, start the login from `./alphagsm-docker shell` because
+forwarded commands have no terminal. See
+[SteamCMD session profiles](steamcmd-auth.md). Live auth and BYO tests run
+locally with `scripts/run_local_auth_tests.sh`.

@@ -30,7 +30,7 @@ with `update`.
 | Install TF2 / Source mods or Minecraft plugins | [Installing Mods](installing-mods.md) |
 | Import owned game files from a folder or archive | [Owned Game Assets](owned-assets.md) |
 | Update a game or AlphaGSM itself | [Updating Servers And AlphaGSM](updating.md) |
-| SteamCMD login for AUTH-gated games | [SteamCMD Auth Profiles](steamcmd-auth.md) (not implemented yet) |
+| Log in for Steam-owned file setup | [SteamCMD Auth Profiles](steamcmd-auth.md) |
 | Add or change a game module | [Adding A Game Server](adding-a-game-server.md) |
 | Work on AlphaGSM internals | [Developer Guide](../DEVELOPERS.md) |
 

@@ -15,12 +15,51 @@ it in server JSON or `alphagsm.conf`. Profile names accept letters, numbers,
 underscores and hyphens. Use a separate Steam account with the required licenses
 where practical. Game-server tokens such as GSLTs remain separate requirements.
 
+## Where the login runs
+
+The login runs in the AlphaGSM process, from a real terminal:
+
+```bash
+alphagsm steam-auth login owned your_steam_username
+alphagsm myserver setup --auth-profile owned
+alphagsm steam-auth status owned
+```
+
+Use the same commands for a host install of the `alphagsm` command, a
+standalone binary, or a Python process that imports AlphaGSM. When that
+process starts game servers with `[runtime] backend = docker`, SteamCMD still
+runs in the AlphaGSM process before the game container starts. The private
+profile stays on the host Linux filesystem, outside the server install
+directory. AlphaGSM does not mount `steam-auth/` into the game container.
+Anonymous SteamCMD client libraries mounted for a `steamcmd-linux` container
+are a different directory.
+
+When AlphaGSM itself is the manager container, forwarded commands currently
+run with `docker compose exec -T`, which cannot answer SteamCMD's password
+prompt. Open a terminal inside the manager and log in there:
+
+```bash
+./alphagsm-docker shell
+python alphagsm steam-auth login owned your_steam_username
+exit
+./alphagsm-docker myserver setup --auth-profile owned
+```
+
+The profile is stored under `[core] alphagsm_path`, which the wrapper keeps on
+the bind-mounted state directory. That directory must record Unix owners and
+modes. Keep each server install beside that state directory, not inside
+`steam-auth/`. Direct Compose users omit `-T` for the login command:
+
+```bash
+docker compose -f docker/manager/compose.yml exec alphagsm python alphagsm steam-auth login owned your_steam_username
+```
+
 Profiles use their own SteamCMD installation and home directory under
 `~/.alphagsm/steam-auth/PROFILE/`, or the configured `[core] alphagsm_path`.
-They do not reuse your desktop Steam installation or its session. The current
-installer runs on the Linux host; selecting Docker for a game does not move
-this login into a container. SteamCMD's usual Linux runtime libraries are still
-required. The first interactive login downloads Valve's Linux SteamCMD bootstrap.
+They do not reuse your desktop Steam installation or its session. SteamCMD's
+usual Linux runtime libraries are still required. The manager image already
+includes them. The first interactive login downloads Valve's Linux SteamCMD
+bootstrap.
 
 Select a profile with `alphagsm myserver setup --auth-profile owned` for a
 managed Steam-backed BYO recipe. Setup remembers its name and reuses it when
@@ -62,3 +101,8 @@ use session profiles where the acquisition helper supports them.
 
 See [server support status](TEST_STATUS.md) for the difference between
 **ENABLED (AUTH)** provider requirements and **ENABLED (BYO)** owned assets.
+
+Local tests for those servers are not part of CI. Run them with
+[scripts/run_local_auth_tests.sh](../scripts/run_local_auth_tests.sh). The
+[local test readme](../local_tests/README.md) lists the unit and integration
+commands. Do not put profile directories, passwords, or tokens in git.
