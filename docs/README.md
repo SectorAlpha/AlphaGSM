@@ -22,6 +22,7 @@ with `update`.
 | I want to… | Read |
 | --- | --- |
 | Get AlphaGSM installed | [Getting Started](../README.md) |
+| Take or skip the guided setup tour | [First-run setup](first-run-setup.md) |
 | Run or maintain AlphaGSM with an AI agent | [Agent Operations](agent-operations.md) |
 | See every command (`restore`, `kill`, `activate`, `send`, …) | [Everyday Commands](commands.md) |
 | Run AlphaGSM itself in Docker | [Run AlphaGSM In Docker](docker-manager.md) |

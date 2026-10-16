@@ -7,6 +7,16 @@ boot, and discovery.
 Every server also has `alphagsm <name> --help` for the exact flags of that
 game.
 
+## Optional setup tour
+
+Run `alphagsm` with no command in a terminal for the first-run offer.
+`alphagsm --welcome` replays the tour; `alphagsm --skip-welcome` remembers a skip
+and works without a terminal. Press Enter to skip. The tour offers local server
+setup, common commands and optional Sector Alpha enrollment/binding, with
+separate confirmations before creation, downloads or remote enrollment.
+It never starts a game or enables reporting/management. Ordinary commands and
+scripts run directly. See [First-run setup](first-run-setup.md).
+
 ## Lifecycle
 
 | Command | What it does |

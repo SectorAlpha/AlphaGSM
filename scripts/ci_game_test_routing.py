@@ -267,6 +267,8 @@ PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = (
 )
 SOURCE_FAMILY_BACKLOG = set()
 DOCKER_DEFAULT_RUNTIME_TESTS = {
+    # Runtime-independent CLI coverage belongs in the default lane, not the game backlog.
+    "tests/integration_tests/test_first_run_tour.py",
     "tests/integration_tests/test_archive_backed_installs.py",
     "tests/integration_tests/test_ark.py",
     "tests/integration_tests/test_arksurvivalascended.py",

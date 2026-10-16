@@ -47,6 +47,42 @@ AlphaGSM is a Python CLI that normalises game-server lifecycle management across
 - a runtime layer that can launch either local screen-backed processes or Docker containers
 - dedicated test layers for unit, integration, and streamed smoke coverage
 
+## First-run guidance
+
+`core.main` routes only bare invocation, `--welcome` and `--skip-welcome` to
+`core.welcome`. Automatic prompting requires both stdin and stdout to be TTYs
+and no acknowledgement marker. All named server/agent commands, internal workers,
+help and version follow their usual paths. Keep this boundary so automation
+never blocks on first-run questions.
+
+The tour passes argv arrays back through ordinary dispatch after previews and
+explicit approvals. It resolves game aliases through `MODULE_CATALOG`, restricts
+local names, and rejects `core.server_names.RESERVED_SERVER_NAMES`, numeric selectors
+and `all` before dispatch. Never let wildcard/count interpretation bypass the
+existing-record check. Creation checks `lexists` before the preview and again
+under the ordinary per-record state lock, refusing existing files or links.
+Setup has separate approval; games never start from the tour. Optional agent
+setup has a separate network confirmation and keeps its own enrollment/binding
+permissions; the tour does not call capability-enable commands.
+
+`core.welcome_state` owns the non-secret, versioned `welcome-v1.done` marker under
+configured `core.alphagsm_path`. Creation is exclusive, mode 0600, with no-follow
+where available, ownership checks and no overwrite of existing markers. It
+preserves existing directory permissions and keeps acknowledgement separate from
+server/agent configuration and all consent. EOF/Ctrl+C stops further commands;
+completed approved actions are not rolled back.
+
+Run the isolated first-run smoke checks with:
+
+```sh
+PYTHON_BIN=python3 bash tests/smoke_tests/run_first_run_tour.sh
+```
+
+This covers unit boundaries plus actual CLI subprocesses and POSIX PTYs against
+disposable config/home paths, including the `all` overwrite regression. PTY cases
+require POSIX and skip on platforms without PTYs. It neither downloads game
+assets nor starts servers, and does not establish game lifecycle support.
+
 ## Documentation Split
 
 Keep repository docs split by audience and preferred operator path:
