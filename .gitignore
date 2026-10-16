@@ -20,3 +20,7 @@ dist-binary/
 /test_output.log
 /test_trace.log
 /log_slow_*.txt
+
+# Private SteamCMD session material and disposable local game validation.
+steam-auth/
+.local-tests/

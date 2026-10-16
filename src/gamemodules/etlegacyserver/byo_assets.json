@@ -1,0 +1,37 @@
+{
+  "description": "Original free Wolfenstein: Enemy Territory game data",
+  "requirements": [
+    {
+      "path": "etmain/pak0.pk3",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Use an original Enemy Territory installation or the upstream FAQ-linked free game distribution. Copy pak0.pk3 to etmain/; pak1.pk3 and pak2.pk3 may be needed by third-party mods. This is separate from the ET: Legacy engine download.",
+      "live_validated": false,
+      "url": "https://github.com/etlegacy/etlegacy/wiki/FAQ"
+    }
+  ],
+  "defaults": {},
+  "managed_import": true,
+  "validation": "declared-files-and-content-sentinels",
+  "manual_reason": "Import requires a complete compatible distribution and manual staging. See assets requirements for this game.",
+  "roots": [
+    ""
+  ],
+  "target": "",
+  "include": [
+    "etmain/pak0.pk3",
+    "etmain/pak1.pk3",
+    "etmain/pak2.pk3"
+  ],
+  "required": [
+    "etmain/pak0.pk3"
+  ],
+  "module": "etlegacyserver",
+  "guide": "docs/servers/etlegacyserver.md",
+  "schema_version": 1
+}

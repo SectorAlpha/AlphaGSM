@@ -1,0 +1,35 @@
+{
+  "description": "Jedi Outcast dedicated engine and owned multiplayer data",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    },
+    {
+      "path": "base/assets0.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "base/assets1.pk3",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Use a matching JK2MV dedicated release and owned Jedi Outcast GameData/base/assets0.pk3 and assets1.pk3. Retain assets2.pk3 for 1.03 or assets5.pk3 for 1.04 as appropriate. Match engine architecture and game version.",
+      "live_validated": false,
+      "url": "https://jk2mv.org/downloads/"
+    }
+  ],
+  "defaults": {
+    "exe_name": "jk2mvded.x86_64"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "jk2server",
+  "guide": "docs/servers/jk2server.md",
+  "schema_version": 1
+}

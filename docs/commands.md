@@ -134,3 +134,22 @@ user through `sudo` when permitted.
 SteamCMD auth profiles (`alphagsm steam-auth login`) are planned so AUTH-gated
 Steam apps can `setup`. They are **not** a command today. See
 [SteamCMD Auth Profiles](steamcmd-auth.md).
+
+
+## Game-specific BYO files
+
+```bash
+alphagsm myserver assets requirements
+alphagsm myserver assets check --json
+alphagsm myserver assets import /path/to/owned-game
+alphagsm myserver assets fetch steam-owned --auth-profile owned
+alphagsm steam-auth login owned your_steam_username
+alphagsm steam-auth status owned
+alphagsm steam-auth logout owned
+```
+
+Only recipes that declare managed import support can import or fetch files.
+The server must be stopped for those actions. `requirements` explains the
+game-specific source, files and destinations without login. `check` validates
+files, not server readiness. See [BYO files](byo-files.md) and
+[private SteamCMD sessions](steamcmd-auth.md).

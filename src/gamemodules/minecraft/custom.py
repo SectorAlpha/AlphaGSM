@@ -520,3 +520,9 @@ def get_query_address(server):
     """Return the TCP endpoint used by the ``query`` command."""
 
     return (runtime_module.resolve_query_host(server), server.data["port"], "tcp")
+
+
+def get_asset_requirements(server):
+    """Describe this game's owned files, acquisition routes and staging limits."""
+    from utils.byo_files import load_requirements
+    return load_requirements(server, __file__, 'custom_byo_assets.json')

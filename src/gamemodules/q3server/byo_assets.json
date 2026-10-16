@@ -1,0 +1,54 @@
+{
+  "description": "Quake III Arena base and patch data",
+  "requirements": [
+    {
+      "path": "baseq3/pak0.pk3",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Copy baseq3/pak0.pk3 from an owned Steam, GOG or CD installation. Retain compatible pak1.pk3 through pak8.pk3 patch data from the game/official point release; engine binaries are separate.",
+      "live_validated": false,
+      "url": "https://ioquake3.org/help/players-guide/"
+    },
+    {
+      "id": "steam-owned",
+      "kind": "steamcmd",
+      "instructions": "Copy baseq3/pak0.pk3 from an owned Steam, GOG or CD installation. Retain compatible pak1.pk3 through pak8.pk3 patch data from the game/official point release; engine binaries are separate.",
+      "live_validated": false,
+      "app_id": 2200,
+      "platform": "windows",
+      "authentication": "required",
+      "url": "https://store.steampowered.com/app/2200/"
+    }
+  ],
+  "defaults": {},
+  "managed_import": true,
+  "validation": "declared-files-and-content-sentinels",
+  "manual_reason": "Import requires a complete compatible distribution and manual staging. See assets requirements for this game.",
+  "roots": [
+    ""
+  ],
+  "target": "",
+  "include": [
+    "baseq3/pak0.pk3",
+    "baseq3/pak1.pk3",
+    "baseq3/pak2.pk3",
+    "baseq3/pak3.pk3",
+    "baseq3/pak4.pk3",
+    "baseq3/pak5.pk3",
+    "baseq3/pak6.pk3",
+    "baseq3/pak7.pk3",
+    "baseq3/pak8.pk3"
+  ],
+  "required": [
+    "baseq3/pak0.pk3"
+  ],
+  "case_insensitive": true,
+  "module": "q3server",
+  "guide": "docs/servers/q3server.md",
+  "schema_version": 1
+}

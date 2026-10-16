@@ -67,3 +67,12 @@ create is still the live source of truth.
 - AlphaGSM follows LinuxGSM's launch defaults for `mohaa_lnxded`, including `fs_basepath`, `fs_outputpath`, `dedicated 2`, `net_ip`, `net_port`, the default map `dm/mohdm1`, and `+exec main/<server-name>.cfg`.
 - LinuxGSM does not advertise an external query protocol for MOHAA, so AlphaGSM intentionally exposes only a conservative UDP reachability probe for `query` and `info`.
 - Automated install is not provided because no authoritative LinuxGSM-backed download path was identified for this legacy server.
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This helper checks known sentinels only and directs you to stage the complete
+compatible distribution manually; managed import is unavailable for this recipe.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

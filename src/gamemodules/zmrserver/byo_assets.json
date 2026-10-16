@@ -1,0 +1,25 @@
+{
+  "description": "Zombie Master: Reborn complete multiplayer content",
+  "requirements": [
+    {
+      "path": "zombie_master_reborn/maps/zm_docksofthedead.bsp",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Obtain the official compatible complete Linux release. Source SDK scaffold alone does not contain the real mod. Stage the complete zombie_master_reborn/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+      "live_validated": false,
+      "url": "https://zombiemaster.dev/blog/"
+    }
+  ],
+  "defaults": {},
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "zmrserver",
+  "guide": "docs/servers/zmrserver.md",
+  "schema_version": 1
+}

@@ -19,6 +19,7 @@ import tempfile
 import zipfile
 
 from server import ServerError
+from utils import byo_files
 
 
 _RESERVED = re.compile(r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)", re.IGNORECASE)
@@ -171,7 +172,14 @@ def _open_source(source):
 
 def _recipe_paths(recipe):
     """Validate recipe paths before using them to construct destinations."""
-    required = tuple(_portable_name(str(name)) for name in recipe.get("required", ()))
+    required = tuple((str(name),) for name in recipe.get("required", ()))
+    for group in recipe.get("required_any", ()):
+        if not isinstance(group, (list, tuple)) or not group:
+            raise ServerError("Asset requirement alternatives must be nonempty lists")
+        required += (tuple(str(name) for name in group),)
+    for group in required:
+        for pattern in group:
+            _portable_name(pattern.replace("*", "x").replace("?", "x"))
     if not required:
         raise ServerError("Asset recipe must declare required files")
     target = str(recipe.get("target", ""))
@@ -182,11 +190,16 @@ def _recipe_paths(recipe):
         _portable_name(pattern.replace("*", "x").replace("?", "x"))
     if not patterns:
         raise ServerError("Asset recipe must declare included files")
+    for original, destination in recipe.get("destination_names", {}).items():
+        _portable_name(original)
+        _portable_name(destination)
     return required, target, roots, patterns
 
 
 def _join(root, path):
     """Join canonical archive-style paths without host-dependent separators."""
+    if not path:
+        return root
     return root + "/" + path if root else path
 
 
@@ -205,17 +218,18 @@ def _select(source, entries, recipe):
     insensitive = recipe.get("case_insensitive", False)
     canonical = {name.lower() if insensitive else name: (name, asset)
                  for name, asset in entries.items()}
-    required = tuple(name.lower() if insensitive else name for name in required)
+    required = tuple(tuple(name.lower() if insensitive else name for name in group) for group in required)
     patterns = tuple(name.lower() if insensitive else name for name in patterns)
     roots = tuple(name.lower() if insensitive else name for name in roots)
     candidates = _candidate_roots(canonical, roots)
     matches = [root for root in candidates if all(
-        _join(root, name) in canonical and canonical[_join(root, name)][1].size > 0
-        for name in required)]
+        any(PurePosixPath("/" + name).match("/" + _join(root, pattern)) and asset.size > 0
+            for pattern in group for name, (_, asset) in canonical.items())
+        for group in required)]
     if len(matches) > 1:
         raise ServerError("Ambiguous asset roots: %s" % ", ".join(root or "." for root in matches))
     if not matches:
-        raise ServerError("Missing or empty required assets: %s" % ", ".join(required))
+        raise ServerError("Missing or empty required assets: %s" % ", ".join(" or ".join(group) for group in required))
     root = matches[0]
     files = {}
     for name, (_, asset) in canonical.items():
@@ -224,9 +238,16 @@ def _select(source, entries, recipe):
         relative = name[len(root) + 1:] if root else name
         if any(PurePosixPath("/" + relative).match("/" + pattern) for pattern in patterns):
             files[relative] = asset
-    if any(name not in files for name in required):
+    if any(not any(PurePosixPath("/" + name).match("/" + pattern) and asset.size > 0
+                   for pattern in group for name, asset in files.items()) for group in required):
         raise ServerError("Required assets must also match the recipe include patterns")
-    return _Selection(source, root, dict(sorted(files.items())), target)
+    destinations = recipe.get("destination_names", {})
+    mapped, names = {}, {}
+    for name, asset in files.items():
+        destination = destinations.get(name, name)
+        _register_name(names, destination)
+        mapped[destination] = asset
+    return _Selection(source, root, dict(sorted(mapped.items())), target)
 
 
 def _hash_file(path):
@@ -361,11 +382,14 @@ def import_assets(source, install_root, recipe):
             with tempfile.TemporaryDirectory(prefix=".alphagsm-assets-", dir=staging_parent) as temp:
                 staging = Path(temp)
                 records = _stage_selection(selection, staging)
+                if "requirements" in recipe:
+                    byo_files.validate_staged_files(staging / "new", recipe, selection.target)
                 copied, skipped = _publication_plan(install_root, records, manifest)
                 manifest["files"].update({name: records[name] for name in copied})
                 _publish(install_root, selection, staging, copied, manifest)
         return {"status": "ready", "files": list(records), "copied": copied,
-                "skipped": skipped, "manifest": str(install_root / _MANIFEST)}
+                "skipped": skipped, "manifest": str(install_root / _MANIFEST),
+                "game_readiness": "not-checked"}
     except (OSError, ValueError, tarfile.TarError, zipfile.BadZipFile, RuntimeError) as error:
         raise ServerError("Unable to import assets: %s" % error) from error
 
@@ -374,18 +398,23 @@ def check_assets(install_root, recipe):
     """Report missing or empty required installed files without creating anything."""
     required, target, _, _ = _recipe_paths(recipe)
     if recipe.get("case_insensitive", False):
-        required = tuple(name.lower() for name in required)
+        required = tuple(tuple(name.lower() for name in group) for group in required)
     install_root = Path(install_root).absolute()
     files, missing = [], []
     try:
-        for name in required:
-            relative = _join(target, name)
-            path = install_root / relative
-            _assert_no_links(path)
-            if path.is_file() and path.stat().st_size > 0:
-                files.append(relative)
+        _assert_no_links(install_root)
+        for group in required:
+            found = []
+            for name in group:
+                name = recipe.get("destination_names", {}).get(name, name)
+                for path in install_root.glob(_join(target, name)):
+                    _assert_no_links(path)
+                    if path.is_file() and path.stat().st_size > 0:
+                        found.append(path.relative_to(install_root).as_posix())
+            if found:
+                files.extend(sorted(found))
             else:
-                missing.append(relative)
+                missing.append(" or ".join(_join(target, name) for name in group))
     except OSError as error:
         raise ServerError("Unable to check assets: %s" % error) from error
     return {"status": "missing" if missing else "ready", "ready": not missing,
@@ -403,10 +432,16 @@ def export_assets(source, output, recipe):
             if output == source_path or (source_path.is_dir() and source_path in output.parents):
                 raise ServerError("Export output must be outside the asset source directory")
             with tempfile.TemporaryDirectory(prefix=".alphagsm-export-", dir=output.parent) as temp:
-                staged = Path(temp) / "assets.zip"
+                staging = Path(temp)
+                if "requirements" in recipe:
+                    _stage_selection(selection, staging)
+                    byo_files.validate_staged_files(staging / "new", recipe, selection.target)
+                staged = staging / "assets.zip"
                 with zipfile.ZipFile(staged, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
                     for name, asset in selection.files.items():
-                        with asset.opener() as incoming, bundle.open(name, "w", force_zip64=True) as outgoing:
+                        incoming_file = ((staging / "new" / name).open("rb")
+                                         if "requirements" in recipe else asset.opener())
+                        with incoming_file as incoming, bundle.open(name, "w", force_zip64=True) as outgoing:
                             shutil.copyfileobj(incoming, outgoing, length=1024 * 1024)
                 with zipfile.ZipFile(staged) as bundle:
                     if any(bundle.getinfo(name).file_size != asset.size

@@ -1,0 +1,24 @@
+{
+  "description": "Nuclear Dawn complete multiplayer content",
+  "requirements": [
+    {
+      "path": "nucleardawn/maps/hydro.bsp",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Use a complete owned Nuclear Dawn installation/server content tree; the anonymous server download is partial. A current authoritative direct artifact is not verified. Stage the complete nucleardawn/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+      "live_validated": false
+    }
+  ],
+  "defaults": {},
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "ndserver",
+  "guide": "docs/servers/ndserver.md",
+  "schema_version": 1
+}

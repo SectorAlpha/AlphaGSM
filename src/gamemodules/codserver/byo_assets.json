@@ -1,0 +1,48 @@
+{
+  "description": "Owned Call of Duty multiplayer content",
+  "requirements": [
+    {
+      "path": "main/*.pk3",
+      "kind": "archive-member",
+      "member": "maps/mp/{startmap}.bsp"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Use main/ from an owned original Call of Duty installation. Its PK3 files must contain the configured multiplayer map; the public dedicated archive lacks map data.",
+      "live_validated": false
+    },
+    {
+      "id": "steam-owned",
+      "kind": "steamcmd",
+      "instructions": "Use main/ from an owned original Call of Duty installation. Its PK3 files must contain the configured multiplayer map; the public dedicated archive lacks map data. SteamCMD access requires the appropriate entitlement; it is not live validated.",
+      "live_validated": false,
+      "app_id": 2620,
+      "platform": "windows",
+      "authentication": "required",
+      "url": "https://store.steampowered.com/app/2620/"
+    }
+  ],
+  "defaults": {
+    "startmap": "mp_carentan"
+  },
+  "managed_import": true,
+  "validation": "declared-files-and-content-sentinels",
+  "manual_reason": "Import requires a complete compatible distribution and manual staging. See assets requirements for this game.",
+  "roots": [
+    ""
+  ],
+  "target": "",
+  "case_insensitive": true,
+  "include": [
+    "main/*.pk3"
+  ],
+  "required": [
+    "main/*.pk3"
+  ],
+  "module": "codserver",
+  "guide": "docs/servers/codserver.md",
+  "schema_version": 1
+}

@@ -140,3 +140,12 @@ alphagsm myserver set KEY VALUE
 - **Current status**: Supported in `ENABLED (BYO)` mode. Anonymous SteamCMD app `244310` still only provides the generic SDK scaffold, so stage the real `sfclassic/` content tree from the official SourceForts Classic ModDB full-version archive before retrying startup.
 - **Map install**: Copy `.bsp` files into `sfclassic/maps/` and add to `sfclassic/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `sfclassic/addons/`.
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This helper checks known sentinels only and directs you to stage the complete
+compatible distribution manually; managed import is unavailable for this recipe.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

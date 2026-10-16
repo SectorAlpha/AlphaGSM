@@ -138,3 +138,12 @@ alphagsm myserver set KEY VALUE
 - **Workshop support**: No
 - **Map install**: Copy `.bsp` files into `ts/maps/` and add to `ts/mapcycle.txt`.
 - **Mod install**: Use Metamod in `ts/dlls/` or AMX Mod X in `ts/addons/amxmodx/`.
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This helper checks known sentinels only and directs you to stage the complete
+compatible distribution manually; managed import is unavailable for this recipe.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

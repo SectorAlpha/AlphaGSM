@@ -25,6 +25,10 @@ The everyday flow is always the same:
 Then `stop`, `backup`, or `update` as needed. Pick a game from
 [the server guides](docs/README.md) if you want the exact module name.
 
+If a server needs files from a game you own, the [BYO file helpers](docs/byo-files.md)
+explain what to supply and where to get it. Supported recipes can also acquire
+owned files using a private SteamCMD session.
+
 You can also ask an AI agent with terminal access to do this work. Start with
 “Use alphagsm-agent-operations to run my server,” and give it the game, server
 name and desired result. See [Run AlphaGSM With An AI Agent](docs/agent-operations.md)

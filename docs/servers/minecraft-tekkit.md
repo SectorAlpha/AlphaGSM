@@ -141,3 +141,12 @@ alphagsm myserver set KEY VALUE
 - **Workshop support**: No
 - **Map notes**: The world directory contains all world data.
 - **Mod notes**: Tekkit ships with pre-configured mods. Additional mods go in `mods/`.
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This helper checks known sentinels only and directs you to stage the complete
+compatible distribution manually; managed import is unavailable for this recipe.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

@@ -135,3 +135,12 @@ alphagsm myserver set KEY VALUE
 - **Current status**: Supported in `ENABLED (BYO)` mode. The anonymous dedicated-server app still installs only a partial `nucleardawn/` tree, so stage the real game content before retrying startup.
 - **Map install**: Copy `.bsp` files into `nucleardawn/maps/` and add to `nucleardawn/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `nucleardawn/addons/`.
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This helper checks known sentinels only and directs you to stage the complete
+compatible distribution manually; managed import is unavailable for this recipe.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

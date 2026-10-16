@@ -418,9 +418,10 @@ class Server(object):
             )
         ),
         "assets": CmdSpec(
-            requiredarguments=(ArgSpec("ACTION", "check, import, or export", str),),
-            optionalarguments=(ArgSpec("SOURCE", "Owned local folder or archive", str),),
+            requiredarguments=(ArgSpec("ACTION", "requirements, check, import, export, or fetch", str),),
+            optionalarguments=(ArgSpec("SOURCE", "Owned local path or declared acquisition source ID", str),),
             options=(OptSpec("", ["output"], "ZIP destination for export", "output", "ZIP", str),
+                     OptSpec("", ["auth-profile"], "Private SteamCMD session for file acquisition", "auth_profile", "NAME", str),
                      OptSpec("j", ["json"], "Print machine-readable asset results", "as_json", None, True)),
         ),
         "start": CmdSpec(),
@@ -892,9 +893,9 @@ class Server(object):
         runtime_module.sync_runtime_metadata(self, save=True)
         diagnostics_module.record_installation_provenance(self, "setup")
 
-    def assets(self, action, source=None, *, output=None, as_json=False):
+    def assets(self, action, source=None, *, output=None, as_json=False, auth_profile=None):
         """Manage module-declared owned game content without launching a game."""
-        return assets_module.execute(self, action, source, output=output, as_json=as_json)
+        return assets_module.execute(self, action, source, output=output, as_json=as_json, auth_profile=auth_profile)
 
     def start(self, *args, **kwargs):
         """Start a server. Won't start it if the server is already running."""

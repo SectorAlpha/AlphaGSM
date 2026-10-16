@@ -165,6 +165,7 @@ def download(
     force_platform=None,
     beta_branch=None,
     beta_password=None,
+    auth_profile=None,
 ):
     """Download a game server via SteamCMD, optionally setting a GoldSrc mod.
 
@@ -181,7 +182,15 @@ def download(
             ``"linux"`` or ``"windows"``.
         beta_branch: Optional Steam branch name to install.
         beta_password: Optional branch password paired with ``beta_branch``.
+        auth_profile: Explicit reusable isolated session; never falls back to anonymous.
     """
+    if auth_profile is not None:
+        _download_with_profile(
+            path, Steam_AppID, auth_profile, validate=validate, mod=mod,
+            force_windows=force_windows, force_platform=force_platform,
+            beta_branch=beta_branch, beta_password=beta_password,
+        )
+        return
     # check to see if steamcmd exists
     install_steamcmd()
     path = _normalise_install_path(path)
@@ -246,6 +255,43 @@ def download(
             )
             time.sleep(retry_delay)
     raise sp.CalledProcessError(proc.returncode, proc_list, output=last_output)
+
+
+def _download_with_profile(path, app_id, profile, **options):
+    """Download with cached credentials and suppress potentially private output."""
+    from utils import steam_auth  # pylint: disable=import-outside-toplevel
+    if options.get("beta_password"):
+        raise steam_auth.SteamAuthError("Branch passwords are not supported with SteamCMD session profiles")
+    with steam_auth.download_session(profile) as (executable, username, env, lock_fd):
+        platform = options.get("force_platform")
+        if platform is not None:
+            platform = str(platform).strip().lower() or None
+        if options.get("force_windows"):
+            if platform not in (None, "windows"):
+                raise ValueError("force_windows cannot be combined with non-windows force_platform")
+            platform = "windows"
+        command = [str(executable), "+@ShutdownOnFailedCommand", "1",
+                   "+@NoPromptForPassword", "1"]
+        if platform:
+            command.extend(["+@sSteamCmdForcePlatformType", platform])
+        command.extend(["+force_install_dir", _normalise_install_path(path), "+login", username])
+        if options.get("mod") is not None:
+            command.extend(["+app_set_config", "90", "mod", str(options["mod"])])
+        command.extend(["+app_update", str(app_id)])
+        if options.get("beta_branch"):
+            command.extend(["-beta", str(options["beta_branch"])])
+        if options.get("validate"):
+            command.append("validate")
+        command.append("+quit")
+        print("Running SteamCMD with a local auth profile")
+        try:
+            result = steam_auth.run_steamcmd(command, lock_fd=lock_fd, stdin=sp.DEVNULL, stdout=sp.PIPE,
+                            stderr=sp.STDOUT, text=True, check=False,
+                            cwd=str(executable.parent), env=env, umask=0o077)
+        except (OSError, sp.SubprocessError):
+            raise steam_auth.SteamAuthError("SteamCMD profile download failed; retry login or check entitlement") from None
+        if result.returncode != 0 or not _steamcmd_succeeded(result.stdout or "", app_id):
+            raise steam_auth.SteamAuthError("SteamCMD profile download failed; retry login or check entitlement")
 
 
 def download_workshop_item(path, workshop_app_id, workshop_item_id, steam_anonymous_login_possible):

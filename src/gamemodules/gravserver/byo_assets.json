@@ -1,0 +1,27 @@
+{
+  "description": "GRAV complete compatible server tree",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Use the owned complete GRAV game tree and its Binaries/ server launch scripts. The configured flat extensionless executable is a legacy module assumption, not proof of a native Linux distribution.",
+      "live_validated": false,
+      "url": "https://steamcommunity.com/app/332500/discussions/4/496881136901566007/"
+    }
+  ],
+  "defaults": {
+    "exe_name": "CAGGameServer-Win32-Shipping"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "gravserver",
+  "guide": "docs/servers/gravserver.md",
+  "schema_version": 1
+}

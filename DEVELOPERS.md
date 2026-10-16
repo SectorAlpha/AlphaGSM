@@ -1156,3 +1156,50 @@ When upgrading an existing source environment that installed the obsolete
 `python -m pip uninstall crontab`, then install `requirements-runtime.txt` again.
 AlphaGSM uses the `python-crontab` distribution's `CronTab` API. A fresh binary or
 fresh environment does not need this cleanup.
+
+
+## Game-specific BYO file contracts
+
+File-based BYO modules expose `get_asset_requirements(server)` and own a nearby
+`byo_assets.json` (Minecraft family helpers use a prefixed local filename).
+`utils.byo_files.load_requirements` resolves only declared non-secret path keys
+from the instance. Provider credentials stay in provider metadata/auth storage.
+
+Rich recipes declare `module`, `description`, `requirements`, `sources`,
+`managed_import`, `validation`, and source guidance. Requirements have a relative
+`path` and kind `file`, `glob`, `directory`, or `archive-member`; the latter
+includes a relative archive `member` pattern. `any_of` declares alternative
+paths and `optional` marks advisory content. Files must be nonempty unless a
+requirement explicitly says otherwise. Checks reject symlinks and report
+`game_readiness: not-checked`. Manual recipes use `sentinel-only` validation.
+
+Managed recipes also supply the existing importer fields `roots`, `include`,
+`required`, and `target`. Required patterns are ANDed; each `required_any` group
+is ORed internally and ANDed with other groups. `destination_names` explicitly
+preserves a native filename when case-insensitive source matching would otherwise
+normalize it (for example COD4's `fileSysCheck.cfg`). The importer validates
+selected staged bytes against rich requirements before publication or export,
+while preserving rollback and ownership hashes. It never infers that unrelated
+files from a full Steam installation may be copied. Existing Reclaimer recipes
+without rich requirements remain compatible.
+
+A Steam source records `id`, `kind: steamcmd`, numeric `app_id`, explicit
+`platform`, `authentication: required` or `anonymous`, optional public `branch`,
+and human instructions/source links. Source identities are not successful
+entitlement/download evidence. `utils.byo_acquire.acquire` downloads the app to
+private temporary staging, validates declared content and imports only the
+allowlist. Passwords are never recipe fields. Explicit profile selection calls
+`steamcmd.download(..., auth_profile=profile)` using the session-only auth helper.
+
+Session profiles keep their own runtime/home under the AlphaGSM state root.
+Owner-only permissions, trusted ancestor checks, link rejection and an inherited
+child-held lock protect their lifecycle. Interactive SteamCMD receives passwords
+and Guard directly; automated downloads disable prompts and sanitize errors.
+Local profile status is not proof of server-side authentication. See
+[SteamCMD session profiles](docs/steamcmd-auth.md).
+
+No live authenticated or CI integration validation is claimed for these helpers.
+Unit tests use synthetic game files and fake SteamCMD child processes, including
+permission, cancellation, interrupted-parent locks, staging cleanup, failed
+publication and exact native filename cases. Later local validation must use
+one operator-selected game at a time with a real entitled session.

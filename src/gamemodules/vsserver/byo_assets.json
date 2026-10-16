@@ -1,0 +1,25 @@
+{
+  "description": "Vampire Slayer complete multiplayer content",
+  "requirements": [
+    {
+      "path": "vs/maps/vs_frost.bsp",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Obtain the matching Chapter VI Linux server distribution; original mirror availability is unverified. Stage the complete vs/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+      "live_validated": false,
+      "url": "https://www.vsmod.co.uk/"
+    }
+  ],
+  "defaults": {},
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "vsserver",
+  "guide": "docs/servers/vsserver.md",
+  "schema_version": 1
+}

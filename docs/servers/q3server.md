@@ -142,3 +142,13 @@ alphagsm myserver set KEY VALUE
 - **Mod directory**: `<fs_game>/` (default `baseq3/`)
 - **Mod notes**: AlphaGSM can now track direct `.pk3` and archive `url` entries for Quake 3, install approved `.pk3` payloads into the active `fs_game` directory, and clean up only AlphaGSM-managed files from `.alphagsm/mods/q3server/`.
 - **Workshop support**: No
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This module has an allowlisted local import recipe. It also declares `steam-owned` for explicit acquisition with
+`alphagsm <server-name> assets fetch steam-owned --auth-profile <profile>`.
+Authenticated downloads remain unverified here.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

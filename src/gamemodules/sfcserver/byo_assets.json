@@ -1,0 +1,25 @@
+{
+  "description": "SourceForts Classic complete multiplayer content",
+  "requirements": [
+    {
+      "path": "sfclassic/maps/sf_astrodome.bsp",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Select the full SourceForts Classic release compatible with the configured module, not original SourceForts or an arbitrary prerelease. Stage the complete sfclassic/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+      "live_validated": false,
+      "url": "https://www.moddb.com/mods/sourceforts"
+    }
+  ],
+  "defaults": {},
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "sfcserver",
+  "guide": "docs/servers/sfcserver.md",
+  "schema_version": 1
+}

@@ -219,3 +219,9 @@ def status(server, verbose):
             server.query()
     except Exception as exc:
         print("Status check failed: " + str(exc))
+
+
+def get_asset_requirements(server):
+    """Describe this game's owned files, acquisition routes and staging limits."""
+    from utils.byo_files import load_requirements
+    return load_requirements(server, __file__, 'tekkit_byo_assets.json')

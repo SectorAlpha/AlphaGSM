@@ -135,3 +135,12 @@ alphagsm myserver set KEY VALUE
 - **Current status**: Supported in `ENABLED (BYO)` mode. Anonymous SteamCMD app `244310` only provides the generic Source SDK 2013 dedicated server scaffold, so stage the real `zombie_master_reborn/` content tree before retrying startup.
 - **Map install**: Copy `.bsp` files into `zombie_master_reborn/maps/` and add to `zombie_master_reborn/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `zombie_master_reborn/addons/`.
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This helper checks known sentinels only and directs you to stage the complete
+compatible distribution manually; managed import is unavailable for this recipe.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

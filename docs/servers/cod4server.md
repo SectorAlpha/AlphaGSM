@@ -166,3 +166,13 @@ alphagsm mycod4serv mod add url https://example.com/custom-pack.zip
 alphagsm mycod4serv mod apply
 alphagsm mycod4serv mod cleanup
 ```
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This module has an allowlisted local import recipe. It also declares `steam-owned` for explicit acquisition with
+`alphagsm <server-name> assets fetch steam-owned --auth-profile <profile>`.
+Authenticated downloads remain unverified here.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

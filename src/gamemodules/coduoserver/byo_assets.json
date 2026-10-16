@@ -1,0 +1,54 @@
+{
+  "description": "Original Call of Duty base assets for United Offensive",
+  "requirements": [
+    {
+      "any_of": [
+        "main/pak0.pk3",
+        "main/default_mp.cfg"
+      ],
+      "kind": "glob"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Use the original Call of Duty main/ files (Steam app 2620), alongside the United Offensive uo/ distribution. Expansion app 2640 alone does not supply the original base content.",
+      "live_validated": false,
+      "url": "https://store.steampowered.com/app/2640/"
+    },
+    {
+      "id": "steam-owned",
+      "kind": "steamcmd",
+      "instructions": "Use the original Call of Duty main/ files (Steam app 2620), alongside the United Offensive uo/ distribution. Expansion app 2640 alone does not supply the original base content. SteamCMD access requires the appropriate entitlement; it is not live validated.",
+      "live_validated": false,
+      "app_id": 2620,
+      "platform": "windows",
+      "authentication": "required",
+      "url": "https://store.steampowered.com/app/2620/"
+    }
+  ],
+  "defaults": {},
+  "managed_import": true,
+  "validation": "declared-files-and-content-sentinels",
+  "manual_reason": "Import requires a complete compatible distribution and manual staging. See assets requirements for this game.",
+  "roots": [
+    ""
+  ],
+  "target": "",
+  "case_insensitive": true,
+  "include": [
+    "main/*.pk3",
+    "main/default_mp.cfg"
+  ],
+  "required": [],
+  "module": "coduoserver",
+  "guide": "docs/servers/coduoserver.md",
+  "schema_version": 1,
+  "required_any": [
+    [
+      "main/pak0.pk3",
+      "main/default_mp.cfg"
+    ]
+  ]
+}

@@ -552,3 +552,9 @@ def checkvalue(server, key, *value):
         resolved_str_keys=("game", "exe_name", "dir", "startmap", "hostname"),
         backup_module=backup_utils,
     )
+
+
+def get_asset_requirements(server):
+    """Describe this game's owned files, acquisition routes and staging limits."""
+    from utils.byo_files import load_requirements
+    return load_requirements(server, __file__, 'byo_assets.json')

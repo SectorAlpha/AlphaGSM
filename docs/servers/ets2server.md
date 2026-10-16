@@ -120,3 +120,11 @@ returning protocol `a2s` instead of waiting for screen-log markers.
 - **Map directory**: Check game documentation
 - **Mod directory**: Check game documentation
 - **Workshop support**: No
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This module has an allowlisted local import recipe. Use its source instructions to prepare the required data before importing.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

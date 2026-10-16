@@ -1,0 +1,53 @@
+{
+  "description": "Owned Call of Duty 2 main content",
+  "requirements": [
+    {
+      "any_of": [
+        "main/localized_*.iwd",
+        "main/default_localize_mp.cfg"
+      ],
+      "kind": "glob"
+    },
+    {
+      "path": "main/*.iwd",
+      "kind": "glob"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Copy the owned Call of Duty 2 main/ data. Localization config can reside inside an IWD; use the complete original main content, not only the dedicated Linux download.",
+      "live_validated": false
+    },
+    {
+      "id": "steam-owned",
+      "kind": "steamcmd",
+      "instructions": "Copy the owned Call of Duty 2 main/ data. Localization config can reside inside an IWD; use the complete original main content, not only the dedicated Linux download. SteamCMD access requires the appropriate entitlement; it is not live validated.",
+      "live_validated": false,
+      "app_id": 2630,
+      "platform": "windows",
+      "authentication": "required",
+      "url": "https://store.steampowered.com/app/2630/"
+    }
+  ],
+  "defaults": {},
+  "managed_import": true,
+  "validation": "declared-files-and-content-sentinels",
+  "manual_reason": "Import requires a complete compatible distribution and manual staging. See assets requirements for this game.",
+  "roots": [
+    ""
+  ],
+  "target": "",
+  "case_insensitive": true,
+  "include": [
+    "main/*.iwd",
+    "main/default_localize_mp.cfg"
+  ],
+  "required": [
+    "main/*.iwd"
+  ],
+  "module": "cod2server",
+  "guide": "docs/servers/cod2server.md",
+  "schema_version": 1
+}

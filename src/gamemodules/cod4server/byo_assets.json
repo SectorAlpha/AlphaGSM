@@ -1,0 +1,76 @@
+{
+  "description": "Owned original Call of Duty 4 content",
+  "requirements": [
+    {
+      "path": "fileSysCheck.cfg",
+      "kind": "file"
+    },
+    {
+      "path": "main/*.iwd",
+      "kind": "glob"
+    },
+    {
+      "path": "main/localized_*.iwd",
+      "kind": "glob"
+    },
+    {
+      "any_of": [
+        "zone/*.ff",
+        "zone/*/*.ff"
+      ],
+      "kind": "glob"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Obtain the original 2007 Call of Duty 4, not the remaster. Copy fileSysCheck.cfg, all main/*.iwd and the full compatible zone/ fastfiles. Do not replace existing server.cfg. Managed import selects only the declared IWD/config and recognized fastfile paths. Any additional zone content requires manual staging; file checks do not prove completeness.",
+      "live_validated": false,
+      "url": "https://github.com/callofduty4x/CoD4x_Server"
+    },
+    {
+      "id": "steam-owned",
+      "kind": "steamcmd",
+      "instructions": "Obtain the original 2007 Call of Duty 4, not the remaster. Copy fileSysCheck.cfg, all main/*.iwd and the full compatible zone/ fastfiles. Do not replace existing server.cfg. SteamCMD access requires the appropriate entitlement; it is not live validated. Managed import selects only the declared IWD/config and recognized fastfile paths. Any additional zone content requires manual staging; file checks do not prove completeness.",
+      "live_validated": false,
+      "app_id": 7940,
+      "platform": "windows",
+      "authentication": "required",
+      "url": "https://store.steampowered.com/app/7940/"
+    }
+  ],
+  "defaults": {},
+  "managed_import": true,
+  "validation": "declared-files-and-content-sentinels",
+  "manual_reason": "Import requires a complete compatible distribution and manual staging. See assets requirements for this game.",
+  "roots": [
+    ""
+  ],
+  "target": "",
+  "case_insensitive": true,
+  "include": [
+    "fileSysCheck.cfg",
+    "main/*.iwd",
+    "zone/*.ff",
+    "zone/*/*.ff",
+    "zone/*/*/*.ff"
+  ],
+  "required": [
+    "fileSysCheck.cfg",
+    "main/*.iwd",
+    "main/localized_*.iwd"
+  ],
+  "module": "cod4server",
+  "guide": "docs/servers/cod4server.md",
+  "schema_version": 1,
+  "required_any": [
+    [
+      "zone/*.ff",
+      "zone/*/*.ff"
+    ]
+  ],
+  "destination_names": {
+    "filesyscheck.cfg": "fileSysCheck.cfg"
+  }
+}

@@ -159,3 +159,9 @@ get_container_spec = gamemodule_common.make_container_spec_builder(
         port_definitions=({'key': 'peerport', 'protocol': 'udp'}, {'key': 'peerport', 'protocol': 'tcp'}, {'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
 )
+
+
+def get_asset_requirements(server):
+    """Describe this game's owned files, acquisition routes and staging limits."""
+    from utils.byo_files import load_requirements
+    return load_requirements(server, __file__, 'byo_assets.json')

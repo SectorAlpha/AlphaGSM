@@ -348,3 +348,9 @@ get_container_spec = gamemodule_common.make_container_spec_builder(
     port_definitions=PORT_DEFINITIONS,
     stdin_open=True,
 )
+
+
+def get_asset_requirements(server):
+    """Describe this game's owned files, acquisition routes and staging limits."""
+    from utils.byo_files import load_requirements
+    return load_requirements(server, __file__, 'byo_assets.json')

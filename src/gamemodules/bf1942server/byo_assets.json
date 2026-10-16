@@ -1,0 +1,26 @@
+{
+  "description": "Battlefield 1942 complete compatible server tree",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Supply your compatible archived complete Linux dedicated-server tree with game/mod data. No current authoritative downloadable archive has been verified.",
+      "live_validated": false
+    }
+  ],
+  "defaults": {
+    "exe_name": "bf1942_lnxded"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "bf1942server",
+  "guide": "docs/servers/bf1942server.md",
+  "schema_version": 1
+}
