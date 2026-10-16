@@ -18,7 +18,7 @@
       "id": "steam-owned",
       "kind": "steamcmd",
       "instructions": "Copy baseq3/pak0.pk3 from an owned Steam, GOG or CD installation. Retain compatible pak1.pk3 through pak8.pk3 patch data from the game/official point release; engine binaries are separate.",
-      "live_validated": false,
+      "live_validated": true,
       "app_id": 2200,
       "platform": "windows",
       "authentication": "required",

@@ -122,12 +122,12 @@ def test_dst_uses_instance_cluster_and_shard_without_exposing_token(tmp_path):
 def test_steam_sources_use_base_game_not_dedicated_app(tmp_path):
     from gamemodules import coduoserver, q3server
     server = SimpleNamespace(name="test", data={"dir": str(tmp_path)})
-    for module, app_id in ((coduoserver, 2620), (q3server, 2200)):
+    for module, app_id, live_validated in ((coduoserver, 2620, False), (q3server, 2200, True)):
         source = next(s for s in module.get_asset_requirements(server)["sources"] if s["kind"] == "steamcmd")
         assert source["app_id"] == app_id
         assert source["platform"] == "windows"
         assert source["authentication"] == "required"
-        assert source["live_validated"] is False
+        assert source["live_validated"] is live_validated
 
 
 @pytest.mark.skipif(sys.platform != "linux", reason="Linux path case semantics")
