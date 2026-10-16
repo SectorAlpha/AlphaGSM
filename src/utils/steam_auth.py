@@ -29,7 +29,7 @@ def _state_root():
     return Path(os.path.abspath(os.path.expanduser(value)))
 
 
-def _validate_name(name):
+def validate_profile_name(name):
     """Accept only unambiguous local profile identifiers."""
     if not isinstance(name, str) or re.fullmatch(r'[A-Za-z0-9_-]+', name) is None:
         raise SteamAuthError('Invalid SteamCMD profile name; use letters, numbers, _ or -')
@@ -96,7 +96,7 @@ def _secure_tree(profile):
 @contextmanager
 def locked_profile(name, create=False, pass_lock=False):
     """Hold the lock; pass_lock also yields its FD for child inheritance."""
-    _validate_name(name)
+    validate_profile_name(name)
     if PLATFORM != 'linux':
         raise SteamAuthError('SteamCMD auth profiles require the Linux host installer')
     # fcntl is unavailable on Windows; reject before importing it.
@@ -244,7 +244,7 @@ def run_steamcmd(command, *, lock_fd, **kwargs):
 
 def login(name, username):
     """Let SteamCMD read password and Guard directly from the operator terminal."""
-    _validate_name(name)
+    validate_profile_name(name)
     if PLATFORM != 'linux':
         raise SteamAuthError('SteamCMD auth profiles require the Linux host installer')
     if not re.fullmatch(r'[A-Za-z0-9_-]+', username) or username.lower() == 'anonymous':
@@ -269,7 +269,7 @@ def login(name, username):
 
 def status(name):
     """Report local cached state only, without reading out credentials."""
-    _validate_name(name)
+    validate_profile_name(name)
     try:
         with locked_profile(name) as profile:
             try:

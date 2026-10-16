@@ -415,6 +415,8 @@ class Server(object):
                     False,
                 ),
                 OptSpec("", ["assets"], "Import an owned game folder or local ZIP/tar archive.", "assets_source", "PATH", str),
+                OptSpec("", ["auth-profile"], "Acquire owned files with a private SteamCMD session.", "auth_profile", "NAME", str),
+                OptSpec("", ["steam-dir"], "Import owned files from an explicit Steam library.", "steam_dir", "PATH", str),
             )
         ),
         "assets": CmdSpec(
@@ -870,8 +872,10 @@ class Server(object):
                 + "' can't be executed. Please check the help"
             )
 
-    def setup(self, *args, ask=True, assets_source=None, **kwargs):
+    def setup(self, *args, ask=True, assets_source=None, auth_profile=None, steam_dir=None, **kwargs):
         """Setup this server. Once this returns the server should be ready to start."""
+        if sum(source is not None for source in (assets_source, auth_profile, steam_dir)) > 1:
+            raise ServerError("Select only one of --auth-profile, --steam-dir or --assets")
         explicit_keys = self._explicit_setup_port_keys(args, kwargs)
         claim_values_before = self._claim_affecting_value_snapshot(self.data)
         args, kwargs = self.module.configure(self, ask, *args, **kwargs)
@@ -887,8 +891,9 @@ class Server(object):
             runtime_module.assert_host_install_requirements(self, phase="setup")
         except runtime_module.RuntimeError as ex:
             raise ServerError(str(ex))
-        if assets_source is not None:
-            assets_module.import_for_setup(self, assets_source)
+        assets_module.prepare_for_setup(
+            self, assets_source=assets_source, auth_profile=auth_profile, steam_dir=steam_dir
+        )
         self.module.install(self, *args, **kwargs)
         runtime_module.sync_runtime_metadata(self, save=True)
         diagnostics_module.record_installation_provenance(self, "setup")
@@ -2108,6 +2113,18 @@ class Server(object):
             return
         if key is None:
             raise ServerError("Error: set requires a key")
+
+        if key.split(".", 1)[0] == "steam_auth_profile":
+            if key != "steam_auth_profile" or len(args) != 1 or kwargs:
+                raise ServerError("Use set steam_auth_profile NAME or set steam_auth_profile DELETE")
+            value = args[0]
+            if value == "DELETE":
+                self.data.pop("steam_auth_profile", None)
+            else:
+                assets_module.validate_profile_reference(self, value)
+                self.data["steam_auth_profile"] = value
+            self.data.save()
+            return
 
         resolved = None
         schema = self.get_setting_schema()

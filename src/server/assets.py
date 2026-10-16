@@ -3,7 +3,7 @@
 import json
 
 from server.errors import ServerError
-from utils import asset_import, byo_acquire, byo_files
+from utils import asset_import, byo_acquire, byo_files, steam_auth, steam_library
 from . import runtime
 
 
@@ -29,6 +29,49 @@ def import_for_setup(server, source):
     _guard_stopped(server)
     byo_files.require_managed_import(recipe)
     return asset_import.import_assets(source, server.data["dir"], recipe)
+
+
+def _steam_recipe_for(server):
+    """Require one explicit Steam acquisition declaration on a managed recipe."""
+    recipe = recipe_for(server)
+    byo_files.require_managed_import(recipe)
+    if recipe.get("managed_import") is not True:
+        raise ServerError("Steam setup file selection requires an explicitly managed asset recipe")
+    sources = [source for source in recipe.get("sources", []) if source.get("kind") == "steamcmd"]
+    if len(sources) != 1:
+        raise ServerError("This module requires exactly one declared SteamCMD source for setup file selection")
+    return recipe, sources[0]
+
+
+def validate_profile_reference(server, profile):
+    """Validate only the profile identifier and recipe, without opening a cache."""
+    try:
+        steam_auth.validate_profile_name(profile)
+    except steam_auth.SteamAuthError as error:
+        raise ServerError(str(error)) from None
+    return _steam_recipe_for(server)
+
+
+def prepare_for_setup(server, *, assets_source=None, auth_profile=None, steam_dir=None):
+    """Prepare selected owned files before engine installation; save names only."""
+    if assets_source is not None:
+        return import_for_setup(server, assets_source)
+    if steam_dir is not None:
+        recipe, source = _steam_recipe_for(server)
+        _guard_stopped(server)
+        installed = steam_library.find_installed_app(steam_dir, source.get("app_id"))
+        return asset_import.import_assets(installed, server.data["dir"], recipe)
+    if auth_profile is None and "steam_auth_profile" not in server.data:
+        return None
+    profile = auth_profile if auth_profile is not None else server.data["steam_auth_profile"]
+    recipe, source = validate_profile_reference(server, profile)
+    _guard_stopped(server)
+    report = byo_files.inspect_files(byo_files.inspection_root(server, recipe), recipe)
+    if not report["ready"]:
+        report = byo_acquire.acquire(server, recipe, source["id"], auth_profile=profile)
+    server.data["steam_auth_profile"] = profile
+    server.data.save()
+    return report
 
 
 def _print_sources(recipe):
