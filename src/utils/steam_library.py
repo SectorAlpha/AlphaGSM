@@ -15,7 +15,7 @@ from server import ServerError
 
 _METADATA_LIMIT = 1024 * 1024
 _MAX_DEPTH = 16
-_RESERVED_NAME = re.compile(r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)", re.IGNORECASE)
+_RESERVED_NAME = re.compile(r"^(CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])(?:\.|$)", re.IGNORECASE)
 
 
 class _KeyValues:

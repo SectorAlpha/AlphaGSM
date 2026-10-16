@@ -170,6 +170,14 @@ def test_rejects_unsafe_or_nonportable_installdir(tmp_path, name):
         resolver()(tmp_path, 123)
 
 
+@pytest.mark.parametrize("name", ["COM¹", "COM²", "COM³", "LPT¹", "LPT²", "LPT³",
+                                 "COM¹.txt", "COM².txt", "COM³.txt", "LPT¹.txt", "LPT².txt", "LPT³.txt"])
+def test_rejects_windows_reserved_superscript_installdir(tmp_path, name):
+    manifest(tmp_path / "steamapps", f'"AppState" {{ "appid" "123" "installdir" {quoted(name)} }}')
+    with pytest.raises(ServerError, match="installdir"):
+        resolver()(tmp_path, 123)
+
+
 def test_rejects_install_symlink_escaping_common_directory(tmp_path):
     install(tmp_path)
     target = tmp_path / "outside"
