@@ -345,6 +345,94 @@ Curated server-side mod support now has a shared core under
 - `downloads.py` owns trusted-host validation, optional checksum enforcement, safe archive extraction, and destination allowlisting so AlphaGSM only installs files into explicitly approved server paths.
 - `ownership.py` records the AlphaGSM-owned relative file manifest for each installed curated entry.
 - `providers.py` owns shared external-provider helpers such as GameBanana item resolution, Mod DB page resolution, Workshop id validation, and direct URL normalization for plugin-style modules. These providers are not TF2-specific; individual game modules decide whether and how to install their payloads safely.
+- `workshop.py` resolves positive uint64 IDs through Valve's public metadata APIs,
+  normalizes numeric IDs and official Steam Community filedetails URLs at input
+  boundaries while keeping returned API IDs strictly numeric,
+  validates `consumer_app_id` against the module's game Workshop AppID, and
+  expands collections iteratively with order preservation, deduplication,
+  cycle detection, response-size limits, node/request limits, and bounded
+  transport retries. A collection must validate completely before intake saves
+  any additions. Collection provenance is stored on ordinary desired Workshop
+  entries; imports are snapshots and do not remove previously requested items.
+  Legacy metadata without `file_type` uses content fields to identify items
+  and verified collection details to identify collections. Opaque zero-size
+  entries with a content handle probe collection identity: only a validated
+  result 9 permits item fallback; transport failures remain errors. Collection branding
+  image URLs are not downloadable item payloads.
+- `source_addons.py` revalidates desired Workshop metadata on apply, including
+  legacy/manual entries, in batches under one resolver's request budget.
+  Each completed installation persists ownership before proceeding so a later
+  download failure leaves earlier files tracked for cleanup. Staging rejects
+  destination symlinks and paths outside the server root before copying.
+  Modules must declare `workshop_app_id` independently
+  of their dedicated-server Steam app ID. L4D2 uses `550` for Workshop and
+  `222860` for server installation, and opts into a single bare `.vpk` payload
+  installed as `addons/workshop/<item-id>.vpk` through owned-file staging.
+- `workshop_downloads.py` supplies the shared `workshop download item|collection
+  ID_OR_URL` and `workshop list` command on every anonymous SteamCMD module.
+  Command availability reads module-owned anonymous metadata, including the
+  Valve factory namespace; editable datastore auth flags cannot enable it.
+  The game identity comes from module `workshop_app_id`, the configured Source
+  game's `gameinfo.txt` SteamAppId, or bounded discovery of upstream
+  `steam_appid.txt` files, excluding mod/Workshop caches. Missing,
+  invalid, or conflicting identity fails closed. Verified downloads are copied
+  into `.alphagsm/workshop/content/<app>/<item>` with per-item completed-state
+  persistence. Fresh staged payloads replace previous downloads with rollback
+  on publication failure; obsolete upstream files do not accumulate. Cache
+  symlinks are checked before SteamCMD runs. This shared path stages content;
+  module adapters own activation.
+- `native_workshop.py` shares game-validated item/collection intake and native
+  configuration state across game-specific adapters. Adapters receive
+  a completely validated ordered ID list; `native_workshop.status=configured`
+  describes declarations, not engine load evidence. Contained nonsymlink paths
+  and atomic text publication protect native configs. Cleanup calls the adapter
+  with an empty list before clearing desired entries. Module callbacks own
+  preservation/removal of operator config and multi-file rollback.
+- `owned_payloads.py` publishes contained native files as a transaction with
+  SHA-256 ownership records. It rejects operator files, edited owned files,
+  symlinks and overlapping paths before publication. Failed publication restores
+  previous assets and ownership; failed rollback retains original backups and a
+  recovery manifest. Adapters also restore their native config and metadata if
+  publication fails. Cleanup preserves unowned files and download caches.
+- Each native loader's live fixture and process/Docker status is recorded in
+  [the Workshop support matrix](docs/WORKSHOP_SUPPORT.md). Require fresh engine
+  mount, map, registry or mod execution evidence in addition to query/info and
+  shutdown; configured desired state is not engine load proof.
+- Wreckfest's Linux baseline uses query-port UDP reachability
+  plus a fresh native `Server connected.` log and running runtime; it provides no map or
+  population metadata. CI run `38537399526` found no A2S response over IPv4,
+  IPv6 or mapped IPv4 even inside the container with `IPV6_V6ONLY=false`.
+  Static inspection of the shipped THQN `steam_api64.dll` identifies
+  `SteamNetworkingSockets_LibV12::CreateListenSocketIP` at the configured query
+  port. Neither that socket nor compiled-in RakNet support proves a metadata
+  query API. Generic UDP silence establishes absence of an ICMP rejection,
+  not an application response or measured RTT. Docker's TCP proxy is not a
+  native TCP listener. Keep protocol probes diagnostic until a native response is verified;
+  do not substitute a transport handshake for game state. Workshop acceptance
+  additionally requires an exact registered event row under the latest native
+  `Tracks:` response, captured from the current disposable server lifecycle.
+- Current Squad uses `squad_rcon` for health and info: authenticated native
+  `ShowServerInfo` and `ShowCurrentMap` exchanges share one overall deadline.
+  The parser exposes only public metadata, validates population bounds and
+  requires a confirmed map/layer rather than trusting the JSON's `Unknown`
+  map placeholder. The module owns local RCON configuration and port claims;
+  no provider account is needed for this read-only health protocol.
+- `utils.source_console.build_source_container_start_command` relays the runtime console FIFO through
+  `bsdutils` script so Garry's Mod and L4D2 see a real input terminal. Process
+  commands keep their ordinary launch path.
+- Garry's Mod validates GMAD tables, paths, sizes and CRCs before extracting
+  GMA payloads into owned addon trees. Unturned preserves existing File_IDs;
+  Project Zomboid inspects multiplayer mod metadata and preserves unowned
+  WorkshopItems/Mods entries.
+- `download_workshop_items` exposes the verified staged downloader to native
+  adapters, checking anonymous capability, game identity and complete item
+  metadata before SteamCMD. SteamCMD legacy success paths may name a file inside
+  the expected content directory. L4D2 normalizes legacy `.bin` uploads only
+  after validating a VPK header.
+- Workshop download verification requires the item-specific SteamCMD success
+  path, an expected app/item content directory under the requested cache or
+  configured SteamCMD root, and nonempty file content. Exit code zero and an
+  old cache directory are insufficient. Anonymous access errors remain errors.
 - `plugin_jars.py` packages the repeated desired-state, checked-in manifest resolution, dependency expansion, direct URL handling for plugin payloads, Mod DB archive installs, and owned-file cleanup flow for plugin-style modules such as Paper, the proxy family, and TShock.
 - `source_addons.py` packages the repeated desired-state, manifest registry loading, archive staging, GameBanana/Mod DB/workshop intake, direct single-file URL handling, and owned-file cleanup flow for Source-engine games that install addons under a known game directory.
 - Thin Source wrappers that share the same `addons/` layout can reuse one checked-in registry under [src/gamemodules/source_curated_mods.json](src/gamemodules/source_curated_mods.json) via `load_shared_source_curated_registry()` instead of carrying identical MetaMod/SourceMod manifests per module.
@@ -400,6 +488,7 @@ python3 scripts/list_missing_start_commands.py
 - keep Linux headless wrapper metadata aligned with the real launcher surface. If a module or launch script invokes `xvfb-run`, declare it in `host_dependencies`; `tests/unit_tests/test_runtime_contract_static.py` now audits that contract repo-wide
 - Linux-native containers that cannot run as root may opt into `run_as_host_user` through both runtime wrappers. Keep the game command unchanged: the shared Docker runtime adds `--user <effective UID>:<effective GID>`, sets the declared absolute `container_home`, and mounts a per-server HOME from `<manager-root>/runtime/<server>/home`.
 - `run_as_host_user` is deliberately opt-in and rejects an effective UID of `0`. Do not add module-specific `useradd`, `chown`, `chmod`, HOME-directory creation, or process-versus-Docker command branches; declare the requirement and let `server.runtime` enforce it.
+- Container wrappers may declare boolean `init: true` to request Docker's init process; `doctor --json` reports the resolved choice. TF2 uses it so its terminal relay does not adopt Steam crash-upload children and stall in util-linux's child-exit handling.
 - The `alphagsm-docker` wrapper derives the manager UID from Bash's read-only effective-process identity and the primary GID through a trusted absolute system `id` executable, then reads the Docker supplementary GID from the socket. It does not trust caller `PATH` or identity variables. It reuses a running manager only when Docker reports that exact identity/group tuple and exactly one matching Docker socket mount source. Before recreating an old root, stale-group, or stale-socket manager through the active mode, it walks existing state without following symlinks and fails before mutation if that state is not writable/traversable by the new non-root identity.
 - Host-user HOME state must remain outside the writable game-content mount. The runtime normalizes mount targets, rejects duplicate or read-only HOME mounts, validates existing manager-state components without following symlinks, and creates missing components with directory-relative no-follow operations. `doctor` uses the same non-mutating validation and reports whether first-run state is safely creatable.
 - `set` now preflights any claim-affecting datastore change before persistence, including top-level `port` / `*port` keys, hosted-IP keys (`bindaddress`, `publicip`, `externalip`, `hostip`), and nested runtime `ports` edits
@@ -767,6 +856,17 @@ runtime. Real integration/game/backend acceptance runs in CI for PR #36; local
 validation uses unit tests and static checks.
 
 The GitHub Actions workflow is [`.github/workflows/unittest.yaml`](.github/workflows/unittest.yaml).
+Manual dispatch accepts an optional `game_test_paths` input containing existing,
+space-separated `tests/integration_tests/test_*.py` and
+`tests/smoke_tests/run_*.sh` paths. This limits the game matrix for CI-only
+diagnosis while retaining unit, lint, image and backend gates. Omit it for the
+full fleet. PR, scheduled, merge-queue and reusable-run routing cannot be reduced
+through this input. For example:
+
+```bash
+gh workflow run unittest.yaml --ref YOUR_BRANCH \
+  -f game_test_paths='tests/integration_tests/test_asrdserver.py tests/smoke_tests/run_asrdserver.sh'
+```
 
 The workflow runs for pull requests targeting `master`, scheduled coverage,
 merge groups, manual dispatch and reusable release validation. Its current gates are:
@@ -779,6 +879,22 @@ merge groups, manual dispatch and reusable release validation. Its current gates
   used by the relevant lifecycle jobs
 - backend process smoke/integration coverage plus backend Docker integration
 - representative Minecraft backend integration on Windows and macOS
+- four native Windows unit cases, with exact passing JUnit evidence required
+  by the final summary; Linux unit and coverage jobs deselect those cases
+
+Smoke, integration and isolated recheck commands run through
+`scripts/run_ci_workshop_tests.py`. It enables every public anonymous Workshop
+opt-in in the supported CI set and installs the required-case pytest plugin.
+Keep this wrapper inside the `su` command after switching to `gsmuser`, so the
+login shell cannot drop the flags. A required Workshop skip is a failure;
+unrelated provider-authentication and BYO skips keep their prerequisite gates.
+Local runs retain explicit opt-ins for the large content downloads.
+
+Workshop integration parametrization uses `workshop_runtime_backends()` to
+collect exactly the explicit process or Docker matrix lane. An ambiguous
+`auto` selection is rejected. ARK and Space Engineers therefore have explicit
+process and Docker lanes alongside the other native Workshop cases. Without
+an explicit backend, local collection includes both runtimes.
 
 Ubuntu 24.04 is the full game-server lifecycle baseline. The Windows and macOS
 jobs currently validate representative Minecraft backend paths only; broader
@@ -935,6 +1051,13 @@ an initial test-failure exit code can be recovered by one matching successful
 isolated recheck. The initial failure and its standard/heavy runner lane remain
 visible. `FLAKY RECOVERED` is a temporary non-blocking classification, not proof
 that a recurring failure has been fixed; track its failing node and log evidence.
+
+New pushes cancel superseded runs for the same PR, keeping validation focused
+on the latest commit. The latest run keeps its complete selected test matrix;
+`fail-fast: false` prevents one failing game from canceling the other games.
+The required summary uses `always()` to report all available outcomes.
+Missing or malformed recheck collector output remains a blocking error and
+retains the original required-job diagnostics.
 Scheduled and merge-group runs exercise broad coverage beyond PR routing.
 
 ### State and process ownership

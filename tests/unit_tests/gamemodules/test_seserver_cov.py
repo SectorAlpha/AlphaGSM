@@ -135,7 +135,9 @@ def test_get_start_command_linux_wraps_with_proton(tmp_path):
     wrap_mock = MagicMock(return_value=["proton", "run", "SpaceEngineersDedicated.exe"])
     with patch.object(mod, "IS_LINUX", True), patch.object(mod.proton, "wrap_command", wrap_mock):
         cmd, cwd = mod.get_start_command(server)
-    assert cmd == ["proton", "run", "SpaceEngineersDedicated.exe"]
+    assert cmd[:2] == ["xvfb-run", "-a"]
+    assert cmd[-3:] == ["proton", "run", "SpaceEngineersDedicated.exe"]
+    assert "SDL_VIDEODRIVER=x11" in cmd and "WINEDLLOVERRIDES=" in cmd
     wrap_mock.assert_called_once()
     assert cwd == str(tmp_path / "DedicatedServer64")
 
@@ -258,4 +260,6 @@ def test_container_data_path_uses_mounted_install_while_process_keeps_host_path(
     spec = mod.get_container_spec(server)
     assert process_command[process_command.index("-path") + 1] == "Z:" + str(tmp_path).replace("/", "\\")
     assert spec["command"][spec["command"].index("-path") + 1] == "Z:\\srv\\server"
+    assert spec["command"][0] == "./SpaceEngineersDedicated.exe"
+    assert "xvfb-run" not in spec["command"]
     assert any(mount["target"] == "/srv/server" for mount in spec["mounts"])

@@ -2,15 +2,22 @@
 
 import json
 import os
+import time
+import uuid
+
+from tests.smoke_tests.gmod_workshop import assert_workshop_mounts, write_probe
 
 import pytest
 
 from conftest import (
+    workshop_runtime_backends,
     default_runtime_backend,
+    effective_runtime_backend,
+    resolve_steamcmd_linux_runtime_image,
     require_integration_opt_in,
     require_steamcmd_opt_in,
     require_command_for_runtime,
-    pick_free_udp_port,
+    pick_free_tcp_port_group,
     write_config,
     alphagsm_env,
     run_and_assert_ok,
@@ -85,10 +92,10 @@ def _assert_gmod_mount_files(install_dir):
         )
 
 
-def test_gmodserver_lifecycle(tmp_path):
+def test_gmodserver_lifecycle(tmp_path, workshop_source=None, workshop_identifier=None, runtime_backend=None):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    runtime_backend = os.environ.get(
+    runtime_backend = runtime_backend or os.environ.get(
         "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
     )
     require_command_for_runtime(
@@ -111,10 +118,12 @@ def test_gmodserver_lifecycle(tmp_path):
         module_name="gmodserver",
     )
     env = alphagsm_env(config_path)
-    port = pick_free_udp_port()
+    port = pick_free_tcp_port_group(3)
 
     # create
     run_and_assert_ok(env, server_name, "create", "gmodserver")
+    run_and_assert_ok(env, server_name, "set", "clientport", str(port + 1))
+    run_and_assert_ok(env, server_name, "set", "sourcetvport", str(port + 2))
 
     # setup
     result = run_and_assert_ok(
@@ -128,11 +137,21 @@ def test_gmodserver_lifecycle(tmp_path):
     )
     if result.returncode != 0:
         skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    if effective_runtime_backend(runtime_backend, module_name="gmodserver") == "docker":
+        run_and_assert_ok(env, server_name, "set", "image", resolve_steamcmd_linux_runtime_image())
 
     server_cfg_path = install_dir / "garrysmod" / "cfg" / "server.cfg"
     assert server_cfg_path.exists()
     _assert_gmod_mount_files(install_dir)
     set_source_hibernation(server_cfg_path, enabled=False)
+
+    item_ids = []
+    if workshop_source:
+        run_and_assert_ok(env, server_name, "mod", "add", workshop_source, workshop_identifier)
+        run_and_assert_ok(env, server_name, "mod", "apply", timeout=600)
+        data = json.loads((home_dir / "conf" / f"{server_name}.json").read_text())
+        item_ids = [entry["workshop_id"] for entry in data["mods"]["desired"]["workshop"]]
+        assert item_ids, "Workshop selection did not persist any desired items"
 
     # start
     run_and_assert_ok(env, server_name, "start")
@@ -143,6 +162,8 @@ def test_gmodserver_lifecycle(tmp_path):
             env, server_name, "a2s", START_TIMEOUT, expected_port=port
         )
         _assert_common_gmod_info(info_data)
+        if item_ids:
+            _verify_workshop_loaded(env, server_name, item_ids, data)
 
         # status
         run_and_assert_ok(env, server_name, "status")
@@ -177,3 +198,42 @@ def test_gmodserver_lifecycle(tmp_path):
     assert stop_result.returncode == 0, stop_result.stderr or stop_result.stdout
     # verify stopped
     wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
+
+
+@pytest.mark.skipif(os.environ.get("ALPHAGSM_RUN_GMOD_WORKSHOP") != "1",
+                    reason="Set ALPHAGSM_RUN_GMOD_WORKSHOP=1 for external Workshop load validation")
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
+def test_gmodserver_workshop_item_loads(tmp_path, runtime_backend):
+    """Install official ULib and require a fresh running-engine mount report."""
+    test_gmodserver_lifecycle(
+        tmp_path, "workshop",
+        os.environ.get("ALPHAGSM_GMOD_WORKSHOP_ITEM", "557962238"), runtime_backend,
+    )
+
+
+@pytest.mark.skipif(not os.environ.get("ALPHAGSM_GMOD_WORKSHOP_COLLECTION")
+                    and os.environ.get("ALPHAGSM_RUN_GMOD_WORKSHOP") != "1",
+                    reason="Set ALPHAGSM_GMOD_WORKSHOP_COLLECTION for an external collection lifecycle")
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
+def test_gmodserver_workshop_collection_loads(tmp_path, runtime_backend):
+    """Require every imported collection item to be mounted by the running engine."""
+    test_gmodserver_lifecycle(
+        tmp_path, "workshop-collection",
+        os.environ.get("ALPHAGSM_GMOD_WORKSHOP_COLLECTION", "2886432224"), runtime_backend,
+    )
+
+
+def _verify_workshop_loaded(env, server_name, item_ids, data):
+    token = "AlphaGSM-Workshop-" + uuid.uuid4().hex
+    run_and_assert_ok(env, server_name, "send", write_probe(data, token))
+    deadline = time.monotonic() + 60
+    last_output, last_error = "", None
+    while time.monotonic() < deadline:
+        last_output = run_and_assert_ok(env, server_name, "logs", "-n", "20000").stdout
+        try:
+            assert_workshop_mounts(last_output, item_ids, token)
+            return
+        except AssertionError as exc:
+            last_error = exc
+        time.sleep(1)
+    pytest.fail(f"Garry's Mod Workshop load verification failed: {last_error}\n{last_output[-20000:]}")

@@ -22,7 +22,10 @@ from utils.valve_server import (
 )
 from utils.gamemodules import common as gamemodule_common
 from .maps import apply_configured_maps, ensure_map_state, tf2_map_command
-from .mods import apply_configured_mods, ensure_mod_state, tf2_mod_command
+from .mods import TF2_WORKSHOP_APP_ID, apply_configured_mods, ensure_mod_state, tf2_mod_command
+from utils.source_console import build_source_container_start_command
+
+workshop_app_id = TF2_WORKSHOP_APP_ID
 
 steam_app_id = 232250
 # This integration installs srcds_run and Linux Steam client libraries.
@@ -38,8 +41,8 @@ command_args = gamemodule_common.build_setup_update_restart_command_args(
 command_args["mod"] = CmdSpec(
     requiredarguments=(ArgSpec("ACTION", "mod action", str),),
     optionalarguments=(
-        ArgSpec("SOURCE", "manifest/curated, gamebanana, or workshop", str),
-        ArgSpec("IDENTIFIER", "family, GameBanana id, or workshop id", str),
+        ArgSpec("SOURCE", "manifest/curated, gamebanana, moddb, workshop, or workshop-collection", str),
+        ArgSpec("IDENTIFIER", "family, GameBanana id, or Workshop ID/URL", str),
         ArgSpec("EXTRA", "optional channel/version", str),
     ),
 )
@@ -222,6 +225,10 @@ restart.__doc__ = "Restart the server by stopping it and then starting it again.
 
 def prestart(server, *args, **kwargs):
     """Perform TF2-specific setup immediately before the server is started."""
+    mods = ensure_mod_state(server)
+    has_content = any(mods['desired'].values()) or mods['installed'] or mods.get('owned_payloads', {}).get('tf2_native_workshop')
+    if mods.get('autoapply', True) and has_content:
+        _package_override('apply_configured_mods', apply_configured_mods)(server)
     steamclient_src = os.path.join(steamcmd.STEAMCMD_DIR, "linux64", "steamclient.so")
     steamclient_dst = _package_override("STEAMCLIENT_DST", STEAMCLIENT_DST)
     steamclient_dir = os.path.dirname(steamclient_dst)
@@ -258,7 +265,7 @@ def update(server, validate=True, restart=False):
         _package_override("apply_configured_maps", apply_configured_maps)(server)
 
 
-def get_start_command(server):
+def get_start_command(server, *, ugc_path=None):
     """Build the command list used to launch the TF2 dedicated server."""
     # example run ./srcds_run -game tf -port 27015 +maxplayers 32 +map cf_2fort
     exe_name = server.data["exe_name"]
@@ -284,7 +291,7 @@ def get_start_command(server):
         require_explicit_tokens=True,
     )
 
-    return [
+    command = [
         exe_name,
         "-game",
         "tf",
@@ -300,7 +307,15 @@ def get_start_command(server):
         "+servercfgfile",
         "server.cfg",
         *launch_args[4:6],
-    ], server.data["dir"]
+    ]
+    mods = server.data.get('mods', {})
+    if mods.get('enabled', True) and mods.get('desired', {}).get('workshop'):
+        # Initialize Steam's dedicated-server UGC library inside the mounted install.
+        # Without -ugcpath the native download may wait on a nonexistent Steam library.
+        command.extend(['-ugcpath', ugc_path or os.path.join(
+            os.path.abspath(server.data['dir']), 'steamapps', 'workshop')])
+        command.extend(['+exec', 'alphagsm_workshop.cfg'])
+    return command, server.data['dir']
 
 
 def do_stop(server, j):
@@ -455,6 +470,18 @@ def status(server, verbose):
         print("Map apply errors: " + "; ".join(map_error_messages))
 
 
+def _validate_tf2_map(server, value):
+    """Permit native Workshop shorthand only for managed same-game item IDs."""
+    name = str(value)
+    if name.startswith('workshop/'):
+        item = name.removeprefix('workshop/')
+        desired = server.data.get('mods', {}).get('desired', {}).get('workshop', [])
+        if not re.fullmatch(r'[1-9][0-9]*', item) or item not in {entry['workshop_id'] for entry in desired}:
+            raise ServerError('Add the TF2 Workshop map ID to desired state before selecting it')
+        return name
+    return validate_source_startmap(server, 'tf', name)
+
+
 def checkvalue(server, key, *value):
     """Validate supported TF2 datastore edits."""
 
@@ -467,11 +494,11 @@ def checkvalue(server, key, *value):
         raw_int_keys=("port",),
         raw_str_keys=("dir", "exe_name"),
         resolved_handlers={
-            "map": lambda server_obj, raw_value: validate_source_startmap(server_obj, "tf", raw_value),
+            "map": _validate_tf2_map,
         },
         raw_handlers={
             "maxplayers": lambda _server_obj, raw_value: str(int(raw_value)),
-            "startmap": lambda server_obj, raw_value: validate_source_startmap(server_obj, "tf", raw_value),
+            "startmap": _validate_tf2_map,
         },
     )
 
@@ -529,12 +556,29 @@ wake_a2s_query = wake_source_server_for_a2s
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
     family="steamcmd-linux",
-    port_definitions=({"key": "port", "protocol": "udp"}, {"key": "port", "protocol": "tcp"}),
+    port_definitions=({"key": "port", "protocol": "udp"}, {"key": "port", "protocol": "tcp"},
+                      {"key": "port", "offset": 1, "protocol": "udp"},
+                      {"key": "port", "offset": 5, "protocol": "udp"}),
+    extra={"run_as_host_user": True, "container_home": "/home/alphagsm", "init": True},
 )
+
+def _get_container_start_command(server):
+    # The command is shell-quoted inside script before shared path mapping runs.
+    # Resolve the UGC argument in the container namespace before quoting it.
+    return build_source_container_start_command(
+        server, lambda current: get_start_command(
+            current, ugc_path=runtime_module.DEFAULT_CONTAINER_WORKDIR + '/steamapps/workshop'),
+    )
+
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
     family="steamcmd-linux",
-    get_start_command=get_start_command,
-    port_definitions=({"key": "port", "protocol": "udp"}, {"key": "port", "protocol": "tcp"}),
+    get_start_command=_get_container_start_command,
+    port_definitions=({"key": "port", "protocol": "udp"}, {"key": "port", "protocol": "tcp"},
+                      {"key": "port", "offset": 1, "protocol": "udp"},
+                      {"key": "port", "offset": 5, "protocol": "udp"}),
     stdin_open=True,
+    # script must not adopt Steam's orphaned crash-upload children as PID 1;
+    # util-linux 2.39.3 can spin in its SIGCHLD wait loop and freeze the relay.
+    extra={"run_as_host_user": True, "container_home": "/home/alphagsm", "init": True},
 )

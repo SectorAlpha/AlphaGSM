@@ -2,12 +2,16 @@
 
 import os
 import os.path
+from pathlib import Path
+import re
 import subprocess as sp
 import time
 
 from downloadermodules.url import download as url_download
 from utils.settings import settings
 from utils.platform_info import PLATFORM
+from server.modsupport.workshop import normalize_workshop_identifier
+from server.modsupport.errors import ModSupportError
 
 # SteamCMD prefers an existing Steam directory, but an explicit configuration
 # must always win regardless of whether that default directory exists.
@@ -245,17 +249,26 @@ def download(
 
 
 def download_workshop_item(path, workshop_app_id, workshop_item_id, steam_anonymous_login_possible):
-    """Download a Steam workshop item and return its extracted content directory."""
+    """Download a Workshop item, requiring item-specific success and real content."""
+
+    try:
+        workshop_item_id = normalize_workshop_identifier(workshop_item_id)
+    except ModSupportError as exc:
+        raise ValueError(str(exc)) from exc
+    ids = ((workshop_app_id, 32), (workshop_item_id, 64))
+    for value, bits in ids:
+        if not re.fullmatch(r"[0-9]{1,20}", str(value)) or not 0 < int(value) < 2**bits:
+            raise ValueError("Steam Workshop app and item IDs must be positive numeric IDs")
+    workshop_app_id, workshop_item_id = (str(int(value)) for value, _ in ids)
 
     install_steamcmd()
     path = _normalise_install_path(path)
-    content_dir = os.path.join(
-        path,
-        "steamapps",
-        "workshop",
-        "content",
-        str(workshop_app_id),
-        str(workshop_item_id),
+    content_roots = [
+        (Path(root) / "steamapps" / "workshop" / "content" / workshop_app_id / workshop_item_id).resolve()
+        for root in (path, STEAMCMD_DIR)
+    ]
+    success_pattern = re.compile(
+        rf'Success\. Downloaded item {workshop_item_id} to "([^"\r\n]+)"'
     )
 
     print("Running SteamCMD workshop download")
@@ -272,9 +285,25 @@ def download_workshop_item(path, workshop_app_id, workshop_item_id, steam_anonym
         )
         print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
         last_output = proc.stdout
-        if proc.returncode == 0 and os.path.isdir(content_dir):
-            _ensure_steamclient_symlinks()
-            return content_dir
+        success = success_pattern.search(proc.stdout)
+        if proc.returncode == 0 and success and "ERROR!" not in proc.stdout:
+            reported_path = Path(success.group(1))
+            content_dir = reported_path.resolve()
+            # Legacy Workshop uploads report a payload filename instead of its directory.
+            if (reported_path.is_file() and not reported_path.is_symlink()
+                    and reported_path.stat().st_size > 0):
+                content_dir = content_dir.parent
+            if content_dir in content_roots and content_dir.is_dir() and any(
+                file.is_file() and not file.is_symlink() and file.stat().st_size > 0
+                for file in content_dir.rglob("*")
+            ):
+                return str(content_dir)
+        if any(error in proc.stdout.lower() for error in ("access denied", "no subscription", "file not found")):
+            last_output = (
+                "Steam Workshop item is unavailable or this game does not permit anonymous downloads. "
+                "An entitled Steam account may be required.\n" + proc.stdout
+            )
+            break
         if attempt + 1 < STEAMCMD_RETRIES:
             retry_delay = _steamcmd_retry_delay(proc.stdout, workshop_app_id)
             print(
@@ -282,7 +311,7 @@ def download_workshop_item(path, workshop_app_id, workshop_item_id, steam_anonym
                 % (retry_delay,)
             )
             time.sleep(retry_delay)
-    raise sp.CalledProcessError(proc.returncode, proc_list, output=last_output)
+    raise sp.CalledProcessError(proc.returncode or 1, proc_list, output=last_output)
 
 
 def get_autoupdate_script(name, path, app_id, force=False, mod=None):

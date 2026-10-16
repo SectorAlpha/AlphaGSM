@@ -8,18 +8,25 @@ from server import ServerError
 
 from utils.platform_info import IS_LINUX
 import server.runtime as runtime_module
+from server.modsupport.native_workshop import build_native_workshop_support
+from .workshop import WORKSHOP_APP_ID, apply_workshop
+from .configuration import sync_server_config
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 298740
 steam_anonymous_login_possible = True
+workshop_app_id = WORKSHOP_APP_ID
+MOD_SUPPORT = build_native_workshop_support(
+    game_label="Space Engineers", workshop_app_id=workshop_app_id, apply_callback=apply_workshop,
+)
 CONTAINER_WORKING_DIR = f"{proton.CONTAINER_SERVER_DIR}/DedicatedServer64"
 DEFAULT_EXECUTABLES = (
     "DedicatedServer64/SpaceEngineersDedicated.exe",
     "DedicatedServer/SpaceEngineersDedicated.exe",
 )
 
-commands = ("update", "restart")
+commands = ("update", "restart") + MOD_SUPPORT.commands
 command_args = gamemodule_common.build_setup_update_restart_command_args(
     "The game port for the server to listen on",
     "The directory to install Space Engineers in",
@@ -28,8 +35,11 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Update the Space Engineers dedicated server to the latest version.",
     "Restart the Space Engineers dedicated server.",
 )
-command_functions = {}
+command_args.update(MOD_SUPPORT.command_args)
+command_descriptions.update(MOD_SUPPORT.command_descriptions)
+command_functions = dict(MOD_SUPPORT.command_functions)
 max_stop_wait = 1
+config_sync_keys = ("port", "servername", "maxplayers")
 
 
 def _container_runtime_env(_server):
@@ -111,7 +121,14 @@ def configure(
         prompt="Where would you like to install the Space Engineers server:",
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
+    MOD_SUPPORT.ensure_mod_state(server)
     return gamemodule_common.finalize_configure(server)
+
+
+def apply_automatic_mods(server):
+    """Respect the lifecycle autoapply switch, including disabled desired state."""
+    if MOD_SUPPORT.ensure_mod_state(server)["autoapply"]:
+        MOD_SUPPORT.apply_configured_mods(server)
 
 
 install = gamemodule_common.make_steamcmd_install_hook(
@@ -119,6 +136,8 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
+    sync_server_config=sync_server_config,
+    post_download_hook=apply_automatic_mods,
 )
 install.__doc__ = "Download the Space Engineers server files via SteamCMD."
 
@@ -128,12 +147,39 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     download_kwargs={"force_windows": IS_LINUX},
+    sync_server_config=sync_server_config,
+    post_download_hook=apply_automatic_mods,
 )
 update.__doc__ = "Update the Space Engineers server files and optionally restart the server."
 
 
 restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Space Engineers server."
+
+
+def prestart(server):
+    """Revalidate native world activation before launching the engine."""
+    sync_server_config(server)
+    apply_automatic_mods(server)
+    if (IS_LINUX and proton.find_wine()
+            and runtime_module.resolve_runtime_metadata(server).get("runtime") == "process"):
+        proton.prepare_wineprefix(_wineprefix(server))
+
+
+def _wineprefix(server):
+    """Use a private Wine prefix for each managed dedicated server."""
+    return server.data.get("wineprefix") or os.path.join(server.data["dir"], ".alphagsm-wineprefix")
+
+
+def _wine_launch_options(server):
+    """Keep an existing Proton compatibility directory on its original layout."""
+    prefix = _wineprefix(server)
+    native_prefix = os.path.join(prefix, "pfx")
+    if os.path.isfile(os.path.join(native_prefix, "system.reg")):
+        if proton.find_proton():
+            return {"wineprefix": prefix, "prefer_proton": True}
+        return {"wineprefix": native_prefix, "prefer_proton": False}
+    return {"wineprefix": prefix, "prefer_proton": False}
 
 
 def get_start_command(server):
@@ -144,7 +190,7 @@ def get_start_command(server):
     working_dir = os.path.dirname(exe_path) or server.data["dir"]
     cmd = [
         os.path.basename(executable),
-        "-console",
+        "-noconsole" if IS_LINUX else "-console",
         "-path",
         _data_path(server),
         "-port",
@@ -152,10 +198,9 @@ def get_start_command(server):
         "-start",
     ]
     if IS_LINUX:
-        cmd = proton.wrap_command(
+        cmd = proton.wrap_xvfb_command(
             cmd,
-            wineprefix=server.data.get("wineprefix"),
-            prefer_proton=True,
+            **_wine_launch_options(server),
         )
     return cmd, working_dir
 
@@ -201,13 +246,14 @@ def checkvalue(server, key, *value):
         server,
         key,
         *value,
-        int_keys=("port",),
-        str_keys=("exe_name", "dir"),
+        int_keys=("port", "maxplayers"),
+        str_keys=("exe_name", "dir", "servername", "wineprefix"),
     )
 
 get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
     port_definitions=({"key": "port", "protocol": "udp"},),
     extra_env=_container_runtime_env,
+    extra_host_dependencies=(proton.xvfb_host_dependency(),),
 )
 
 def get_container_spec(server):

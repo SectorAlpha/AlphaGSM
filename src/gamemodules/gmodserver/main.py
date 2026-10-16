@@ -3,10 +3,16 @@
 import os
 from pathlib import Path
 import re
+import shutil
 
+from gamemodules.gmodserver.gma import extract_gma
+
+from server.modsupport.errors import ModSupportError
+from server.modsupport.workshop import validate_workshop_identifier
 from server.modsupport.source_addons import build_source_addon_mod_support
 from server.modsupport.registry import CuratedRegistryLoader
 import utils.steamcmd as steamcmd
+from utils.source_console import build_source_container_start_command
 from utils.valve_server import define_valve_server_module
 
 
@@ -37,6 +43,36 @@ def load_curated_registry():
     return CuratedRegistryLoader.load(path)
 
 
+workshop_app_id = 4000
+
+
+def download_workshop_addon(path, app_id, item_id, anonymous):
+    """Download and safely extract one GMA into an engine-loadable addon tree."""
+    item_id = validate_workshop_identifier(item_id)
+    payload_root = Path(steamcmd.download_workshop_item(path, app_id, item_id, anonymous))
+    payloads = list(payload_root.glob("*.gma"))
+    if (payload_root.is_symlink() or len(payloads) != 1
+            or not payloads[0].is_file() or payloads[0].is_symlink()):
+        raise ModSupportError("Garry's Mod Workshop item must contain one regular GMA addon")
+    with payloads[0].open("rb") as handle:
+        header = handle.read(5)
+    if header != b"GMAD\x03":
+        raise ModSupportError("Garry's Mod Workshop item has an invalid GMA signature or version")
+    stage_root = Path(path) / "payload"
+    if any(parent.is_symlink() for parent in (stage_root, *stage_root.parents)):
+        raise ModSupportError("Refusing GMA extraction through symlink paths")
+    if stage_root.exists():
+        shutil.rmtree(stage_root)
+    extract_gma(payloads[0], stage_root / "addons" / item_id)
+    return stage_root
+
+
+def stage_gma_addon(archive_path, stage_root, filename):
+    """Stage URL and curated GMAs as the same engine-loadable addon folders."""
+    addon_name = re.sub(r"[^a-z0-9_-]+", "-", Path(filename).stem.lower()).strip("-") or "addon"
+    extract_gma(archive_path, Path(stage_root) / "addons" / addon_name)
+
+
 MOD_SUPPORT = build_source_addon_mod_support(
     game_label="Garry's Mod",
     game_dir="garrysmod",
@@ -44,6 +80,10 @@ MOD_SUPPORT = build_source_addon_mod_support(
     direct_url_suffixes={".gma": "single"},
     direct_url_filename_description="a .gma addon filename or a supported archive filename",
     curated_registry_loader=load_curated_registry,
+    enabled_sources=("url", "gamebanana", "moddb", "workshop"),
+    workshop_app_id=workshop_app_id,
+    workshop_downloader_getter=lambda: download_workshop_addon,
+    single_file_payload_transform_getter=lambda: stage_gma_addon,
     allow_bare_addon_root=True,
     bare_addon_marker_files=("addon.json", "addon.txt"),
     bare_addon_marker_dirs=(
@@ -173,9 +213,29 @@ def configure(server, ask, port=None, dir=None, *, exe_name=None):
 
 
 doinstall = MODULE.doinstall
-prestart = MODULE.prestart
+
+
+def prestart(server, *args, **kwargs):
+    """Apply addon desired state before both process and Docker launches."""
+    MODULE.prestart(server, *args, **kwargs)
+    if MOD_SUPPORT.ensure_mod_state(server).get("autoapply", True):
+        MOD_SUPPORT.apply_configured_mods(server)
+
+
 restart = MODULE.restart
-get_start_command = MODULE.get_start_command
+
+
+def get_start_command(server):
+    """Enable the engine console explicitly for process and container input."""
+    command, directory = MODULE.get_start_command(server)
+    return [*command, "-console"], directory
+
+
+def _get_container_start_command(server):
+    """Give the Source engine a terminal while forwarding managed FIFO input."""
+    return build_source_container_start_command(server, get_start_command)
+
+
 do_stop = MODULE.do_stop
 status = MODULE.status
 message = MODULE.message
@@ -189,7 +249,8 @@ get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
-        get_start_command=get_start_command,
+        get_start_command=_get_container_start_command,
+        tty=True,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
         stdin_open=True,
 )

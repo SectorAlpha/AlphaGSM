@@ -49,6 +49,27 @@ wait_for_log_ready() { wait_for_ready "$@"; }
 wait_for_info_protocol() { echo "protocol $2" >> "$COMMANDS"; return "$QUERY_RC"; }
 run_stop_or_skip() { echo stop >> "$COMMANDS"; }
 '''
+    if module == "counterstrike2":
+        prelude += '''PYTHON_BIN=python3
+run_alphagsm() {
+  echo "$*" >> "$COMMANDS"
+  if [[ "${2:-}" == info && "${3:-}" == --json ]]; then
+    echo '{"protocol":"a2s","port":27015,"map":"de_dust2","players":0,"bots":0,"max_players":16}'
+  fi
+}
+'''
+    if module == "codwawserver":
+        prelude += '''PYTHON_BIN=python3
+run_alphagsm() {
+  echo "$*" >> "$COMMANDS"
+  if [[ "${2:-}" == info && "${3:-}" == --json ]]; then
+    echo '{"protocol":"quake","port":27015,"map":"mp_airfield","players":0,"max_players":16}'
+  elif [[ "${2:-}" == status ]]; then
+    echo "Server isn't running"
+  fi
+}
+wait_for_codwaw_stopped() { echo closed >> "$COMMANDS"; }
+'''
     result = subprocess.run(["bash", "-c", prelude + lifecycle], capture_output=True,
                             env=dict(os.environ, LOG_PATH=str(log), COMMANDS=str(commands),
                                      QUERY_RC=str(query_rc), PORT="27015",
@@ -72,6 +93,39 @@ run_stop_or_skip() { echo stop >> "$COMMANDS"; }
     if query_rc == 0:
         assert calls.index(protocol_call) < calls.index("test query") < calls.index("stop")
         assert "test info --json" in calls
+
+
+@pytest.mark.parametrize("change", [
+    {}, {"players": 2, "bots": 2}, {"players": 0, "bots": 1},
+    {"map": "de_inferno"}, {"port": 27016}, {"protocol": "tcp"},
+])
+def test_cs2_smoke_requires_empty_native_map_response(tmp_path, change):
+    import json
+
+    script = (REPO_ROOT / "tests/smoke_tests/run_counterstrike2.sh").read_text()
+    lifecycle = script[script.index('run_alphagsm "$SERVER_NAME" start'):]
+    commands = tmp_path / "commands"
+    payload = dict(protocol="a2s", port=27015, map="de_dust2", players=0, bots=0)
+    payload.update(change)
+    prelude = '''set -Eeuo pipefail
+SERVER_NAME=test
+PYTHON_BIN=python3
+START_TIMEOUT_SECONDS=1
+run_alphagsm() {
+  echo "$*" >> "$COMMANDS"
+  if [[ "${2:-}" == info && "${3:-}" == --json ]]; then
+    printf '%s\\n' "$PAYLOAD"
+  fi
+}
+wait_for_info_protocol() { return 0; }
+run_stop_or_skip() { echo stop >> "$COMMANDS"; }
+'''
+    result = subprocess.run(["bash", "-c", prelude + lifecycle], capture_output=True,
+                            env=dict(os.environ, COMMANDS=str(commands), PORT="27015",
+                                     PAYLOAD=json.dumps(payload)), check=False)
+    assert (result.returncode == 0) == (not change)
+    if not change:
+        assert "stop" in commands.read_text().splitlines()
 
 
 def test_palworld_accepts_its_listening_message(tmp_path):

@@ -1358,6 +1358,58 @@
       "aliases": [],
       "architectures": null,
       "config_sync_keys": [
+        "rconpassword",
+        "servername",
+        "serverpassword"
+      ],
+      "hooks": {
+        "get_container_spec": true,
+        "get_info_address": true,
+        "get_platform_requirements": false,
+        "get_provider_requirements": false,
+        "get_query_address": true,
+        "get_runtime_requirements": true,
+        "get_start_command": true,
+        "sync_server_config": true
+      },
+      "module": "asrdserver",
+      "platform_requirements": {
+        "docker": {
+          "operating_system": null
+        },
+        "process": {
+          "architectures": null,
+          "platforms": [
+            "linux"
+          ]
+        }
+      },
+      "platforms": null,
+      "provider_categories": [],
+      "query_protocols": {
+        "info": null,
+        "query": null
+      },
+      "runtime": {
+        "docker": true,
+        "family": "wine-proton",
+        "process": true
+      },
+      "schema_version": 1,
+      "support_state": "PASSED",
+      "unknown_fields": [
+        "architectures",
+        "platform_requirements.docker.operating_system",
+        "platform_requirements.process.architectures",
+        "platforms",
+        "query_protocols.info",
+        "query_protocols.query"
+      ]
+    },
+    {
+      "aliases": [],
+      "architectures": null,
+      "config_sync_keys": [
         "ownername",
         "port",
         "registration_publicip"
@@ -8153,7 +8205,11 @@
         "pzserver"
       ],
       "architectures": null,
-      "config_sync_keys": [],
+      "config_sync_keys": [
+        "port",
+        "queryport",
+        "servername"
+      ],
       "hooks": {
         "get_container_spec": true,
         "get_info_address": true,
@@ -8162,7 +8218,7 @@
         "get_query_address": true,
         "get_runtime_requirements": true,
         "get_start_command": true,
-        "sync_server_config": false
+        "sync_server_config": true
       },
       "module": "projectzomboid",
       "platform_requirements": {
@@ -9533,7 +9589,11 @@
     {
       "aliases": [],
       "architectures": null,
-      "config_sync_keys": [],
+      "config_sync_keys": [
+        "maxplayers",
+        "port",
+        "servername"
+      ],
       "hooks": {
         "get_container_spec": true,
         "get_info_address": true,
@@ -9542,7 +9602,7 @@
         "get_query_address": true,
         "get_runtime_requirements": true,
         "get_start_command": true,
-        "sync_server_config": false
+        "sync_server_config": true
       },
       "module": "seserver",
       "platform_requirements": {
@@ -10082,7 +10142,7 @@
       "config_sync_keys": [],
       "hooks": {
         "get_container_spec": true,
-        "get_info_address": false,
+        "get_info_address": true,
         "get_platform_requirements": false,
         "get_provider_requirements": false,
         "get_query_address": true,
@@ -10126,16 +10186,19 @@
     {
       "aliases": [],
       "architectures": null,
-      "config_sync_keys": [],
+      "config_sync_keys": [
+        "adminpassword",
+        "rconport"
+      ],
       "hooks": {
         "get_container_spec": true,
-        "get_info_address": false,
+        "get_info_address": true,
         "get_platform_requirements": false,
         "get_provider_requirements": false,
         "get_query_address": true,
         "get_runtime_requirements": true,
         "get_start_command": true,
-        "sync_server_config": false
+        "sync_server_config": true
       },
       "module": "squadserver",
       "platform_requirements": {
@@ -10150,8 +10213,8 @@
       "platforms": null,
       "provider_categories": [],
       "query_protocols": {
-        "info": null,
-        "query": null
+        "info": "squad_rcon",
+        "query": "squad_rcon"
       },
       "runtime": {
         "docker": true,
@@ -10165,9 +10228,7 @@
         "platform_requirements.docker.operating_system",
         "platform_requirements.process.architectures",
         "platform_requirements.process.platforms",
-        "platforms",
-        "query_protocols.info",
-        "query_protocols.query"
+        "platforms"
       ]
     },
     {
@@ -10760,6 +10821,60 @@
         "architectures",
         "platform_requirements.docker.operating_system",
         "platform_requirements.process.architectures",
+        "platforms",
+        "query_protocols.info",
+        "query_protocols.query"
+      ]
+    },
+    {
+      "aliases": [],
+      "architectures": null,
+      "config_sync_keys": [
+        "maxplayers",
+        "port",
+        "serverpassword",
+        "world",
+        "worldname",
+        "worldsize"
+      ],
+      "hooks": {
+        "get_container_spec": true,
+        "get_info_address": true,
+        "get_platform_requirements": false,
+        "get_provider_requirements": false,
+        "get_query_address": true,
+        "get_runtime_requirements": true,
+        "get_start_command": true,
+        "sync_server_config": true
+      },
+      "module": "terraria.tmodloader",
+      "platform_requirements": {
+        "docker": {
+          "operating_system": null
+        },
+        "process": {
+          "architectures": null,
+          "platforms": null
+        }
+      },
+      "platforms": null,
+      "provider_categories": [],
+      "query_protocols": {
+        "info": null,
+        "query": null
+      },
+      "runtime": {
+        "docker": true,
+        "family": "steamcmd-linux",
+        "process": true
+      },
+      "schema_version": 1,
+      "support_state": "PASSED",
+      "unknown_fields": [
+        "architectures",
+        "platform_requirements.docker.operating_system",
+        "platform_requirements.process.architectures",
+        "platform_requirements.process.platforms",
         "platforms",
         "query_protocols.info",
         "query_protocols.query"
@@ -12012,7 +12127,8 @@
         "queryport",
         "servername",
         "serverpassword",
-        "steamport"
+        "steamport",
+        "track"
       ],
       "hooks": {
         "get_container_spec": true,

@@ -7,6 +7,7 @@ import argparse
 import json
 import math
 import os
+import re
 import subprocess
 from pathlib import Path, PurePosixPath
 
@@ -63,6 +64,12 @@ MODULE_ALIASES = {
     "tf2server": ["teamfortress2"],
 }
 PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = (
+    # This historical name selects CI lanes, not the current support state.
+    # Live validation results remain in docs/TEST_STATUS.md and WORKSHOP_SUPPORT.md.
+    "tests/integration_tests/test_asrdserver.py",
+    "tests/integration_tests/test_ark.py",
+    "tests/integration_tests/test_seserver.py",
+    "tests/integration_tests/test_terraria_tmodloader.py",
     "tests/integration_tests/test_aloftserver.py",
     "tests/integration_tests/test_ahlserver.py",
     "tests/integration_tests/test_ahl2server.py",
@@ -268,7 +275,6 @@ PROCESS_PASSED_DOCKER_PENDING_DUAL_LANE_TESTS: tuple[str, ...] = (
 SOURCE_FAMILY_BACKLOG = set()
 DOCKER_DEFAULT_RUNTIME_TESTS = {
     "tests/integration_tests/test_archive_backed_installs.py",
-    "tests/integration_tests/test_ark.py",
     "tests/integration_tests/test_arksurvivalascended.py",
     "tests/integration_tests/test_astroneerserver.py",
     "tests/integration_tests/test_atlasserver.py",
@@ -303,7 +309,6 @@ DOCKER_DEFAULT_RUNTIME_TESTS = {
     "tests/integration_tests/test_rs2server.py",
     "tests/integration_tests/test_saleblazersserver.py",
     "tests/integration_tests/test_scumserver.py",
-    "tests/integration_tests/test_seserver.py",
     "tests/integration_tests/test_sniperelite4server.py",
     "tests/integration_tests/test_soulmask.py",
     "tests/integration_tests/test_sonsoftheforestserver.py",
@@ -673,6 +678,11 @@ def write_github_outputs(outputs: dict[str, str], github_output: str) -> None:
 
 def build_outputs_for_changed_files(changed_files: list[str], repo_root: Path | None = None) -> dict[str, str]:
     classification = classify_changed_files(changed_files, repo_root=repo_root)
+    return _build_outputs_for_classification(classification, repo_root)
+
+
+def _build_outputs_for_classification(classification, repo_root):
+    """Render the same runtime lanes and artifacts for automatic or manual scope."""
     mode = classification["mode"]
     if mode == SKIP_MODE:
         smoke_standard_matrix = {"include": []}
@@ -712,9 +722,23 @@ def build_outputs_for_changed_files(changed_files: list[str], repo_root: Path | 
 
 
 def build_outputs_for_event(
-    event_name: str, base_sha: str = "", head_sha: str = "", repo_root: Path | None = None
+    event_name: str, base_sha: str = "", head_sha: str = "", repo_root: Path | None = None,
+    *, target_paths: list[str] | None = None,
 ) -> dict[str, str]:
-    """Diff PRs only; scheduled, merge-queue, manual and reusable runs cover all."""
+    """Keep required coverage; allow explicit game selection only on manual runs."""
+    if target_paths:
+        if event_name != "workflow_dispatch":
+            raise ValueError("Selected game tests are supported only for manual runs")
+        root = repo_root or REPO_ROOT
+        paths = dedupe(target_paths)
+        pattern = r"tests/(?:integration_tests/test_[A-Za-z0-9_]+\.py|smoke_tests/run_[A-Za-z0-9_]+\.sh)"
+        if any(not re.fullmatch(pattern, path) or not (root / path).is_file() for path in paths):
+            raise ValueError("Manual game test path must name an existing integration or smoke test")
+        return _build_outputs_for_classification({
+            "mode": TARGETED_MODE,
+            "smoke_scripts": [path for path in paths if path.endswith('.sh')],
+            "integration_tests": [path for path in paths if path.endswith('.py')],
+        }, root)
     if event_name == "pull_request":
         if not base_sha or not head_sha:
             raise ValueError("PR routing requires both base and head commits")
@@ -731,12 +755,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--head-sha", default="")
     parser.add_argument("--event-name", default=os.environ.get("GITHUB_EVENT_NAME", "pull_request"))
     parser.add_argument("--github-output", default=os.environ.get("GITHUB_OUTPUT"))
+    parser.add_argument("--game-test-paths", default=os.environ.get("ALPHAGSM_CI_GAME_TEST_PATHS", ""))
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    outputs = build_outputs_for_event(args.event_name, args.base_sha, args.head_sha, repo_root=REPO_ROOT)
+    outputs = build_outputs_for_event(args.event_name, args.base_sha, args.head_sha,
+                                     repo_root=REPO_ROOT, target_paths=args.game_test_paths.split())
     if args.github_output:
         write_github_outputs(outputs, args.github_output)
     else:

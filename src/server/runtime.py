@@ -2158,6 +2158,8 @@ def get_container_spec(
                                     or isinstance(merged["stop_timeout"], bool)
                                     or not 1 <= merged["stop_timeout"] <= 300):
         raise RuntimeError("Container stop_timeout must be an integer from 1 to 300")
+    if "init" in merged and not isinstance(merged["init"], bool):
+        raise RuntimeError("Container init must be a boolean")
     if merged.get("runtime_family") == "java":
         if merged.get("stop_mode") == "exec-console":
             if not merged.get("stdin_open") and not merged.get("tty"):
@@ -2304,6 +2306,7 @@ def get_runtime_doctor_report(server):
         return report
 
     report["stop_mode"] = spec.get("stop_mode", "docker-stop")
+    report["init"] = spec.get("init", False)
     report["working_dir"] = spec.get("working_dir", "")
     report["command"] = list(spec.get("command", ()))
     report["mounts"] = copy.deepcopy(spec.get("mounts", []))
@@ -3120,6 +3123,16 @@ def _steam_runtime_library_state(server, spec, home_relative_path):
     app_id = str(server.data.get("Steam_AppID") or "").strip()
     if not app_id.isdecimal():
         return None
+    app_ids = [app_id]
+    # Dedicated-server depots and their Workshop consumer are distinct apps
+    # (TF2: 232250 and 440). Steam's native UGC library lookup uses the latter.
+    workshop_id = str(getattr(getattr(server, "module", None), "workshop_app_id", ""))
+    if (len(workshop_id) <= 10 and workshop_id.isascii() and workshop_id.isdecimal()
+            and 0 < int(workshop_id) <= 4294967295):
+        workshop_id = str(int(workshop_id))
+        if workshop_id not in app_ids:
+            app_ids.append(workshop_id)
+    app_entries = "".join(f'            "{identifier}" "0"\n' for identifier in app_ids)
 
     install_source = server.data.get("dir")
     install_source = (
@@ -3163,7 +3176,7 @@ def _steam_runtime_library_state(server, spec, home_relative_path):
         '        "time_last_update_corruption" "0"\n'
         '        "apps"\n'
         "        {\n"
-        f'            "{app_id}" "0"\n'
+        f'{app_entries}'
         "        }\n"
         "    }\n"
         "}\n"
@@ -3225,7 +3238,8 @@ def container_launch_command(spec):
 
     Writing /proc/1/fd/0 writes the output side when stdin is a PTY. A FIFO
     gives both Docker attach and later exec calls the same real input stream.
-    The image entrypoint still runs, and the server remains PID 1 after exec.
+    The image entrypoint still runs; an opted-in Docker init process remains
+    PID 1 and reaps orphaned descendants above the foreground command.
     Console-capable images must provide POSIX sh, mkfifo and cat.
     """
     command = spec.get("command", ())
@@ -3453,6 +3467,8 @@ class ContainerRuntime(BaseRuntime):
             command.extend(["--stop-signal", spec["stop_signal"]])
         if spec.get("stop_timeout"):
             command.extend(["--stop-timeout", str(spec["stop_timeout"])])
+        if spec.get("init", False):
+            command.append("--init")
         if spec.get("stdin_open", False):
             command.append("-i")
         if spec.get("tty", False):

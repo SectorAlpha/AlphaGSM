@@ -30,6 +30,7 @@ steam_app_id = 730
 steam_anonymous_login_possible = True
 wake_a2s_query = wake_source_server_for_a2s
 CS2_WORKSHOP_APP_ID = 730
+workshop_app_id = CS2_WORKSHOP_APP_ID
 ALLOWED_CS2_MOD_DESTINATIONS = ("addons", "cfg")
 
 commands = ("update", "restart", "mod")
@@ -40,8 +41,8 @@ command_args = gamemodule_common.build_setup_update_restart_command_args(
 command_args["mod"] = CmdSpec(
     requiredarguments=(ArgSpec("ACTION", "mod action", str),),
     optionalarguments=(
-        ArgSpec("SOURCE", "gamebanana, moddb, or workshop", str),
-        ArgSpec("IDENTIFIER", "provider item id or Mod DB page URL", str),
+        ArgSpec("SOURCE", "gamebanana, moddb, workshop, or workshop-collection", str),
+        ArgSpec("IDENTIFIER", "provider item id, Workshop URL, or Mod DB page URL", str),
         ArgSpec("EXTRA", "reserved", str),
     ),
 )

@@ -1701,6 +1701,16 @@ def test_print_runtime_doctor_reports_spec_identity_mismatch_without_opt_in(
     assert "Container identity error: " + mismatch in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("invalid_init", [None, "true", "false", 0, 1, {}])
+def test_container_spec_rejects_non_boolean_init(monkeypatch, invalid_init):
+    _set_runtime_backend(monkeypatch, "docker")
+    module = SimpleNamespace(get_container_spec=lambda _server: {
+        "init": invalid_init, "command": ["server"], "mounts": [],
+    })
+    with pytest.raises(runtime_module.RuntimeError, match="init must be a boolean"):
+        runtime_module.get_container_spec(DummyServer(module=module))
+
+
 def test_container_runtime_removes_stale_stopped_container_before_start(monkeypatch):
     _set_runtime_backend(monkeypatch, "docker")
     module = SimpleNamespace(
@@ -1741,7 +1751,21 @@ def test_container_runtime_removes_stale_stopped_container_before_start(monkeypa
     assert not any(str(argument).startswith("HOME=") for argument in observed[-1])
 
 
-def test_container_runtime_runs_opted_in_server_as_effective_host_user(monkeypatch, tmp_path):
+@pytest.mark.parametrize("workshop_app_id, expected_ids", [
+    (None, ["985050"]),
+    (440, ["985050", "440"]),
+    (985050, ["985050"]),
+    ("000440", ["985050", "440"]),
+    ("440\"\n\"999", ["985050"]),
+    ("9" * 100, ["985050"]),
+    (4294967296, ["985050"]),
+    (0, ["985050"]),
+    (-440, ["985050"]),
+    ("٤٤٠", ["985050"]),
+])
+@pytest.mark.parametrize("init_process", [False, True])
+def test_container_runtime_runs_opted_in_server_as_effective_host_user(
+        monkeypatch, tmp_path, workshop_app_id, expected_ids, init_process):
     _set_runtime_backend(monkeypatch, "docker")
     install_dir = tmp_path / "thefront"
     install_dir.mkdir()
@@ -1755,11 +1779,13 @@ def test_container_runtime_runs_opted_in_server_as_effective_host_user(monkeypat
     extra = {
         "run_as_host_user": True,
         "container_home": "/home/alphagsm",
+        "init": init_process,
     }
     server = DummyServer(
         data={"runtime": "docker", "dir": str(install_dir), "Steam_AppID": 985050}
     )
     server.module = SimpleNamespace(
+        workshop_app_id=workshop_app_id,
         get_runtime_requirements=lambda current: runtime_module.build_runtime_requirements(
             current,
             family="steamcmd-linux",
@@ -1790,6 +1816,9 @@ def test_container_runtime_runs_opted_in_server_as_effective_host_user(monkeypat
     runtime_module.ContainerRuntime().start(server)
 
     command = observed[-1]
+    assert command.count("--init") == int(init_process)
+    if init_process:
+        assert command.index("--init") < command.index("--name")
     assert home_source.is_dir()
     assert (home_source / ".steam" / "sdk64").is_dir()
     assert (home_source / ".steam" / "sdk32").is_dir()
@@ -1809,8 +1838,8 @@ def test_container_runtime_runs_opted_in_server_as_effective_host_user(monkeypat
         '        "time_last_update_corruption" "0"\n'
         '        "apps"\n'
         "        {\n"
-        '            "985050" "0"\n'
-        "        }\n"
+        + "".join(f'            "{identifier}" "0"\n' for identifier in expected_ids)
+        + "        }\n"
         "    }\n"
         "}\n"
     )

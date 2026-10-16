@@ -1,6 +1,7 @@
 """Focused coverage tests for wreckfestserver."""
 
 from pathlib import Path
+import shlex
 import sys
 from unittest.mock import MagicMock, patch
 
@@ -31,6 +32,8 @@ def test_configure_sets_wreckfest_defaults(tmp_path):
     assert server.data["queryport"] == "27016"
     assert server.data["steamport"] == "27015"
     assert server.data["maxplayers"] == "24"
+    assert server.data["wreckfest_private_profile"] is True
+    assert "wreckfest_private_profile" not in mod.config_sync_keys
 
 
 def test_sync_server_config_updates_official_keys(tmp_path):
@@ -127,13 +130,19 @@ def test_install_ensures_parent_appid_and_config(tmp_path):
     assert (tmp_path / "server_config.cfg").is_file()
 
 
-def test_get_query_address_uses_queryport():
+@pytest.mark.parametrize("is_linux,expected_port,protocol", [
+    (True, 27016, "udp"),
+    (False, 27016, "a2s"),
+])
+def test_query_and_info_preserve_platform_endpoint(is_linux, expected_port, protocol):
     server = DummyServer()
     server.data["port"] = "33540"
     server.data["queryport"] = "27016"
-    with patch.object(mod.runtime_module, "resolve_query_host", return_value="127.0.0.1"):
-        assert mod.get_query_address(server) == ("127.0.0.1", 33540, "tcp")
-        assert mod.get_info_address(server) == ("127.0.0.1", 33540, "tcp")
+    with patch.object(mod, "IS_LINUX", is_linux), patch.object(
+            mod.runtime_module, "resolve_query_host", return_value="192.0.2.8"):
+        expected = ("192.0.2.8", expected_port, protocol)
+        assert mod.get_query_address(server) == expected
+        assert mod.get_info_address(server) == expected
 
 
 def test_get_start_command_wraps_windows_payload_on_linux(tmp_path):
@@ -149,11 +158,15 @@ def test_get_start_command_wraps_windows_payload_on_linux(tmp_path):
     (tmp_path / "Wreckfest_x64.exe").write_text("", encoding="utf-8")
     (tmp_path / "server_config.cfg").write_text("game_port=33540\n", encoding="utf-8")
 
-    with patch.object(mod.proton, "wrap_command", return_value=["wrapped"]) as wrap_command:
+    with patch.object(mod.proton, "wrap_command",
+                      side_effect=lambda command, **_: ["wrapped", *command]) as wrap_command:
         cmd, cwd = mod.get_start_command(server)
 
     wrap_command.assert_called_once()
-    assert cmd == ["wrapped"]
+    assert cmd[:2] == ["script", "-qefc"]
+    cmd = shlex.split(cmd[2])
+    assert cmd[:2] == ["xvfb-run", "-a"]
+    assert "wrapped" in cmd
     assert cwd == str(tmp_path)
 
 

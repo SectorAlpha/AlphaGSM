@@ -2,11 +2,14 @@
 
 import json
 import os
+from pathlib import Path
+import re
 import sys
 
 import pytest
 
 from conftest import (
+    workshop_runtime_backends,
     alphagsm_env,
     default_runtime_backend,
     pick_free_tcp_port_group,
@@ -21,6 +24,7 @@ from conftest import (
     run_setup_with_port_retry,
     wait_for_info_protocol,
     wait_for_udp_closed,
+    wait_for_glob_log_marker,
     write_config,
 )
 from gamemodules.conanexiles import steam_app_id
@@ -38,19 +42,19 @@ PUBLISHED_STEAMCMD_LINUX_IMAGE = (
 
 
 @pytest.mark.timeout(TEST_TIMEOUT)
-def test_conanexiles_lifecycle(tmp_path):
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
+def test_conanexiles_lifecycle(tmp_path, runtime_backend):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    runtime_backend = os.environ.get(
-        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
-    )
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND",
+                                     runtime_backend or default_runtime_backend())
     require_command_for_runtime(
         "docker", runtime_backend=runtime_backend, module_name=module_name
     )
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
-    install_dir = tmp_path / "server"
+    install_dir = Path(os.environ.get("ALPHAGSM_CONAN_INSTALL_DIR", tmp_path / "server"))
     config_path = tmp_path / "alphagsm.conf"
     server_name = ("itconan" + tmp_path.name.replace("_", "")[-8:])[:15]
     image = resolve_runtime_image(
@@ -92,10 +96,23 @@ def test_conanexiles_lifecycle(tmp_path):
             f"{result.stdout}\n{result.stderr}"
         )
 
-    run_and_assert_ok(env, server_name, "start")
-
+    workshop_id = "3733835102"
+    run_and_assert_ok(env, server_name, "mod", "add", "workshop",
+                      f"https://steamcommunity.com/sharedfiles/filedetails/?id={workshop_id}")
+    run_and_assert_ok(env, server_name, "mod", "apply")
+    log_dir = install_dir / "ConanSandbox/Saved/Logs"
+    if log_dir.exists():
+        for old_log in log_dir.glob("*.log"):
+            old_log.rename(old_log.with_suffix(".previous"))
     try:
+        run_and_assert_ok(env, server_name, "start")
         wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
+        native_log = wait_for_glob_log_marker(
+            log_dir, "*.log", ["[StorageReachExpanded] Active!"], START_TIMEOUT,
+            env=env, server_name=server_name,
+        )
+        assert re.search(r"LogModManager:.*Mounting mod pak file:.*"
+                         r"3733835102[/\\]StorageReachExpanded\.pak", native_log), native_log[-8000:]
 
         run_and_assert_ok(env, server_name, "status")
 
@@ -130,6 +147,28 @@ def test_conanexiles_lifecycle(tmp_path):
         stop_result = capture_alphagsm_stop(
             env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT
         )
+        if stop_result is not None and stop_result.returncode == 0:
+            run_and_assert_ok(env, server_name, "mod", "cleanup")
 
     assert_alphagsm_result_ok(stop_result)
+    wait_for_udp_closed("127.0.0.1", queryport, STOP_TIMEOUT)
+    assert not (install_dir / "ConanSandbox/Mods/3733835102/StorageReachExpanded.pak").exists()
+    assert not (install_dir / "ConanSandbox/Mods/modlist.txt").read_text().strip()
+    for loaded_log in log_dir.glob("*.log"):
+        loaded_log.rename(loaded_log.with_suffix(".loaded"))
+    run_and_assert_ok(env, server_name, "start")
+    try:
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=queryport)
+        unloaded_log = wait_for_glob_log_marker(
+            log_dir, "*.log", ["LogModManager: Starting mod runtime module."], START_TIMEOUT,
+            env=env, server_name=server_name,
+        )
+        assert not re.search(r"(?:Mounting mod pak file:|Mounted (?:container|IoStore container|Pak file))"
+                             r".*StorageReachExpanded", unloaded_log), unloaded_log[-8000:]
+        assert "[StorageReachExpanded] Active!" not in unloaded_log
+        assert "AddActiveModControllerClass: /Game/Mods/StorageReachExpanded/" not in unloaded_log
+    finally:
+        cleanup_stop = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT)
+    assert_alphagsm_result_ok(cleanup_stop)
     wait_for_udp_closed("127.0.0.1", queryport, STOP_TIMEOUT)

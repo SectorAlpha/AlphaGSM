@@ -125,8 +125,16 @@ alphagsm myserver set KEY VALUE
 
 - **Map directory**: `left4dead2/maps/`
 - **Mod directory**: `left4dead2/addons/`
-- **Workshop support**: No
-- **Mod notes**: AlphaGSM can now manage Left 4 Dead 2 addons from checked-in `manifest` entries plus direct `url` entries, GameBanana ids, and Mod DB page URLs. The local manifest currently includes popular Source admin/plugin stacks such as MetaMod and SourceMod. Direct URLs can point at `.vpk` files or supported archives; provider-backed and manifest sources currently install supported archives only. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps its cache/state under `.alphagsm/mods/left4dead2/`.
+- **Workshop support**: Anonymous item and collection downloads with game AppID
+  validation and one bare VPK per item, including verified legacy upload names.
+  The opt-in live test uses public Back To School and Admin System fixtures.
+- **Mod notes**: AlphaGSM manages addons from checked-in `manifest` entries,
+  direct `url` entries, GameBanana IDs, Mod DB URLs, and game-validated Workshop
+  IDs/collections. The manifest includes MetaMod and SourceMod. Direct URLs
+  accept `.vpk` files or supported archives; GameBanana, Mod DB, and manifest
+  sources install supported archives. Workshop items must contain one bare
+  `.vpk`. `mod cleanup` removes AlphaGSM-tracked files and keeps its local
+  cache/state under `.alphagsm/mods/left4dead2/`.
 - **Current status**: Fully supported. The current anonymous SteamCMD lane for
   app `222860` works when AlphaGSM stages the Windows depots first and then the
   Linux depots into the same install tree.
@@ -141,6 +149,50 @@ alphagsm myl4d2 mod add manifest sourcemod
 alphagsm myl4d2 mod add url https://mods.example.invalid/custom-campaign.vpk
 alphagsm myl4d2 mod add gamebanana 12345
 alphagsm myl4d2 mod add moddb https://www.moddb.com/mods/example/downloads/example-addon-pack
+alphagsm myl4d2 mod add workshop ITEM_ID
+alphagsm myl4d2 mod add workshop-collection COLLECTION_ID
+alphagsm myl4d2 mod add workshop "https://steamcommunity.com/sharedfiles/filedetails/?id=762591677"
 alphagsm myl4d2 mod apply
 alphagsm myl4d2 mod cleanup
 ```
+
+Workshop items use the game AppID `550`, rather than server-tool AppID
+`222860`. Both item and collection commands accept IDs or Steam Workshop URLs.
+AlphaGSM checks the collection and every nested item against `550`
+before saving additions. Workshop VPKs install as
+`left4dead2/addons/workshop/<item-id>.vpk`; enabled desired addons auto-apply
+before launch. Re-importing a collection adds new items without deleting old
+ones. Remove an individual entry with `mod remove workshop ITEM_ID`, then
+`mod apply`. Steam can still require an entitled account for some downloads.
+
+To test a public campaign collection and server addon on process and Docker runtimes:
+
+```bash
+ALPHAGSM_RUN_INTEGRATION=1 ALPHAGSM_RUN_STEAMCMD=1 \
+ALPHAGSM_RUN_L4D2_WORKSHOP=1 ALPHAGSM_WORK_DIR=/tmp/alphagsm-work \
+PYTHONPATH=.:src python3 -m pytest tests/integration_tests/test_l4d2server.py \
+  -k workshop_collection -s
+```
+
+The test defaults to [Back To School](https://steamcommunity.com/sharedfiles/filedetails/?id=121115793)
+collection `121115793` and the independent
+[Admin System](https://steamcommunity.com/sharedfiles/filedetails/?id=214630948)
+item `214630948`. Set `ALPHAGSM_L4D2_WORKSHOP_COLLECTION` and
+`ALPHAGSM_L4D2_WORKSHOP_ITEM` to override them. The earlier collection
+`3819008159` returned Valve result `9` (unavailable), so it is no longer the
+default. The test exercises AlphaGSM
+create/setup/start/readiness/status/query/info/stop and requires every addon
+in the running engine's addon load order. File existence alone cannot
+pass. This proves VPK mounting, rather than client rendering or every gameplay
+effect. An unavailable collection fails before downloading the server.
+
+Both process and branch-local Docker tests passed on 2026-10-13. Fresh engine
+output listed all 11 VPKs and showed Admin System executing; real A2S query/info
+and UDP shutdown also passed. Process shutdown completed normally. Docker used
+the existing 60-second timeout/kill fallback, so graceful Docker shutdown remains
+unverified.
+
+The streamed equivalent is
+`ALPHAGSM_RUN_L4D2_WORKSHOP=1 make smoke-test SMOKE_TEST=run_l4d2server.sh`.
+The normal lifecycle test and smoke runner do not require an external Workshop
+collection unless this option is enabled.

@@ -104,9 +104,13 @@ alphagsm myteamfort mod list
 still accepted as an alias for `manifest`. Files land under `tf/addons/` and
 `tf/cfg/`. `mod cleanup` removes only AlphaGSM-owned addon files.
 
-GameBanana and Mod DB ids/URLs are also accepted. Workshop `mod add` records a
-desired item, but Workshop apply is still experimental for TF2 — prefer
-`manifest`.
+GameBanana and Mod DB ids/URLs are also accepted. Workshop maps use the engine's
+native loader described below.
+
+`mod add workshop-collection COLLECTION_ID` also imports a collection snapshot.
+Both item and collection identifiers accept Steam Community Workshop URLs.
+Steam metadata must identify every item and nested collection as TF2 (AppID
+`440`) before AlphaGSM saves additions.
 
 ## Notes
 
@@ -157,4 +161,83 @@ alphagsm myserver set KEY VALUE
 - **Map directory**: Check game documentation
 - **Curated mod directories**: `tf/addons` and `tf/cfg`
 - **Curated mod examples**: `sourcemod`, `metamod`
-- **Workshop support**: Experimental desired-state support only; apply/download is not yet verified
+- **Workshop support**: Native multiplayer maps with verified anonymous process and Docker activation.
+
+
+## Native Workshop multiplayer maps
+
+```bash
+alphagsm mytf2 mod add workshop 454299390
+alphagsm mytf2 mod add workshop-collection YOUR_COLLECTION_ID
+alphagsm mytf2 mod apply
+alphagsm mytf2 set map workshop/454299390
+alphagsm mytf2 start
+```
+
+Official Steam Community item/collection URLs also work. AlphaGSM validates AppID
+`440` and map-mode metadata, then configures the engine's native
+`tf_workshop_map_sync` commands in `tf/cfg/alphagsm_workshop.cfg`. Cosmetic uploads
+are rejected. Native Workshop map names are `workshop/ITEM_ID`; the engine resolves
+the full map name and downloads the current map itself. No Steam account token
+or Workshop API key is supplied. The existing curated map and addon commands stay
+available. See [Valve's native map-loader update](https://www.teamfortress.com/post.php?id=17214).
+AlphaGSM supplies an absolute `-ugcpath` under the install's `steamapps/workshop`
+directory while native Workshop maps are enabled. Docker uses the mounted
+container path and the host user's identity, with a private writable HOME and
+Steam library metadata that identifies both dedicated-server app `232250` and
+Workshop consumer app `440`. Native download readiness still needs to be confirmed
+by the engine. TF2 containers also use Docker's init process so Steam crash
+uploaders are reaped independently of the console relay. With util-linux
+`2.39.3`, an orphaned uploader exiting while `script` is PID 1 can enter an
+incorrect child-wait loop and freeze console forwarding even though the game
+and Workshop transfer remain alive. See the upstream
+[child-wait implementation](https://github.com/util-linux/util-linux/blob/v2.39.3/lib/pty-session.c#L469).
+
+Apply while stopped. AlphaGSM refuses a preexisting unowned sync configuration
+and externally edited managed files. `mod cleanup` removes only its unchanged
+sync configuration; engine-managed Workshop caches and the operator's selected
+map setting remain. Choose an ordinary installed map before restarting after
+cleanup if you want to stop playing the Workshop map.
+
+The public [cp_orange_x3 fixture](https://steamcommunity.com/sharedfiles/filedetails/?id=454299390)
+was verified as AppID `440` on 2026-10-13. The complete process lifecycle passed on 2026-10-13 with real A2S and fresh native
+mount evidence. The normal stop-timeout fallback was used before shutdown
+verification; owned configuration cleanup also passed.
+Its opt-in check requires actual custom-map A2S responses together with a fresh
+`tf_workshop_map_status` row marking the exact item and canonical `.ugcITEM_ID`
+map ready, and a fresh console `status` showing that same canonical map running.
+The check first requests `tf_workshop_map_sync` and waits for native `ready`
+status before sending `changelevel`, which otherwise blocks the engine's command
+loop while a download is pending. Both download and execution checks share a
+ten-minute deadline, and each console probe uses a new response token. Smoke
+waits up to 15 seconds for that token's complete response before replacing it,
+so delayed Screen log writes cannot make it abandon every valid response. A failed
+Docker check includes bounded native Steam Workshop/content log tails and the
+managed library mapping for diagnosis. CI run
+[`38748333313`](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38748333313)
+passed both process and Docker lifecycle and Workshop integration cases on
+2026-10-15, including exact canonical ready/current-map evidence and real A2S.
+The bounded response wait correction passed the complete Screen Workshop
+[smoke case in run `38775144746`](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38775144746/job/116564198683)
+on PR head `6a446839`, including fresh native ready/current-map frames, real
+A2S, shutdown and configuration cleanup. The same run retained passing process
+and Docker native Workshop integrations.
+A pending `workshop/ITEM_ID` advertisement cannot satisfy it. TF2 resolves its
+Workshop BSP through Steam's native item-install API rather than requiring the
+item directory in the engine's search paths. The check also requires full CLI
+shutdown and configuration cleanup.
+
+```bash
+ALPHAGSM_WORK_DIR=/path/on/large/disk \
+ALPHAGSM_RUN_INTEGRATION=1 ALPHAGSM_RUN_STEAMCMD=1 \
+ALPHAGSM_RUN_TF2_WORKSHOP=1 \
+python3 -m pytest tests/integration_tests/test_tf2.py -k workshop
+
+ALPHAGSM_WORK_DIR=/path/on/large/disk TF2_WORKSHOP_ITEM=454299390 \
+make smoke-test SMOKE_TEST=run_tf2.sh
+```
+
+A collection override uses `ALPHAGSM_TF2_WORKSHOP_COLLECTION`; select its test map
+with `ALPHAGSM_TF2_WORKSHOP_LOAD_ITEM` and `ALPHAGSM_TF2_WORKSHOP_MAP`. Smoke accepts
+`TF2_WORKSHOP_COLLECTION`, `TF2_WORKSHOP_LOAD_ITEM`, and `TF2_WORKSHOP_MAP`.
+Process and Docker validation above ran in GitHub CI.

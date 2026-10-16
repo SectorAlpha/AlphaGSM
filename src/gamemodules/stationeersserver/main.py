@@ -6,14 +6,20 @@ import utils.steamcmd as steamcmd
 from server import ServerError
 
 import server.runtime as runtime_module
+from server.modsupport.native_workshop import build_native_workshop_support
+from .workshop import WORKSHOP_APP_ID, apply_workshop
 from server.settable_keys import SettingSpec
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 600760
 steam_anonymous_login_possible = True
+workshop_app_id = WORKSHOP_APP_ID
+MOD_SUPPORT = build_native_workshop_support(
+    game_label="Stationeers", workshop_app_id=workshop_app_id, apply_callback=apply_workshop,
+)
 
-commands = ("update", "restart")
+commands = ("update", "restart") + MOD_SUPPORT.commands
 command_args = gamemodule_common.build_setup_update_restart_command_args(
     "The game port to use for the Stationeers server",
     "The directory to install Stationeers in",
@@ -22,7 +28,9 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Update the Stationeers dedicated server to the latest version.",
     "Restart the Stationeers dedicated server.",
 )
-command_functions = {}
+command_args.update(MOD_SUPPORT.command_args)
+command_descriptions.update(MOD_SUPPORT.command_descriptions)
+command_functions = dict(MOD_SUPPORT.command_functions)
 setting_schema = {
     "serverpassword": SettingSpec(
         canonical_key="serverpassword",
@@ -74,13 +82,26 @@ def configure(server, ask, port=None, dir=None, *, exe_name="rocketstation_Dedic
         prompt="Where would you like to install the Stationeers server:",
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
+    MOD_SUPPORT.ensure_mod_state(server)
     return gamemodule_common.finalize_configure(server)
+
+
+def apply_automatic_mods(server):
+    """Apply desired native XML only when lifecycle autoapply is enabled."""
+    if MOD_SUPPORT.ensure_mod_state(server)["autoapply"]:
+        MOD_SUPPORT.apply_configured_mods(server)
+
+
+def prestart(server):
+    """Revalidate and activate native XML gameplay packages before launch."""
+    apply_automatic_mods(server)
 
 
 install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    post_download_hook=apply_automatic_mods,
 )
 install.__doc__ = "Download the Stationeers server files via SteamCMD."
 
@@ -89,6 +110,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    post_download_hook=apply_automatic_mods,
 )
 update.__doc__ = "Update the Stationeers server files and optionally restart the server."
 

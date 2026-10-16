@@ -73,6 +73,14 @@ def _block_network(monkeypatch):
     monkeypatch.setattr(
         urllib.request, "urlretrieve", _blocked("urllib.request.urlretrieve")
     )
+    # Workshop imports urlopen directly. Block that alias as well so synthetic
+    # addon tests cannot accidentally make real Steam API calls.
+    import server.modsupport.workshop as workshop
+    import server.modsupport.source_addons as source_addons
+    import server.modsupport.workshop_downloads as workshop_downloads
+    monkeypatch.setattr(workshop, "urlopen", _blocked("Workshop.urlopen"))
+    monkeypatch.setattr(source_addons.workshop_provider, "urlopen", _blocked("Workshop.urlopen"))
+    monkeypatch.setattr(workshop_downloads.workshop, "urlopen", _blocked("Workshop.urlopen"))
     try:
         import utils.steamcmd as _sc
         monkeypatch.setattr(_sc, "download", lambda *a, **kw: None)

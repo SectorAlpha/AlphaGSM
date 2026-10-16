@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import subprocess
 from types import SimpleNamespace
 from urllib.parse import urlparse
 
@@ -33,6 +34,8 @@ from .providers import (
 )
 from .reconcile import reconcile_mod_state
 from .registry import CuratedRegistryLoader
+from . import workshop as workshop_provider
+from .native_workshop import safe_server_path
 
 
 _ARCHIVE_URL_SUFFIXES = {
@@ -80,6 +83,8 @@ def build_source_addon_mod_support(
     workshop_downloader_getter=None,
     workshop_app_id: int | None = None,
     workshop_login_anonymous: bool = True,
+    workshop_single_file_suffix: str | None = None,
+    single_file_payload_transform_getter=None,
     prefix_provider_cache_files_with_resolved_id: bool = False,
     allow_bare_addon_root: bool = False,
     bare_addon_marker_files: tuple[str, ...] = (),
@@ -97,6 +102,8 @@ def build_source_addon_mod_support(
         "manifest/curated" if source_type == "curated" else source_type
         for source_type in source_types
     ]
+    if "workshop" in source_types:
+        display_source_labels.append("workshop-collection")
     supported_source_labels = ", ".join(display_source_labels)
     bare_addon_marker_file_set = set(bare_addon_marker_files)
     bare_addon_marker_dir_set = set(bare_addon_marker_dirs)
@@ -110,7 +117,7 @@ def build_source_addon_mod_support(
     if "moddb" in source_types:
         supported_id_description.append("Mod DB page URL")
     if "workshop" in source_types:
-        supported_id_description.append("workshop id")
+        supported_id_description.append("Workshop ID or URL")
 
     def _save_data(server):
         save = getattr(server.data, "save", None)
@@ -251,12 +258,16 @@ def build_source_addon_mod_support(
             f"Missing desired-state metadata for {game_label} addon '{resolved_id}'"
         )
 
+    def _allowed_payload_path(relative):
+        return any(relative == Path(destination) or Path(destination) in relative.parents
+                   for destination in allowed_destination_set)
+
     def _payload_has_allowed_content(stage_root: Path) -> bool:
         for path in stage_root.rglob("*"):
             if not path.is_file():
                 continue
             relative_path = path.relative_to(stage_root)
-            if relative_path.parts and relative_path.parts[0] in allowed_destination_set:
+            if _allowed_payload_path(relative_path):
                 return True
         return False
 
@@ -323,22 +334,60 @@ def build_source_addon_mod_support(
             installed_paths.append(destination)
         return build_owned_manifest(server_root, installed_paths)
 
+    def _validate_install_destinations(server, payload_root, destination_root, *, approved_only=False):
+        """Reject all unowned/active-owner collisions before copying a payload."""
+        server_root = Path(server.data["dir"]).resolve()
+        desired_ids = {entry.resolved_id for entry in _desired_entries(server)}
+        owners = {}
+        for entry in _installed_entries(server):
+            for relative in entry.installed_files:
+                owners.setdefault(relative, set()).add(entry.resolved_id)
+        for source in payload_root.rglob("*"):
+            if not source.is_file():
+                continue
+            payload_relative = source.relative_to(payload_root)
+            if approved_only and not _allowed_payload_path(payload_relative):
+                continue
+            target = destination_root / payload_relative
+            relative = target.relative_to(server_root).as_posix()
+            target = safe_server_path(server, relative)
+            current_owners = owners.get(relative, set())
+            if current_owners.intersection(desired_ids) or (target.exists() and not current_owners):
+                raise ModSupportError(f"Addon install collision with an unowned or active file: {relative}")
+            if target.exists() and not target.is_file():
+                raise ModSupportError(f"Addon install collision with a directory: {relative}")
+            if any(parent.exists() and not parent.is_dir() for parent in target.parents):
+                raise ModSupportError(f"Addon install collision with a parent file: {relative}")
+
     def _install_staged_payload(server, stage_root: Path, install_root_name: str | None = None) -> list[str]:
+        server_root = Path(server.data["dir"]).resolve()
+        game_root = server_root / game_dir
+        try:
+            game_root.resolve().relative_to(server_root)
+        except ValueError as exc:
+            raise ModSupportError("Refusing to install outside server root") from exc
+        if game_root.is_symlink():
+            raise ModSupportError("Refusing to install through a symlink game directory")
         payload_root = _discover_payload_root(stage_root)
         if _payload_has_allowed_content(payload_root):
-            server_root = Path(server.data["dir"])
+            _validate_install_destinations(server, payload_root, game_root, approved_only=True)
             installed_paths = install_staged_tree(
                 staged_root=payload_root,
-                server_root=server_root / game_dir,
+                server_root=game_root,
                 allowed_destinations=allowed_destinations,
+                ignore_unapproved=True,
             )
             return build_owned_manifest(server_root, installed_paths)
 
         if install_root_name and _payload_is_bare_addon_root(payload_root):
+            addon_name = _normalize_bare_addon_name(install_root_name)
+            _validate_install_destinations(
+                server, payload_root, game_root / single_file_destination / addon_name,
+            )
             return _install_bare_addon_root(
                 server,
                 payload_root,
-                _normalize_bare_addon_name(install_root_name),
+                addon_name,
             )
 
         if not _payload_has_allowed_content(payload_root):
@@ -360,6 +409,12 @@ def build_source_addon_mod_support(
         filename = Path(parsed.path).name
         return filename or fallback_name
 
+    def _stage_single_file_payload(archive_path, stage_root, filename):
+        if single_file_payload_transform_getter is not None:
+            single_file_payload_transform_getter()(archive_path, stage_root, filename)
+        else:
+            stage_single_file(archive_path, stage_root, f"{single_file_destination}/{filename}")
+
     def _install_url_entry(server, desired_entry: DesiredModEntry) -> InstalledModEntry:
         desired_record = _desired_record(server, "url", desired_entry.resolved_id)
         cache_root = _cache_root(server) / "url"
@@ -374,11 +429,7 @@ def build_source_addon_mod_support(
         if stage_root.exists():
             shutil.rmtree(stage_root)
         if desired_record["archive_type"] == "single":
-            stage_single_file(
-                archive_path,
-                stage_root,
-                f"{single_file_destination}/{desired_record['filename']}",
-            )
+            _stage_single_file_payload(archive_path, stage_root, desired_record["filename"])
         else:
             _extract_archive(archive_path, stage_root, desired_record["archive_type"])
         return InstalledModEntry(
@@ -413,11 +464,7 @@ def build_source_addon_mod_support(
         if stage_root.exists():
             shutil.rmtree(stage_root)
         if resolved.archive_type == "single":
-            stage_single_file(
-                archive_path,
-                stage_root,
-                f"{single_file_destination}/{archive_name}",
-            )
+            _stage_single_file_payload(archive_path, stage_root, archive_name)
         else:
             _extract_archive(archive_path, stage_root, resolved.archive_type)
         return InstalledModEntry(
@@ -475,14 +522,29 @@ def build_source_addon_mod_support(
     def _install_workshop_entry(server, desired_entry: DesiredModEntry) -> InstalledModEntry:
         workshop_id = _validate_workshop_id()(desired_entry.requested_id)
         cache_root = _cache_root(server) / "workshop" / workshop_id
-        stage_root = Path(
-            _download_workshop_item()(
-                cache_root,
-                workshop_app_id,
-                workshop_id,
-                workshop_login_anonymous,
+        try:
+            stage_root = Path(
+                _download_workshop_item()(
+                    cache_root,
+                    workshop_app_id,
+                    workshop_id,
+                    workshop_login_anonymous,
+                )
             )
-        )
+        except (subprocess.CalledProcessError, OSError, RuntimeError) as exc:
+            output = getattr(exc, "output", None) or str(exc)
+            raise ModSupportError(f"Steam Workshop item {workshop_id} download failed: {output}") from exc
+        if workshop_single_file_suffix:
+            payloads = list(stage_root.glob(f"*{workshop_single_file_suffix}"))
+            if len(payloads) != 1 or not payloads[0].is_file() or payloads[0].is_symlink():
+                raise ModSupportError(f"Workshop item {workshop_id} must contain one {workshop_single_file_suffix} addon")
+            single_stage = cache_root / "stage"
+            shutil.rmtree(single_stage, ignore_errors=True)
+            stage_single_file(
+                payloads[0], single_stage,
+                f"{single_file_destination}/workshop/{workshop_id}{workshop_single_file_suffix}",
+            )
+            stage_root = single_stage
         return InstalledModEntry(
             source_type="workshop",
             resolved_id=desired_entry.resolved_id,
@@ -504,10 +566,24 @@ def build_source_addon_mod_support(
             f"Unsupported {game_label} addon source: {desired_entry.source_type}"
         )
 
-    def _remove_owned_entry(server, installed_entry: InstalledModEntry) -> None:
-        server_root = Path(server.data["dir"])
+    def _remove_owned_entry(server, installed_entry: InstalledModEntry, *, retained_paths=()) -> None:
+        server_root = Path(server.data["dir"]).resolve()
+        targets = []
         for relative_path in installed_entry.installed_files:
-            target = server_root / relative_path
+            relative = Path(relative_path)
+            if relative.is_absolute() or ".." in relative.parts:
+                raise ServerError(f"Refusing to remove unsafe owned path: {relative_path}")
+            target = server_root / relative
+            try:
+                target.resolve().relative_to(server_root)
+            except ValueError as exc:
+                raise ServerError(f"Refusing to remove outside server root: {relative_path}") from exc
+            if target.is_symlink() or any(parent.is_symlink() for parent in target.parents if parent != server_root):
+                raise ServerError(f"Refusing to remove through a symlink: {relative_path}")
+            if relative_path not in retained_paths:
+                targets.append(target)
+
+        for target in targets:
             if target.exists():
                 target.unlink()
 
@@ -534,12 +610,33 @@ def build_source_addon_mod_support(
         mods = ensure_mod_state(server)
         if not mods.get("enabled", True):
             return
+
+        def install_tracked(entry):
+            installed_entry = _install_entry(server, entry)
+            mods["installed"].extend(_serialize_installed_entries([installed_entry]))
+            _save_data(server)
+            return installed_entry
+
+        def remove_tracked(entry):
+            desired_ids = {desired.resolved_id for desired in _desired_entries(server)}
+            retained_paths = {path for installed in _installed_entries(server)
+                              if installed.resolved_id != entry.resolved_id
+                              and installed.resolved_id in desired_ids
+                              for path in installed.installed_files}
+            _remove_owned_entry(server, entry, retained_paths=retained_paths)
+            mods["installed"] = [item for item in mods["installed"] if item["resolved_id"] != entry.resolved_id]
+            _save_data(server)
+
         try:
+            # Validate legacy and manually edited desired state before installing any files.
+            workshop_ids = [entry["workshop_id"] for entry in mods["desired"].get("workshop", [])]
+            if workshop_ids:
+                workshop_provider.resolve_workshop_items(workshop_ids, workshop_app_id)
             reconciled = reconcile_mod_state(
                 desired=_desired_entries(server),
                 installed=_installed_entries(server),
-                install_entry=lambda entry: _install_entry(server, entry),
-                remove_entry=lambda entry: _remove_owned_entry(server, entry),
+                install_entry=install_tracked,
+                remove_entry=remove_tracked,
             )
         except (ModSupportError, ServerError) as exc:
             mods["errors"] = [str(exc)]
@@ -625,18 +722,38 @@ def build_source_addon_mod_support(
             mods["desired"]["moddb"].append(resolved)
             _save_data(server)
             return
-        if action == "add" and source == "workshop" and "workshop" in source_types:
+        if action == "remove" and source == "workshop" and "workshop" in source_types:
+            try:
+                workshop_id = workshop_provider.normalize_workshop_identifier(identifier)
+            except ModSupportError as exc:
+                raise ServerError(str(exc)) from exc
+            desired = mods["desired"]["workshop"]
+            remaining = [entry for entry in desired if entry["workshop_id"] != workshop_id]
+            if len(remaining) == len(desired):
+                raise ServerError(f"Workshop item {workshop_id} is not in desired state")
+            desired[:] = remaining
+            _save_data(server)
+            return
+        if action == "add" and source in ("workshop", "workshop-collection") and "workshop" in source_types:
             if not identifier:
-                raise ServerError(f"{game_label} mod add workshop requires a numeric workshop id")
-            workshop_id = _validate_workshop_id()(identifier)
-            _reject_duplicate_entry(mods, "workshop", workshop_id)
-            mods["desired"]["workshop"].append(
-                {
-                    "workshop_id": workshop_id,
-                    "source_type": "workshop",
-                    "resolved_id": f"workshop.{workshop_id}",
-                }
-            )
+                raise ServerError(f"{game_label} mod add workshop requires a Workshop ID or URL")
+            try:
+                identifier = workshop_provider.normalize_workshop_identifier(identifier)
+                if source == "workshop":
+                    resolved = workshop_provider.resolve_workshop_item(identifier, workshop_app_id)
+                    _reject_duplicate_entry(mods, "workshop", identifier)
+                    entries = [resolved]
+                else:
+                    item_ids = workshop_provider.resolve_workshop_collection(identifier, workshop_app_id)
+                    existing = {entry["workshop_id"] for entry in mods["desired"]["workshop"]}
+                    entries = [
+                        {"workshop_id": item_id, "source_type": "workshop",
+                         "resolved_id": f"workshop.{item_id}", "collection_id": identifier}
+                        for item_id in item_ids if item_id not in existing
+                    ]
+            except ModSupportError as exc:
+                raise ServerError(str(exc)) from exc
+            mods["desired"]["workshop"].extend(entries)
             _save_data(server)
             return
         raise ServerError(f"Unsupported {game_label} mod command")

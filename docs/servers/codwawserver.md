@@ -10,6 +10,26 @@ Status: PASSED on 2026-05-30
 - Host/process fallback: `screen`
 - Python packages from `requirements.txt`
 
+New AlphaGSM servers default to Internet dedicated mode (`dedicated=2`). Existing
+servers without this setting retain their prior native launch behavior. The server
+uses DemonWare authentication in this mode, so its DNS and service availability
+can prevent startup before a playable map exists. For a local LAN server, select
+the engine's supported LAN mode explicitly:
+
+```bash
+alphagsm mycodwawse set dedicated 1
+```
+
+Use `set dedicated 2` to restore Internet mode. These native mode values follow
+[GameServerManagers' CoDWaW configuration](https://github.com/GameServerManagers/Game-Server-Configs/blob/main/codwaw/server.cfg).
+The disposable smoke and integration cases select LAN mode and still require
+real Quake status on the exact managed port, `mp_airfield`, positive capacity,
+and complete shutdown. These checks do not validate Internet authentication,
+public listing, or remote-player joining. The LAN smoke passed in
+[run 38812335342](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38812335342/job/116691510049),
+after run `38775144746` reported a DemonWare DNS/authentication failure in the
+implicit Internet mode.
+
 ## Quick Start
 
 Create the server:
@@ -80,6 +100,7 @@ alphagsm myserver set KEY VALUE
 
 | Key | Aliases | Type | What it does |
 | --- | --- | --- | --- |
+| `dedicated` | — | integer | Dedicated mode: `1` for LAN, `2` for Internet (default). Applied at launch. |
 | `dir` | — | string | Install directory for the server. |
 | `download_name` | — | string | Cached archive filename. |
 | `exe_name` | — | string | Server executable filename. |

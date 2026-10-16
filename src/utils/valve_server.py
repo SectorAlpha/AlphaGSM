@@ -956,6 +956,7 @@ def define_valve_server_module(
 
     exported_namespace = SimpleNamespace(
         steam_app_id=steam_app_id,
+        steam_anonymous_login_possible=True,
         commands=("update", "restart"),
         command_args=_COMMAND_ARGS,
         command_descriptions=_COMMAND_DESCRIPTIONS,

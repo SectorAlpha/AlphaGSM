@@ -104,6 +104,7 @@ alphagsm myserver set KEY VALUE
 | `httpuser` | — | string | Web admin username. |
 | `maxplayers` | users | integer | Maximum allowed players. |
 | `maxspectators` | — | integer | Maximum allowed spectators. |
+| `modserveraddress` | — | string | Optional owned local interface for the native mod download web server. |
 | `modserverport` | — | integer | Mod server port. |
 | `port` | gameport | integer | Primary gameplay port. |
 | `servername` | hostname, name | string | The advertised server name. |
@@ -132,6 +133,7 @@ alphagsm myserver set KEY VALUE
 - **Key settings**:
   - `port` — Game port (default: `27015`)
   - `httpport` — Web admin port (default: `8080`)
+  - `webdomain` — Optional web admin bind address (engine default: `localhost`)
   - `modserverport` — Mod server port (default: `27031`)
   - `maxplayers` — Maximum players (default: `20`)
   - `maxspectators` — Maximum spectators (default: `5`)
@@ -141,4 +143,61 @@ alphagsm myserver set KEY VALUE
 
 - **Map selection**: via `startmap`
 - **Mod directory**: `<install_dir>/<server_name>/Workshop`
-- **Workshop support**: manual storage path only in this first AlphaGSM slice
+- **Workshop support**: native mod activation through hexadecimal IDs in MapCycle.json.
+
+
+## Native Workshop multiplayer content
+
+```bash
+alphagsm myns2 mod add workshop 129599221
+alphagsm myns2 mod add workshop-collection YOUR_COLLECTION_ID
+alphagsm myns2 mod apply
+alphagsm myns2 start
+```
+
+Official Steam Community item and collection URLs work too. AlphaGSM validates
+consumer AppID `4920`, expands collections, and merges hexadecimal mod IDs into
+`<install_dir>/<server_name>/MapCycle.json`. The same native IDs are passed with
+`-mods`, and NS2 downloads and mounts the content itself. No Steam account or
+Workshop API key is supplied. Apply while stopped; prestart also reconciles the
+managed list unless `mods.autoapply` is false.
+
+Existing map rotations, settings, operator mod IDs and other JSON fields remain.
+`mod cleanup` removes unchanged owned mod IDs; it retains operator edits and
+engine-managed Workshop caches. Symlinks, invalid JSON and unsafe native IDs fail
+before a write. Native storage stays under the per-server install directory,
+including server names containing hyphens.
+
+The native mod file server can need an explicit local interface behind NAT:
+`alphagsm myns2 set modserveraddress YOUR_OWNED_LAN_IP`. Its native port is
+`modserverport`; the public IP is not necessarily a bindable local address.
+The validation uses loopback for this local-only download endpoint; remote-client
+content delivery has not been verified.
+
+Web admin also listens on `localhost` by default. `webdomain` accepts an owned
+local interface IP; Spark rejects the wildcard `0.0.0.0`. The Docker Workshop
+check reads the same authenticated native API on loopback inside AlphaGSM's
+managed container, using its installed Python. It keeps admin on loopback and
+still requires exact native map origin, map-change execution and external A2S.
+
+The opt-in check downloads public [ns2_Jambi](https://steamcommunity.com/sharedfiles/filedetails/?id=129599221),
+starts on a stock map, waits for the real engine web API, requests the custom map
+through web admin, and requires both custom-map A2S and `Server.GetMapModId`
+attribution through `getmaplist`. File existence alone cannot satisfy it.
+The native Workshop process and Docker lifecycles passed in GitHub CI run
+`38655040006` on 2026-10-15, including the Docker loopback API transport.
+
+```bash
+ALPHAGSM_WORK_DIR=/path/on/large/disk \
+ALPHAGSM_RUN_INTEGRATION=1 ALPHAGSM_RUN_STEAMCMD=1 \
+ALPHAGSM_RUN_NS2SERVER_WORKSHOP=1 \
+python3 -m pytest tests/integration_tests/test_ns2server.py -k workshop
+
+ALPHAGSM_WORK_DIR=/path/on/large/disk NS2_WORKSHOP_ITEM=129599221 \
+make smoke-test SMOKE_TEST=run_ns2server.sh
+```
+
+Collection overrides use `ALPHAGSM_NS2SERVER_WORKSHOP_COLLECTION`, with
+`ALPHAGSM_NS2SERVER_WORKSHOP_LOAD_ITEM` and `ALPHAGSM_NS2SERVER_WORKSHOP_MAP` selecting
+the map to exercise. Smoke uses corresponding `NS2_WORKSHOP_*` variables. Keep
+web-admin credentials private and configure your own password before public use.

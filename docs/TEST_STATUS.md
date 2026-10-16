@@ -11,7 +11,7 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 | Status   | Count |
 |----------|-------|
-| PASSED | 139 |
+| PASSED | 141 |
 | ENABLED (AUTH) | 49 |
 | ENABLED (BYO) | 45 |
 | DISABLED | 4 |
@@ -43,6 +43,99 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- Run `38812335342` completed CS2 setup in both runtimes. The process recheck
+  then reported native A2S with `de_dust2`, two players and two bots, failing the
+  empty-server assertion. Docker stayed running after map spawn but never
+  emitted the Source 1 readiness strings required before the A2S probe.
+  Replacement disposable configurations apply zero-bot/awake rules in the native
+  competitive override after game-mode defaults; Docker readiness now goes
+  directly through real A2S and AlphaGSM info, still requiring the selected map,
+  managed port and zero players/bots. These replacements are pending remote CI.
+  CoDWaW's LAN smoke correction passed in
+  [batch 10](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38812335342/job/116691510049).
+- Run `38775144746` passed all 21 required anonymous Workshop integration suites
+  in both runtimes and their matching smoke scenarios, including the corrected
+  TF2/Wreckfest capture paths. All 331 expected artifacts were retained. The
+  remaining failures are outside that campaign: CoDWaW smoke stopped during
+  DemonWare DNS/authentication, and CS2 process setup failed while its isolated
+  recheck skipped after the old 900s/240s limits. CS2 Docker setup also skipped.
+  The same run's CS2 Docker smoke successfully installed the 73.4 GB depot in
+  about 22 minutes, longer than those combined limits. Replacements explicitly
+  select CoDWaW LAN mode for disposable CI and give CS2 one bounded setup attempt
+  with a larger budget and timeout failure diagnostics. Validation is pending;
+  LAN lifecycle results do not establish Internet authentication or client joins.
+- Full run `38748333313` has no persistent integration failures. Exact JUnit
+  artifacts confirm baseline and native Workshop cases passed in both runtimes
+  for ARK, Space Engineers, TF2 and Wreckfest, including every previously failing
+  case. All 330 expected artifacts were retained. JC3 process and Avorion Docker
+  recovered on isolated rechecks. Only TF2 and Wreckfest smoke remain failing:
+  delayed Screen log frames and a prompt redraw inside an earlier stock track
+  identifier rejected already-loaded native content. Replacement smoke fixes
+  retain fresh responses and exact engine-load proof; remote validation is pending.
+- Full PR run `38702811625` passed 9,693 Linux units, lint 10.00/10, coverage,
+  native Windows cases, binaries and shared backends, retaining all 336 expected
+  artifacts. The five Source smoke failures are resolved. ARK and Wreckfest smoke
+  still fail, together with the same seven integration cases listed below;
+  JC3 again recovered on recheck. ARK now reaches engine loading and crashes on
+  Linux-cooked assets; the replacement uses Windows-cooked content as required
+  by upstream tooling. Space Engineers process lacks a fresh user's LocalLow
+  folder, while Docker passes with the same OS/CLR. TF2 downloads successfully
+  but its console relay stalls after orphaned Steam uploaders exit; replacement
+  changes enable Docker init and register the Workshop consumer library.
+  Wreckfest captures its complete stock-only registry; replacement tests perform
+  the documented first-start native profile initialization before the final
+  engine-load assertion. These fixes await remote validation.
+- Full PR run `38655040006` retained all 336 expected artifacts. NS2 Docker
+  and Squad 44 process/Docker native Workshop lifecycles now pass. Seven
+  integration cases remain: ARK Workshop in both runtimes, Space Engineers
+  process baseline/Workshop, TF2 Docker Workshop and Wreckfest Workshop in both
+  runtimes. JC3 recovered on recheck. Seven smoke scenarios failed: ARK,
+  BrainBread 2, Day of Infamy, Insurgency, NMRIH, TF2 and Wreckfest. Replacement
+  metadata, JSON-output, download sequencing and console-capture fixes await CI;
+  Space Engineers process now retains additional crash evidence. No local tests ran.
+- Replacement changes passed lint, Linux units and coverage in GitHub run
+  `38651680142`. Focused run `38649280824` passed Space Engineers' Docker MES
+  smoke and NS2's process native Workshop integration. ARK's Linux engine
+  authenticated RCON but returned only a receipt for `GetAll`; the replacement
+  fixture now requires a staged Linux custom world plus exact native startup
+  and A2S identity. Squad 44/Wreckfest native proof failures remain open.
+- Full PR run `38582006699` completed with ten persistent integration failures
+  across ARK Workshop, NS2 Docker Workshop, Space Engineers process, Squad 44
+  Workshop, TF2 Docker Workshop and Wreckfest Workshop; JC3 recovered on recheck.
+  The earlier shared Source SteamCMD section corrections removed their setup
+  failures. Replacement corrections use remote diagnostics only and keep native
+  content execution, protocol health and complete shutdown requirements.
+- Required anonymous Workshop campaign `38558175692` completed on 2026-10-14:
+  20 initial integration failures, one recovered recheck, 19 persistent failures,
+  and three failed smoke scenarios. Earlier native-load evidence in the Workshop
+  matrix does not certify this CI run. The canceled duplicate `38558162021`
+  separately exposed a summary cancellation/missing-output defect; fixing that
+  reporting path does not resolve or suppress the game failures.
+- CI run `38479351815` exposed ARK engine-file permission failures, Reactive
+  Drop duplicate SteamCMD configuration and host-Wine prerequisite failures,
+  Wreckfest's incorrect `./cmd.exe` launch and runtime selection, and Squad 44
+  query/obsolete Workshop fixture failures. No local retests were run. ARK's
+  corrected Docker smoke and integration passed in run `38531765158`.
+  Reactive Drop's process and Docker integrations plus Docker smoke passed in
+  run `38534961789` after its terminal-input correction. Squad 44's stock process
+  and Docker integrations plus Docker smoke passed in run `38537399526` after
+  depot-SDK launch preference was added; successful captured output does not
+  establish the loaded SDK hash or prove the earlier timeout's cause. Wreckfest's
+  added A2S requirement was unsupported: all address families timed out while
+  the engine's query-port socket was dual stack. Docker's published TCP proxy
+  also masked the lack of a native TCP listener in the process lane. Linux now
+  uses limited UDP reachability on the observed query port, with fresh native
+  startup evidence and runtime liveness required separately. Stock process and
+  Docker integrations plus Docker smoke passed in run `38545270577` with
+  complete TCP/UDP shutdown checks. Stock ARK and Squad 44 tests retain
+  actual A2S readiness. Public anonymous Workshop cases are now mandatory in
+  CI, with explicit process/Docker lanes and skips treated as failures; local
+  runs retain download opt-ins. Replacement native-load results are pending.
+  Wreckfest's UDP result does not establish track/player metadata or
+  Workshop loading; a successful Windows launch alone cannot pass its baseline.
+- The anonymous Workshop expansion is tracked per game and runtime in
+  [WORKSHOP_SUPPORT.md](WORKSHOP_SUPPORT.md). Existing baseline server status
+  does not imply its new Workshop loader has passed live validation.
 - Conan Exiles now installs the official native Linux depot and runs through
   the shared `steamcmd-linux` family. The previous Windows server reached
   startup under Wine but crashed in `xaudio2_9.dll` even with `-nosound`.
@@ -170,7 +263,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | ns2server | Process and Docker lifecycle revalidation of the corrected install-root launcher, relative data paths, exact A2S query on `port + 1`, and shutdown checks. |
 | ns2cserver | Process and Docker lifecycle revalidation of the corrected `ia32` working directory, relative data paths, exact A2S query on `port + 1`, and shutdown checks. |
 
-## PASSED (140)
+## PASSED (141)
 
 | Test | Type |
 |------|------|
@@ -179,7 +272,8 @@ support-state tables and do not change the summary counts or record a new pass.
 | ark | Docker runtime (SteamCMD Linux) — PASSED 2026-06-01; fresh formal integration now proves the old size-based disabled note is no longer the real blocker: anonymous SteamCMD setup for app `376030` completes on the shared `steamcmd-linux` runtime, AlphaGSM launches `ShooterGame/Binaries/Linux/ShooterGameServer` from its real working directory inside the Docker lane as a non-root user with the shared Steam bootstrap mounted into `~/.steam/sdk64/steamclient.so`, and validates real A2S `query`, `info`, and `info --json` on the managed `queryport` instead of the older stale host-process / generic-TCP assumptions |
 | arksurvivalascended | Docker runtime (Wine/Proton) — PASSED 2026-05-30; the current correction replaces the deprecated Steam query-port assumption with authenticated Source RCON `ListPlayers` on managed TCP `rconport`. The runtime contract claims and publishes game UDP and RCON TCP; launch enables RCON and keeps the admin password out of query output. Replacement CI validation is pending; this does not record a new pass. |
 | armarserver | SteamCMD |
-| avserver | SteamCMD |
+| asrdserver | Wine/Proton — PASSED 2026-10-14 in process and Docker integrations plus Docker smoke (`38534961789`). Anonymous game/SDK setup, loaded-map A2S readiness, status/query/info/JSON, stop and query shutdown passed through AlphaGSM. Docker supplies terminal-backed stdin for the native Win32 console API. Required CI Workshop engine-load validation remains unverified. |
+| avserver | SteamCMD — anonymous AzimuthLib Workshop activation passed process and branch-local Docker lifecycles on 2026-10-13, including live Lua execution and native query/info/shutdown. |
 | archive_backed_installs | Archive |
 | bb2server | SteamCMD (Source) — PASSED; process and Docker readiness uses AlphaGSM's real A2S `info --json` response because Docker console logs can omit the traditional Source startup markers |
 | btlserver | SteamCMD — Docker runtime uses the shared non-root host-user contract required by the Unreal payload; the current GitHub matrix validates both process and Docker lanes |
@@ -190,7 +284,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | ccserver | SteamCMD (Source) |
 | citadelserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; anonymous SteamCMD app `489650` and the native Linux payload remain supported, with the validated health contract now declared honestly as generic TCP on the managed game port because the configured queryport did not answer A2S in replacement CI validation. |
 | colserver | Docker runtime (SteamCMD Linux) — PASSED; CI keeps the validated Docker lifecycle after the forced host-process recheck stayed alive without opening Colony Survival's managed UDP query surface. |
-| conanexiles | Docker runtime (SteamCMD Linux) — the official native Linux depot replaces the Wine path that crashed in `xaudio2_9.dll` during current CI. AlphaGSM launches `ConanSandbox/Binaries/Linux/ConanSandboxServer-Linux-Shipping` as the invoking host user because the binary refuses root, syncs settings under `ConanSandbox/Saved/Config/LinuxServer/`, claims the hardcoded pinger at game port plus one, and retains A2S on the managed `queryport`. Replacement CI validation is pending; this does not record a new pass. |
+| conanexiles | SteamCMD Linux — PASSED 2026-10-13 in process and branch-local Docker: anonymous Workshop PAK mounting and Blueprint execution, A2S query/info, owned cleanup and fresh unmodded restart. The official Linux depot replaces the crashing Wine path, runs as the invoking host user, syncs LinuxServer configuration and claims the game-port-plus-one pinger. Existing stop timeout required forced termination; graceful saving is not established. |
 | counterstrike2 | SteamCMD (Source 2) — PASSED 2026-04-08 |
 | csczserver | SteamCMD (GoldSrc) |
 | csserver | SteamCMD (GoldSrc) |
@@ -211,7 +305,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | fearthenightserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; AlphaGSM syncs `Moonlight/Saved/Config/WindowsServer/Engine.ini` and `GameUserSettings.ini`, launches the dedicated server with the real `Pittsburgh_Overworld?listen?Port=...?QueryPort=...?SessionName=...?MaxPlayers=...` map URL, and treats the live health surface as generic `udp` on the managed game port. CI keeps the validated Docker lifecycle after the forced host-process recheck failed to expose that surface. |
 | fofserver | SteamCMD (Source) — PASSED; process and Docker readiness uses AlphaGSM's real A2S `info --json` response because Docker console logs can omit the traditional Source startup markers |
 | frozenflameserver | SteamCMD |
-| gmodserver | SteamCMD (Source) — PASSED; process and Docker readiness uses AlphaGSM's real A2S `info --json` response because Docker console logs can omit the traditional Source startup markers |
+| gmodserver | Workshop extension PASSED 2026-10-13 in process and branch-local Docker: collection `2886432224` expands ULib/ULX, GMAs safely extract into owned addon trees, and a fresh engine probe matches addon-file CRCs plus both live server APIs. Real A2S query/info and shutdown verified. Docker used the existing 60-second stop timeout/kill fallback; graceful completion remains unproven. |
 | hl2dmserver | SteamCMD (Source) |
 | hldmserver | SteamCMD (GoldSrc) |
 | hldmsserver | SteamCMD (Source) |
@@ -224,7 +318,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | kerbalspaceprogramserver | Docker runtime (SteamCMD Linux) — PASSED 2026-06-01; fresh smoke and focused integration now prove the old SteamCMD/platform skip note was stale: AlphaGSM downloads the Linux LunaMultiplayer release directly, launches the native `LMPServer-linux-x64/Server` host inside the shared `steamcmd-linux` runtime, creates first-run `Config/ConnectionSettings.xml` and `GeneralSettings.xml` when the upstream archive has not generated them yet, syncs the managed port, server name, and max players before start, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed main game port |
 | kf2server | SteamCMD |
 | l4dserver | SteamCMD (Source) |
-| l4d2server | SteamCMD (Source) — PASSED 2026-06-01; app `222860` installs anonymously when AlphaGSM stages the Windows depots first and then applies the Linux depots into the same server tree. Process and Docker readiness uses the real A2S `info --json` response on the managed game port because Docker console logs can omit the traditional Source startup markers. |
+| l4d2server | SteamCMD (Source) — PASSED 2026-06-01; app `222860` installs anonymously by staging Windows then Linux depots. Workshop extension PASSED 2026-10-13 in process and branch-local Docker: Back To School collection `121115793` plus Admin System `214630948`; fresh engine addon load order confirms all 11 VPKs, with Admin System execution also observed. Real A2S readiness/query/info/info-json, status and UDP shutdown verified. Process stopped normally; Docker used the existing 60-second stop timeout/kill fallback, so graceful Docker shutdown remains unproven. The unavailable collection `3819008159` is no longer the default. |
 | lastoasisserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-30; anonymous SteamCMD app `920720`, the native `MistServer-Linux-Shipping` payload, and generic `tcp` health on the managed main port remain the supported contract. The 2026-07-16 forced process lane mounted content but never opened that surface, so CI now keeps one Docker-default lifecycle. |
 | longvinterserver | Docker runtime — PASSED 2026-05-29; fresh smoke and focused integration now both pass on the shared `steamcmd-linux` runtime image once AlphaGSM seeds `Longvinter/Saved/Config/LinuxServer/Game.ini` from the shipped `.default`, syncs `ServerName` / `MaxPlayers`, launches `LongvinterServer.sh` inside the container as the mounted server-directory owner instead of root, and treats the live health surface as generic `udp` on the managed game port instead of the older stale A2S `queryport` assumption |
 | minecraft_bedrock | Docker runtime (service-console) — PASSED 2026-05-30; fresh focused integration now passes on the rebuilt branch-local `service-console` runtime image after AlphaGSM switches Bedrock setup from the stale JavaScript-page assumption to a direct browser-header archive fetch, keeps Docker-first lifecycle coverage on the shared runtime family, and uses Docker-stop for the container-backed stop path because Bedrock echoes console `stop` input without exiting cleanly under the shared exec-console path |
@@ -235,7 +329,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | minecraft_waterfall | Direct download |
 | medievalengineersserver | Docker runtime (Wine/Proton) — PASSED 2026-06-03; anonymous SteamCMD setup for app `367970` completes, AlphaGSM stages `instance-data/MedievalEngineers-Dedicated.cfg`, and validates `query`, `info`, and `info --json` on the generic `tcp` health surface at the managed game port. The host Proton path now uses Xvfb as the Docker path already did, preventing the dedicated server's immediate window-handle crash. |
 | miscreatedserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; the supported Linux path reads `user/server.log` and uses generic `tcp` health on the managed main port. CI now keeps one Docker-default lifecycle rather than duplicating an unproven host-Proton lane. |
-| codwawserver | Docker runtime — PASSED 2026-05-30; AlphaGSM drives the archive-backed install through the shared `steamcmd-linux` runtime and validates `query`, `info`, plus `info --json` through the native Quake-style UDP status protocol on the managed game port |
+| codwawserver | Docker runtime — LAN smoke PASSED 2026-10-15 in run `38812335342`, following the earlier external DemonWare DNS/authentication failure. Disposable smoke/integration explicitly select LAN dedicated mode and require map identity, native Quake status, capacity and complete shutdown. Internet mode remains the new-server default and its authentication/client joins are not established by LAN CI. |
 | mumbleserver | Docker runtime — PASSED 2026-05-18; standard integration/smoke use the shared `simple-tcp` Docker runtime because upstream does not publish an anonymous standalone Linux server binary. Process mode remains available for operators with a host `mumble-server`/`murmurd` package, but CI keeps one Docker-default lifecycle. |
 | mtaserver | Docker runtime — PASSED 2026-05-30; fresh focused integration and smoke now both pass on the branch-local `steamcmd-linux` runtime image once AlphaGSM auto-installs the official `baseconfig.tar.gz` payload, syncs `mods/deathmatch/mtaserver.conf` before launch, disables `ase` so no unmanaged `port + 123` listener is required, and aligns `query`, `info`, and `info --json` to MTA's real built-in HTTP listener on `httpport = port + 2` instead of the older stale ncurses/A2S assumptions |
 | mordserver | SteamCMD |
@@ -250,7 +344,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | palworld | SteamCMD Linux, process + Docker — PASSED; the corrected contract publishes and launches only Palworld's documented UDP game port, removes the invented query-port argument, and uses generic UDP `query`, `info`, and `info --json` on the managed game port. Fresh validation of this correction is pending the replacement CI run. |
 | primalcarnageextinctionserver | Wine/Proton — PASSED 2026-05-28; the corrected dedicated launch argv now feeds the `PC-Docks?...?bIsDedicated=true` map URL directly to `PrimalCarnageServer.exe`, focused smoke/integration reach `LoadMap: PC-Docks`, `Game class is 'PCTeamDeathMatchGame'`, and `NetMode is now 1`, A2S/info succeed on the managed `queryport`, and `stop` closes the live UE3 ports cleanly |
 | pcarserver | PASSED 2026-05-23; standard smoke and focused integration now both pass, with readiness driven by `info --json` protocol `a2s` on the derived query port (`port + 1`) |
-| projectzomboid | SteamCMD |
+| projectzomboid | Workshop extension PASSED 2026-10-13 on Build 42.21 in process and branch-local Docker: anonymous item `2773478544`, native Workshop Ready/install, exact mod ID loading and server Lua execution, status/query/info/info-json, successful stop, UDP shutdown, and removal verified. Build 41 compatibility has metadata unit coverage; its live runtime was not tested. |
 | q2server | Direct download — PASSED 2026-05-18; setup builds Yamagi Quake II from source, stages the official demo `baseq2` data, and defaults fresh servers to `demo1`. Process and Docker query/info use the dedicated Quake II `status` protocol, while Docker runs as the invoking host user because Quake II refuses root execution. |
 | qwserver | Direct download — PASSED 2026-05-18; setup stages the public nQuake shareware, KTX runtime, configs, and core maps needed for anonymous MVDSV installs. GitHub CI authenticates release metadata resolution, process and Docker launch with `-game ktx`, and the shared Quake image supplies MVDSV's required `libcurl.so.4` before validating the QuakeWorld `status` protocol. |
 | pvkiiserver | SteamCMD (Source) — PASSED; process and Docker readiness uses AlphaGSM's real A2S `info --json` response because Docker console logs can omit the traditional Source startup markers |
@@ -272,27 +366,28 @@ support-state tables and do not change the summary counts or record a new pass.
 | sonsoftheforestserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; AlphaGSM writes the managed JSON `user-data/dedicatedserver.cfg`, seeds `ownerswhitelist.txt`, starts Xvfb from the shared container entrypoint, and validates A2S on the managed `queryport`. CI now routes one Docker-default heavy lifecycle instead of duplicating the currently failing forced host-process Wine lane. |
 | solserver | SteamCMD |
 | subsistenceserver | Docker runtime (Wine/Proton) — PASSED 2026-06-03; fresh focused integration plus smoke now prove the earlier DirectX-only disabled note was stale. Anonymous SteamCMD setup for app `1362640` installs the full Windows dedicated payload, AlphaGSM launches the upstream `Binaries/Win64/UDK.exe` dedicated host inside the shared `wine-proton` runtime, hands Docker the bare Windows command so the shared entrypoint can seed the Wine prefix and Xvfb correctly, syncs the real UDK config layer so the managed `queryport` becomes authoritative before start, and validates `query`, `info`, and `info --json` over A2S on the managed query port |
-| squad44server | SteamCMD |
-| squadserver | SteamCMD |
-| stationeersserver | SteamCMD — PASSED 2026-05-29; smoke and focused integration now both pass on the post-September-2025 Linux dedicated-server contract (`rocketstation_DedicatedServer.x86_64 -file start ... -logFile ./server.log -settings ... UseSteamP2P false LocalIpAddress 0.0.0.0`), with the shared setup port-retry helper covering the colliding default `updateport` and generic `udp` `query` / `info` on the managed game port |
+| squad44server | SteamCMD — stock and Ramelle Workshop process/Docker integrations plus Docker smoke PASSED 2026-10-15 in CI run `38655040006`; exact native PAK registration/serialization, custom world, real A2S query/info/JSON and shutdown verified. Existing forced-stop fallback remains; graceful saving is not established. |
+| squadserver | SteamCMD — anonymous Workshop process lifecycle PASSED 2026-10-13 with native PAK/IoStore mount, serialization and layer registration, real Squad RCON population/map/layer queries, cleanup and fresh unmodded restart. Workshop Docker validation awaits the SSD endpoint; existing forced-stop fallback does not prove graceful saving. |
+| stationeersserver | SteamCMD — PASSED 2026-05-29; smoke and focused integration now both pass on the post-September-2025 Linux dedicated-server contract (`rocketstation_DedicatedServer.x86_64 -file start ... -logFile ./server.log -settings ... UseSteamP2P false LocalIpAddress 0.0.0.0`), with the shared setup port-retry helper covering the colliding default `updateport` and generic `udp` `query` / `info` on the managed game port. Anonymous Workshop process validation also passed 2026-10-13: the Mars Abandoned Frontier fixture produced a fresh native save with its exact custom world ID and Structure prefabs; CLI shutdown and owned-mod cleanup passed. Workshop Docker validation awaits an SSD-backed endpoint. |
 | starruptureserver | Docker runtime (Wine/Proton) — PASSED 2026-06-01; fresh focused integration plus follow-up smoke validation now prove the old timeout-only skip was stale: anonymous SteamCMD setup for app `3809400` installs the real Windows dedicated payload, AlphaGSM launches `StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe` inside the shared `wine-proton` runtime, stages root `DSSettings.txt` from the checked-in template before launch, and validates `query`, `info`, and `info --json` on the current generic `udp` health surface at the managed main game port |
 | stnserver | SteamCMD |
 | svenserver | SteamCMD (GoldSrc) |
 | terraria_tshock | Direct download — PASSED 2026-05-28; smoke and focused integration both pass on the Docker-backed lifecycle once the shared `steamcmd-linux` runtime image includes the required `.NET` runtimes, and CI now builds that image from the branch before validation |
+| terraria_tmodloader | Direct official release download — PASSED 2026-10-13; process and branch-local Docker baseline/Workshop lifecycles passed on v2026.08.3.0, including native Census TownProgress execution, framed Terraria query/info and shutdown verification. |
 | terraria_vanilla | Direct download |
 | terratechworldsserver | Wine/Proton — PASSED 2026-05-28; the Linux lane now launches `TT2/Binaries/Win64/TT2Server-Win64-Shipping.exe` directly under `xvfb-run` + Wine, syncs AlphaGSM's managed port into `dedicated_server_config.json`, reaches `Created socket for bind address`, `IpNetDriver listening on port`, and `Bringing World` in `TT2/Saved/Logs/TT2.log`, and passes the full AlphaGSM lifecycle on the generic `udp` contract instead of A2S |
 | tf2 | SteamCMD (Source) |
 | tfcserver | SteamCMD (GoldSrc) |
 | thefrontserver | SteamCMD — PASSED on the Ubuntu 24.04 baseline; process and Docker retain one game command. The current Docker correction opts into the shared non-root host UID/GID contract with manager-owned HOME state, fail-closed host-path translation, and matching `doctor` checks. Replacement CI validation is pending and this does not record a new pass. |
 | trackmaniaserver | Direct download — PASSED 2026-05-17; setup now syncs the configured XML-RPC port into `GameData/Config/dedicated_cfg.txt`, launch stays attached with `/nodaemon`, and query/info use TCP reachability on the XML-RPC endpoint |
-| unturned | SteamCMD |
+| unturned | SteamCMD — Workshop map extension PASSED 2026-10-13 in process and Docker with public PEI Arena item `2396897717`: native download, engine level loading at 100%, real A2S map, query/info/status, removal and shutdown verified. Docker reached the existing graceful-stop timeout and used the kill fallback; clean-save completion is not established. |
 | ut2k4server | Direct download — PASSED 2026-05-29; fresh focused integration now passes once AlphaGSM requires the OldUnreal installer prerequisites, isolates the runtime `HOME` under `.alphagsm/ut2k4-home` so per-instance user state no longer leaks between servers, extends the setup budget for the full native installer path, and aligns `query`, `info`, and `info --json` to the current generic `udp` health surface on the managed game port |
 | ut99server | Direct download |
 | valheim | Docker runtime (SteamCMD Linux) — PASSED; the current contract includes `libatomic1`, `libpulse0`, and `libpulse-dev`, waits for `Game server connected`, publishes the primary and adjacent UDP server ports, and validates generic UDP `query`, `info`, and `info --json` on the primary game port instead of requiring a stale A2S response. Fresh validation is pending the replacement CI run. |
 | veinserver | Docker runtime (SteamCMD Linux) — PASSED 2026-05-31; fresh focused integration now proves the old timeout-only disable note was stale: anonymous SteamCMD setup for app `2131400` completes on the validated native Linux lane, AlphaGSM launches `VeinServer.sh` inside the shared `steamcmd-linux` runtime as a non-root user with the host SteamCMD `steamclient.so` bootstrap mounted into `~/.steam/sdk64`, and the live health surface is generic `tcp` on the managed main game port rather than the older stale timeout-only assumption |
 | vintagestoryserver | Direct download / Docker runtime — PASSED 2026-05-30; fresh focused integration now passes once validation follows the module's existing `steamcmd-linux` Docker runtime instead of requiring host `dotnet`, and the rerun is pinned to the rebuilt branch-local `alphagsm-steamcmd-linux-runtime:test` image so `dotnet VintagestoryServer.dll --dataPath <install_dir>` resolves cleanly inside the container and AlphaGSM proves `query`, `info`, `info --json`, `status`, and `stop` on the managed generic `tcp` game port |
 | warbandserver | Direct download (Wine) — PASSED 2026-05-18; the module now uses the official `mb_warband_dedicated_1174.zip` archive directly instead of scraping the Cloudflare-blocked TaleWorlds page, syncs `Sample_Battle.txt` to the configured AlphaGSM port/maxplayers, runs the nested `mb_warband_dedicated.exe` through Wine/Proton plus `xvfb-run` on headless Linux, and smoke/integration wait on `info --json` protocol `tcp` instead of stale screen-log markers |
-| wreckfestserver | Docker runtime (Wine/Proton) — PASSED 2026-05-31; fresh smoke and focused integration now prove the old missing-Linux-binary disabled note was stale: anonymous SteamCMD setup for app `361580` installs the real Windows dedicated payload, AlphaGSM launches the shipped `Wreckfest_x64.exe` under the shared `wine-proton` runtime, seeds `server_config.cfg` from the vendor `initial_server_config.cfg`, syncs `game_port` / `query_port` / `steam_port` plus managed server identity settings, and validates `query`, `info`, and `info --json` on the current generic `tcp` health surface at the managed main game port instead of the older fake native-Linux / A2S contract |
+| wreckfestserver | Wine/Proton — stock process and Docker integrations plus Docker smoke PASSED 2026-10-14 in CI run `38545270577`; anonymous app `361580` setup, fresh native `Server connected.` evidence, runtime liveness, explicit generic UDP query/info/JSON on the configured query port and complete TCP/UDP shutdown verified. UDP silence means no ICMP rejection, not an application response or measured RTT; map/player metadata and native Workshop loading remain unverified. |
 | wfserver | SteamCMD — PASSED; smoke plus process and Docker integration use AlphaGSM's live Quake `info --json` response on the managed UDP game port for readiness because Docker console logs can omit the traditional startup markers |
 | wurmserver | SteamCMD |
 | xntserver | Direct download / Docker runtime — PASSED 2026-05-30; AlphaGSM launches Xonotic through the upstream `server/server_linux.sh` wrapper from the detected archive content root, maps that nested root to the matching Docker working directory, writes managed `server.cfg`, and spaces runtime-resolved Quake checks around DarkPlaces' rate limit. CI now keeps one Docker-default lifecycle; replacement validation of the restored wrapper contract is pending. |

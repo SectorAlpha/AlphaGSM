@@ -14,6 +14,165 @@ Historical detail lives in git history. Keep this file focused on release-facing
   AlphaGSM Wine runtime, managed settings and real RCON queries. Real owned-MCC
   lifecycle validation is explicitly deferred; no enabled/pass state is claimed.
 - CI: exercise portable asset and Reclaimer contract tests on Windows and Linux.
+- CI: replay complete native smoke configuration blocks in the unit contract,
+  preserving multiline writes and excluding runtime JSON output.
+- CS2 CI: apply empty-server rules after native competitive defaults and require
+  live A2S readiness directly instead of waiting for Source 1 log markers.
+  Smoke and integration still require the selected map and zero players/bots.
+
+2026-10-15
+- CoDWaW: expose explicit LAN/Internet dedicated modes while preserving legacy
+  launch arguments. Disposable CI uses LAN mode with native map/status and
+  shutdown checks, avoiding external DemonWare DNS/authentication dependencies.
+- CS2 integration: allow a large-depot setup budget without retrying a timed-out
+  updater; setup timeouts fail with diagnostics instead of skipping the test.
+- Workshop validation: all 21 required suites now pass process/Docker native
+  integration and matching smoke scenarios in GitHub run 38775144746.
+- Workshop validation: ARK, Space Engineers, TF2 and Wreckfest pass native
+  process/Docker integration in CI run 38748333313. TF2 smoke now waits for
+  its fresh Screen response; Wreckfest accepts prompt redraws in earlier
+  registry rows while requiring the exact unchanged Workshop track identifier.
+- ARK Workshop: use Windows-cooked content with the native Linux dedicated
+  server, matching upstream tooling's fix for Linux-cooked map load crashes.
+- Wine prefixes: allow normal current-user profile initialization after copying
+  a fresh prepared template; preserve existing operator prefixes unchanged.
+- Steam containers: register the declared Workshop consumer AppID alongside
+  the dedicated-server depot AppID for native content library lookup.
+- TF2 Docker: use Docker's init process so orphaned Steam crash uploaders do
+  not stall the terminal relay; require a new response token for every probe.
+- Wreckfest: keep new servers' native profiles in their savegame directory;
+  initialize fresh Workshop test profiles through one real start/stop cycle
+  before requiring exact track registration on the final launch.
+- Source smoke: keep progress banners on stderr so redirected CLI JSON remains
+  valid for BrainBread 2, Day of Infamy, Insurgency, NMRIH and TF2 checks.
+- ARK Workshop: accept native zero-length optional Unreal metadata strings
+  while retaining bounded decoding and exact custom-map validation.
+- Wreckfest validation: capture the whole fresh native track registry despite
+  console cursor redraws; retain exact Workshop event registration requirements.
+- TF2 validation: wait for asynchronous native Workshop download readiness
+  before changing maps, and retain bounded Steam download failure diagnostics.
+- Space Engineers diagnostics: retain CI process Wine exceptions and bounded,
+  redacted native runtime details for comparison with the passing Docker lane.
+- Workshop validation: NS2 Docker and Squad 44 process/Docker native-load
+  lifecycles passed in GitHub CI run 38655040006; seven integration cases remain.
+- TF2 Docker: launch with the host's identity, a writable private Steam home
+  and an absolute container UGC path so Workshop library metadata can initialize.
+- Space Engineers process: use the same virtual display and X11 drivers as
+  the validated container while preserving private Wine/Proton prefix selection.
+
+2026-10-14
+- Squad 44 validation: recognize its direct native PAK precacher registration
+  and exact successful mod serialization before checking the custom world and A2S.
+- Workshop diagnostics: retain bounded native PAK/plugin rows and escaped
+  console response bytes when Squad 44 or Wreckfest load assertions fail in CI.
+- Workshop smoke CI: supply public fixtures for the eight runners whose
+  item/collection variables are separate from their opt-in flags, preserving
+  explicit overrides so a stock-only pass cannot replace Workshop validation.
+- ARK: stage native Workshop maps from validated Linux metadata and select
+  exact published world paths. Validate a custom world through flushed engine
+  startup logs and real A2S map identity; command receipt is not mod execution.
+- TF2: initialize the dedicated-server UGC library in the installation and
+  verify its exact ready item/current canonical map before accepting A2S.
+- NS2: expose an optional owned-IP web-admin binding. Keep Docker validation
+  on authenticated container loopback because Spark rejects wildcard addresses.
+- Space Engineers: seed fresh private process Wine prefixes from the prepared
+  runtime template and require the MES script's own initialization evidence.
+- Wreckfest validation: capture a fresh native Win32 Tracks response in the
+  selected private Wine prefix; build the bounded observer in the runtime image
+  and include its source in both image cache keys. Keep lifecycle commands managed.
+- Squad 44 validation: retain early runtime output for native PAK mounting
+  and registration while still requiring fresh custom-world and A2S evidence.
+- CI: cancel superseded runs on new pushes while keeping the latest commit's
+  complete game matrices running after individual failures. Always produce the
+  required summary; missing or malformed recheck output remains a blocking
+  error with the original required-job diagnostics.
+- CI: require all existing public anonymous Workshop scenarios in smoke, process/Docker
+  integration and isolated rechecks; skipped required cases now fail validation.
+  Run the four native Windows unit cases on Windows and require their evidence
+  in the final summary. ARK and Space Engineers get explicit runtime lanes.
+- Squad 44 tests: select the public Ramelle Linux fixture by default, derive its
+  plugin name from staged metadata and require the current SDK identity before
+  checking native map execution and A2S identity. Live load validation is pending.
+- Workshop CI: avoid duplicate NS2 SteamCMD test configuration and direct NS2
+  and Reactive Drop admin probes to the published Docker endpoint.
+- Workshop CI: update the existing SteamCMD configuration section for
+  BrainBread 2, Day of Infamy, Insurgency, No More Room in Hell and TF2, so
+  shared CI work directories no longer fail before server creation.
+- ARK: run containers with the manager's UID/GID and retain launch mod IDs
+  before startup so live console and stop commands do not reopen private INIs.
+- Lifecycle tests: fix Reactive Drop's duplicate SteamCMD configuration and
+  select Wine runtime prerequisites consistently. Wreckfest honors the CI
+  backend and stops failed launches before removing managed content.
+- Wreckfest: use limited UDP reachability on the native query port after an
+  unsupported A2S requirement and Docker-only TCP proxy checks caused false
+  assumptions. Require fresh native startup evidence, running runtime and
+  complete TCP/UDP shutdown; Workshop checks still require native track
+  registration rather than config echoes or port availability.
+  Stock process/Docker integrations and Docker smoke now pass in CI.
+- Reactive Drop: provide terminal-backed Docker input so the native Windows
+  console API can read events; attempt cleanup even when startup fails.
+  Anonymous process/Docker baselines now pass real A2S lifecycle checks in CI.
+- Squad 44: prefer the Steam SDK shipped with its server depot through a
+  launch-only library path, preserving the operator's HOME and library paths.
+  Stock process/Docker integrations and Docker smoke now pass real A2S lifecycle
+  checks in CI; existing forced-stop fallback and pending Workshop load proof
+  remain documented. Successful output does not establish the loaded SDK hash
+  or prove the earlier query timeout's cause.
+- CI diagnostics: record Squad 44 SDK revisions and Wreckfest's actual IPv4,
+  IPv6 and socket options when native query readiness fails. Observe bounded,
+  nonce-matched RakNet replies without replacing native readiness assertions.
+- Workshop tests: keep unverified ARK and obsolete Squad 44 fixtures separate
+  from stock lifecycles; retain real engine-load and A2S requirements.
+- Wine containers: preserve Windows command-processor lookup instead of
+  resolving cmd.exe as a missing file in the game directory.
+- CI: allow explicit game-test selection on manual runs while preserving full
+  scheduled coverage and normal PR routing; keep regression validation on CI.
+
+2026-10-13
+- tModLoader: add public-release dedicated-server installation, contained world
+  configuration and native Workshop package activation, with Census command
+  execution verified through process and Docker lifecycle tests.
+- Workshop: add native map, package and mod adapters for additional anonymous
+  dedicated servers; record each game's actual runtime evidence and blockers
+  in docs/WORKSHOP_SUPPORT.md.
+- Mod installs: publish native assets transactionally, protect operator-owned
+  and edited files, and retain recovery backups if rollback itself fails.
+- Workshop safety: reject live Space Engineers/Wreckfest changes and preserve
+  edited Tripwire subscriptions. Reactive Drop stops before updates and honors
+  the selected native server configuration file.
+- Workshop: distinguish legacy collections from opaque item metadata using
+  Valve's collection response instead of relying on empty upload fields.
+- Downloads: extract ZIPs reliably from cache directories containing brackets
+  and allow unattended retries after partial extraction.
+- Docker: set Proton ownership in its installation layer to avoid copying the
+  complete runtime into a second layer during the Wine image build.
+- Squad: query live server population and loaded map/layer through native RCON
+  on the current EOS server, with bounded replies and private admin credentials.
+- Workshop: accept numeric IDs or Steam Community filedetails URLs for items
+  and collections, including removal. Expose anonymous Workshop downloads on
+  every anonymous SteamCMD module, checking the module or installed game AppID
+  and staging content per server for game-specific activation.
+- Workshop: validate item and collection game AppIDs against Steam metadata,
+  expand nested collections before saving, and reject unavailable or mixed-game
+  content. Collection imports preserve order and deduplicate existing items.
+- SteamCMD: verify item-specific Workshop download success and nonempty content
+  at the actual SteamCMD/cache path; stale files no longer mask failed downloads.
+- L4D2: add anonymous Workshop VPK installation and collection imports, apply
+  configured addons before start, and track files for removal and cleanup.
+- Mod installs: retain ownership after partial collection failures and reject
+  destination symlinks before copying files.
+- Workshop: add native desired-state activation for Garry's Mod addons,
+  Unturned maps and Project Zomboid mods;
+  preserve operator configuration and remove only AlphaGSM-managed entries.
+- SteamCMD: accept legacy success messages that report a payload file; L4D2
+  recognizes legacy upload names after checking their VPK headers.
+- Tests: use the public Back To School collection and Admin System addon for
+  opt-in L4D2 process/Docker checks, requiring fresh engine mount evidence.
+  Add game-specific live Workshop checks for anonymous server content.
+- Docker: relay Garry's Mod and L4D2 console input through a real terminal,
+  preserving engine probes and shutdown commands behind the runtime FIFO.
+- Integration runner: allow cleanup when no matching screen sessions exist,
+  keeping prerequisite skips successful while preserving actual test failures.
 
 2026-10-11
 - Agent workflows: add 26 focused operations and development skills alongside

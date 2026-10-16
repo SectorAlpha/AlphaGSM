@@ -107,13 +107,46 @@ run_create_or_skip_disabled "$SERVER_NAME" create ark
 run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
 run_alphagsm "$SERVER_NAME" set queryport "$QUERY_PORT"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+if [[ "${ALPHAGSM_RUN_ARK_WORKSHOP:-0}" == "1" ]]; then
+  run_alphagsm "$SERVER_NAME" mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=2041231763
+  run_alphagsm "$SERVER_NAME" mod apply
+  ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
+    "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/ark_workshop.py" prepare "$SERVER_NAME"
+fi
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+"$PYTHON_BIN" - "$ALPHAGSM_SCRIPT" "$CONFIG_PATH" "$SERVER_NAME" "$START_TIMEOUT_SECONDS" <<'PY'
+import json
+import os
+import subprocess
+import sys
+import time
+env = dict(os.environ, ALPHAGSM_CONFIG_LOCATION=sys.argv[2])
+deadline = time.monotonic() + int(sys.argv[4])
+while time.monotonic() < deadline:
+    result = subprocess.run([sys.executable, sys.argv[1], sys.argv[3], "info", "--json"],
+                            env=env, text=True, capture_output=True, timeout=min(30, deadline-time.monotonic()),
+                            check=False)
+    if result.returncode == 0:
+        info = json.loads(result.stdout)
+        if info.get("protocol") == "a2s" and info.get("map") and info.get("max_players", 0) > 0:
+            break
+    time.sleep(2)
+else:
+    raise SystemExit("ARK never confirmed a loaded native world with positive capacity")
+PY
+if [[ "${ALPHAGSM_RUN_ARK_WORKSHOP:-0}" == "1" ]]; then
+  ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
+    "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/ark_workshop.py" check "$SERVER_NAME"
+fi
 run_alphagsm "$SERVER_NAME" status
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info
 run_alphagsm "$SERVER_NAME" info --json
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
+if [[ "${ALPHAGSM_RUN_ARK_WORKSHOP:-0}" == "1" ]]; then
+  run_alphagsm "$SERVER_NAME" mod cleanup
+fi
 run_alphagsm "$SERVER_NAME" status

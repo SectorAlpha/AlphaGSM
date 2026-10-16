@@ -1,11 +1,13 @@
 """Left 4 Dead 2-specific lifecycle, configuration, and update helpers."""
 
 import os
+import struct
 from pathlib import Path
 from server.modsupport.source_addons import build_source_addon_mod_support
 from server.modsupport.registry import CuratedRegistryLoader
 import utils.steamcmd as steamcmd
 from utils.valve_server import define_valve_server_module
+from utils.source_console import build_source_container_start_command
 
 
 import server.runtime as runtime_module
@@ -36,6 +38,31 @@ def load_curated_registry():
     return CuratedRegistryLoader.load(path)
 
 
+workshop_app_id = 550
+
+
+def _download_workshop_vpk(path, app_id, item_id, anonymous):
+    """Normalize Valve's legacy .bin upload name after checking its VPK header."""
+    content = Path(steamcmd.download_workshop_item(path, app_id, item_id, anonymous))
+    payloads = [entry for entry in content.iterdir() if entry.is_file() and not entry.is_symlink()]
+    legacy = [entry for entry in payloads if entry.name.endswith('_legacy.bin')]
+    normalized = content / f'{item_id}.vpk'
+    if legacy:
+        if len(legacy) != 1 or any(entry not in (legacy[0], normalized) for entry in payloads):
+            raise RuntimeError('Legacy Workshop item must contain one VPK addon payload')
+        with legacy[0].open('rb') as handle:
+            header = handle.read(12)
+        if len(header) != 12:
+            raise RuntimeError('Legacy Workshop payload is not a VPK addon')
+        signature, version, tree_size = struct.unpack('<III', header)
+        header_size = 12 if version == 1 else 28
+        if (signature != 0x55AA1234 or version not in (1, 2) or tree_size == 0
+                or legacy[0].stat().st_size < header_size + tree_size):
+            raise RuntimeError('Legacy Workshop payload is not a VPK addon')
+        legacy[0].replace(normalized)
+    return str(content)
+
+
 MOD_SUPPORT = build_source_addon_mod_support(
     game_label="Left 4 Dead 2",
     game_dir="left4dead2",
@@ -43,6 +70,10 @@ MOD_SUPPORT = build_source_addon_mod_support(
     direct_url_suffixes={".vpk": "single"},
     direct_url_filename_description="a .vpk addon filename or a supported archive filename",
     curated_registry_loader=load_curated_registry,
+    enabled_sources=("url", "gamebanana", "moddb", "workshop"),
+    workshop_app_id=workshop_app_id,
+    workshop_downloader_getter=lambda: _download_workshop_vpk,
+    workshop_single_file_suffix=".vpk",
 )
 
 steam_app_id = MODULE.steam_app_id
@@ -110,7 +141,11 @@ def install(server):
     _finish_l4d2_install(server)
 
 
-prestart = MODULE.prestart
+def prestart(server, *args, **kwargs):
+    """Prepare the Source runtime and apply enabled desired addons before launch."""
+    MODULE.prestart(server, *args, **kwargs)
+    if MOD_SUPPORT.ensure_mod_state(server).get("autoapply", True):
+        MOD_SUPPORT.apply_configured_mods(server)
 
 
 def update(server, validate=False, restart=False):
@@ -122,6 +157,10 @@ def update(server, validate=False, restart=False):
 
 restart = MODULE.restart
 get_start_command = MODULE.get_start_command
+
+
+def _get_container_start_command(server):
+    return build_source_container_start_command(server, get_start_command)
 
 
 do_stop = MODULE.do_stop
@@ -137,7 +176,8 @@ get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
 
 get_container_spec = gamemodule_common.make_container_spec_builder(
         family='steamcmd-linux',
-        get_start_command=get_start_command,
+        get_start_command=_get_container_start_command,
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}),
         stdin_open=True,
+        tty=True,
 )

@@ -120,3 +120,34 @@ alphagsm myserver set KEY VALUE
 | `servername` | hostname, name | string | The advertised Conan Exiles server name. |
 
 <!-- alphagsm-server-variables:end -->
+
+## Workshop mods
+
+Ordered native PAK staging uses anonymous SteamCMD. Process and branch-local
+Docker validation passed on 2026-10-13 with the Storage Reach Expanded fixture:
+native PAK mounting, Blueprint mod execution, real A2S health, owned cleanup and
+a fresh restart proving deactivation. Both stop paths used the existing timeout
+and kill fallback; graceful saving remains unverified.
+
+```bash
+alphagsm myserver mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=3733835102
+alphagsm myserver mod add workshop-collection COLLECTION_ID
+alphagsm myserver mod apply
+alphagsm myserver start
+```
+
+AlphaGSM validates items against game AppID `440900`, downloads anonymously,
+and publishes PAKs under `ConanSandbox/Mods/<item-id>/`. Desired items retain
+their load order in `ConanSandbox/Mods/modlist.txt`. Existing operator entries
+remain present. `mod remove workshop ID_OR_URL` followed by `mod apply` removes
+the selected owned files; `mod cleanup` clears all desired Workshop items.
+Externally edited owned files block replacement or cleanup.
+Conan may extract native cache files from the published PAK. AlphaGSM leaves
+those game-generated caches in place; removing the modlist entry deactivates
+the mod at the next start.
+
+The [Storage Reach Expanded fixture](https://steamcommunity.com/sharedfiles/filedetails/?id=3733835102)
+targets Conan Exiles Enhanced. Legacy and Enhanced mods are different payloads;
+choose mods matching your installed server. The [official launcher documentation](https://forums.funcom.com/t/conan-exiles-dedicated-server-launcher-official-version-1-9-2-beta-1-9-3/21699)
+describes ordered PAK lists and native `LogModManager` mounting evidence.
+Downloads and a written modlist alone do not establish a successful engine load.

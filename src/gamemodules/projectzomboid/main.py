@@ -7,13 +7,23 @@ from server import ServerError
 
 import server.runtime as runtime_module
 from server.settable_keys import SettingSpec
+from server.modsupport.native_workshop import build_native_workshop_support
+from . import workshop
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 380870
 steam_anonymous_login_possible = True
+workshop_app_id = workshop.WORKSHOP_APP_ID
+MOD_SUPPORT = build_native_workshop_support(
+    game_label="Project Zomboid",
+    workshop_app_id=workshop_app_id,
+    apply_callback=workshop.apply_workshop_mods,
+)
+config_sync_keys = ("port", "queryport", "servername")
+sync_server_config = workshop.sync_server_config
 
-commands = ("update", "restart")
+commands = ("update", "restart") + MOD_SUPPORT.commands
 command_args = gamemodule_common.build_setup_update_restart_command_args(
     "The default game port to store for this server",
     "The directory to install Project Zomboid in",
@@ -22,7 +32,9 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Update the Project Zomboid dedicated server to the latest version.",
     "Restart the Project Zomboid dedicated server.",
 )
-command_functions = {}
+command_args.update(MOD_SUPPORT.command_args)
+command_descriptions.update(MOD_SUPPORT.command_descriptions)
+command_functions = dict(MOD_SUPPORT.command_functions)
 setting_schema = {
     "adminpassword": SettingSpec(
         canonical_key="adminpassword",
@@ -60,10 +72,9 @@ def configure(server, ask, port=None, dir=None, *, exe_name="start-server.sh"):
         default_port=16261,
         prompt="Please specify the port to use for this server:",
     )
-    # Build 41 dedicated servers expose their direct-connection listener on the
-    # fixed UDP port configured in SERVERNAME.ini. Without module-managed config
-    # files this remains the upstream default 16262.
-    server.data.setdefault("queryport", 16262)
+    # Keep the native direct-connection listener in the claimed port group.
+    server.data.setdefault("queryport", int(server.data["port"]) + 1)
+    MOD_SUPPORT.ensure_mod_state(server)
     gamemodule_common.configure_install_dir(
         server,
         ask,
@@ -74,10 +85,18 @@ def configure(server, ask, port=None, dir=None, *, exe_name="start-server.sh"):
     return gamemodule_common.finalize_configure(server)
 
 
+def autoapply_configured_mods(server):
+    """Reconcile native activation only when automatic application is enabled."""
+    if MOD_SUPPORT.ensure_mod_state(server)["autoapply"]:
+        MOD_SUPPORT.apply_configured_mods(server)
+
+
 install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
+    post_download_hook=autoapply_configured_mods,
 )
 install.__doc__ = "Download the Project Zomboid server files via SteamCMD."
 
@@ -86,6 +105,8 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
+    post_download_hook=autoapply_configured_mods,
 )
 
 restart = gamemodule_common.make_restart_hook()
@@ -100,6 +121,7 @@ def get_start_command(server):
     return (
         [
             "./" + server.data["exe_name"],
+            "-cachedir=./Zomboid",
             "-servername",
             str(server.data["servername"]),
             "-adminpassword",
@@ -109,6 +131,12 @@ def get_start_command(server):
         ],
         server.data["dir"],
     )
+
+
+def prestart(server):
+    """Reconcile native config and Workshop intent before each launch."""
+    sync_server_config(server)
+    autoapply_configured_mods(server)
 
 
 def get_query_address(server):
@@ -161,6 +189,7 @@ def checkvalue(server, key, *value):
         *value,
         int_keys=("port", "queryport"),
         str_keys=("servername", "adminpassword", "exe_name", "dir"),
+        custom_handlers={"servername": workshop.validate_servername},
     )
 
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(

@@ -2,6 +2,7 @@
 
 from types import SimpleNamespace
 from pathlib import Path
+import shlex
 
 import pytest
 
@@ -89,5 +90,8 @@ def test_source_uses_own_launcher_before_mounted_game_content(tmp_path, configur
     assert command[0] == "./srcds_run"
     assert Path(cwd) == tmp_path
     spec = gmodserver.get_container_spec(server)
-    assert spec["command"][0] == "./srcds_run"
+    assert spec["command"][:5] == ["/usr/bin/script", "--quiet", "--flush", "--return", "--command"]
+    engine_command = shlex.split(spec["command"][5])
+    assert engine_command[0] == "./srcds_run"
+    assert "-console" in engine_command
     assert spec["working_dir"].rstrip("/") == "/srv/server"

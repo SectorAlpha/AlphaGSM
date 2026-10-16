@@ -76,6 +76,14 @@ _quake_launch_schema = gamemodule_common.build_quake_setting_schema(
     hostname_before_port=True,
 )
 setting_schema = {
+    "dedicated": SettingSpec(
+        canonical_key="dedicated",
+        description="Dedicated mode: 1 for LAN, 2 for Internet (default).",
+        value_type="integer",
+        apply_to=("datastore", "launch_args"),
+        launch_arg_tokens=("+set", "dedicated"),
+        examples=("1", "2"),
+    ),
     "fs_game": SettingSpec(
         canonical_key="moddir",
         description=_quake_launch_schema["fs_game"].description,
@@ -401,6 +409,7 @@ def configure(server, ask, port=None, dir=None, *, url=None, download_name=None,
     gamemodule_common.set_server_defaults(
         server,
         {
+            "dedicated": 2,
             "hostname": "AlphaGSM %s" % (server.name,),
             "moddir": "main",
             "startmap": "mp_airfield",
@@ -489,6 +498,14 @@ def sync_server_config(server):
     rewrite_equals_config(config_path, config_values)
 
 
+def _dedicated_mode(_server, *values):
+    """Keep LAN lifecycle checks distinct from Internet master authentication."""
+    value = str(values[0]).strip() if values else ""
+    if value not in ("1", "2"):
+        raise ServerError("dedicated must be 1 (LAN) or 2 (Internet)")
+    return int(value)
+
+
 def get_start_command(server):
     """Build the command used to launch a COD: World at War dedicated server."""
 
@@ -497,7 +514,10 @@ def get_start_command(server):
         server.data,
         setting_schema,
         require_explicit_tokens=True,
-        value_transform=lambda _spec, current_value: str(current_value),
+        value_transform=lambda spec, current_value: str(
+            _dedicated_mode(server, current_value)
+            if spec.canonical_key == "dedicated" else current_value
+        ),
     )
     if gamemodule_common.should_omit_base_game_launch_arg(server.data.get("moddir"), "main"):
         launch_args = gamemodule_common.remove_launch_arg_value(launch_args, ("+set", "fs_game"))
@@ -558,6 +578,7 @@ def checkvalue(server, key, *value):
         setting_schema=setting_schema,
         resolved_int_keys=("port",),
         resolved_str_keys=("url", "download_name", "exe_name", "dir", "moddir", "startmap", "hostname"),
+        resolved_handlers={"dedicated": _dedicated_mode},
         backup_module=backup_utils,
     )
 

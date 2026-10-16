@@ -41,7 +41,7 @@ trap cleanup EXIT
 require_cmd "$PYTHON_BIN"
 require_cmd screen
 
-WORK_DIR="$(mktemp -d)"
+WORK_DIR="$(mktemp -d "${ALPHAGSM_WORK_DIR:-/tmp}/pz-workshop.XXXXXX")"
 HOME_DIR="$WORK_DIR/alphagsm-home"
 INSTALL_DIR="$WORK_DIR/projectzomboid-server"
 CONFIG_PATH="$WORK_DIR/alphagsm-projectzomboid.conf"
@@ -75,9 +75,20 @@ echo "Using port: $PORT"
 run_create_or_skip_disabled "$SERVER_NAME" create projectzomboid
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 
+if [[ "${ALPHAGSM_RUN_WORKSHOP:-0}" == "1" ]]; then
+  run_alphagsm "$SERVER_NAME" mod add workshop 2773478544
+  run_alphagsm "$SERVER_NAME" mod apply
+fi
+
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_ready "$LOG_PATH" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS"
+if [[ "${ALPHAGSM_RUN_WORKSHOP:-0}" == "1" ]]; then
+  "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/projectzomboid_workshop.py" "$INSTALL_DIR/Zomboid/server-console.txt"
+fi
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
