@@ -4,7 +4,11 @@
     {
       "path": "main/*.pk3",
       "kind": "archive-member",
-      "member": "maps/mp/{startmap}.bsp"
+      "member_any_of": [
+        "maps/mp/{startmap}.bsp",
+        "maps/mp/{startmap}.d3dbsp"
+      ],
+      "member_case_insensitive": true
     }
   ],
   "sources": [

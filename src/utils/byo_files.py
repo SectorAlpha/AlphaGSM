@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import stat
 import zipfile
 
 from server.errors import ServerError
@@ -50,8 +51,10 @@ def load_requirements(server, module_file, manifest="byo_assets.json"):
         for key in ("path", "member"):
             if key in requirement:
                 requirement[key] = _expand(requirement[key], values)
-        if "any_of" in requirement:
-            requirement["any_of"] = [_expand(value, values) for value in requirement["any_of"]]
+        for key in ("any_of", "member_any_of"):
+            if key in requirement:
+                alternatives = _member_patterns(requirement) if key == "member_any_of" else requirement[key]
+                requirement[key] = [_expand(value, values) for value in alternatives]
     for key in ("required", "include", "roots"):
         if key in recipe:
             recipe[key] = [_expand(value, values) if value else "" for value in recipe[key]]
@@ -94,15 +97,33 @@ def _matches(root, pattern, insensitive=False):
         yield from root.glob(pattern)
 
 
-def _archive_contains(path, member):
-    """Inspect ZIP/PK3/IWD member names without extracting or loading game data."""
+def _member_patterns(requirement):
+    """Validate archive member alternatives, retaining the single-member contract."""
+    members = requirement.get("member_any_of", [requirement.get("member", "")])
+    if not isinstance(members, list) or not members:
+        raise ServerError("BYO archive member alternatives must be nonempty lists")
+    return [relative_path(member) for member in members]
+
+
+def _archive_contains(path, members, insensitive=False):
+    """Inspect regular ZIP/PK3/IWD members without extracting or loading data."""
+    patterns = [member.casefold() if insensitive else member for member in members]
     try:
         with zipfile.ZipFile(path) as bundle:
-            return any(info.file_size > 0 and not info.is_dir()
-                       and fnmatch.fnmatchcase(info.filename, member)
-                       for info in bundle.infolist())
+            for info in bundle.infolist():
+                if (info.file_size <= 0 or info.is_dir()
+                        or stat.S_IFMT(info.external_attr >> 16) not in (0, stat.S_IFREG)):
+                    continue
+                name = info.filename.replace("\\", "/")
+                while name.startswith("./"):
+                    name = name[2:]
+                if insensitive:
+                    name = name.casefold()
+                if any(fnmatch.fnmatchcase(name, pattern) for pattern in patterns):
+                    return True
     except (OSError, ValueError, zipfile.BadZipFile):
         return False
+    return False
 
 
 def _satisfied(root, requirement, insensitive):
@@ -115,8 +136,7 @@ def _satisfied(root, requirement, insensitive):
         raise ServerError("BYO file alternatives cannot be empty")
     for pattern in patterns:
         relative_path(pattern)
-    if kind == "archive-member":
-        relative_path(requirement.get("member", ""))
+    members = _member_patterns(requirement) if kind == "archive-member" else []
     if root is None:
         return False
     for pattern in patterns:
@@ -129,7 +149,8 @@ def _satisfied(root, requirement, insensitive):
                                             and entry.stat().st_size > 0 for entry in path.rglob("*")):
                         return True
                 elif path.is_file() and (not requirement.get("nonempty", True) or path.stat().st_size > 0):
-                    if kind != "archive-member" or _archive_contains(path, requirement["member"]):
+                    if kind != "archive-member" or _archive_contains(
+                            path, members, requirement.get("member_case_insensitive", False)):
                         return True
             except OSError:
                 continue

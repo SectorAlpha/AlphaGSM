@@ -2,6 +2,7 @@
 
 import importlib
 import json
+import stat
 from pathlib import Path
 from types import SimpleNamespace
 import sys
@@ -181,3 +182,74 @@ def test_q3_import_normalizes_source_before_installed_inspection(tmp_path):
     assert (target / "baseq3/pak0.pk3").read_bytes() == b"owned-data"
     assert helpers().inspect_files(target, recipe)["ready"]
     q3server._assert_required_base_assets(str(target))
+
+
+@pytest.mark.parametrize("member_case_insensitive,ready", [(False, False), (True, True)])
+@pytest.mark.parametrize("source", [False, True])
+@pytest.mark.parametrize("filesystem_insensitive", [False, True])
+@pytest.mark.parametrize("uppercase_pattern", [False, True])
+def test_archive_member_case_policy_is_independent(
+        tmp_path, member_case_insensitive, ready, source, filesystem_insensitive, uppercase_pattern):
+    patterns = ["maps/mp/mp_test.bsp", "maps/mp/mp_test.d3dbsp"]
+    if uppercase_pattern:
+        patterns = [pattern.upper() for pattern in patterns]
+    recipe = {"case_insensitive": filesystem_insensitive, "requirements": [{
+        "path": "maps.pk3", "kind": "archive-member",
+        "member_any_of": patterns,
+        "member_case_insensitive": member_case_insensitive,
+    }]}
+    member = "maps/mp/mp_test.d3dbsp" if uppercase_pattern else "MAPS/MP/MP_TEST.D3DBSP"
+    with zipfile.ZipFile(tmp_path / "maps.pk3", "w") as bundle:
+        bundle.writestr(member, b"map")
+
+    assert helpers().inspect_files(tmp_path, recipe, source=source)["ready"] is ready
+
+
+@pytest.mark.parametrize("member", ["././maps/mp/mp_test.bsp", "maps\\mp\\mp_test.bsp"])
+def test_legacy_archive_member_normalizes_member_names(tmp_path, member):
+    recipe = {"requirements": [{"path": "maps.pk3", "kind": "archive-member",
+                                "member": "maps/mp/mp_test.bsp"}]}
+    with zipfile.ZipFile(tmp_path / "maps.pk3", "w") as bundle:
+        bundle.writestr(member, b"map")
+
+    assert helpers().inspect_files(tmp_path, recipe)["ready"]
+
+
+@pytest.mark.parametrize("alternatives", [[], "maps/mp/map.bsp", None, (),
+    ["maps/mp/map.bsp", "../escape"], ["maps/mp/map.bsp", "maps\\mp\\map.bsp"]])
+def test_archive_member_alternatives_are_validated_before_access(tmp_path, monkeypatch, alternatives):
+    def unexpected_access(*_args, **_kwargs):
+        pytest.fail("Archive paths accessed before validating all member alternatives")
+    monkeypatch.setattr(helpers(), "_matches", unexpected_access)
+    recipe = {"requirements": [{"path": "maps.pk3", "kind": "archive-member",
+                                "member": "maps/mp/map.bsp", "member_any_of": alternatives}]}
+
+    with pytest.raises(ServerError, match="path|alternatives"):
+        helpers().inspect_files(tmp_path, recipe)
+
+
+@pytest.mark.parametrize("mode,payload", [
+    (stat.S_IFREG | 0o644, b""),
+    (stat.S_IFDIR | 0o755, b"map"),
+    (stat.S_IFLNK | 0o777, b"maps/mp/other.bsp"),
+    (stat.S_IFIFO | 0o644, b"map"),
+])
+def test_archive_member_requires_nonempty_regular_file(tmp_path, mode, payload):
+    recipe = {"requirements": [{"path": "maps.pk3", "kind": "archive-member",
+                                "member": "maps/mp/mp_test.bsp"}]}
+    member = zipfile.ZipInfo("maps/mp/mp_test.bsp")
+    member.create_system = 3
+    member.external_attr = mode << 16
+    with zipfile.ZipFile(tmp_path / "maps.pk3", "w") as bundle:
+        bundle.writestr(member, payload)
+
+    assert not helpers().inspect_files(tmp_path, recipe)["ready"]
+
+
+def test_staged_archive_members_are_not_translated_by_import_target(tmp_path):
+    recipe = {"requirements": [{"path": "main/maps.pk3", "kind": "archive-member",
+                                "member_any_of": ["maps/mp/mp_test.bsp", "maps/mp/mp_test.d3dbsp"]}]}
+    with zipfile.ZipFile(tmp_path / "maps.pk3", "w") as bundle:
+        bundle.writestr("maps/mp/mp_test.d3dbsp", b"map")
+
+    helpers().validate_staged_files(tmp_path, recipe, "main")
