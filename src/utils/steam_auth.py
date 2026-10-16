@@ -148,8 +148,9 @@ def _session_username(profile):
     """Require local session material; it is never proof of remote entitlement."""
     try:
         username = json.loads((profile / 'profile.json').read_text(encoding='utf-8'))['username']
-        cache = profile / 'runtime/config/config.vdf'
-        if not cache.is_file() or not cache.stat().st_size:
+        caches = (profile / 'home/Steam/config/config.vdf',
+                  profile / 'runtime/config/config.vdf')
+        if not any(cache.is_file() and cache.stat().st_size for cache in caches):
             raise ValueError
         if not isinstance(username, str) or not re.fullmatch(r'[A-Za-z0-9_-]+', username):
             raise ValueError

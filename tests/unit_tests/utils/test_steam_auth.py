@@ -54,6 +54,67 @@ def test_profile_and_metadata_are_private_and_status_does_not_reveal_tokens(auth
     assert (profile / 'runtime/config/config.vdf').stat().st_mode & 0o777 == 0o600
 
 
+@pytest.mark.parametrize('cache_path', ['runtime/config/config.vdf', 'home/Steam/config/config.vdf'])
+def test_session_cache_layouts_support_status_and_download(auth, cache_path):
+    profile = session(auth)
+    cache = profile / cache_path
+    if cache_path.startswith('home/'):
+        cache.parent.mkdir(parents=True, mode=0o700)
+        (profile / 'runtime/config/config.vdf').rename(cache)
+    assert auth.status('owned') == {'profile': 'owned', 'local_session': True}
+    with auth.download_session('owned') as (executable, username, env, lock_fd):
+        assert executable == profile / 'runtime/steamcmd.sh'
+        assert username == 'account_name'
+        assert env['HOME'] == str(profile / 'home')
+        assert lock_fd >= 0
+    assert cache.stat().st_mode & 0o777 == 0o600
+    if cache_path.startswith('home/'):
+        assert not (profile / 'runtime/config/config.vdf').exists()
+
+
+@pytest.mark.parametrize('cache_path', ['runtime/config/config.vdf', 'home/Steam/config/config.vdf'])
+@pytest.mark.parametrize('missing', ['cache', 'empty_cache', 'executable', 'metadata', 'username'])
+def test_session_cache_layouts_still_require_complete_local_session(auth, cache_path, missing):
+    profile = session(auth)
+    cache = profile / cache_path
+    if cache_path.startswith('home/'):
+        cache.parent.mkdir(parents=True, mode=0o700)
+        (profile / 'runtime/config/config.vdf').rename(cache)
+    if missing == 'cache':
+        cache.unlink()
+    elif missing == 'empty_cache':
+        cache.write_text('')
+    elif missing == 'executable':
+        (profile / 'runtime/steamcmd.sh').unlink()
+    elif missing == 'metadata':
+        (profile / 'profile.json').unlink()
+    else:
+        auth.write_metadata(profile, '+quit')
+    assert not auth.status('owned')['local_session']
+    with pytest.raises(auth.SteamAuthError, match='session missing'):
+        with auth.download_session('owned'):
+            pytest.fail('incomplete local session must fail closed')
+
+
+@pytest.mark.parametrize('linked_path', ['home', 'home/Steam', 'home/Steam/config',
+                                       'home/Steam/config/config.vdf'])
+def test_home_cache_links_are_rejected_before_status_or_download(auth, tmp_path, linked_path):
+    profile = session(auth)
+    cache = profile / 'home/Steam/config/config.vdf'
+    cache.parent.mkdir(parents=True, mode=0o700)
+    (profile / 'runtime/config/config.vdf').rename(cache)
+    linked = profile / linked_path
+    outside = tmp_path / 'outside'
+    linked.rename(outside)
+    linked.symlink_to(outside, target_is_directory=outside.is_dir())
+    with pytest.raises(auth.SteamAuthError, match='symbolic link'):
+        auth.status('owned')
+    with pytest.raises(auth.SteamAuthError, match='symbolic link'):
+        with auth.download_session('owned'):
+            pytest.fail('linked home cache must not be used')
+    assert outside.exists()
+
+
 def test_missing_profile_status_and_download_fail_closed(auth):
     assert auth.status('missing') == {'profile': 'missing', 'local_session': False}
     with pytest.raises(auth.SteamAuthError, match='login'):
@@ -96,7 +157,8 @@ def test_profile_lock_prevents_concurrent_operations(auth):
             auth.logout('owned')
 
 
-def test_login_inherits_terminal_and_never_passes_a_password(auth, monkeypatch):
+@pytest.mark.parametrize('cache_layout', ['runtime', 'home'])
+def test_login_inherits_terminal_and_never_passes_a_password(auth, monkeypatch, cache_layout):
     calls = []
     def install(profile):
         (profile / 'runtime/config').mkdir(parents=True)
@@ -106,7 +168,10 @@ def test_login_inherits_terminal_and_never_passes_a_password(auth, monkeypatch):
         return executable
     def run(command, **kwargs):
         calls.append((command, kwargs))
-        (Path(kwargs['cwd']) / 'config/config.vdf').write_text('private-session')
+        cache_root = (Path(kwargs['env']['HOME']) / 'Steam' if cache_layout == 'home'
+                      else Path(kwargs['cwd']))
+        (cache_root / 'config').mkdir(parents=True, exist_ok=True)
+        (cache_root / 'config/config.vdf').write_text('private-session')
         return subprocess.CompletedProcess(command, 0)
     monkeypatch.setattr(auth, '_install_runtime', install)
     monkeypatch.setattr(auth.sys.stdin, 'isatty', lambda: True)
