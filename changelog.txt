@@ -8,6 +8,12 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-16
+- Owned assets: add portable folder/ZIP/tar import, checks and ZIP export for
+  module-declared files, with ownership hashes, update conflicts and rollback.
+- Project Reclaimer: add a checksum-pinned dedicated server module using the
+  AlphaGSM Wine runtime, managed settings and real RCON queries. Real owned-MCC
+  lifecycle validation is explicitly deferred; no enabled/pass state is claimed.
+- CI: exercise portable asset and Reclaimer contract tests on Windows and Linux.
 - CI: replay complete native smoke configuration blocks in the unit contract,
   preserving multiline writes and excluding runtime JSON output.
 - CS2 CI: apply empty-server rules after native competitive defaults and require

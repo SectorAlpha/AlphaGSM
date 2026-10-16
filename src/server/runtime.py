@@ -2154,6 +2154,12 @@ def get_container_spec(
     merged.setdefault("ports", [])
     if "init" in merged and not isinstance(merged["init"], bool):
         raise RuntimeError("Container init must be a boolean")
+    if "stop_signal" in merged and merged["stop_signal"] not in ("SIGINT", "SIGTERM"):
+        raise RuntimeError("Container stop_signal must be SIGINT or SIGTERM")
+    if "stop_timeout" in merged and (not isinstance(merged["stop_timeout"], int)
+                                    or isinstance(merged["stop_timeout"], bool)
+                                    or not 1 <= merged["stop_timeout"] <= 300):
+        raise RuntimeError("Container stop_timeout must be an integer from 1 to 300")
     if merged.get("runtime_family") == "java":
         if merged.get("stop_mode") == "exec-console":
             if not merged.get("stdin_open") and not merged.get("tty"):
@@ -3457,6 +3463,10 @@ class ContainerRuntime(BaseRuntime):
         if home_plan is not None:
             _create_host_user_container_home(home_plan, identity)
         command = ["docker", "run", "-d"]
+        if spec.get("stop_signal"):
+            command.extend(["--stop-signal", spec["stop_signal"]])
+        if spec.get("stop_timeout"):
+            command.extend(["--stop-timeout", str(spec["stop_timeout"])])
         if spec.get("init", False):
             command.append("--init")
         if spec.get("stdin_open", False):
@@ -3491,9 +3501,10 @@ class ContainerRuntime(BaseRuntime):
         return self._container_running_state(name) is True
 
     def kill(self, server):
-        name = resolve_runtime_metadata(server).get("container_name", "alphagsm-" + server.name)
+        spec = resolve_runtime_metadata(server)
+        name = spec.get("container_name", "alphagsm-" + server.name)
         try:
-            self._run_check_output(["docker", "stop", "--time", "10", name], text=True)
+            self._run_check_output(["docker", "stop", "--time", str(spec.get("stop_timeout", 10)), name], text=True)
         except RuntimeError:
             pass
         self._run_check_output(["docker", "rm", "-f", name], text=True)
