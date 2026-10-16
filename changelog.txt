@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-16
+- CI: replay complete native smoke configuration blocks in the unit contract,
+  preserving multiline writes and excluding runtime JSON output.
 - CS2 CI: apply empty-server rules after native competitive defaults and require
   live A2S readiness directly instead of waiting for Source 1 log markers.
   Smoke and integration still require the selected map and zero players/bots.

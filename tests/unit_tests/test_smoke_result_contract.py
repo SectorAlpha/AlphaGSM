@@ -167,19 +167,28 @@ def test_source_smoke_config_keeps_server_awake(module):
     assert f"[gamemodules.{module}.servercfg]\nsv_hibernate_when_empty = 0" in config
 
 
-@pytest.mark.parametrize("module,cfg", [
-    ("tf2", "tf/cfg/server.cfg"), ("counterstrike2", "game/csgo/cfg/server.cfg"),
+@pytest.mark.parametrize("module,cfg,next_stage", [
+    ("tf2", "tf/cfg/server.cfg", 'if [[ -n "$TF2_CURATED_REGISTRY_PATH" ]]'),
+    ("counterstrike2", "game/csgo/cfg/server.cfg", 'run_alphagsm "$SERVER_NAME" start'),
 ])
-def test_custom_source_smoke_writes_native_hibernation_override(tmp_path, module, cfg):
+def test_custom_source_smoke_writes_native_hibernation_override(tmp_path, module, cfg, next_stage):
     script = (SMOKE_DIR / f"run_{module}.sh").read_text()
     native_config = tmp_path / cfg
     native_config.parent.mkdir(parents=True)
     native_config.write_text("hostname Fixture\n")
-    writes = [line for line in script.splitlines() if line.startswith("printf ")]
-    assert writes
-    result = _shell("\n".join(writes), INSTALL_DIR=str(tmp_path))
-    assert result.returncode == 0
+    # Execute the complete config stage, retaining shell continuations and
+    # excluding later runtime/JSON output that also uses printf.
+    start = script.index(f'test -f "$INSTALL_DIR/{cfg}"')
+    config_stage = script[start:script.index(next_stage, start)]
+    result = _shell(config_stage, INSTALL_DIR=str(tmp_path))
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "hostname Fixture" in native_config.read_text()
     assert "sv_hibernate_when_empty 0" in native_config.read_text()
+    if module == "counterstrike2":
+        override = native_config.with_name("gamemode_competitive_server.cfg").read_text()
+        assert "bot_quota 0\n" in override
+        assert "bot_kick\n" in override
+        assert "sv_hibernate_when_empty 0\n" in override
 
 
 @pytest.mark.parametrize("exports,expected", [
