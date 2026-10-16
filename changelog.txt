@@ -7,6 +7,15 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-16
+- First run: offer a skippable setup tour on bare interactive launches, with
+  --welcome to replay and --skip-welcome for noninteractive opt-out.
+- Guided setup: preview local creation, preserve existing server records, and
+  confirm downloads separately. Sector Alpha enrollment/binding remains optional;
+  the tour never starts games or enables reporting/remote management.
+- Tests: add isolated real-terminal CLI integration/smoke coverage for first-run
+  skip/replay, local creation and selector/reserved-name overwrite prevention.
+
 2026-10-15
 - Sector Alpha: never infer a player port from Trackmania XML-RPC, Enshrouded
   query-only settings or Arma headless client roles. Use --connect-port only

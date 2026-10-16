@@ -25,6 +25,13 @@ The everyday flow is always the same:
 Then `stop`, `backup`, or `update` as needed. Pick a game from
 [the server guides](docs/README.md) if you want the exact module name.
 
+After installation, run `./alphagsm` in a terminal for an optional setup tour.
+Press Enter to skip, use `./alphagsm --welcome` to replay, or
+`./alphagsm --skip-welcome` to skip from a script. The tour can help create a
+local server and show everyday commands. Downloads need a separate confirmation;
+Sector Alpha enrollment is optional and reporting/management stay off unless
+you enable them separately. See [First-run setup](docs/first-run-setup.md).
+
 You can also ask an AI agent with terminal access to do this work. Start with
 “Use alphagsm-agent-operations to run my server,” and give it the game, server
 name and desired result. See [Run AlphaGSM With An AI Agent](docs/agent-operations.md)

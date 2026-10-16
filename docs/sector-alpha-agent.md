@@ -6,6 +6,11 @@ management are independent opt-ins, and publication is chosen for each server.
 Public player-stat queries support Minecraft Java vanilla/Paper and Team Fortress 2.
 Other managed games can use private reporting and permitted remote actions.
 
+For a general walkthrough first, run `alphagsm --welcome` in a terminal and
+choose the optional Sector Alpha connection step. It asks before opening
+`agent setup` and never enables reporting or management. You can skip the tour
+and run the commands below directly. See [First-run setup](first-run-setup.md).
+
 On the Sector Alpha website at `https://sector-alpha.net`, or a compatible
 provider website, sign into the verified operator account
 with MFA, choose capabilities and create a ten-minute enrollment code. Locally:
