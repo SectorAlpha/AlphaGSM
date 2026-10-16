@@ -143,6 +143,13 @@ directory and exported assets. A successful file check establishes only the
 declared file contract; use that game's normal readiness, query/info and stop
 checks separately when validating its lifecycle.
 
+Each game must answer a real native query on its configured game/query port
+using the correct TCP/UDP protocol. Require running `status`, `query`, `info`
+and `info --json`, then stopped status and verified process/listener shutdown.
+Record the endpoint and probe scope. Fix and retest the game module or shared
+query/configuration helper when these checks expose a defect; an open socket
+or running process alone does not complete that game.
+
 Quake III Arena was validated locally on 2026-10-16 through authenticated
 setup, nine allowlisted PK3 files, repeat setup without Steam acquisition,
 a dedicated engine payload with all 36 maps retained, native Quake UDP

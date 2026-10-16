@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-16
+- BYO validation: require native port queries, running/stopped status, server
+  info and verified shutdown per game; record module fixes and retest failures.
 - Quake III install: keep the dedicated engine and complete owned map/content
   packs while omitting known loose client and renderer components.
 - Quake III BYO: validate authenticated Steam setup, remembered-profile reuse,

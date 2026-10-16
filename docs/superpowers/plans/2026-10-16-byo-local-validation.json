@@ -66,7 +66,42 @@
       ],
       "reusable_installer_result": "IMPLEMENTED_AUTH_AND_LOCAL_IMPORT",
       "content_result": "COMPLETE_DEDICATED_ENGINE_NINE_PK3_36_MAPS",
-      "installed_map_count": 36
+      "installed_map_count": 36,
+      "network_checks": {
+        "endpoints": [
+          {
+            "roles": [
+              "game",
+              "query"
+            ],
+            "host": "127.0.0.1",
+            "port": 27960,
+            "transport": "udp"
+          }
+        ],
+        "protocol": "quake",
+        "probe_scope": "HOST_LOOPBACK",
+        "port_query_result": "PASSED",
+        "status_result": "PASSED_RUNNING_AND_STOPPED",
+        "info_result": "PASSED_NATIVE_QUAKE",
+        "shutdown_result": "PASSED_PROCESS_AND_UDP_RELEASE",
+        "observed_server": {
+          "name": "AlphaGSM byossdq3",
+          "map": "q3dm17",
+          "players": 0,
+          "max_players": 8
+        },
+        "evidence": [
+          "SSD results/q3server/status.log",
+          "SSD results/q3server/query.log",
+          "SSD results/q3server/info-json.log",
+          "SSD results/q3server/final-status.log",
+          "SSD results/q3server/lifecycle-result.json"
+        ]
+      },
+      "module_review_result": "EXISTING_NATIVE_QUERY_INFO_HOOKS_VERIFIED",
+      "module_changes": [],
+      "module_review_note": "No network-related module change required; dedicated engine selection was updated in 49daf65c and retested."
     },
     {
       "order": 2,
@@ -167,7 +202,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 3,
@@ -222,7 +268,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 4,
@@ -274,7 +331,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 5,
@@ -329,7 +397,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 6,
@@ -393,7 +472,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 7,
@@ -432,7 +522,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 8,
@@ -477,7 +578,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 9,
@@ -522,7 +634,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 10,
@@ -561,7 +684,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 11,
@@ -606,7 +740,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 12,
@@ -647,7 +792,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 13,
@@ -694,7 +850,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 14,
@@ -733,7 +900,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 15,
@@ -773,7 +951,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 16,
@@ -813,7 +1002,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 17,
@@ -864,7 +1064,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 18,
@@ -905,7 +1116,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 19,
@@ -954,7 +1176,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 20,
@@ -995,7 +1228,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 21,
@@ -1036,7 +1280,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 22,
@@ -1076,7 +1331,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 23,
@@ -1125,7 +1391,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 24,
@@ -1165,7 +1442,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 25,
@@ -1210,7 +1498,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 26,
@@ -1254,7 +1553,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 27,
@@ -1295,7 +1605,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 28,
@@ -1333,7 +1654,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 29,
@@ -1372,7 +1704,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 30,
@@ -1416,7 +1759,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 31,
@@ -1460,7 +1814,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 32,
@@ -1499,7 +1864,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 33,
@@ -1540,7 +1916,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 34,
@@ -1584,7 +1971,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 35,
@@ -1625,7 +2023,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 36,
@@ -1670,7 +2079,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 37,
@@ -1715,7 +2135,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 38,
@@ -1758,7 +2189,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 39,
@@ -1797,7 +2239,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 40,
@@ -1846,7 +2299,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 41,
@@ -1885,7 +2349,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     },
     {
       "order": 42,
@@ -1924,7 +2399,18 @@
       "tested_commit": null,
       "evidence": [],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED"
+      "content_result": "NOT_ASSESSED",
+      "network_checks": {
+        "endpoints": [],
+        "protocol": null,
+        "probe_scope": null,
+        "port_query_result": "NOT_RUN",
+        "status_result": "NOT_RUN",
+        "info_result": "NOT_RUN",
+        "shutdown_result": "NOT_RUN"
+      },
+      "module_review_result": "NOT_ASSESSED",
+      "module_changes": []
     }
   ],
   "shared_auth_status": {
@@ -1933,5 +2419,18 @@
     "remote_entitlement": "VERIFIED_APP_2200_ONLY"
   },
   "next_module": "rtcwserver",
-  "content_policy": "Runnable dedicated server plus fullest compatible maps/content from declared legitimate source; reusable checked-in installer required; discard staging and unrelated client binaries."
+  "content_policy": "Runnable dedicated server plus fullest compatible maps/content from declared legitimate source; reusable checked-in installer required; discard staging and unrelated client binaries.",
+  "network_validation_policy": {
+    "required_commands": [
+      "status",
+      "query",
+      "info",
+      "info --json"
+    ],
+    "require_native_protocol_response": true,
+    "record_host_ports_transport_and_probe_scope": true,
+    "require_verified_shutdown": true,
+    "fix_and_retest_module_or_shared_code_before_completion": true,
+    "authenticated_ci_integration": "DEFERRED"
+  }
 }

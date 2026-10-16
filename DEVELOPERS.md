@@ -1253,3 +1253,12 @@ client engine exclusions in `Q3_CLIENT_ONLY_ENGINE_FILES`; it retains an
 explicitly configured executable and never filters inside PK3 content archives.
 These exclusions control source publication and do not delete existing operator
 files during setup or updates.
+
+The sequential BYO campaign records native port query, AlphaGSM status, info
+and shutdown outcomes separately for every game. Establish exact configured
+endpoints and transport before testing; validate real protocol responses and
+matching server properties. When a failure exposes module or shared-helper
+wiring defects, check in the fix with a regression and rerun the selected real
+lifecycle before closing that row. Keep Docker wrappers/config-sync contracts
+and record probe scope so host-local success does not imply Docker or external
+reachability. Authenticated CI integration remains deferred.

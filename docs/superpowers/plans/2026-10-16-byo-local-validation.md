@@ -60,6 +60,43 @@ engine selection now omits 11 loose client components and passed a repeated
 native lifecycle/shutdown check; other games will get their own
 source-specific selection when reached, without applying Q3 exclusions globally.
 
+## Per-game completion rule: port queries, status and module fixes
+
+Every row must prove real server communication, not only downloaded files, a
+running process, an open socket or a startup log marker:
+
+1. Record the actual game/query host, port numbers and TCP/UDP transport from
+   the configured module and installed server. Use the game's real status/query
+   protocol, including its handshake or challenge where required.
+2. Start through AlphaGSM and wait with a finite readiness deadline. Require
+   `status` to report running, `query` to receive a valid native response on the
+   recorded endpoint, and both `info` and `info --json` to describe that server.
+   Check protocol-specific fields against the configured name, map, player
+   capacity and fresh-server player count where those fields are available.
+3. Record probe origin (host loopback, published container endpoint or remote
+   host). A local port test establishes that scope only; Docker and external
+   reachability require their own evidence.
+4. If a check fails, diagnose and fix the checked-in game module or shared
+   helper as needed: install layout, game configuration, launch flags,
+   game/query ports, readiness, `get_query_address`, `get_info_address`, or
+   protocol parsing. Preserve explicit Docker runtime wrappers and config-sync
+   contracts. Add a regression for the defect, update matching lifecycle tests
+   and documentation, then rerun the real selected-server lifecycle.
+5. Always stop the selected test instance and verify its process/container and
+   claimed listeners are gone. Record port-query, status, info and shutdown
+   results separately in the JSON queue, along with module review/fix commits.
+   Leave failed or unsupported checks incomplete with a concrete blocker.
+
+A generic TCP-open fallback cannot pass a game whose status protocol is UDP or
+another native protocol. Missing query/status support is module work to resolve,
+not a reason to substitute process status for server readiness. Credential-free
+regressions are checked in; authenticated CI integration remains deferred.
+
+Q3 already satisfies the local process checks: UDP `127.0.0.1:27960`, protocol
+`quake`, running status, native query/info for `q3dm17`, 0/8 players, then stopped
+status with no owned process and UDP port released. Its existing query/info
+hooks required no network-related code change. RTCW remains next in the queue.
+
 ## Task 0: Repair and verify isolated Steam cache discovery
 
 **Modify:** `src/utils/steam_auth.py`, `tests/unit_tests/utils/test_steam_auth.py`, `changelog.txt`, `docs/steamcmd-auth.md`.
@@ -158,7 +195,7 @@ For each row, complete the following checklist and update its JSON record immedi
 - [ ] Run `assets check --json`; require the declared files. Compare selected file hashes and the ownership manifest; confirm unrelated client files and profile contents were not published. Use local managed export/import for idempotency checks rather than downloading the full app repeatedly.
 - [ ] Confirm the preferred setup finished and remembered only the profile name. Later setup reuses it without another download when declared files remain valid. Run file checks again to catch engine archive overwrites or layout drift. An explicit `--steam-dir PATH` or `--assets PATH` is the local-source alternative.
 - [ ] Run doctor; distinguish missing external prerequisites from actual implementation failures. Start only after the selected configuration and installed executable are understood.
-- [ ] Start through AlphaGSM, wait with a finite game-appropriate deadline, then require `status`, `query`, `info`, and `info --json` to describe the actual server and configured map. See the protocol audit below.
+- [ ] Apply the mandatory port-query/status/module-fix completion rule above. Start through AlphaGSM, wait with a finite game-appropriate deadline, and require real native `query`/`info` responses on the recorded game/query endpoint plus correct running `status`. Record each outcome independently; repair and retest module/shared code before closing failures. See the protocol audit below.
 - [ ] In a `finally` cleanup path, stop the selected tag and prove process/container termination plus listener closure. A failed query/start also requires cleanup before advancing.
 - [ ] Where Docker capability is part of a support-enablement claim, repeat lifecycle validation with the declared branch-local runtime image after native validation; record image/commit/ports and shutdown. Otherwise leave Docker explicitly NOT_RUN, without claiming full runtime parity.
 - [ ] Record results, evidence paths, blocker/fix, disk use and final stopped state. Update applicable public tracker/guide immediately after a real lifecycle run; preserve AUTH/BYO prerequisite classification.
