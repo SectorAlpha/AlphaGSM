@@ -39,5 +39,6 @@
   ],
   "module": "atsserver",
   "guide": "docs/servers/atsserver.md",
-  "schema_version": 1
+  "schema_version": 1,
+  "config_home_setting": "configdir"
 }

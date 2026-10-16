@@ -253,3 +253,46 @@ def test_staged_archive_members_are_not_translated_by_import_target(tmp_path):
         bundle.writestr("maps/mp/mp_test.d3dbsp", b"map")
 
     helpers().validate_staged_files(tmp_path, recipe, "main")
+
+
+@pytest.mark.parametrize('setting', ['configdir', 'confdir'])
+def test_absolute_config_home_translates_path_alternatives(tmp_path, setting):
+    home = tmp_path / 'external-home'
+    recipe = {'config_home_setting': setting, 'defaults': {setting: 'default-home'},
+              'target': '{' + setting + '}', 'managed_import': True,
+              'requirements': [{'any_of': ['{' + setting + '}/first.dat',
+                                            '{' + setting + '}/second.dat'], 'kind': 'file'}]}
+    (tmp_path / 'byo_assets.json').write_text(json.dumps(recipe))
+    server = SimpleNamespace(name='test', data={'dir': str(tmp_path / 'server'), setting: str(home)})
+
+    result = helpers().load_requirements(server, str(tmp_path / 'main.py'))
+
+    assert result['requirements'][0]['any_of'] == ['first.dat', 'second.dat']
+    assert result['managed_import'] is False
+    assert helpers().inspection_root(server, result) == str(home)
+
+
+@pytest.mark.parametrize('setting', ['dir', 'password', ''])
+def test_config_home_opt_in_only_accepts_config_settings(tmp_path, setting):
+    recipe = {'config_home_setting': setting, 'requirements': [{'path': 'file.dat'}]}
+    (tmp_path / 'byo_assets.json').write_text(json.dumps(recipe))
+    server = SimpleNamespace(name='test', data={'dir': str(tmp_path)})
+
+    with pytest.raises(ServerError, match='configuration home setting'):
+        helpers().load_requirements(server, str(tmp_path / 'main.py'))
+
+
+@pytest.mark.parametrize('requirement', [
+    {'path': 'outside.dat'},
+    {'any_of': ['{configdir}/inside.dat', 'outside.dat']},
+    {'path': '{configdir}/../escape.dat'},
+    {'any_of': ['{configdir}/inside.dat', '{configdir}/../escape.dat']},
+])
+def test_absolute_config_home_keeps_requirement_paths_contained(tmp_path, requirement):
+    recipe = {'config_home_setting': 'configdir', 'requirements': [requirement]}
+    (tmp_path / 'byo_assets.json').write_text(json.dumps(recipe))
+    server = SimpleNamespace(name='test', data={'dir': str(tmp_path / 'server'),
+                                              'configdir': str(tmp_path / 'external-home')})
+
+    with pytest.raises(ServerError, match='path|configuration home'):
+        helpers().load_requirements(server, str(tmp_path / 'main.py'))

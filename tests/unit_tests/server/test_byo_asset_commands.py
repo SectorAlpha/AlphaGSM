@@ -77,3 +77,96 @@ def test_real_assets_option_spec_parses(arguments, expected_args, expected_optio
 def test_setup_asset_source_option_has_a_valid_shortform_sequence():
     from utils.cmdparse import cmdparse
     assert cmdparse.parse(['--assets', '/source'], Server.default_command_args['setup']) == ([], {'assets_source': '/source'})
+
+
+@pytest.mark.parametrize('module_id', ['ets2server', 'atsserver'])
+@pytest.mark.parametrize('contents', [None, b'', b'client export'])
+def test_absolute_truck_home_requirements_and_check(tmp_path, capsys, module_id, contents):
+    import importlib
+    server = instance(tmp_path)
+    server.module = importlib.import_module('gamemodules.' + module_id)
+    home = tmp_path / 'external-home'
+    server.data['configdir'] = str(home)
+    if contents is not None:
+        home.mkdir()
+        for name in ('server_packages.sii', 'server_packages.dat'):
+            (home / name).write_bytes(contents)
+
+    server.assets('requirements', as_json=True)
+    recipe = json.loads(capsys.readouterr().out)
+    expected = ['server_packages.sii', 'server_packages.dat']
+    assert [item['path'] for item in recipe['requirements']] == expected
+    assert recipe['root_setting'] == 'configdir'
+    assert recipe['target'] == ''
+    assert recipe['managed_import'] is False
+    assert 'manual staging' in recipe['manual_reason']
+    assert all(name in recipe['manual_reason'] for name in expected)
+    if contents:
+        server.assets('check', as_json=True)
+    else:
+        with pytest.raises(ServerError, match='Required assets are missing'):
+            server.assets('check', as_json=True)
+    report = json.loads(capsys.readouterr().out)
+    assert report['ready'] is bool(contents)
+    assert report['missing'] == ([] if contents else expected)
+    assert report['game_readiness'] == 'not-checked'
+    assert not (tmp_path / 'server').exists()
+
+
+@pytest.mark.parametrize('module_id', ['ets2server', 'atsserver'])
+@pytest.mark.parametrize('action', ['import', 'export'])
+def test_absolute_truck_home_managed_operations_are_read_only(
+        tmp_path, monkeypatch, module_id, action):
+    import importlib
+    server = instance(tmp_path)
+    server.module = importlib.import_module('gamemodules.' + module_id)
+    home = tmp_path / 'external-home'
+    home.mkdir()
+    server.data['configdir'] = str(home)
+    before = {'server_packages.sii': b'original sii', 'server_packages.dat': b'original dat'}
+    for name, payload in before.items():
+        (home / name).write_bytes(payload)
+    monkeypatch.setattr(runtime, 'get_runtime', lambda _s: SimpleNamespace(is_running=lambda _s: False))
+    options = {'output': str(tmp_path / 'exports.zip')} if action == 'export' else {}
+
+    with pytest.raises(ServerError, match='manual staging'):
+        server.assets(action, str(home), **options)
+
+    assert {path.name: path.read_bytes() for path in home.iterdir()} == before
+    assert not (tmp_path / 'exports.zip').exists()
+    assert not (tmp_path / 'server').exists()
+    assert sorted(path.name for path in tmp_path.iterdir()) == ['external-home']
+
+
+@pytest.mark.parametrize('module_id', ['ets2server', 'atsserver'])
+def test_relative_truck_home_retains_import_export_and_ownership(
+        tmp_path, monkeypatch, capsys, module_id):
+    import importlib
+    import zipfile
+    server = instance(tmp_path)
+    server.module = importlib.import_module('gamemodules.' + module_id)
+    server.data['configdir'] = 'custom-home'
+    source = tmp_path / 'client-export'
+    source.mkdir()
+    filenames = ['server_packages.dat', 'server_packages.sii']
+    for name in filenames:
+        (source / name).write_bytes(('owned ' + name).encode())
+    monkeypatch.setattr(runtime, 'get_runtime', lambda _s: SimpleNamespace(is_running=lambda _s: False))
+
+    server.assets('import', str(source), as_json=True)
+    report = json.loads(capsys.readouterr().out)
+    expected = ['custom-home/' + name for name in filenames]
+    assert sorted(report['copied']) == expected
+    manifest = json.loads((tmp_path / 'server/.alphagsm/assets.json').read_text())
+    assert sorted(manifest['files']) == expected
+    assert not (tmp_path / 'server/custom-home/.alphagsm').exists()
+    server.assets('check', as_json=True)
+    assert json.loads(capsys.readouterr().out)['ready']
+    output = tmp_path / 'exports.zip'
+    server.assets('export', str(source), output=str(output), as_json=True)
+    assert sorted(json.loads(capsys.readouterr().out)['files']) == filenames
+    with zipfile.ZipFile(output) as bundle:
+        assert sorted(bundle.namelist()) == filenames
+        for name in filenames:
+            assert bundle.read(name) == (source / name).read_bytes()
+            assert (tmp_path / 'server/custom-home' / name).read_bytes() == bundle.read(name)

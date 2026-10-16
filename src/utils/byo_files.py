@@ -34,6 +34,34 @@ def _expand(value, values):
     return relative_path(result)
 
 
+def _prepare_external_home(server, recipe):
+    """Inspect opted-in absolute config homes without permitting managed writes."""
+    if "config_home_setting" not in recipe:
+        return
+    setting = recipe["config_home_setting"]
+    if setting not in ("configdir", "confdir"):
+        raise ServerError("Invalid BYO configuration home setting: " + str(setting))
+    home = server.data.get(setting, recipe.get("defaults", {}).get(setting, ""))
+    if not os.path.isabs(str(home)):
+        return
+    prefix = "{" + setting + "}/"
+    for requirement in recipe["requirements"]:
+        for key in ("path", "any_of"):
+            if key not in requirement:
+                continue
+            values = [requirement[key]] if key == "path" else requirement[key]
+            translated = []
+            for value in values:
+                if not value.startswith(prefix):
+                    raise ServerError("BYO requirement path is outside the configuration home")
+                translated.append(relative_path(value[len(prefix):]))
+            requirement[key] = translated[0] if key == "path" else translated
+    recipe.update(root_setting=setting, target="", managed_import=False,
+                  manual_reason="An absolute configuration home requires manual staging. "
+                  "Copy server_packages.sii and server_packages.dat into the configured home, "
+                  "then run assets check.")
+
+
 def load_requirements(server, module_file, manifest="byo_assets.json"):
     """Read a package-local recipe and resolve its declared instance path settings."""
     path = Path(module_file).with_name(manifest)
@@ -41,6 +69,7 @@ def load_requirements(server, module_file, manifest="byo_assets.json"):
         recipe = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as error:
         raise ServerError("Unable to read the module's BYO file requirements") from error
+    _prepare_external_home(server, recipe)
     values = {"server_name": server.name}
     allowed = {"exe_name", "configdir", "confdir", "cluster", "shard", "startmap", "map"}
     for key, default in recipe.get("defaults", {}).items():
