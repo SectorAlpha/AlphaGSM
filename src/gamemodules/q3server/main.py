@@ -29,6 +29,20 @@ from utils.simple_kv_config import rewrite_equals_config
 
 IOQ3_LINUX_DOWNLOAD_URL = "https://files.ioquake3.org/Linux.zip"
 IOQ3_LINUX_DOWNLOAD_VERSION = "linux"
+# These loose engine files are client-only; preserve complete content archives.
+Q3_CLIENT_ONLY_ENGINE_FILES = (
+    "ioquake3.x86_64",
+    "renderer_opengl1_x86_64.so",
+    "renderer_opengl2_x86_64.so",
+    "baseq3/cgamex86_64.so",
+    "baseq3/uix86_64.so",
+    "baseq3/vm/cgame.qvm",
+    "baseq3/vm/ui.qvm",
+    "missionpack/cgamex86_64.so",
+    "missionpack/uix86_64.so",
+    "missionpack/vm/cgame.qvm",
+    "missionpack/vm/ui.qvm",
+)
 Q3_MOD_CACHE_DIRNAME = "q3server"
 Q3_ALLOWED_MOD_SUFFIXES = {
     ".7z": "7z",
@@ -469,7 +483,15 @@ def install(server):
         server.data["version"] = resolved_version
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", os.path.basename(resolved_url))
-    install_archive(server, detect_compression(server.data["download_name"]))
+    # A configured executable remains installable even if it is a client binary.
+    configured_exe = os.path.normpath(server.data["exe_name"])
+    install_archive(
+        server,
+        detect_compression(server.data["download_name"]),
+        skip_relative_files=tuple(
+            path for path in Q3_CLIENT_ONLY_ENGINE_FILES if path != configured_exe
+        ),
+    )
     sync_server_config(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
