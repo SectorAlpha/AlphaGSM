@@ -2,6 +2,8 @@ import importlib
 import os
 import sys
 import urllib.error
+import shutil
+import zipfile
 
 import pytest
 
@@ -31,6 +33,22 @@ def test_download_rejects_too_many_arguments(url_module, tmp_path):
 def test_download_rejects_unknown_decompression(url_module, tmp_path):
     with pytest.raises(url_module.DownloaderError, match="Unknown decompression type"):
         url_module.download(str(tmp_path), ("http://example.com/file", "server.jar", "rar"))
+
+
+@pytest.mark.skipif(shutil.which('unzip') is None, reason='Native unzip is required for this regression')
+def test_zip_extracts_unattended_in_bracketed_cache_directory(url_module, tmp_path, monkeypatch):
+    """A retry must refresh cache files without an interactive overwrite prompt."""
+    cache = tmp_path / 'cache[process]'
+    cache.mkdir()
+    (cache / 'nested').mkdir()
+    (cache / 'nested/payload.txt').write_text('partial previous extraction')
+    def download_zip(_url, destination, timeout=None):
+        del timeout
+        with zipfile.ZipFile(destination, 'w') as archive:
+            archive.writestr('nested/payload.txt', 'public release')
+    monkeypatch.setattr(url_module, '_download_url', download_zip)
+    url_module.download(str(cache), ('https://example.invalid/release.zip', 'release.zip', 'zip'))
+    assert (cache / 'nested/payload.txt').read_text() == 'public release'
 
 
 def test_download_wraps_url_errors(url_module, tmp_path, monkeypatch):
@@ -222,7 +240,7 @@ def test_download_accepts_custom_timeout(url_module, tmp_path, monkeypatch):
             pass
 
     monkeypatch.setattr(url_module, "_download_url", fake_download_url)
-    monkeypatch.setattr(url_module.sp, "call", lambda cmd, stdout: 0)
+    monkeypatch.setattr(url_module.sp, "call", lambda cmd, stdout, **_kwargs: 0)
 
     url_module.download(str(tmp_path), ("http://example.com/file", "server.zip", "zip", "300"))
 
@@ -253,7 +271,7 @@ def test_download_uses_curl_transport_with_clean_retries(url_module, tmp_path, m
 
     monkeypatch.setattr(url_module, "_download_url_with_curl", fake_download_url_with_curl)
     monkeypatch.setattr(url_module.time, "sleep", lambda seconds: sleeps.append(seconds))
-    monkeypatch.setattr(url_module.sp, "call", lambda cmd, stdout: 0)
+    monkeypatch.setattr(url_module.sp, "call", lambda cmd, stdout, **_kwargs: 0)
 
     url_module.download(
         str(tmp_path),
@@ -319,7 +337,7 @@ def test_download_runs_expected_extractor(url_module, tmp_path, monkeypatch, com
         with open(targetname, "wb"):
             pass
 
-    def fake_call(cmd, stdout):
+    def fake_call(cmd, stdout, **_kwargs):
         calls.append(cmd)
         return 0
 
@@ -338,7 +356,7 @@ def test_download_raises_when_extractor_fails(url_module, tmp_path, monkeypatch)
             pass
 
     monkeypatch.setattr(url_module, "_download_url", fake_download_url)
-    monkeypatch.setattr(url_module.sp, "call", lambda cmd, stdout: 1)
+    monkeypatch.setattr(url_module.sp, "call", lambda cmd, stdout, **_kwargs: 1)
 
     with pytest.raises(url_module.DownloaderError, match="Error extracting download"):
         url_module.download(str(tmp_path), ("http://example.com/file", "server", "zip"))

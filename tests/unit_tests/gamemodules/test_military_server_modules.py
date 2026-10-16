@@ -144,7 +144,8 @@ def test_squadserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = squadserver.get_start_command(server)
 
-    assert cmd == ["./SquadGameServer.sh", "Port=7787", "QueryPort=27165", "FIXEDMAXPLAYERS=80"]
+    assert cmd == ["./SquadGameServer.sh", "Port=7787", "QueryPort=27165",
+                   "beaconport=15000", "FIXEDMAXPLAYERS=80"]
     assert cwd == server.data["dir"]
 
 
@@ -164,7 +165,8 @@ def test_squad44server_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = squad44server.get_start_command(server)
 
-    assert cmd == ["./PostScriptumServer.sh", "Port=7787", "QueryPort=27165", "FIXEDMAXPLAYERS=80"]
+    assert cmd == ["./PostScriptumServer.sh", "Port=7787", "QueryPort=27165",
+                   "beaconport=15000", "FIXEDMAXPLAYERS=80"]
     assert cwd == server.data["dir"]
 
 

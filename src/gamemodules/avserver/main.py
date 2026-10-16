@@ -6,13 +6,19 @@ import utils.steamcmd as steamcmd
 from server import ServerError
 
 import server.runtime as runtime_module
+from server.modsupport.native_workshop import build_native_workshop_support
+from .workshop import WORKSHOP_APP_ID, apply_workshop
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 565060
 steam_anonymous_login_possible = True
+workshop_app_id = WORKSHOP_APP_ID
+MOD_SUPPORT = build_native_workshop_support(
+    game_label="Avorion", workshop_app_id=workshop_app_id, apply_callback=apply_workshop,
+)
 
-commands = ("update", "restart")
+commands = ("update", "restart") + MOD_SUPPORT.commands
 command_args = gamemodule_common.build_setup_update_restart_command_args(
     "The port for the server to listen on",
     "The directory to install Avorion in",
@@ -21,7 +27,9 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Update the Avorion dedicated server to the latest version.",
     "Restart the Avorion dedicated server.",
 )
-command_functions = {}
+command_args.update(MOD_SUPPORT.command_args)
+command_descriptions.update(MOD_SUPPORT.command_descriptions)
+command_functions = dict(MOD_SUPPORT.command_functions)
 max_stop_wait = 1
 
 
@@ -64,13 +72,26 @@ def configure(server, ask, port=None, dir=None, *, exe_name="server.sh"):
         prompt="Where would you like to install the Avorion server:",
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
+    MOD_SUPPORT.ensure_mod_state(server)
     return gamemodule_common.finalize_configure(server)
+
+
+def apply_automatic_mods(server):
+    """Respect autoapply during setup, update and startup, including disabled cleanup."""
+    if MOD_SUPPORT.ensure_mod_state(server)["autoapply"]:
+        MOD_SUPPORT.apply_configured_mods(server)
+
+
+def prestart(server):
+    """Revalidate native Workshop desired state before launching the galaxy."""
+    apply_automatic_mods(server)
 
 
 install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    post_download_hook=apply_automatic_mods,
 )
 install.__doc__ = "Download the Avorion server files via SteamCMD."
 
@@ -79,6 +100,7 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    post_download_hook=apply_automatic_mods,
 )
 
 restart = gamemodule_common.make_restart_hook()
@@ -129,7 +151,7 @@ def get_info_address(server):
 def do_stop(server, j):
     """Stop Avorion using the standard stop command."""
 
-    runtime_module.send_to_server(server, "\nstop\n")
+    runtime_module.send_to_server(server, "\n/stop\n")
 
 
 def status(server, verbose):

@@ -12,9 +12,13 @@ from utils.platform_info import IS_LINUX
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
+from server.modsupport.native_workshop import build_native_workshop_support
+from .workshop import configure_workshop
+from gamemodules.kf2server.workshop import validate_installed_map
 
 steam_app_id = 418480
 steam_anonymous_login_possible = True
+workshop_app_id = 418460
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -26,6 +30,17 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Restart the Rising Storm 2: Vietnam dedicated server.",
 )
 command_functions = {}
+_mod_support = build_native_workshop_support(
+    game_label="Rising Storm 2: Vietnam", workshop_app_id=workshop_app_id,
+    apply_callback=configure_workshop,
+)
+commands += _mod_support.commands
+command_args.update(_mod_support.command_args)
+command_descriptions.update(_mod_support.command_descriptions)
+command_functions.update(_mod_support.command_functions)
+ensure_mod_state = _mod_support.ensure_mod_state
+apply_configured_mods = _mod_support.apply_configured_mods
+cleanup_configured_mods = _mod_support.cleanup_configured_mods
 max_stop_wait = 1
 config_sync_keys = ("servername",)
 setting_schema = {
@@ -38,6 +53,8 @@ setting_schema = {
         native_config_key="ServerName",
     ),
     "configfile": SettingSpec(canonical_key="configfile", description="Config file path for the server."),
+    "startmap": SettingSpec(canonical_key="startmap", description="Native installed starting map.",
+                            apply_to=("datastore", "launch_args")),
     **gamemodule_common.build_executable_path_setting_schema(),
 }
 
@@ -130,6 +147,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Win64/VNGa
             "queryport": "27015",
             "configfile": "ROGame/Config/PCServer-ROGame.ini",
             "servername": "AlphaGSM %s" % (server.name,),
+            "startmap": "VNTE-CuChi",
         },
     )
     gamemodule_common.ensure_backup_config(
@@ -154,14 +172,27 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Binaries/Win64/VNGa
     return gamemodule_common.finalize_configure(server)
 
 
-install = gamemodule_common.make_steamcmd_install_hook(
+_install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
     sync_server_config=sync_server_config,
     download_kwargs={"force_windows": IS_LINUX},
 )
-install.__doc__ = "Download the Rising Storm 2 server files via SteamCMD."
+
+
+def install(server):
+    """Download the dedicated server and reconcile native Workshop subscriptions."""
+    _install(server)
+    if ensure_mod_state(server).get("autoapply", True):
+        apply_configured_mods(server)
+
+
+def prestart(server):
+    """Sync native config and Workshop downloads before the process can rewrite INIs."""
+    sync_server_config(server)
+    if ensure_mod_state(server).get("autoapply", True):
+        apply_configured_mods(server)
 
 
 update = gamemodule_common.make_steamcmd_update_hook(
@@ -204,7 +235,7 @@ def get_start_command(server):
     )
     cmd = [
             server.data["exe_name"],
-            "VNTE-CuChi?maxplayers=64",
+            server.data.get("startmap", "VNTE-CuChi") + "?maxplayers=64",
             *dynamic_args,
             "-ConfigSubDir=PCServer",
             "-log",
@@ -242,6 +273,9 @@ def backup(server, profile=None):
 def checkvalue(server, key, *value):
     """Validate supported Rising Storm 2 datastore edits."""
 
+    if key == ["startmap"]:
+        return validate_installed_map(server, " ".join(value), game_dir="ROGame",
+                                      suffix=".roe", stock="VNTE-CuChi")
     return gamemodule_common.handle_setting_schema_checkvalue(
         server,
         key,
@@ -252,11 +286,22 @@ def checkvalue(server, key, *value):
         backup_module=backup_utils,
     )
 
-get_runtime_requirements = gamemodule_common.make_proton_runtime_requirements_builder(
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+_PORT_DEFINITIONS = (
+    {"key": "queryport", "protocol": "udp"},
+    {"key": "queryport", "protocol": "tcp"},
+    {"key": "port", "protocol": "udp"},
+    {"key": "port", "protocol": "tcp"},
 )
+port_claim_definitions = _PORT_DEFINITIONS
 
-get_container_spec = gamemodule_common.make_proton_container_spec_builder(
-    get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
-)
+
+def get_runtime_requirements(server):
+    """Declare the Windows dedicated-server runtime and all managed native ports."""
+    return proton.get_runtime_requirements(server, port_definitions=_PORT_DEFINITIONS)
+
+
+def get_container_spec(server):
+    """Use the shared Wine/Proton container contract for the Windows server."""
+    return proton.get_container_spec(
+        server, get_start_command, port_definitions=_PORT_DEFINITIONS,
+    )

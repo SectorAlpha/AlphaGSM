@@ -162,17 +162,20 @@ def test_get_info_address():
     assert mod.get_info_address(server) == ("127.0.0.1", 27015, "a2s")
 
 
-def test_get_runtime_requirements_mounts(tmp_path):
+def test_get_runtime_requirements_mounts(tmp_path, monkeypatch):
     server = DummyServer()
     server.data["dir"] = str(tmp_path)
-    mod.steamcmd.STEAMCMD_DIR = "/tmp/steamcmd"
+    steam = tmp_path / "steamcmd/linux64"
+    steam.mkdir(parents=True)
+    (steam / "steamclient.so").write_bytes(b"SDK fixture")
+    monkeypatch.setattr(mod.steamcmd, "STEAMCMD_DIR", str(steam.parent))
     requirements = mod.get_runtime_requirements(server)
     assert requirements["family"] == "steamcmd-linux"
     assert any(
         mount["target"] == "/srv/server" for mount in requirements["mounts"]
     )
     assert any(
-        mount["target"] == mod.CONTAINER_STEAMCMD_DIR
+        mount["target"] == "/home/alphagsm/.steam/sdk64" and mount["mode"] == "ro"
         for mount in requirements["mounts"]
     )
 
@@ -195,11 +198,10 @@ def test_get_container_spec_uses_non_root_steam_bootstrap(tmp_path):
     spec = mod.get_container_spec(server)
     assert spec["working_dir"] == "/srv/server"
     assert spec["stdin_open"] is True
-    shell = spec["command"][-1]
-    assert "/home/alphagsm/.steam/sdk64/steamclient.so" in shell
-    assert "/opt/alphagsm-steamcmd/linux64/steamclient.so" in shell
-    assert "runuser -u alphagsm" in shell
-    assert "./ShooterGame/Binaries/Linux/ShooterGameServer" in shell
+    assert spec["run_as_host_user"] is True
+    assert spec["container_home"] == "/home/alphagsm"
+    assert spec["command"][0] == "./ShooterGame/Binaries/Linux/ShooterGameServer"
+    assert not any("chmod" in argument or "runuser" in argument for argument in spec["command"])
 
 
 def test_status():

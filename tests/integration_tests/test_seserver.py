@@ -2,12 +2,22 @@
 
 import json
 import os
+import re
+from pathlib import Path
+import sys
 
 import pytest
 
 from conftest import (
+    _redact_logged_text,
+    workshop_runtime_backends,
     alphagsm_env,
     default_runtime_backend,
+    effective_runtime_backend,
+    require_proton,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
+    wait_for_glob_log_marker,
     log_command_result,
     pick_free_udp_port,
     require_command,
@@ -22,6 +32,7 @@ from conftest import (
     write_config,
 )
 from gamemodules.seserver import steam_app_id
+from tests.smoke_tests.seserver_workshop import FIXTURE_ID, assert_workshop_executed
 
 pytestmark = [pytest.mark.integration]
 START_TIMEOUT = 600
@@ -30,23 +41,52 @@ SETUP_TIMEOUT = 3600
 TEST_TIMEOUT = SETUP_TIMEOUT + START_TIMEOUT + 600
 LOCAL_WINE_PROTON_IMAGE = "alphagsm-wine-proton-runtime:local"
 PUBLISHED_WINE_PROTON_IMAGE = "ghcr.io/sectoralpha/alphagsm-wine-proton-runtime:latest"
-runtime_backend = os.environ.get(
-    "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
-)
 module_name = "seserver"
 
 
+def _native_startup_diagnostics(install_dir, backend):
+    """Keep the native runtime identity visible for passing and failing cases."""
+    selected = re.compile(r"App Version:|Environment\.(?:OSVersion|Version|CommandLine|CurrentDirectory):|"
+                          r"Working directory:|Bind IP|Exception|Error|Game ready", re.IGNORECASE)
+    for path in sorted(install_dir.glob("SpaceEngineersDedicated_*.log"))[:4]:
+        if path.is_symlink() or not path.is_file():
+            continue
+        with path.open("r", encoding="utf-8", errors="replace") as handle:
+            text = _redact_logged_text(handle.read(256 * 1024))
+        lines = [line[:1000] for line in text.splitlines() if selected.search(line)][:40]
+        print(_redact_logged_text(
+            f"[diagnostic] Space Engineers {backend} native runtime {path.name}: {lines!r}"))
+    # Only list crash artifacts in known native locations; never read dump data.
+    candidates = list(install_dir.glob("*.dmp"))[:8]
+    candidates.extend(list((install_dir / "DedicatedServer64").glob("*.dmp"))[:8])
+    prefix = install_dir / ".alphagsm-wineprefix"
+    candidates.extend(list(prefix.glob("drive_c/users/*/Temp/*.dmp"))[:8])
+    artifacts = [(str(path.relative_to(install_dir)), path.stat().st_size)
+                 for path in candidates if not path.is_symlink()]
+    print(_redact_logged_text(f"[diagnostic] Space Engineers native crash artifacts: {artifacts!r}"))
+
+
 @pytest.mark.timeout(TEST_TIMEOUT)
-def test_seserver_lifecycle(tmp_path):
+def test_seserver_lifecycle(tmp_path, runtime_backend=None, workshop_fixture=False):
     require_integration_opt_in()
     require_steamcmd_opt_in()
-    require_command("docker")
+    runtime_backend = runtime_backend or os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend())
+    backend = effective_runtime_backend(runtime_backend, module_name=module_name)
+    if backend == "docker":
+        require_command("docker")
+    else:
+        require_proton()
 
     home_dir = tmp_path / "home"
     home_dir.mkdir()
     install_dir = tmp_path / "server"
+    reusable = os.environ.get("ALPHAGSM_SESERVER_TEST_INSTALL")
+    if reusable:
+        install_dir = Path(reusable).expanduser().resolve()
+        assert install_dir.is_relative_to(Path(os.environ["ALPHAGSM_WORK_DIR"]).resolve())
+        assert (install_dir / "DedicatedServer64/SpaceEngineersDedicated.exe").is_file()
     config_path = tmp_path / "alphagsm.conf"
-    server_name = ("itse" + tmp_path.name.replace("_", "")[-11:])[:15]
+    server_name = "itse" + re.sub(r"[^A-Za-z0-9]", "", tmp_path.name)[-10:]
     image = resolve_runtime_image(
         "ALPHAGSM_BACKEND_DOCKER_IMAGE_WINE_PROTON",
         LOCAL_WINE_PROTON_IMAGE,
@@ -62,10 +102,16 @@ def test_seserver_lifecycle(tmp_path):
         module_name=module_name,
     )
     env = alphagsm_env(config_path)
+    if backend == "process" and (os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS")):
+        # The image normally disables every Wine channel. Keep SE's actual SEH
+        # crash visible in remote CI, without changing operator launch defaults.
+        env["WINEDEBUG"] = "err+all,+seh"
     port = pick_free_udp_port()
 
     run_and_assert_ok(env, server_name, "create", module_name)
-    run_and_assert_ok(env, server_name, "set", "image", image)
+    if backend == "docker":
+        run_and_assert_ok(env, server_name, "set", "image", image)
+    run_and_assert_ok(env, server_name, "set", "wineprefix", str(install_dir / ".alphagsm-wineprefix"))
 
     result, port = run_setup_with_port_retry(
         env,
@@ -80,9 +126,20 @@ def test_seserver_lifecycle(tmp_path):
             f"{result.stdout}\n{result.stderr}"
         )
 
-    run_and_assert_ok(env, server_name, "start")
-
+    if workshop_fixture:
+        run_and_assert_ok(env, server_name, "mod", "add", "workshop", FIXTURE_ID)
+        run_and_assert_ok(env, server_name, "mod", "apply")
+    for previous_log in install_dir.glob("SpaceEngineersDedicated_*.log"):
+        previous_log.unlink()  # Fresh/exclusive disposable install; keep captured failure evidence elsewhere.
     try:
+        run_and_assert_ok(env, server_name, "start")
+        evidence = wait_for_glob_log_marker(install_dir, "SpaceEngineersDedicated_*.log", ["Game ready"], START_TIMEOUT, env=env, server_name=server_name)
+        if workshop_fixture:
+            assert_workshop_executed(evidence)
+            if os.environ.get("ALPHAGSM_WORK_DIR"):
+                target = Path(os.environ["ALPHAGSM_WORK_DIR"]) / "evidence"
+                target.mkdir(exist_ok=True)
+                (target / f"seserver-{backend}.log").write_text(evidence)
         wait_for_info_protocol(env, server_name, "udp", START_TIMEOUT)
 
         run_and_assert_ok(env, server_name, "status")
@@ -106,6 +163,28 @@ def test_seserver_lifecycle(tmp_path):
             f"Expected game port in info JSON: {info_data!r}"
         )
     finally:
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        original_error = sys.exc_info()[1]
+        try:
+            _native_startup_diagnostics(install_dir, backend)
+        except OSError as diagnostic_error:
+            print(_redact_logged_text(
+                f"[diagnostic] Space Engineers native details unavailable: {diagnostic_error}"))
+        stopped = capture_alphagsm_stop(env, server_name, original_error, timeout=90)
+        if workshop_fixture and stopped is not None and stopped.returncode == 0:
+            cleaned = run_alphagsm(env, server_name, "mod", "cleanup")
+            log_command_result("alphagsm mod cleanup", cleaned)
+            if original_error is None:
+                assert_alphagsm_result_ok(cleaned)
+    assert_alphagsm_result_ok(stopped)
 
     wait_for_generic_udp_closed("127.0.0.1", port, STOP_TIMEOUT)
+
+    result = run_and_assert_ok(env, server_name, "status")
+    assert "isn't running" in result.stdout
+
+
+@pytest.mark.skipif(os.environ.get("ALPHAGSM_RUN_WORKSHOP") != "1",
+                    reason="Set ALPHAGSM_RUN_WORKSHOP=1 for native public Workshop checks")
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
+def test_seserver_native_workshop(tmp_path, runtime_backend):
+    test_seserver_lifecycle(tmp_path, runtime_backend, workshop_fixture=True)

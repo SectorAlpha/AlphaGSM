@@ -1,3 +1,12 @@
+FROM ubuntu:24.04 AS console-probe-build
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64 \
+    && rm -rf /var/lib/apt/lists/*
+COPY src/gamemodules/wreckfestserver/console_probe.c /tmp/console_probe.c
+RUN x86_64-w64-mingw32-gcc -O2 -Wall -Wextra -Werror -municode -mwindows \
+    /tmp/console_probe.c -o /tmp/wreckfest-console-probe.exe -lshell32
+
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -12,6 +21,7 @@ RUN dpkg --add-architecture i386 \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         bash \
+        bsdutils \
         ca-certificates \
         cabextract \
         curl \
@@ -74,13 +84,14 @@ RUN GITHUB_TOKEN=${GITHUB_TOKEN:-} \
     PROTON_GE_DIR=/opt/proton-ge \
     bash /tmp/install_proton.sh proton \
     && ln -s /opt/proton-ge /opt/proton \
+    && chown -R root:root /opt/proton-ge /opt/proton \
     && rm -f /tmp/install_proton.sh /tmp/select_proton_asset.py
 
 COPY docker/wine-proton/entrypoint.sh /usr/local/bin/alphagsm-wine-proton-entrypoint
+COPY --from=console-probe-build /tmp/wreckfest-console-probe.exe /usr/local/lib/alphagsm/wreckfest-console-probe.exe
 
 RUN chmod +x /usr/local/bin/alphagsm-wine-proton-entrypoint \
-    && mkdir -p /srv/server \
-    && chown -R root:root /opt/proton-ge /opt/proton /opt/wine
+    && mkdir -p /srv/server
 
 WORKDIR /srv/server
 

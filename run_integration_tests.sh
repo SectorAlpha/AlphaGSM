@@ -70,10 +70,10 @@ FAIL_LIST=()
 cleanup_tmp() {
     # Remove pytest tmp dirs to free disk space after each test
     rm -rf /tmp/pytest-of-"$(whoami)"/pytest-*/
-    # Kill any leftover integration-test screen sessions
+    # Kill leftover integration sessions. An empty screen/grep result is normal.
     screen -ls 2>/dev/null | grep -oP 'AlphaGSM-IT#\S+' | while read -r sess; do
         screen -S "$sess" -X quit 2>/dev/null || true
-    done
+    done || true
 }
 
 echo "=== Running ${TOTAL} integration test file(s) one by one ==="

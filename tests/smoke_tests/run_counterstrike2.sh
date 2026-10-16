@@ -20,8 +20,8 @@ require_cmd() {
 }
 
 run_alphagsm() {
-  echo
-  echo "=== alphagsm $* ==="
+  echo >&2
+  echo "=== alphagsm $* ===" >&2
   ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
 }
 
@@ -78,13 +78,25 @@ run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
 # Keep the smoke server awake for real A2S query and info checks.
 test -f "$INSTALL_DIR/game/csgo/cfg/server.cfg"
 printf '\nsv_hibernate_when_empty 0\n' >> "$INSTALL_DIR/game/csgo/cfg/server.cfg"
+# CS2 executes game-mode defaults after server.cfg. Apply the disposable
+# empty-server rules in the native competitive override loaded after them.
+printf 'bot_quota 0\nbot_kick\nsv_hibernate_when_empty 0\n' \
+  > "$INSTALL_DIR/game/csgo/cfg/gamemode_competitive_server.cfg"
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
-wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS" "$PORT"
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info
-run_alphagsm "$SERVER_NAME" info --json
+INFO_JSON="$(run_alphagsm "$SERVER_NAME" info --json)"
+printf '%s\n' "$INFO_JSON"
+"$PYTHON_BIN" -c '
+import json, sys
+data = json.load(sys.stdin)
+assert data["protocol"] == "a2s" and data["port"] == int(sys.argv[1]), data
+assert data["map"] == "de_dust2", data
+assert data["players"] == 0 and data["bots"] == 0, data
+' "$PORT" <<< "$INFO_JSON"
 run_alphagsm "$SERVER_NAME" status
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0

@@ -47,7 +47,7 @@ def test_projectzomboid_get_start_command_uses_server_name(tmp_path):
 
     cmd, cwd = projectzomboid.get_start_command(server)
 
-    assert cmd == ["./start-server.sh", "-servername", "pzalpha", "-adminpassword", "alphagsm", "-port", "16261"]
+    assert cmd == ["./start-server.sh", "-cachedir=./Zomboid", "-servername", "pzalpha", "-adminpassword", "alphagsm", "-port", "16261"]
     assert cwd == server.data["dir"]
 
 
@@ -77,9 +77,9 @@ def test_satisfactory_get_start_command_uses_ports(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_more_standalone_steam_modules_update_and_restart(monkeypatch):
+def test_more_standalone_steam_modules_update_and_restart(monkeypatch, tmp_path):
     pz_server = DummyServer("pz")
-    pz_server.data["dir"] = "/srv/pz/"
+    projectzomboid.configure(pz_server, ask=False, port=16261, dir=str(tmp_path / 'pz'))
     sf_server = DummyServer("sf")
     sf_server.data["dir"] = "/srv/sf/"
     calls = []
@@ -93,7 +93,7 @@ def test_more_standalone_steam_modules_update_and_restart(monkeypatch):
     projectzomboid.update(pz_server, validate=True, restart=True)
     satisfactory.update(sf_server, validate=False, restart=False)
 
-    assert ("/srv/pz/", 380870, True, True) in calls
+    assert (pz_server.data['dir'], 380870, True, True) in calls
     assert ("/srv/sf/", 1690800, True, False) in calls
     assert pz_server.start_calls == 1
     assert sf_server.start_calls == 0

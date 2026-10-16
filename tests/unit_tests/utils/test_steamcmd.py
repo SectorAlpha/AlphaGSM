@@ -1,5 +1,6 @@
 import os
 import subprocess as sp
+import pytest
 
 import utils.steamcmd as steamcmd_module
 
@@ -301,22 +302,22 @@ def test_download_does_not_add_platform_flag_by_default(monkeypatch):
     assert "+@sSteamCmdForcePlatformType" not in cmd
 
 
-def test_download_workshop_item_runs_steamcmd_and_returns_content_dir(tmp_path, monkeypatch):
+@pytest.mark.parametrize("identifier", [12345, "https://steamcommunity.com/sharedfiles/filedetails/?id=12345"])
+def test_download_workshop_item_runs_steamcmd_and_returns_content_dir(tmp_path, monkeypatch, identifier):
     calls = []
     content_dir = tmp_path / "workshop" / "steamapps" / "workshop" / "content" / "440" / "12345"
 
     def fake_run(cmd, stdout, stderr, text, check):
         calls.append(cmd)
         content_dir.mkdir(parents=True)
-        return sp.CompletedProcess(cmd, 0, "Workshop item downloaded\n")
+        (content_dir / "addon.vpk").write_bytes(b"addon")
+        return sp.CompletedProcess(cmd, 0, f'Success. Downloaded item 12345 to "{content_dir}" (5 bytes)\n')
 
     monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: calls.append("install"))
     monkeypatch.setattr(steamcmd_module.sp, "run", fake_run)
     monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
-    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
-    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: str(tmp_path / "workshop"))
 
-    result = steamcmd_module.download_workshop_item("ignored", 440, 12345, True)
+    result = steamcmd_module.download_workshop_item(str(tmp_path / "workshop"), 440, identifier, True)
 
     assert result == str(content_dir)
     assert calls[0] == "install"
@@ -331,6 +332,78 @@ def test_download_workshop_item_runs_steamcmd_and_returns_content_dir(tmp_path, 
         "12345",
         "+quit",
     ]
+
+
+@pytest.mark.parametrize("output", ["ERROR! Download item failed\n",
+                                   "Success. Downloaded item 999 to somewhere\n", ""])
+def test_workshop_stale_content_does_not_mask_failed_download(tmp_path, monkeypatch, output):
+    content = tmp_path / "steamapps/workshop/content/440/12345"
+    content.mkdir(parents=True)
+    (content / "old.vpk").write_bytes(b"stale")
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
+    monkeypatch.setattr(steamcmd_module.time, "sleep", lambda _: None)
+    monkeypatch.setattr(steamcmd_module.sp, "run", lambda *a, **kw: sp.CompletedProcess(a[0], 0, output))
+    with pytest.raises(sp.CalledProcessError):
+        steamcmd_module.download_workshop_item(tmp_path, 440, 12345, True)
+
+
+def test_workshop_uses_actual_steamcmd_content_root(tmp_path, monkeypatch):
+    steam_root = tmp_path / "steam"
+    content = steam_root / "steamapps/workshop/content/550/10"
+    content.mkdir(parents=True)
+    (content / "addon.vpk").write_bytes(b"addon")
+    monkeypatch.setattr(steamcmd_module, "STEAMCMD_DIR", str(steam_root))
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
+    monkeypatch.setattr(steamcmd_module.time, "sleep", lambda _: None)
+    monkeypatch.setattr(steamcmd_module.sp, "run", lambda *a, **kw: sp.CompletedProcess(
+        a[0], 0, f'Success. Downloaded item 10 to "{content}" (5 bytes)\n'))
+    assert steamcmd_module.download_workshop_item(tmp_path / "cache", 550, 10, True) == str(content)
+
+
+def test_workshop_legacy_success_reports_payload_file(tmp_path, monkeypatch):
+    content = tmp_path / "steamapps/workshop/content/550/10"
+    content.mkdir(parents=True)
+    payload = content / "123_legacy.bin"
+    payload.write_bytes(b"payload")
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
+    monkeypatch.setattr(steamcmd_module.time, "sleep", lambda _: None)
+    monkeypatch.setattr(steamcmd_module.sp, "run", lambda *a, **kw: sp.CompletedProcess(
+        a[0], 0, f'Success. Downloaded item 10 to "{payload}" (7 bytes)\n'))
+    assert steamcmd_module.download_workshop_item(tmp_path, 550, 10, True) == str(content)
+
+
+def test_workshop_access_denied_fails_without_retry(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
+    monkeypatch.setattr(steamcmd_module.time, "sleep", lambda _: None)
+
+    def denied(*args, **kwargs):
+        calls.append(args[0])
+        return sp.CompletedProcess(args[0], 0, "ERROR! Download item 10 failed (Access Denied).\n")
+
+    monkeypatch.setattr(steamcmd_module.sp, "run", denied)
+    with pytest.raises(sp.CalledProcessError) as error:
+        steamcmd_module.download_workshop_item(tmp_path, 550, 10, True)
+    assert "anonymous" in error.value.output.lower()
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize("app_id,item_id", [(0, 10), (550, "10 +quit"), (2**32, 10), (550, 0)])
+def test_workshop_invalid_ids_fail_before_install(tmp_path, monkeypatch, app_id, item_id):
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: pytest.fail("must validate first"))
+    with pytest.raises(ValueError):
+        steamcmd_module.download_workshop_item(tmp_path, app_id, item_id, True)
+
+
+def test_workshop_empty_directory_is_not_a_download(tmp_path, monkeypatch):
+    content = tmp_path / "steamapps/workshop/content/550/10"
+    content.mkdir(parents=True)
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
+    monkeypatch.setattr(steamcmd_module.time, "sleep", lambda _: None)
+    monkeypatch.setattr(steamcmd_module.sp, "run", lambda *a, **kw: sp.CompletedProcess(
+        a[0], 0, f'Success. Downloaded item 10 to "{content}" (0 bytes)\n'))
+    with pytest.raises(sp.CalledProcessError):
+        steamcmd_module.download_workshop_item(tmp_path, 550, 10, True)
 
 
 def test_download_workshop_item_raises_when_content_dir_never_appears(monkeypatch):

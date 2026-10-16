@@ -1,11 +1,95 @@
 """Unit tests for utils.proton – Wine/Proton wrapping helpers."""
 
 import os
+import shlex
 import types
 
 import pytest
 
 import utils.proton as proton_module
+
+
+def test_console_wrapper_quotes_arguments_without_executing_them():
+    command = ["env", "VALUE=space and $(literal)", "/path with spaces/wine", "cmd.exe", "/c", "server.exe"]
+    wrapped = proton_module.wrap_console_command(command)
+    assert wrapped[:2] == ["script", "-qefc"]
+    assert wrapped[-1] == "/dev/null"
+    assert shlex.split(wrapped[2]) == command
+
+
+@pytest.mark.parametrize("prefer_proton", [False, True])
+def test_xvfb_wrap_preserves_runtime_prefix_and_exposes_x11_driver(tmp_path, monkeypatch, prefer_proton):
+    monkeypatch.setattr(proton_module, 'find_wine', lambda: '/usr/bin/wine')
+    monkeypatch.setattr(proton_module, 'find_proton', lambda: '/opt/proton/proton')
+    native = ['server.exe', '-noconsole', 'WINEDLLOVERRIDES=native-argument']
+    prefix = str(tmp_path / 'private-prefix')
+    command = proton_module.wrap_xvfb_command(native, wineprefix=prefix, prefer_proton=prefer_proton)
+    assert command[:2] == ['xvfb-run', '-a']
+    assert 'WINEDLLOVERRIDES=winex11.drv=' not in command and 'DISPLAY=' not in command
+    assert 'WINEDLLOVERRIDES=' in command and 'SDL_VIDEODRIVER=x11' in command
+    assert ('STEAM_COMPAT_DATA_PATH=' if prefer_proton else 'WINEPREFIX=') + prefix in command
+    assert ('/opt/proton/proton' if prefer_proton else '/usr/bin/wine') in command
+    assert proton_module.unwrap_runtime_command(command) == native
+
+
+def test_prepare_wineprefix_copies_runtime_template_into_fresh_prefix(tmp_path):
+    template = tmp_path / "prepared"
+    template.mkdir()
+    (template / "system.reg").write_text("installed C++ runtime")
+    (template / "drive_c/windows/system32").mkdir(parents=True)
+    (template / "drive_c/windows/system32/vcruntime140.dll").write_bytes(b"native runtime")
+    prefix = tmp_path / "server/prefix"
+    assert proton_module.prepare_wineprefix(prefix, template=template)
+    assert (prefix / "system.reg").read_text() == "installed C++ runtime"
+    assert (prefix / "drive_c/windows/system32/vcruntime140.dll").read_bytes() == b"native runtime"
+
+
+@pytest.mark.parametrize("timestamp", ["1712345678\n", "disable\n"])
+def test_prepare_wineprefix_reinitializes_copied_user_profile(tmp_path, timestamp):
+    template, prefix = tmp_path / "root-template", tmp_path / "private-prefix"
+    template.mkdir()
+    (template / "system.reg").write_text("installed native runtime")
+    (template / ".update-timestamp").write_text(timestamp)
+    (template / "user.reg").write_text("prepared application settings")
+
+    assert proton_module.prepare_wineprefix(prefix, template=template)
+
+    # Wine must run its normal profile/shell-folder setup for the receiving
+    # account instead of trusting the image builder's completed update.
+    assert not (prefix / ".update-timestamp").exists()
+    assert (template / ".update-timestamp").read_text() == timestamp
+    assert (prefix / "user.reg").read_text() == "prepared application settings"
+
+
+def test_prepare_wineprefix_preserves_existing_update_timestamp(tmp_path):
+    template, prefix = tmp_path / "template", tmp_path / "operator-prefix"
+    template.mkdir()
+    (template / "system.reg").write_text("template runtime")
+    prefix.mkdir()
+    (prefix / ".update-timestamp").write_text("disable\n")
+
+    assert not proton_module.prepare_wineprefix(prefix, template=template)
+    assert (prefix / ".update-timestamp").read_text() == "disable\n"
+    assert not (prefix / "system.reg").exists()
+
+
+@pytest.mark.parametrize("existing", ["system.reg", "operator.txt", "pfx/system.reg"])
+def test_prepare_wineprefix_preserves_existing_wine_or_proton_prefix(tmp_path, existing):
+    template, prefix = tmp_path / "prepared", tmp_path / "prefix"
+    template.mkdir()
+    (template / "system.reg").write_text("template")
+    target = prefix / existing
+    target.parent.mkdir(parents=True)
+    target.write_text("operator")
+    assert not proton_module.prepare_wineprefix(prefix, template=template)
+    assert target.read_text() == "operator"
+    assert sorted(path.relative_to(prefix).as_posix() for path in prefix.rglob("*") if path.is_file()) == [existing]
+
+
+def test_prepare_wineprefix_without_template_does_not_create_empty_prefix(tmp_path):
+    prefix = tmp_path / "new-prefix"
+    assert not proton_module.prepare_wineprefix(prefix, template=tmp_path / "missing")
+    assert not prefix.exists()
 
 
 class DummyServer:
@@ -444,6 +528,19 @@ def test_get_container_spec_uses_unwrapped_command_and_runtime_env():
     assert spec["mounts"] == [
         {"source": "/srv/opz/", "target": "/srv/server", "mode": "rw"}
     ]
+
+
+@pytest.mark.parametrize("launcher", ["cmd.exe", "CMD.EXE"])
+def test_container_spec_preserves_windows_command_processor_lookup(launcher):
+    """A Windows system launcher must not become a nonexistent server-local file."""
+    server = DummyServer(data={"dir": "/srv/wreckfest"})
+    spec = proton_module.get_container_spec(
+        server,
+        lambda _server: (["env", "WINEDEBUG=-all", "/usr/bin/wine", launcher,
+                          "/c", "Wreckfest_x64.exe", "-s"], "/srv/wreckfest"),
+    )
+    assert spec["command"] == [launcher, "/c", "Wreckfest_x64.exe", "-s"]
+    assert spec["working_dir"] == "/srv/server"
 
 
 @pytest.mark.parametrize(

@@ -1,9 +1,16 @@
 """Unturned dedicated server lifecycle helpers."""
 
+import json
 import os
+from pathlib import PurePosixPath
 
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.modsupport.native_workshop import (
+    build_native_workshop_support,
+    safe_server_path,
+    write_managed_text,
+)
 from utils.backups import backups as backup_utils
 
 import server.runtime as runtime_module
@@ -11,6 +18,8 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 1110390
 steam_anonymous_login_possible = True
+workshop_app_id = 304930
+MAX_WORKSHOP_CONFIG_BYTES = 1024 * 1024
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -26,28 +35,127 @@ max_stop_wait = 1
 config_sync_keys = ("port",)
 
 
+def _instance_path(server):
+    """Require one native instance name before resolving any writable path."""
+    instance = str(server.data.get("serverid", server.name))
+    if not instance or instance in (".", "..") or any(
+        character in instance for character in ("/", "\\", "\x00", "\n", "\r")
+    ):
+        raise ServerError("Unturned serverid must be a single safe instance name")
+    return "Servers/" + instance
+
+
+def _read_workshop_config(path):
+    """Validate native configuration before changing any operator-owned fields."""
+    try:
+        original = None
+        if path.exists():
+            with path.open("rb") as handle:
+                raw = handle.read(MAX_WORKSHOP_CONFIG_BYTES + 1)
+            if len(raw) > MAX_WORKSHOP_CONFIG_BYTES:
+                raise ValueError("Workshop configuration exceeds size limit")
+            original = raw.decode("utf-8")
+        config = json.loads(original) if original is not None else {}
+        ids = config.get("File_IDs", []) if isinstance(config, dict) else None
+        if not isinstance(ids, list) or any(
+            isinstance(item, bool) or not str(item).isascii() or not str(item).isdigit()
+            or not 0 < int(item) < 2**64 for item in ids
+        ):
+            raise ValueError("File_IDs must be a list of positive numeric Workshop IDs")
+        return config, original
+    except (OSError, ValueError) as exc:
+        raise ServerError("Invalid Unturned WorkshopDownloadConfig.json: " + str(exc)) from exc
+
+
+def _publish_workshop_configs(server, updates, originals):
+    """Restore earlier instance configs if publishing a later config fails."""
+    written = []
+    try:
+        for relative, text in updates:
+            write_managed_text(server, relative, text)
+            written.append(relative)
+    except (OSError, ServerError) as exc:
+        failed = []
+        for relative in reversed(written):
+            try:
+                if originals[relative] is None:
+                    safe_server_path(server, relative).unlink(missing_ok=True)
+                else:
+                    write_managed_text(server, relative, originals[relative])
+            except (OSError, ServerError):
+                failed.append(relative)
+        if failed:
+            raise ServerError(f"Unturned config publication failed; restore managed files: {failed}") from exc
+        raise
+
+
+def configure_workshop(server, item_ids):
+    """Merge native activation, removing only IDs previously added by AlphaGSM."""
+    relative = _instance_path(server) + "/WorkshopDownloadConfig.json"
+    mods = server.data["mods"]
+    owned = mods.get("unturned_workshop_ids", {})
+    paths = list(dict.fromkeys([*owned, relative]))
+    updates = []
+    originals = {}
+    new_owned = {}
+    for config_relative in paths:
+        parts = PurePosixPath(config_relative).parts
+        if len(parts) != 3 or parts[0] != "Servers" or parts[2] != "WorkshopDownloadConfig.json":
+            raise ServerError("Invalid Unturned Workshop configuration ownership path")
+        path = safe_server_path(server, config_relative)
+        desired = item_ids if config_relative == relative else []
+        if not path.exists() and not desired:
+            continue
+        config, originals[config_relative] = _read_workshop_config(path)
+        previous = set(owned.get(config_relative, []))
+        remaining = [value for value in config.get("File_IDs", []) if str(int(value)) not in previous]
+        operator_ids = {str(int(value)) for value in remaining}
+        added = list(dict.fromkeys(value for value in desired if value not in operator_ids))
+        config["File_IDs"] = remaining + [int(value) for value in added]
+        text = json.dumps(config, indent=2) + "\n"
+        if len(text.encode("utf-8")) > MAX_WORKSHOP_CONFIG_BYTES:
+            raise ServerError("Unturned Workshop configuration exceeds size limit")
+        updates.append((config_relative, text))
+        if added:
+            new_owned[config_relative] = added
+    _publish_workshop_configs(server, updates, originals)
+    mods["unturned_workshop_ids"] = new_owned
+    # These are configuration references, not wholly owned files to delete.
+    return [config_relative for config_relative, _text in updates]
+
+
+_mod_support = build_native_workshop_support(
+    game_label="Unturned", workshop_app_id=workshop_app_id, apply_callback=configure_workshop
+)
+commands += _mod_support.commands
+command_args.update(_mod_support.command_args)
+command_descriptions.update(_mod_support.command_descriptions)
+command_functions.update(_mod_support.command_functions)
+ensure_mod_state = _mod_support.ensure_mod_state
+apply_configured_mods = _mod_support.apply_configured_mods
+cleanup_configured_mods = _mod_support.cleanup_configured_mods
+
+
 def sync_server_config(server):
     """Write the port to the native instance config without losing other commands."""
 
-    server_dir = os.path.join(
-        server.data["dir"], "Servers", server.data.get("serverid", server.name), "Server"
-    )
-    os.makedirs(server_dir, exist_ok=True)
-    commands_dat = os.path.join(server_dir, "Commands.dat")
+    relative = _instance_path(server) + "/Server/Commands.dat"
+    commands_dat = safe_server_path(server, relative)
     lines = []
     if os.path.isfile(commands_dat):
         with open(commands_dat, encoding="utf-8") as handle:
             lines = handle.read().splitlines()
     lines = [line for line in lines if not line.split() or line.split()[0].lower() != "port"]
     lines.append("Port %s" % server.data.get("port", 27015))
-    with open(commands_dat, "w", encoding="utf-8") as handle:
-        handle.write("\n".join(lines) + "\n")
+    write_managed_text(server, relative, "\n".join(lines) + "\n")
 
 
 def prestart(server):
     """Refresh native server commands before launch."""
 
     sync_server_config(server)
+    if ensure_mod_state(server).get("autoapply", True):
+        apply_configured_mods(server)
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="ServerHelper.sh"):
@@ -81,6 +189,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="ServerHelper.sh"):
         prompt="Where would you like to install the Unturned server:",
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
+    ensure_mod_state(server)
     return gamemodule_common.finalize_configure(server)
 
 
@@ -96,6 +205,8 @@ def install(server):
 
     _base_install(server)
     sync_server_config(server)
+    if ensure_mod_state(server).get("autoapply", True):
+        apply_configured_mods(server)
 
 
 update = gamemodule_common.make_steamcmd_update_hook(

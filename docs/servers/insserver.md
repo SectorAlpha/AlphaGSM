@@ -119,7 +119,7 @@ reaches the normal Source markers and `alphagsm info --json` reports `a2s`.
 
 - **Map directory**: `insurgency/maps/`
 - **Mod directory**: `insurgency/addons/`
-- **Workshop support**: No
+- **Workshop support**: Native item IDs/URLs and collection imports; live validation is described below.
 - **Mod notes**: AlphaGSM can now manage Insurgency addons from checked-in `manifest` entries plus direct archive `url` entries, GameBanana ids, and Mod DB page URLs. The local manifest currently includes popular Source admin/plugin stacks such as MetaMod and SourceMod. Archives must unpack into approved addon paths under `insurgency/addons/`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/insurgency/`.
 - **Map install**: Copy `.bsp` files into `insurgency/maps/` and add to `insurgency/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `insurgency/addons/`.
@@ -135,3 +135,63 @@ alphagsm myins mod add moddb https://www.moddb.com/mods/example/downloads/exampl
 alphagsm myins mod apply
 alphagsm myins mod cleanup
 ```
+
+
+## Workshop server content
+
+Add a public item ID or official Steam Community URL, or import a collection:
+
+```bash
+alphagsm myserver mod add workshop 498253639
+alphagsm myserver mod add workshop-collection YOUR_COLLECTION_ID
+alphagsm myserver mod apply
+alphagsm myserver start
+```
+
+Collection imports are a snapshot of validated AppID `222880` items. AlphaGSM
+uses the game's native `subscribed_file_ids.txt` list and `-workshop` startup
+flag. No Workshop API key, Steam password or login token is supplied. The native
+engine downloads and mounts current-format Workshop items; legacy uploads may
+not work on Linux. Existing archive/manifest addon commands remain available.
+See the [server-side Workshop guide](https://steamcommunity.com/sharedfiles/filedetails/?id=488818549).
+
+Apply while the server is stopped, then start it. Only ID lines added by
+AlphaGSM are removed by `mod cleanup`; operator IDs and comments remain.
+Changing the whitespace or adding a comment to an owned ID line gives that line
+to the operator. Engine-managed Workshop download caches are retained. Maps and
+VPK theaters still need the appropriate map/mode or theater setting; subscribing
+alone is not evidence that a running game loaded the content.
+
+The opt-in checks require a fresh engine `path` probe containing every selected
+item's mounted search path, then load a custom map and require its name in real
+A2S `info --json`. The default fixture is
+[this public map](https://steamcommunity.com/sharedfiles/filedetails/?id=498253639);
+its Valve metadata was checked as public AppID `222880` on 2026-10-13.
+The individual fixture passed the full AlphaGSM process and Docker lifecycles
+on 2026-10-13, with native mount paths and A2S reporting the actual custom map.
+Both runs used the normal stop-timeout fallback before shutdown was verified.
+The collection fixture is [Connorhd's Server Maps](https://steamcommunity.com/sharedfiles/filedetails/?id=552903640),
+containing three public current-format Insurgency maps. Both process and Docker
+passed the collection lifecycle, with all three items mounted and the Amber
+custom map reported by A2S.
+
+```bash
+ALPHAGSM_WORK_DIR=/path/on/large/disk \
+ALPHAGSM_RUN_INTEGRATION=1 ALPHAGSM_RUN_STEAMCMD=1 \
+ALPHAGSM_RUN_INSSERVER_WORKSHOP=1 \
+python3 -m pytest tests/integration_tests/test_insserver.py -k workshop
+
+# Optional collection override, expanded without an API key:
+# ALPHAGSM_INSSERVER_WORKSHOP_COLLECTION=YOUR_COLLECTION_ID
+# ALPHAGSM_INSSERVER_WORKSHOP_MAP=your_custom_map
+# ALPHAGSM_INSSERVER_WORKSHOP_MODE=checkpoint
+
+ALPHAGSM_WORK_DIR=/path/on/large/disk INS_WORKSHOP_ITEM=498253639 \
+make smoke-test SMOKE_TEST=run_insserver.sh
+```
+
+The smoke check supports `INS_WORKSHOP_COLLECTION`, `INS_WORKSHOP_MAP`
+and `INS_WORKSHOP_MODE`. Docker checks use the `steamcmd-linux` image and
+Source console terminal relay; set
+`ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX` to the branch-local image tag when
+validating repository changes.

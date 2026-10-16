@@ -186,7 +186,10 @@ def download(path,args):
             else:
                 raise DownloaderError("Can't download file") from ex
     if decompress == "zip":
-        ret=sp.call(["unzip",targetname,"-d",path],stdout=sys.stderr)
+        # Info-ZIP treats bracketed parent paths as archive globs. Extract in
+        # the owned cache using a basename and refresh partial cache files.
+        ret=sp.call(["unzip", "-o", os.path.basename(targetname), "-d", "."],
+                    cwd=path, stdout=sys.stderr)
         if ret!=0:
             raise DownloaderError("Error extracting download")
     elif decompress == "tar" or decompress == "tar.gz":

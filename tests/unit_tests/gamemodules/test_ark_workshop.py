@@ -1,0 +1,302 @@
+"""ARK compressed content, binary descriptor and native activation regressions."""
+
+from importlib import import_module
+import io
+import struct
+import zlib
+
+import pytest
+
+from server import ServerError
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
+
+def fstring(value):
+    """Build fixture metadata in Unreal's documented ANSI string representation."""
+    raw = value.encode() + b"\0"
+    return struct.pack("<I", len(raw)) + raw
+
+
+@pytest.mark.parametrize("encoded", [struct.pack("<i", 0), fstring(""), struct.pack("<i", -1) + b"\0\0"])
+def test_native_empty_fstring_encodings_preserve_the_following_field(encoded):
+    adapter = import_module("gamemodules.ark.workshop")
+    stream = io.BytesIO(encoded + fstring("FlatMap"))
+    assert adapter._string(stream) == ""
+    assert stream.tell() == len(encoded)
+    assert adapter._string(stream) == "FlatMap"
+    assert stream.read() == b""
+
+
+@pytest.mark.parametrize("size", [65537, -32769, 2**31 - 1, -(2**31)])
+def test_oversized_signed_fstrings_fail_before_reading_the_claimed_payload(size):
+    adapter = import_module("gamemodules.ark.workshop")
+    stream = io.BytesIO(struct.pack("<i", size) + b"untrusted payload")
+    with pytest.raises(ServerError, match="Invalid ARK metadata string length"):
+        adapter._string(stream)
+    assert stream.tell() == 4
+
+
+@pytest.mark.parametrize("encoded,error", [
+    (b"\0\0\0", "Truncated"),
+    (struct.pack("<i", 4) + b"ab", "Truncated"),
+    (struct.pack("<i", 3) + b"abc", "terminator"),
+    (struct.pack("<i", 4) + b"a\0b\0", "embedded NUL"),
+    (struct.pack("<i", 2) + b"\xff\0", "encoding"),
+    (struct.pack("<i", -2) + b"\0\xd8\0\0", "encoding"),
+])
+def test_empty_string_support_keeps_truncation_encoding_and_terminator_checks(encoded, error):
+    adapter = import_module("gamemodules.ark.workshop")
+    with pytest.raises(ServerError, match=error):
+        adapter._string(io.BytesIO(encoded))
+
+
+def make_adapter(tmp_path, monkeypatch):
+    """Use genuine chunk headers and small native metadata inside the server root."""
+    adapter = import_module("gamemodules.ark.workshop")
+    server = DummyServer("arkworkshop")
+    server.data["dir"] = str(tmp_path)
+    payload = tmp_path / ".alphagsm/fixtures/111/WindowsNoEditor"
+    payload.mkdir(parents=True)
+    content = b"native-content-" * 10
+    compressed = [zlib.compress(content[:75]), zlib.compress(content[75:])]
+    header = struct.pack("<4Q", 0x9E2A83C1, 75, sum(map(len, compressed)), len(content))
+    header += struct.pack("<4Q", len(compressed[0]), 75, len(compressed[1]), len(content)-75)
+    (payload / "Example.uasset.z").write_bytes(header + b"".join(compressed))
+    (payload / "Example.uasset.z.uncompressed_size").write_text(str(len(content)))
+    (payload / "mod.info").write_bytes(fstring("Example") + struct.pack("<I", 2)
+                                        + fstring("FirstMap") + fstring("SecondMap") + b"\0" * 8)
+    (payload / "modmeta.info").write_bytes(struct.pack("<I", 1) + fstring("ModType") + fstring("1"))
+    monkeypatch.setattr(adapter, "download_workshop_items", lambda _server, app, ids: {
+        item: payload.parent for item in ids if app == 346110})
+    return adapter, server, payload, content
+
+
+def test_decompressed_native_files_descriptor_and_operator_ids(tmp_path, monkeypatch):
+    adapter, server, payload, content = make_adapter(tmp_path, monkeypatch)
+    config = tmp_path / "ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini"
+    config.parent.mkdir(parents=True)
+    config.write_text("; retain\n[ServerSettings]\nActiveMods=999\nDifficultyOffset=0.5\n[Other]\nFoo=bar\n")
+    adapter.configure_workshop(server, ["111"])
+    native = tmp_path / "ShooterGame/Content/Mods"
+    assert (native / "111/Example.uasset").read_bytes() == content
+    assert not (native / "111/Example.uasset.z").exists()
+    descriptor = (native / "111.mod").read_bytes()
+    assert struct.unpack("<Q", descriptor[:8])[0] == 111
+    assert descriptor.endswith(b"\x33\xff\x22\xff\x02\0\0\0\x01" + (payload / "modmeta.info").read_bytes())
+    assert fstring("FirstMap") + fstring("SecondMap") in descriptor
+    assert "ActiveMods=999,111" in config.read_text()
+    adapter.configure_workshop(server, [])
+    assert "ActiveMods=999" in config.read_text()
+    assert "; retain" in config.read_text() and "Foo=bar" in config.read_text()
+    assert not (native / "111.mod").exists()
+
+
+def test_bad_compressed_stream_does_not_activate_or_publish(tmp_path, monkeypatch):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    compressed = payload / "Example.uasset.z"
+    compressed.write_bytes(compressed.read_bytes()[:-2])
+    with pytest.raises(ServerError):
+        adapter.configure_workshop(server, ["111"])
+    assert not (tmp_path / "ShooterGame/Content/Mods/111.mod").exists()
+    assert not (tmp_path / "ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini").exists()
+
+
+def test_size_claim_and_bad_metadata_rejected(tmp_path, monkeypatch):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    compressed = payload / "Example.uasset.z"
+    raw = compressed.read_bytes()
+    compressed.write_bytes(raw[:24] + struct.pack("<Q", 2**63) + raw[32:])
+    with pytest.raises(ServerError):
+        adapter.configure_workshop(server, ["111"])
+    compressed.write_bytes(raw)
+    (payload / "mod.info").write_bytes(struct.pack("<I", 2**31))
+    with pytest.raises(ServerError):
+        adapter.configure_workshop(server, ["111"])
+
+
+def test_publication_failure_rolls_back_ini_and_native_ownership(tmp_path, monkeypatch):
+    adapter, server, _payload, _content = make_adapter(tmp_path, monkeypatch)
+    adapter.configure_workshop(server, ["111"])
+    def fail(*_args):
+        raise OSError("disk full")
+    monkeypatch.setattr(adapter, "publish_owned_payloads", fail)
+    with pytest.raises(OSError):
+        adapter.configure_workshop(server, [])
+    config = tmp_path / "ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini"
+    assert "ActiveMods=111" in config.read_text()
+    assert server.data["mods"]["ark_workshop_ids"] == ["111"]
+    assert server.data["mods"]["ark_workshop_launch_ids"] == ["111"]
+
+
+def test_launch_includes_native_mod_ids_even_when_first_boot_regenerates_ini(tmp_path, monkeypatch):
+    """The URL must carry staged mods before ARK's first-boot config rewrite."""
+    adapter, server, _payload, _content = make_adapter(tmp_path, monkeypatch)
+    module = import_module("gamemodules.ark")
+    module.configure(server, ask=False, port=28121, dir=str(tmp_path))
+    executable = tmp_path / "ShooterGame/Binaries/Linux/ShooterGameServer"
+    executable.parent.mkdir(parents=True)
+    executable.write_text("")
+    config = tmp_path / "ShooterGame/Saved/Config/LinuxServer/GameUserSettings.ini"
+    config.parent.mkdir(parents=True)
+    config.write_text("[ServerSettings]\nActiveMods=999\n")
+    adapter.configure_workshop(server, ["111"])
+    command, _directory = module.get_start_command(server)
+    assert "?GameModIds=999,111" in command[1]
+    adapter.configure_workshop(server, [])
+    command, _directory = module.get_start_command(server)
+    assert "?GameModIds=999" in command[1] and "111" not in command[1]
+
+
+def test_map_descriptor_requires_declared_native_world_and_snapshots_its_safe_path(tmp_path, monkeypatch):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    (payload / "mod.info").write_bytes(fstring("Very Flat Map") + struct.pack("<I", 1)
+                                        + fstring("FlatMap") + b"\0" * 8)
+    (payload / "modmeta.info").write_bytes(struct.pack("<I", 1) + fstring("ModType") + fstring("2"))
+    (payload / "Maps").mkdir()
+    (payload / "Maps/FlatMap.umap").write_bytes(b"native cooked world")
+    adapter.configure_workshop(server, ["111"])
+    expected = "/Game/Mods/111/Maps/FlatMap"
+    assert server.data["mods"]["ark_workshop_maps"] == {"111": {"FlatMap": expected}}
+    assert adapter.configured_workshop_ids(server) == []
+    config = tmp_path / adapter.CONFIG
+    assert "ActiveMods=\n" in config.read_text()
+    server.data["map"] = expected
+    assert adapter.configured_workshop_map(server) == expected
+    descriptor = (tmp_path / "ShooterGame/Content/Mods/111.mod").read_bytes()
+    assert descriptor.endswith(b"\x33\xff\x22\xff\x02\0\0\0\x01"
+                               + (payload / "modmeta.info").read_bytes())
+    module = import_module("gamemodules.ark")
+    module.configure(server, ask=False, port=28121, dir=str(tmp_path))
+    executable = tmp_path / server.data["exe_name"]
+    executable.parent.mkdir(parents=True)
+    executable.write_text("")
+    command, _directory = module.get_start_command(server)
+    assert command[1].startswith(expected + "?listen?")
+    assert "?MapModID=111" in command[1] and "?GameModIds=111" not in command[1]
+    assert module.checkvalue(server, ["map"], expected) == expected
+    with pytest.raises(ServerError, match="staged"):
+        module.checkvalue(server, ["map"], "/Game/Mods/999/FlatMap")
+    adapter.configure_workshop(server, [])
+    assert server.data["mods"]["ark_workshop_maps"] == {}
+    with pytest.raises(ServerError, match="staged"):
+        adapter.configured_workshop_map(server)
+
+
+@pytest.mark.parametrize("declared,world", [
+    ("FlatMap", "Other.umap"), ("../FlatMap", "FlatMap.umap"),
+    ("FlatMap?listen", "FlatMap.umap"), ("/Game/Maps/FlatMap", "FlatMap.umap"),
+])
+def test_map_payload_rejects_missing_world_and_unsafe_declared_identity(tmp_path, monkeypatch, declared, world):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    (payload / "mod.info").write_bytes(fstring("Map") + struct.pack("<I", 1) + fstring(declared))
+    (payload / "modmeta.info").write_bytes(struct.pack("<I", 1) + fstring("ModType") + fstring("2"))
+    (payload / world).write_bytes(b"world")
+    with pytest.raises(ServerError, match="map"):
+        adapter.configure_workshop(server, ["111"])
+    assert not (tmp_path / "ShooterGame/Content/Mods/111.mod").exists()
+
+
+def test_total_conversion_and_undeclared_custom_launch_remain_rejected(tmp_path, monkeypatch):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    (payload / "modmeta.info").write_bytes(struct.pack("<I", 1) + fstring("ModType") + fstring("3"))
+    with pytest.raises(ServerError, match="ModType"):
+        adapter.configure_workshop(server, ["111"])
+    server.data["map"] = "/Game/Mods/111/FlatMap"
+    with pytest.raises(ServerError, match="staged"):
+        adapter.configured_workshop_map(server)
+
+
+def test_map_snapshot_rolls_back_if_publication_fails(tmp_path, monkeypatch):
+    adapter, server, _payload, _content = make_adapter(tmp_path, monkeypatch)
+    server.data["mods"] = {"ark_workshop_maps": {"999": {"Other": "/Game/Mods/999/Other"}}}
+    monkeypatch.setattr(adapter, "publish_owned_payloads", lambda *_args: (_ for _ in ()).throw(OSError("disk full")))
+    with pytest.raises(OSError):
+        adapter.configure_workshop(server, ["111"])
+    assert server.data["mods"]["ark_workshop_maps"] == {"999": {"Other": "/Game/Mods/999/Other"}}
+
+
+def test_duplicate_native_map_basenames_are_rejected_before_publication(tmp_path, monkeypatch):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    (payload / "mod.info").write_bytes(fstring("Map") + struct.pack("<I", 1) + fstring("FlatMap"))
+    (payload / "modmeta.info").write_bytes(struct.pack("<I", 1) + fstring("ModType") + fstring("2"))
+    (payload / "FlatMap.umap").write_bytes(b"one")
+    (payload / "Other").mkdir()
+    (payload / "Other/FlatMap.umap").write_bytes(b"two")
+    with pytest.raises(ServerError, match="one staged native"):
+        adapter.configure_workshop(server, ["111"])
+
+
+def test_linux_only_payload_is_rejected_before_native_publication(tmp_path, monkeypatch):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    payload.rename(payload.with_name("LinuxNoEditor"))
+    with pytest.raises(ServerError, match="WindowsNoEditor"):
+        adapter.configure_workshop(server, ["111"])
+    assert not (tmp_path / "ShooterGame/Content/Mods/111.mod").exists()
+
+
+def test_linux_server_uses_windows_cooked_assets_and_metadata_when_both_branches_exist(tmp_path, monkeypatch):
+    """The Linux cooker branch produces LinkerLoad crashes on the Linux engine."""
+    adapter, server, payload, content = make_adapter(tmp_path, monkeypatch)
+    linux = payload.with_name("LinuxNoEditor")
+    linux.mkdir()
+    (linux / "mod.info").write_bytes(b"incompatible Linux metadata")
+    (linux / "modmeta.info").write_bytes(b"incompatible Linux metadata")
+    (linux / "Example.uasset").write_bytes(b"incompatible Linux cooked asset")
+    (linux / "LinuxOnly.uasset").write_bytes(b"must not leak into native server content")
+    adapter.configure_workshop(server, ["111"])
+    native = tmp_path / "ShooterGame/Content/Mods/111"
+    assert (native / "Example.uasset").read_bytes() == content
+    assert not (native / "LinuxOnly.uasset").exists()
+    descriptor = (native.parent / "111.mod").read_bytes()
+    assert fstring("FirstMap") + fstring("SecondMap") in descriptor
+    assert descriptor.endswith((payload / "modmeta.info").read_bytes())
+
+
+def test_custom_map_catalog_does_not_claim_operator_active_mod_ids(tmp_path, monkeypatch):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    (payload / "mod.info").write_bytes(fstring("Map") + struct.pack("<I", 1) + fstring("FlatMap"))
+    (payload / "modmeta.info").write_bytes(struct.pack("<I", 1) + fstring("ModType") + fstring("2"))
+    (payload / "FlatMap.umap").write_bytes(b"world")
+    config = tmp_path / adapter.CONFIG
+    config.parent.mkdir(parents=True)
+    config.write_text("[ServerSettings]\nActiveMods=111,999\nOperatorValue=keep\n")
+    adapter.configure_workshop(server, ["111"])
+    assert server.data["mods"]["ark_workshop_ids"] == []
+    assert "ActiveMods=111,999" in config.read_text()
+    server.data["map"] = "/Game/Mods/111/FlatMap"
+    assert adapter.configured_workshop_map(server) == server.data["map"]
+    adapter.configure_workshop(server, [])
+    assert "ActiveMods=111,999" in config.read_text()
+    assert "OperatorValue=keep" in config.read_text()
+    assert server.data["mods"]["ark_workshop_maps"] == {}
+    assert not (tmp_path / "ShooterGame/Content/Mods/111.mod").exists()
+
+
+def test_map_with_zero_length_optional_metadata_strings_stages_and_cleans_safely(tmp_path, monkeypatch):
+    """An empty Unreal FString is its zero prefix alone, without a NUL payload."""
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    (payload / "mod.info").write_bytes(struct.pack("<iI", 0, 1) + fstring("FlatMap"))
+    metadata = (struct.pack("<I", 2) + fstring("ModType") + fstring("2")
+                + fstring("Description") + struct.pack("<i", 0))
+    (payload / "modmeta.info").write_bytes(metadata)
+    (payload / "FlatMap.umap").write_bytes(b"cooked native world")
+    config = tmp_path / adapter.CONFIG
+    config.parent.mkdir(parents=True)
+    config.write_text("[ServerSettings]\nActiveMods=999\nOperatorValue=keep\n")
+    adapter.configure_workshop(server, ["111"])
+    assert server.data["mods"]["ark_workshop_maps"] == {"111": {"FlatMap": "/Game/Mods/111/FlatMap"}}
+    descriptor = tmp_path / "ShooterGame/Content/Mods/111.mod"
+    assert descriptor.read_bytes().endswith(b"\x33\xff\x22\xff\x02\0\0\0\x01" + metadata)
+    assert "ActiveMods=999" in config.read_text()
+    adapter.configure_workshop(server, [])
+    assert not descriptor.exists()
+    assert "ActiveMods=999" in config.read_text() and "OperatorValue=keep" in config.read_text()
+
+
+def test_zero_length_map_identity_is_rejected_by_map_semantics(tmp_path, monkeypatch):
+    adapter, server, payload, _content = make_adapter(tmp_path, monkeypatch)
+    (payload / "mod.info").write_bytes(struct.pack("<iIi", 0, 1, 0))
+    (payload / "modmeta.info").write_bytes(struct.pack("<I", 1) + fstring("ModType") + fstring("2"))
+    with pytest.raises(ServerError, match="safe native map names"):
+        adapter.configure_workshop(server, ["111"])
+    assert not (tmp_path / "ShooterGame/Content/Mods/111.mod").exists()

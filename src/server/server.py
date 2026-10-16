@@ -18,6 +18,7 @@ from . import port_manager
 from . import runtime as runtime_module
 from . import diagnostics as diagnostics_module
 from . import worlds as worlds_module
+from .modsupport import workshop_downloads
 from .settable_keys import KeyResolutionError, resolve_requested_key
 from .settable_keys import get_effective_aliases
 from .errors import ServerError
@@ -663,10 +664,13 @@ class Server(object):
 
     def get_commands(self):
         """Get a list of all the commands available for this server"""
-        return self.default_commands + self.module.commands
+        extra = ("workshop",) if workshop_downloads.supports_anonymous_workshop(self) else ()
+        return self.default_commands + self.module.commands + extra
 
     def get_command_args(self, command):
         """Get the full argument spec for the command specified on this server"""
+        if command == "workshop" and workshop_downloads.supports_anonymous_workshop(self):
+            return workshop_downloads.COMMAND_SPEC
         args = self.default_command_args.get(command, None)
         extra_args = self.module.command_args.get(command, None)
         if args is None:
@@ -675,6 +679,8 @@ class Server(object):
 
     def get_command_description(self, command):
         """Get the complete description for the command specified for this server"""
+        if command == "workshop" and workshop_downloads.supports_anonymous_workshop(self):
+            return workshop_downloads.COMMAND_DESCRIPTION
         desc = self.default_command_descriptions.get(command, None)
         extra_desc = self.module.command_descriptions.get(command, None)
         if extra_desc is not None:
@@ -792,7 +798,9 @@ class Server(object):
         required functions. It can also raise other Exceptions if the arguments don't match those
         required by either this or the backend module
         """
-        if command in self.default_commands:
+        if command == "workshop":
+            workshop_downloads.run_workshop_command(self, *args, **kwargs)
+        elif command in self.default_commands:
             if command == "setup":
                 self.setup(*args, **kwargs)
             elif command == "start":
@@ -1059,7 +1067,7 @@ class Server(object):
         ``"ts3"`` (TeamSpeak 3 ServerQuery),
         ``"udp"`` (generic UDP reachability),
         ``"soldat"`` (classic Soldat TCP file query), ``"source_rcon"``
-        (authenticated Source RCON),
+        (authenticated Source RCON), ``"squad_rcon"`` (native Squad game state),
         ``"http_status"`` (JSON ``/status`` endpoint), ``"terraria"``
         (native framed connection handshake), or ``"tcp"``.
         """
@@ -1242,6 +1250,17 @@ class Server(object):
             except query_utils.QueryError as exc:
                 raise ServerError("Server does not appear to be responding: " + str(exc))
 
+        if protocol == "squad_rcon":
+            try:
+                result = query_utils.squad_rcon_info(
+                    host, port, self.data.get("adminpassword", ""), timeout=30.0)
+                print("Server is responding (Squad RCON on port {}): "
+                      "players={}/{}  layer={}".format(
+                          port, result["players"], result["max_players"], result["layer"]))
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Server does not appear to be responding: " + str(exc))
+
         if protocol == "source_rcon":
             try:
                 result = query_utils.source_rcon_info(
@@ -1365,7 +1384,7 @@ class Server(object):
         ``"ut3"`` (Unreal3/GameSpy4 UDP),
         ``"ts3"`` (TeamSpeak 3 ServerQuery),
         ``"soldat"`` (classic Soldat TCP file query), ``"source_rcon"``
-        (authenticated Source RCON),
+        (authenticated Source RCON), ``"squad_rcon"`` (native Squad game state),
         ``"udp"`` (generic UDP reachability), ``"http_status"`` (JSON
         ``/status`` endpoint), ``"terraria"`` (native framed connection
         handshake), or ``"tcp"`` (TCP ping only).  When the hook is absent the method
@@ -1564,6 +1583,22 @@ class Server(object):
                 )
                 if parsed.get("gamemode"):
                     print("  Gamemode    : " + parsed["gamemode"])
+                return
+            except query_utils.QueryError as exc:
+                raise ServerError("Info query failed: " + str(exc))
+
+        if protocol == "squad_rcon":
+            try:
+                result = query_utils.squad_rcon_info(
+                    host, port, self.data.get("adminpassword", ""), timeout=30.0)
+                if as_json:
+                    print(json.dumps({"protocol": "squad_rcon", "port": port, **result}))
+                    return
+                print("Server info (Squad RCON on port {}):\n"
+                      "  Name        : {}\n  Map         : {}\n"
+                      "  Layer       : {}\n  Players     : {}/{}".format(
+                          port, result.get("name", "unknown"), result["map"],
+                          result["layer"], result["players"], result["max_players"]))
                 return
             except query_utils.QueryError as exc:
                 raise ServerError("Info query failed: " + str(exc))

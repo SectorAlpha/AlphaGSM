@@ -78,6 +78,9 @@ userconf = $HOME_DIR
 db_path = $HOME_DIR/downloads/downloads.txt
 target_path = $HOME_DIR/downloads/downloads
 
+[downloader.steamcmd]
+steamcmd_path = $WORK_DIR/steamcmd
+
 [server]
 datapath = $HOME_DIR/conf
 
@@ -105,6 +108,10 @@ run_create_or_skip_disabled "$SERVER_NAME" create btserver
 run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
 run_alphagsm "$SERVER_NAME" set queryport "$QUERY_PORT"
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+if [[ "${ALPHAGSM_RUN_WORKSHOP:-0}" == "1" ]]; then
+  run_alphagsm "$SERVER_NAME" mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=2499918466
+  run_alphagsm "$SERVER_NAME" mod apply
+fi
 
 run_start_with_port_retry "$SERVER_NAME"
 SERVER_STARTED=1
@@ -113,7 +120,25 @@ wait_for_info_protocol "$SERVER_NAME" "udp" "$START_TIMEOUT_SECONDS"
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info
 run_alphagsm "$SERVER_NAME" info --json
+if [[ "${ALPHAGSM_RUN_WORKSHOP:-0}" == "1" ]]; then
+  run_alphagsm "$SERVER_NAME" send 'calculatehashes BaroCraftables'
+  run_alphagsm "$SERVER_NAME" send items
+  deadline=$((SECONDS + 90))
+  while true; do
+    run_alphagsm "$SERVER_NAME" logs -n 10000 > "$WORK_DIR/workshop-engine.log"
+    if "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/btserver_workshop.py" "$WORK_DIR/workshop-engine.log"; then
+      break
+    fi
+    if (( SECONDS >= deadline )); then
+      exit 1
+    fi
+    sleep 2
+  done
+fi
 run_stop_or_skip "$SERVER_NAME"
 SERVER_STARTED=0
 
 run_alphagsm "$SERVER_NAME" status
+if [[ "${ALPHAGSM_RUN_WORKSHOP:-0}" == "1" ]]; then
+  run_alphagsm "$SERVER_NAME" mod cleanup
+fi

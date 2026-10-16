@@ -13,6 +13,13 @@ START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-300}"
 STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
 SERVER_NAME="${SERVER_NAME:-itl4d2server}"
 SERVER_STARTED=0
+L4D2_WORKSHOP_COLLECTION="${ALPHAGSM_L4D2_WORKSHOP_COLLECTION:-}"
+L4D2_WORKSHOP_ITEM="${ALPHAGSM_L4D2_WORKSHOP_ITEM:-}"
+if [[ "${ALPHAGSM_RUN_L4D2_WORKSHOP:-0}" == "1" ]]; then
+  L4D2_WORKSHOP_COLLECTION="${L4D2_WORKSHOP_COLLECTION:-https://steamcommunity.com/sharedfiles/filedetails/?id=121115793}"
+  L4D2_WORKSHOP_ITEM="${L4D2_WORKSHOP_ITEM:-https://steamcommunity.com/sharedfiles/filedetails/?id=214630948}"
+fi
+WORKSHOP_IDS=()
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -79,11 +86,46 @@ echo "Using install dir: $INSTALL_DIR"
 echo "Using port: $PORT"
 
 run_create_or_skip_disabled "$SERVER_NAME" create l4d2server
+run_alphagsm "$SERVER_NAME" workshop list
+if [[ -n "$L4D2_WORKSHOP_ITEM" ]]; then
+  run_alphagsm "$SERVER_NAME" mod add workshop "$L4D2_WORKSHOP_ITEM"
+fi
+if [[ -n "$L4D2_WORKSHOP_COLLECTION" ]]; then
+  run_alphagsm "$SERVER_NAME" mod add workshop-collection "$L4D2_WORKSHOP_COLLECTION"
+fi
+if [[ -n "$L4D2_WORKSHOP_COLLECTION" || -n "$L4D2_WORKSHOP_ITEM" ]]; then
+  mapfile -t WORKSHOP_IDS < <("$PYTHON_BIN" - "$HOME_DIR/conf/$SERVER_NAME.json" <<'PY'
+import json
+import sys
+with open(sys.argv[1], encoding="utf-8") as handle:
+    data = json.load(handle)
+for entry in data["mods"]["desired"]["workshop"]:
+    print(entry["workshop_id"])
+PY
+  )
+  [[ "${#WORKSHOP_IDS[@]}" -gt 0 ]]
+fi
 run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+if [[ -n "${L4D2_WORKSHOP_COLLECTION:-}${L4D2_WORKSHOP_ITEM:-}" ]]; then
+  run_alphagsm "$SERVER_NAME" mod apply
+fi
 
 run_alphagsm "$SERVER_NAME" start
 SERVER_STARTED=1
 wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+if [[ -n "${L4D2_WORKSHOP_COLLECTION:-}${L4D2_WORKSHOP_ITEM:-}" ]]; then
+  probe_nonce="$("$PYTHON_BIN" -c 'import uuid; print(uuid.uuid4().hex)')"
+  probe_begin="AlphaGSM-Workshop-Mounts-BEGIN-$probe_nonce"
+  probe_end="AlphaGSM-Workshop-Mounts-END-$probe_nonce"
+  run_alphagsm "$SERVER_NAME" send "echo $probe_begin"
+  run_alphagsm "$SERVER_NAME" send "show_addon_load_order"
+  run_alphagsm "$SERVER_NAME" send "echo $probe_end"
+  mount_deadline=$((SECONDS + 60))
+  until "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/l4d2_workshop.py" "$LOG_PATH" "${WORKSHOP_IDS[@]}" --begin-marker "$probe_begin" --end-marker "$probe_end"; do
+    [[ "$SECONDS" -lt "$mount_deadline" ]] || exit 1
+    sleep 1
+  done
+fi
 run_alphagsm "$SERVER_NAME" query
 run_alphagsm "$SERVER_NAME" info
 run_alphagsm "$SERVER_NAME" info --json

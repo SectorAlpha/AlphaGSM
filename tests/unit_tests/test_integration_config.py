@@ -9,6 +9,8 @@ import re
 import subprocess
 import sys
 
+import pytest
+
 from tests.integration_tests.conftest import write_config
 
 
@@ -24,6 +26,54 @@ def test_default_runtime_backend_uses_auto_on_github_actions(monkeypatch):
     monkeypatch.setenv("GITHUB_ACTIONS", "true")
 
     assert helpers.default_runtime_backend() == "auto"
+
+
+@pytest.mark.parametrize("selected,expected", [
+    (None, ("process", "docker")),
+    ("process", ("process",)),
+    ("docker", ("docker",)),
+])
+def test_workshop_runtime_backends_collect_only_selected_lane(monkeypatch, selected, expected):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    if selected is None:
+        monkeypatch.delenv("ALPHAGSM_TEST_RUNTIME_BACKEND", raising=False)
+    else:
+        monkeypatch.setenv("ALPHAGSM_TEST_RUNTIME_BACKEND", selected)
+    assert helpers.workshop_runtime_backends() == expected
+
+
+@pytest.mark.parametrize("selected", ["", "auto", "PROCESS", " docker", "podman", "process,docker"])
+def test_workshop_runtime_backends_reject_ambiguous_or_invalid_lane(monkeypatch, selected):
+    helpers = importlib.import_module("tests.integration_tests.conftest")
+    monkeypatch.setenv("ALPHAGSM_TEST_RUNTIME_BACKEND", selected)
+    with pytest.raises(ValueError, match="ALPHAGSM_TEST_RUNTIME_BACKEND"):
+        helpers.workshop_runtime_backends()
+
+
+@pytest.mark.parametrize("filename", [
+    "test_ark.py", "test_asrdserver.py", "test_avserver.py", "test_bb2server.py",
+    "test_btserver.py", "test_conanexiles.py", "test_doiserver.py", "test_gmodserver.py",
+    "test_insserver.py", "test_l4d2server.py", "test_nmrihserver.py", "test_ns2server.py",
+    "test_projectzomboid.py", "test_seserver.py", "test_squadserver.py",
+    "test_stationeersserver.py", "test_terraria_tmodloader.py", "test_tf2.py",
+    "test_unturned.py", "test_wreckfestserver.py",
+])
+def test_anonymous_workshop_cases_use_shared_runtime_collection(filename):
+    path = Path(__file__).resolve().parents[1] / "integration_tests" / filename
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    cases = [node for node in tree.body if isinstance(node, ast.FunctionDef)
+             and node.name.startswith("test_")
+             and ("workshop" in node.name or filename in {"test_conanexiles.py", "test_squadserver.py"})]
+    assert cases, filename
+    for case in cases:
+        parameterizations = [node for node in case.decorator_list
+                             if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                             and node.func.attr == "parametrize"]
+        assert any(len(node.args) >= 2 and isinstance(node.args[1], ast.Call)
+                   and isinstance(node.args[1].func, ast.Name)
+                   and node.args[1].func.id == "workshop_runtime_backends"
+                   for node in parameterizations), f"{filename}:{case.name} bypasses selected CI lane"
 
 
 def test_write_config_uses_home_download_paths_by_default(tmp_path, monkeypatch):

@@ -2433,6 +2433,41 @@ def test_info_json_uses_source_rcon_player_count(monkeypatch, capsys):
     }
 
 
+def test_query_uses_squad_game_state_and_keeps_admin_password_private(monkeypatch, capsys):
+    import utils
+    module = DummyModule()
+    module.get_query_address = lambda server: ('127.0.0.1', 21114, 'squad_rcon')
+    srv = make_server(module=module, data=DummyData({'port': 7787, 'adminpassword': 'secret'}))
+    calls = []
+    fake_q = types.ModuleType('utils.query')
+    fake_q.QueryError = OSError
+    fake_q.squad_rcon_info = lambda *args, **kwargs: (calls.append((args, kwargs)) or {
+        'players': 0, 'max_players': 80, 'map': 'Al Basrah', 'layer': 'AlBasrah_AAS_v1'})
+    monkeypatch.setattr(utils, 'query', fake_q, raising=False)
+    monkeypatch.setitem(sys.modules, 'utils.query', fake_q)
+    srv.query()
+    output = capsys.readouterr().out
+    assert calls == [(('127.0.0.1', 21114, 'secret'), {'timeout': 30.0})]
+    assert 'Squad RCON' in output and 'AlBasrah_AAS_v1' in output
+    assert 'secret' not in output
+
+
+def test_squad_info_json_reports_native_population_and_loaded_layer(monkeypatch, capsys):
+    import utils
+    module = DummyModule()
+    module.get_info_address = lambda server: ('127.0.0.1', 21114, 'squad_rcon')
+    srv = make_server(module=module, data=DummyData({'port': 7787, 'adminpassword': 'secret'}))
+    fake_q = types.ModuleType('utils.query')
+    fake_q.QueryError = OSError
+    fake_q.squad_rcon_info = lambda *_args, **_kwargs: {
+        'players': 2, 'max_players': 80, 'map': 'Al Basrah', 'layer': 'AlBasrah_AAS_v1'}
+    monkeypatch.setattr(utils, 'query', fake_q, raising=False)
+    monkeypatch.setitem(sys.modules, 'utils.query', fake_q)
+    srv.info(as_json=True)
+    assert json.loads(capsys.readouterr().out) == {'protocol': 'squad_rcon', 'port': 21114,
+        'players': 2, 'max_players': 80, 'map': 'Al Basrah', 'layer': 'AlBasrah_AAS_v1'}
+
+
 def test_info_uses_explicit_http_status_protocol(monkeypatch, capsys):
     import json as _json
     import utils.query as _ensure_imported  # noqa: F401

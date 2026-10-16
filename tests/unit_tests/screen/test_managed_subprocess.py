@@ -6,6 +6,8 @@ import subprocess
 import sys
 import time
 
+import pytest
+
 from screen.managed_subprocess import ManagedSubprocessBackend
 
 
@@ -127,7 +129,8 @@ def test_failed_helper_launch_allows_immediate_retry(tmp_path, monkeypatch):
     backend.kill("retry")
 
 
-@__import__("pytest").mark.skipif(sys.platform != "win32", reason="requires native Windows Job Objects")
+@pytest.mark.native_windows
+@pytest.mark.skipif(sys.platform != "win32", reason="requires native Windows Job Objects")
 def test_windows_job_cleans_descendant_after_parent_exits(tmp_path):
     from core.binary_update import _wait_for_parent_exit
 
@@ -198,7 +201,8 @@ def test_supervisor_termination_stops_owned_process(tmp_path):
             backend.kill("terminated")
 
 
-@__import__("pytest").mark.skipif(sys.platform != "win32", reason="requires native Windows console events")
+@pytest.mark.native_windows
+@pytest.mark.skipif(sys.platform != "win32", reason="requires native Windows console events")
 def test_windows_console_break_reaches_server(tmp_path):
     backend = ManagedSubprocessBackend("Test#", str(tmp_path), 2)
     script = (

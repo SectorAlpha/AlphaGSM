@@ -4,6 +4,8 @@ import os
 
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.modsupport.native_workshop import build_native_workshop_support, safe_server_path
+from .workshop import WORKSHOP_APP_ID, apply_workshop, get_native_mod_ids
 from server.settable_keys import SettingSpec, build_launch_arg_values
 
 import server.runtime as runtime_module
@@ -13,7 +15,12 @@ from utils.gamemodules import common as gamemodule_common
 steam_app_id = 4940
 steam_anonymous_login_possible = True
 
-commands = ("update", "restart")
+workshop_app_id = WORKSHOP_APP_ID
+MOD_SUPPORT = build_native_workshop_support(
+    game_label='Natural Selection 2', workshop_app_id=workshop_app_id, apply_callback=apply_workshop,
+)
+
+commands = ("update", "restart") + MOD_SUPPORT.commands
 command_args = gamemodule_common.build_setup_update_restart_command_args(
     "The game port to use for the Natural Selection 2 server",
     "The directory to install Natural Selection 2 in",
@@ -22,7 +29,9 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Update the Natural Selection 2 dedicated server to the latest version.",
     "Restart the Natural Selection 2 dedicated server.",
 )
-command_functions = {}
+command_args.update(MOD_SUPPORT.command_args)
+command_descriptions.update(MOD_SUPPORT.command_descriptions)
+command_functions = dict(MOD_SUPPORT.command_functions)
 max_stop_wait = 1
 _RUNTIME_PORTS = (
     {"key": "port", "protocol": "udp"},
@@ -63,12 +72,24 @@ setting_schema = {
         apply_to=("datastore", "launch_args"),
         launch_arg_tokens=("-webport",),
     ),
+    "webdomain": SettingSpec(
+        canonical_key="webdomain",
+        description="Optional local interface for the web admin listener (engine default: localhost).",
+        apply_to=("datastore", "launch_args"),
+        launch_arg_tokens=("-webdomain",),
+    ),
     "modserverport": SettingSpec(
         canonical_key="modserverport",
         description="Mod server port.",
         value_type="integer",
         apply_to=("datastore", "launch_args"),
         launch_arg_tokens=("-modserverport",),
+    ),
+    "modserveraddress": SettingSpec(
+        canonical_key="modserveraddress",
+        description="Optional local interface address for the native mod download server.",
+        apply_to=("datastore", "launch_args"),
+        launch_arg_tokens=("-modserveraddress",),
     ),
     "startmap": SettingSpec(
         canonical_key="startmap",
@@ -108,9 +129,13 @@ def _log_dir(server):
 
 
 def _ensure_server_dirs(server):
-    os.makedirs(_config_dir(server), exist_ok=True)
-    os.makedirs(_mod_storage_dir(server), exist_ok=True)
-    os.makedirs(_log_dir(server), exist_ok=True)
+    directories = [safe_server_path(server, value) for value in
+                   (server.name, f'{server.name}/Workshop', 'logs')]
+    for directory in directories:
+        if directory.exists() and not directory.is_dir():
+            raise ServerError('NS2 server directory is occupied by a regular file')
+    for directory in directories:
+        directory.mkdir(parents=True, exist_ok=True)
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="x64/server_linux"):
@@ -153,6 +178,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="x64/server_linux"):
         prompt="Where would you like to install the Natural Selection 2 server:",
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
+    MOD_SUPPORT.ensure_mod_state(server)
     return gamemodule_common.finalize_configure(server)
 
 
@@ -253,7 +279,22 @@ def get_start_command(server):
         "-modstorage",
         "./" + server.name + "/Workshop",
     ]
+    mod_ids = get_native_mod_ids(server)
+    if mod_ids:
+        command.extend(['-mods', ' '.join(mod_ids)])
+    # Spark quotes whitespace itself, but leaves unspaced hyphenated paths unquoted.
+    for index in range(1, len(command)):
+        if (not command[index].startswith('-') and '-' in command[index]
+                and not any(character.isspace() for character in command[index])):
+            command[index] = '"' + command[index].replace('"', '\\"') + '"'
     return command, server.data["dir"]
+
+
+def prestart(server):
+    """Reconcile native Workshop mods before loading the initial map."""
+    if MOD_SUPPORT.ensure_mod_state(server).get('autoapply', True):
+        MOD_SUPPORT.apply_configured_mods(server)
+    _ensure_server_dirs(server)
 
 
 def do_stop(server, j):
@@ -287,7 +328,7 @@ def checkvalue(server, key, *value):
         *value,
         setting_schema=setting_schema,
         resolved_int_keys=("port", "httpport", "modserverport", "maxplayers", "maxspectators"),
-        resolved_str_keys=("servername", "httpuser", "httppassword", "startmap", "exe_name", "dir"),
+        resolved_str_keys=("servername", "httpuser", "httppassword", "webdomain", "startmap", "modserveraddress", "exe_name", "dir"),
         backup_module=backup_utils,
     )
 

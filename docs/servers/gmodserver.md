@@ -133,14 +133,38 @@ alphagsm myserver set KEY VALUE
 - **Mounted base content**: AlphaGSM installs common Source content under `_gmod_content/`
   and writes default mounts for Counter-Strike: Source, Half-Life 2: Deathmatch,
   and Team Fortress 2.
-- **Workshop support**: No
-- **Mod notes**: AlphaGSM can now manage Garry's Mod addons from checked-in `manifest` entries plus direct `url` entries, GameBanana ids, and Mod DB page URLs. The local manifest currently includes popular admin/plugin stacks such as MetaMod, SourceMod, ULib, ULX, and AdvDupe2. Direct URLs can point at `.gma` files or supported archives; provider-backed sources currently install supported archives only, while checked-in manifest entries can now install either supported archives or single-file `.gma` assets. Garry's Mod addon archives that unpack as a bare addon root are installed under `garrysmod/addons/<family-or-archive-name>/`, so `ulx` can also pull in its checked-in `ulib` dependency automatically. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps its cache/state under `.alphagsm/mods/gmodserver/`.
+- **Workshop support**: Individual IDs, official Steam Community URLs, and collection imports through `mod add workshop` / `mod add workshop-collection`.
+- **Mod notes**: AlphaGSM can now manage Garry's Mod addons from checked-in `manifest` entries plus direct `url` entries, GameBanana ids, and Mod DB page URLs. The local manifest currently includes popular admin/plugin stacks such as MetaMod, SourceMod, ULib, ULX, and AdvDupe2. Direct URLs can point at `.gma` files or supported archives; GameBanana and Mod DB currently install supported archives only, while checked-in manifest entries can now install either supported archives or single-file `.gma` assets. Garry's Mod addon archives that unpack as a bare addon root are installed under `garrysmod/addons/<family-or-archive-name>/`, so `ulx` can also pull in its checked-in `ulib` dependency automatically. `mod cleanup` removes only AlphaGSM-tracked addon files, clears its desired entries, and removes its addon cache under `.alphagsm/mods/gmodserver/`.
 - **Map install**: Copy `.bsp` files into `garrysmod/maps/` and add to `garrysmod/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `garrysmod/addons/`.
+
+Workshop items are checked against the game AppID `4000` before being added or
+applied (the dedicated-server download uses AppID `4020`). Collection imports
+expand public same-game collections into item desired state; later collection
+changes require another import. Only a single regular version-3 `.gma` payload
+is accepted per Workshop item. AlphaGSM validates its file table, paths, bounds
+and available CRCs before extracting it under `garrysmod/addons/<workshop-id>/`.
+The dedicated engine loads this addon folder at the next start. Direct URL and
+manifest GMA payloads use the same validation and extraction path.
+`start` applies enabled desired addons automatically unless `mods.autoapply` is
+false. Downloads use anonymous SteamCMD; unavailable, private, or entitlement-gated
+items fail with the provider's error. Stop a running server before applying or
+cleaning up addons, then start it again to reload mounted content.
+
+This uses the same addon desired state and cleanup as manifest/URL addons.
+It does not write `srcds_workshop_ids.txt` or add `host_workshop_collection` to the
+launch command. Those are separate native download paths described in the
+[Facepunch dedicated-server Workshop guide](https://wiki.facepunch.com/gmod/Workshop_for_Dedicated_Servers).
+For client-required assets, follow Facepunch's
+[content serving guidance](https://wiki.facepunch.com/gmod/Serving_Content).
 
 Examples:
 
 ```bash
+alphagsm mygmod mod add workshop 557962238
+alphagsm mygmod mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=557962238
+alphagsm mygmod mod add workshop-collection YOUR_PUBLIC_COLLECTION_ID
+alphagsm mygmod mod remove workshop 557962238
 alphagsm mygmod mod add manifest metamod
 alphagsm mygmod mod add manifest sourcemod
 alphagsm mygmod mod add manifest ulib
@@ -158,3 +182,41 @@ alphagsm mygmod mod cleanup
 - Facepunch recommends installing extra mounted content outside the server root; AlphaGSM follows that pattern with `_gmod_content/`.
 - `mountdepots.txt` is seeded with the default Garry's Mod depot set, including `hl1`, `hl1_hd`, `hl2`, `episodic`, `ep2`, and `lostcoast`.
 - Single-player Valve games such as Episode One, Episode Two, and Lost Coast still require an owned Steam account if you want to download their content manually.
+
+### Verify Workshop loading
+
+The opt-in integration checks run the full AlphaGSM lifecycle in both process
+and Docker runtimes and load a fresh test-owned Lua probe through the running server console. They
+require the engine
+[virtual filesystem](https://wiki.facepunch.com/gmod/file.Read) to expose an
+addon-only file with the expected CRC for every selected item, and require the
+ULib and ULX fixtures to initialize their `ULib.ucl.query` and `ulx.command` APIs. Downloaded files alone do
+not count as successful loading. The test script avoids Source console input
+length limits and matches only a completed nonce-bearing probe. The default small fixture is the official
+[ULib server addon](https://steamcommunity.com/sharedfiles/filedetails/?id=557962238);
+Valve's metadata reported public AppID `4000`, title `ULib`, and size 246,309 bytes
+on 2026-10-13. The default collection fixture is
+[sandbox server](https://steamcommunity.com/sharedfiles/filedetails/?id=2886432224),
+whose public Valve collection response contained ULib and ULX on the same date.
+The full AlphaGSM collection lifecycle passed in process and Docker runtimes on
+2026-10-13, including fresh API evidence for both addons and verified shutdown.
+The Docker run used the normal forced shutdown fallback after its stop timeout.
+
+```bash
+ALPHAGSM_RUN_INTEGRATION=1 ALPHAGSM_RUN_STEAMCMD=1 \
+ALPHAGSM_RUN_GMOD_WORKSHOP=1 \
+python3 -m pytest tests/integration_tests/test_gmodserver.py -k workshop
+
+# Import and verify every item from your selected collection:
+ALPHAGSM_RUN_INTEGRATION=1 ALPHAGSM_RUN_STEAMCMD=1 \
+ALPHAGSM_GMOD_WORKSHOP_COLLECTION=YOUR_PUBLIC_COLLECTION_ID \
+python3 -m pytest tests/integration_tests/test_gmodserver.py -k workshop_collection
+
+ALPHAGSM_WORK_DIR=/path/with/enough/space GMOD_WORKSHOP_ITEM=557962238 \
+make smoke-test SMOKE_TEST=run_gmodserver.sh
+# Or use GMOD_WORKSHOP_COLLECTION=YOUR_PUBLIC_COLLECTION_ID.
+```
+
+Docker validation needs the local `steamcmd-linux` runtime image and daemon.
+An unavailable image or provider download is an unverified prerequisite;
+engine-probe timeouts remain failures.

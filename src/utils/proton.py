@@ -18,7 +18,9 @@ Usage example in a game module::
 """
 
 import os
+import shlex
 import shutil
+from pathlib import Path
 
 CONTAINER_SERVER_DIR = "/srv/server"
 CONTAINER_WINEPREFIX_DIR = "/srv/wineprefix"
@@ -101,6 +103,50 @@ def xvfb_host_dependency():
     return dict(XVFB_RUN_HOST_DEPENDENCY)
 
 
+def console_host_dependency():
+    """Declare the Unix PTY relay used by Windows interactive consoles."""
+    return {
+        "id": "script", "display_name": "script", "command": "script",
+        "platforms": ("linux",),
+        "install_hints": {"linux": "Install 'bsdutils' (util-linux script) for native console I/O."},
+    }
+
+
+def wrap_console_command(command):
+    """Relay native Windows console I/O through a real Unix pseudoterminal.
+
+    Wine only connects its console to the terminal when the launcher has a
+    terminal. The process supervisor and Docker console FIFO otherwise supply
+    pipes, causing native console output to disappear into a GUI conhost.
+    script invokes a shell, so quote each argument rather than joining raw text.
+    """
+    return ["script", "-qefc", shlex.join(command), "/dev/null"]
+
+
+def prepare_wineprefix(wineprefix, *, template=None):
+    """Seed a fresh Wine prefix with image-installed runtime prerequisites.
+
+    Existing prefixes, including Proton compatibility directories, belong to
+    the operator and are never overlaid. Docker's entrypoint prepares its own
+    prefix; process modules can opt into this same prepared Wine template.
+    """
+    source = Path(template or os.environ.get("ALPHAGSM_WINEPREFIX_TEMPLATE", "/opt/wine"))
+    target = Path(wineprefix)
+    if target.is_symlink():
+        raise RuntimeError("Refusing to seed a symlink Wine prefix")
+    if target.exists() and (not target.is_dir() or any(target.iterdir())):
+        return False
+    if not (source / "system.reg").is_file():
+        return False
+    shutil.copytree(source, target, symlinks=True, dirs_exist_ok=True)
+    # Wine's wineboot skips profile and shell-folder initialization when this
+    # image-build timestamp matches wine.inf (or contains "disable"). A fresh
+    # copy may run as a different user, whose LocalLow folder does not exist.
+    # Let Wine initialize that account while retaining installed prerequisites.
+    (target / ".update-timestamp").unlink(missing_ok=True)
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Command wrapping
 # ---------------------------------------------------------------------------
@@ -178,6 +224,31 @@ def wrap_command(command, wineprefix=None, prefer_proton=False):
         "Neither Wine nor Proton-GE is available on this system.  "
         "Run  scripts/install_proton.sh  to install one of them."
     )
+
+
+def wrap_xvfb_command(command, wineprefix=None, prefer_proton=False):
+    """Launch a Windows server with X11 drivers matching the container runtime.
+
+    Only replace the launcher's environment assignments. A native argument that
+    happens to contain the same variable name remains part of the game command.
+    DISPLAY is inherited from xvfb-run instead of the generic headless wrapper.
+    """
+    wrapped = wrap_command(command, wineprefix=wineprefix, prefer_proton=prefer_proton)
+    if wrapped and wrapped[0] == "env":
+        index = 1
+        prefix = ["env"]
+        while index + 1 < len(wrapped) and wrapped[index] == "-u":
+            prefix.extend(wrapped[index:index + 2])
+            index += 2
+        while index < len(wrapped) and _is_env_assignment(wrapped[index]):
+            if wrapped[index].split("=", 1)[0] not in {"DISPLAY", "WINEDLLOVERRIDES"}:
+                prefix.append(wrapped[index])
+            index += 1
+        wrapped = prefix + wrapped[index:]
+    wrapped = prepend_env_assignments(
+        wrapped, WINEDLLOVERRIDES="", SDL_VIDEODRIVER="x11", SDL_AUDIODRIVER="dummy",
+    )
+    return ["xvfb-run", "-a", "--server-args=-screen 0 1024x768x24 -nolisten tcp", *wrapped]
 
 
 def prepend_env_assignments(command, **env_vars):
@@ -444,6 +515,9 @@ def get_container_spec(
         native_command
         and not os.path.isabs(native_command[0])
         and not native_command[0].startswith("./")
+        # Wine resolves the command processor from its Windows system directory.
+        # Prefixing it with ./ instead requests a file in the game installation.
+        and native_command[0].casefold() != "cmd.exe"
     ):
         native_command[0] = "./" + native_command[0].lstrip("./")
     spec = {

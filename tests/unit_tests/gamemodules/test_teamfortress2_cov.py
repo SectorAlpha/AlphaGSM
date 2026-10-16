@@ -230,7 +230,9 @@ def test_tf2_status_warns_when_mod_apply_has_errors(capsys):
     assert "download failed" in output
 
 
-def test_tf2_mod_apply_rejects_workshop_items_until_provider_is_verified(tmp_path):
+def test_tf2_mod_apply_configures_verified_native_workshop_maps(tmp_path, monkeypatch):
+    provider = mod.command_functions["mod"].__globals__["workshop_provider"]
+    monkeypatch.setattr(provider, "resolve_workshop_items", lambda *args: [])
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["mods"] = {
@@ -244,11 +246,19 @@ def test_tf2_mod_apply_rejects_workshop_items_until_provider_is_verified(tmp_pat
         "errors": [],
     }
 
-    with pytest.raises(ServerError, match="Workshop support is experimental"):
-        mod.command_functions["mod"](server, "apply")
+    monkeypatch.setattr(provider, 'resolve_workshop_item_details',
+                        lambda ids, app: {item: {'tags': [{'tag': 'Control Point'}]} for item in ids})
+    mod.command_functions['mod'](server, 'apply')
+    assert (tmp_path / 'tf/cfg/alphagsm_workshop.cfg').read_text() == 'tf_workshop_map_sync 1234567890\n'
 
 
-def test_prestart(tmp_path):
+def test_prestart(tmp_path, monkeypatch):
+    module = _tf2_package_root()
+    source = tmp_path / 'tool/linux64/steamclient.so'
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b'sdk fixture')
+    monkeypatch.setattr(module.steamcmd, 'STEAMCMD_DIR', str(tmp_path / 'tool'))
+    monkeypatch.setattr(module, 'STEAMCLIENT_DST', str(tmp_path / 'sdk64/steamclient.so'))
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     mod.prestart(server)

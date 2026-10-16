@@ -69,6 +69,35 @@ alphagsm myrs2serve backup
 - Default game port: `7777`
 - Default query port: `27015`
 
+## Workshop content
+
+The native Workshop adapter accepts public item or collection IDs and Steam
+Community URLs, checking the consumer game AppID `418460` separately from the
+dedicated-server tool AppID `418480`:
+
+```bash
+alphagsm myrs2serve stop
+alphagsm myrs2serve mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=952365960
+alphagsm myrs2serve mod apply
+alphagsm myrs2serve start
+```
+
+It configures `ServerSubscribedWorkshopItems` under
+`[OnlineSubsystemSteamworks.TWWorkshopSteamworks]` in
+`ROGame/Config/PCServer-ROEngine.ini` and puts the native Workshop client download
+manager first. Operator subscriptions, comments and unrelated settings are
+preserved. Changes require a stopped server, as the engine rewrites its INIs.
+Start on the stock map to download content before selecting an installed custom
+map with `set startmap MAP_NAME`. `mod cleanup` removes the entries AlphaGSM
+added and retains the engine's download cache.
+
+The developer's `CousteauPlantation` fixture (`952365960`) passed public metadata
+validation and anonymous SteamCMD download on 2026-10-13. Its native
+`VNTE-CousteauPlantation.roe` map has not yet been proven loaded by this adapter
+through the full AlphaGSM smoke/integration lifecycle. Process and Docker
+Workshop validation remain pending. The native setup follows
+[Tripwire's server instructions](https://steamcommunity.com/app/418460/discussions/3/1368380934267055221/).
+
 <!-- alphagsm-server-variables:start -->
 
 ## Server variables
@@ -121,4 +150,4 @@ with `query`, `info`, `info --json`, and shutdown verification on the managed
 
 - **Map directory**: Check game documentation
 - **Mod directory**: Check game documentation
-- **Workshop support**: No
+- **Workshop support**: Native subscription adapter; complete native load validation pending.
