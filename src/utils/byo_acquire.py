@@ -43,7 +43,7 @@ def acquire(server, recipe, source_id, *, auth_profile=None):
                 raise ServerError("SteamCMD file acquisition failed; check session and entitlement") from None
             # SteamCMD installs into the requested root. Validate before publication;
             # no source file or importer ownership metadata reaches the server yet.
-            inspection = byo_files.inspect_files(scratch, recipe)
+            inspection = byo_files.inspect_files(scratch, recipe, source=True)
             if not inspection["ready"]:
                 raise ServerError("Downloaded content lacks required files: " + ", ".join(inspection["missing"]))
             report = asset_import.import_assets(scratch, target, recipe)

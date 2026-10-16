@@ -136,15 +136,16 @@ def _satisfied(root, requirement, insensitive):
     return False
 
 
-def inspect_files(root, recipe):
-    """Report declared file availability and source instructions, never readiness."""
+def inspect_files(root, recipe, *, source=False):
+    """Inspect installed paths natively; source paths may use recipe case folding."""
     root = Path(root).absolute() if root else None
     missing, optional = [], []
     requirements = recipe.get("requirements", [])
     if not isinstance(requirements, list) or not requirements:
         raise ServerError("This recipe does not declare BYO file requirements")
+    insensitive = recipe.get("case_insensitive", False) if source else False
     for requirement in requirements:
-        if not _satisfied(root, requirement, recipe.get("case_insensitive", False)):
+        if not _satisfied(root, requirement, insensitive):
             label = requirement.get("path") or " or ".join(requirement["any_of"])
             (optional if requirement.get("optional") else missing).append(label)
     return {"status": "missing" if missing else "ready", "ready": not missing,

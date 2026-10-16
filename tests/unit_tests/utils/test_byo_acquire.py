@@ -23,7 +23,8 @@ def recipe():
                          "instructions": "Use an entitled account"}]}
 
 
-def test_acquire_selects_profile_and_publishes_only_allowlisted_files(tmp_path, monkeypatch):
+@pytest.mark.parametrize("directory,filename", [("baseq3", "pak0.pk3"), ("BaseQ3", "PAK0.PK3")])
+def test_acquire_selects_profile_and_publishes_only_allowlisted_files(tmp_path, monkeypatch, directory, filename):
     module = acquisition()
     staging_paths = []
     calls = []
@@ -31,12 +32,12 @@ def test_acquire_selects_profile_and_publishes_only_allowlisted_files(tmp_path, 
         staging = Path(path)
         staging_paths.append(staging)
         calls.append((app, anonymous, kwargs))
-        (staging / "baseq3").mkdir()
-        (staging / "baseq3/pak0.pk3").write_bytes(b"owned-data")
+        (staging / directory).mkdir()
+        (staging / directory / filename).write_bytes(b"owned-data")
         (staging / "unrelated-password.txt").write_text("must not be copied")
     monkeypatch.setattr(module.steamcmd, "download", download)
     server = SimpleNamespace(name="test", data={"dir": str(tmp_path / "server")})
-    report = module.acquire(server, recipe(), "steam-owned", auth_profile="personal")
+    report = module.acquire(server, dict(recipe(), case_insensitive=True), "steam-owned", auth_profile="personal")
     assert calls == [(2200, False, {"force_platform": "windows", "beta_branch": None, "auth_profile": "personal"})]
     assert (tmp_path / "server/baseq3/pak0.pk3").read_bytes() == b"owned-data"
     assert not (tmp_path / "server/unrelated-password.txt").exists()

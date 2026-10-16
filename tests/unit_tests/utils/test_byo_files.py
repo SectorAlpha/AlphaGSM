@@ -4,6 +4,7 @@ import importlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
+import sys
 import zipfile
 
 import pytest
@@ -126,3 +127,57 @@ def test_steam_sources_use_base_game_not_dedicated_app(tmp_path):
         assert source["platform"] == "windows"
         assert source["authentication"] == "required"
         assert source["live_validated"] is False
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="Linux path case semantics")
+def test_q3_installed_inspection_rejects_source_casing(tmp_path):
+    from gamemodules import q3server
+    server = SimpleNamespace(name="test", data={"dir": str(tmp_path)})
+    recipe = q3server.get_asset_requirements(server)
+    (tmp_path / "BaseQ3").mkdir()
+    (tmp_path / "BaseQ3/PAK0.PK3").write_bytes(b"owned-data")
+
+    report = helpers().inspect_files(tmp_path, recipe)
+
+    assert not report["ready"]
+    assert report["missing"] == ["baseq3/pak0.pk3"]
+
+
+@pytest.mark.parametrize("insensitive,ready", [(False, False), (True, True)])
+@pytest.mark.skipif(sys.platform != "linux", reason="Linux path case semantics")
+def test_source_inspection_honors_recipe_case_policy(tmp_path, insensitive, ready):
+    recipe = {"case_insensitive": insensitive,
+              "requirements": [{"path": "baseq3/pak0.pk3", "kind": "file"}]}
+    (tmp_path / "BaseQ3").mkdir()
+    (tmp_path / "BaseQ3/PAK0.PK3").write_bytes(b"owned-data")
+
+    assert helpers().inspect_files(tmp_path, recipe, source=True)["ready"] is ready
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="Linux path case semantics")
+def test_staged_inspection_requires_canonical_paths(tmp_path):
+    recipe = {"case_insensitive": True,
+              "requirements": [{"path": "baseq3/pak0.pk3", "kind": "file"}]}
+    (tmp_path / "BaseQ3").mkdir()
+    (tmp_path / "BaseQ3/PAK0.PK3").write_bytes(b"owned-data")
+
+    with pytest.raises(ServerError, match="Selected content lacks required files: baseq3/pak0.pk3"):
+        helpers().validate_staged_files(tmp_path, recipe, "")
+
+
+def test_q3_import_normalizes_source_before_installed_inspection(tmp_path):
+    from gamemodules import q3server
+    from utils import asset_import
+    source = tmp_path / "owned"
+    target = tmp_path / "server"
+    server = SimpleNamespace(name="test", data={"dir": str(target)})
+    recipe = q3server.get_asset_requirements(server)
+    (source / "BaseQ3").mkdir(parents=True)
+    (source / "BaseQ3/PAK0.PK3").write_bytes(b"owned-data")
+
+    report = asset_import.import_assets(source, target, recipe)
+
+    assert report["copied"] == ["baseq3/pak0.pk3"]
+    assert (target / "baseq3/pak0.pk3").read_bytes() == b"owned-data"
+    assert helpers().inspect_files(target, recipe)["ready"]
+    q3server._assert_required_base_assets(str(target))
