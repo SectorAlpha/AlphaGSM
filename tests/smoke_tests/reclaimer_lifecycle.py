@@ -38,9 +38,9 @@ def run_lifecycle(work_dir, source, backend="process", image=None, timeout=180):
     port = pick_free_port_group(2)
     server_name = "it-reclaimer"
 
-    def run(*arguments, check=True):
+    def run(*arguments, check=True, command_timeout=600):
         result = subprocess.run([sys.executable, str(REPO_ROOT / "alphagsm"), server_name, *arguments],
-                                env=env, capture_output=True, text=True, timeout=600, check=False)
+                                env=env, capture_output=True, text=True, timeout=command_timeout, check=False)
         if check and result.returncode:
             raise AssertionError(f"AlphaGSM {arguments[0]} failed: {result.stdout}\n{result.stderr}")
         return result
@@ -50,13 +50,13 @@ def run_lifecycle(work_dir, source, backend="process", image=None, timeout=180):
         run("set", "image", image)
     run("setup", "-n", str(port), str(install), "--assets", str(source))
     run("assets", "check")
-    run("start")
     started = True
     try:
+        run("start")
         deadline = time.monotonic() + timeout
         last_error = ""
         while time.monotonic() < deadline:
-            result = run("info", "--json", check=False)
+            result = run("info", "--json", check=False, command_timeout=min(15, max(1, deadline - time.monotonic())))
             if result.returncode == 0:
                 report = json.loads(result.stdout)
                 assert report["protocol"] == "reclaimer_rcon" and report["port"] == port + 1, report
@@ -73,7 +73,6 @@ def run_lifecycle(work_dir, source, backend="process", image=None, timeout=180):
         run("info")
         run("info", "--json")
         run("stop")
-        started = False
         # A released listener must be bindable, and the real RCON query must fail.
         deadline = time.monotonic() + 90
         while True:
@@ -90,10 +89,19 @@ def run_lifecycle(work_dir, source, backend="process", image=None, timeout=180):
                 time.sleep(1)
         assert run("query", check=False).returncode != 0
         assert "isn't running" in run("status").stdout
+        started = False
         return report
     finally:
         if started:
-            run("stop", check=False)
+            try:
+                stop_result = run("stop", check=False, command_timeout=90)
+                if stop_result.returncode or "isn't running" not in run("status", check=False, command_timeout=30).stdout:
+                    run("kill", check=False, command_timeout=30)
+            except (OSError, subprocess.TimeoutExpired):
+                try:
+                    run("kill", check=False, command_timeout=30)
+                except (OSError, subprocess.TimeoutExpired):
+                    pass  # Keep the original failure and preserve the work directory.
 
 
 def main():
@@ -105,8 +113,9 @@ def main():
     if not args.assets:
         print("Project Reclaimer validation needs ALPHAGSM_RECLAIMER_ASSETS or --assets PATH to owned MCC files.")
         return 77
-    with tempfile.TemporaryDirectory(prefix="alphagsm-reclaimer-", dir=os.environ.get("ALPHAGSM_WORK_DIR")) as work:
-        run_lifecycle(work, args.assets, args.runtime, args.image)
+    work = tempfile.mkdtemp(prefix="alphagsm-reclaimer-", dir=os.environ.get("ALPHAGSM_WORK_DIR"))
+    print("Validation files and logs: " + work)
+    run_lifecycle(work, args.assets, args.runtime, args.image)
     print("Project Reclaimer lifecycle passed")
     return 0
 

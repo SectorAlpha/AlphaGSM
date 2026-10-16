@@ -414,13 +414,13 @@ class Server(object):
                     None,
                     False,
                 ),
-                OptSpec(None, ["assets"], "Import an owned game folder or local ZIP/tar archive.", "assets_source", "PATH", str),
+                OptSpec("", ["assets"], "Import an owned game folder or local ZIP/tar archive.", "assets_source", "PATH", str),
             )
         ),
         "assets": CmdSpec(
             requiredarguments=(ArgSpec("ACTION", "check, import, or export", str),),
             optionalarguments=(ArgSpec("SOURCE", "Owned local folder or archive", str),),
-            options=(OptSpec(None, ["output"], "ZIP destination for export", "output", "ZIP", str),
+            options=(OptSpec("", ["output"], "ZIP destination for export", "output", "ZIP", str),
                      OptSpec("j", ["json"], "Print machine-readable asset results", "as_json", None, True)),
         ),
         "start": CmdSpec(),

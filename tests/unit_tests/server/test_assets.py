@@ -8,6 +8,7 @@ import pytest
 from server import ServerError
 from server.server import Server
 from server import runtime
+from utils.cmdparse.cmdparse import parse
 
 
 def instance(tmp_path):
@@ -57,3 +58,27 @@ def test_docker_stop_uses_module_grace_period(monkeypatch):
     monkeypatch.setattr(runtime.ContainerRuntime, "_run_check_output", lambda _self, args, **kw: calls.append(args))
     runtime.ContainerRuntime().kill(SimpleNamespace(name="halo", data={}))
     assert calls[0] == ["docker", "stop", "--time", "30", "halo"]
+
+
+def test_doctor_reports_asset_readiness(tmp_path, monkeypatch):
+    from server import diagnostics
+    server = instance(tmp_path)
+    monkeypatch.setattr(runtime, "get_runtime_doctor_report", lambda _s: {})
+    report = diagnostics.get_diagnostic_report(server)
+    assert next(c for c in report["checks"] if c["category"] == "assets")["status"] == "failed"
+    required = tmp_path / "server/game/game.dat"
+    required.parent.mkdir(parents=True)
+    required.write_bytes(b"owned fixture")
+    report = diagnostics.get_diagnostic_report(server)
+    assert next(c for c in report["checks"] if c["category"] == "assets")["status"] == "ok"
+
+
+def test_asset_options_parse_through_the_real_command_parser():
+    from gamemodules import projectreclaimer
+    setup = Server.default_command_args["setup"].combine(projectreclaimer.command_args["setup"])
+    args, options = parse(["-n", "49176", "server dir", "--assets", "owned files.zip"], setup)
+    assert args == [49176, "server dir"]
+    assert options == {"ask": False, "assets_source": "owned files.zip"}
+    args, options = parse(["export", "owned files", "--output", "assets.zip"], Server.default_command_args["assets"])
+    assert args == ["export", "owned files"]
+    assert options["output"] == "assets.zip"

@@ -57,4 +57,5 @@ unchanged while importing. Ownership hashes live in `<install_dir>/.alphagsm/ass
 
 `ENABLED (BYO)` describes a supported module's prerequisites. It does not change
 after importing files. `assets check` separately reports whether required files
-are present. New modules awaiting a real lifecycle run remain pending validation.
+are present; `doctor` includes the same readiness check. New modules awaiting a
+real lifecycle run remain pending validation.

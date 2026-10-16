@@ -34,7 +34,7 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 - **ENABLED (AUTH)** — Supported server module that still requires provider-managed authentication, credentials, tokens, licenses, or provisioning before setup/start can fully succeed.
 - **ENABLED (BYO)** — Supported server module that still requires an explicit operator-provided prerequisite such as owned assets, exported client files, an external service, or a direct URL.
 - **DISABLED** — Module is in `disabled_servers.conf`; known broken on Linux.
-- **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
+- **SKIPPED** — Test is awaiting explicit prerequisites or validation data before its real lifecycle can run.
 
 ## Counter-Strike Split
 

@@ -17,6 +17,7 @@ from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 from utils.gamemodules import common as gamemodule_common
 from utils.platform_info import IS_LINUX
+from utils.state_io import atomic_write_text
 
 module_contract_version = 1
 process_platforms = ("windows", "linux")
@@ -45,14 +46,18 @@ setting_schema = {
 def configure(server, ask, port=None, dir=None):
     """Configure one managed Reclaimer instance; setup can precede asset import."""
     gamemodule_common.configure_port(server, ask, port, default_port=49176, prompt="Game UDP port:")
+    checkvalue(server, ["port"], str(server.data["port"]))
     gamemodule_common.configure_install_dir(server, ask, dir, prompt="Reclaimer installation directory:")
+    server.data["dir"] = str(Path(server.data["dir"]).expanduser().absolute())
     server.data.setdefault("rconport", int(server.data["port"]) + 1 if int(server.data["port"]) < 65535 else 65534)
-    server.data.setdefault("servername", "AlphaGSM " + server.name)
+    server.data.setdefault("servername", ("AlphaGSM " + server.name)[:48])
     server.data.setdefault("maxplayers", 16)
     server.data.setdefault("map", "Guardian")
     server.data.setdefault("gamemode", "Slayer")
     server.data.setdefault("rconpassword", secrets.token_urlsafe(32))
     server.data.setdefault("exe_name", "project-reclaimer.exe")
+    for key in ("rconport", "maxplayers", "servername", "rconpassword", "map"):
+        checkvalue(server, [key], str(server.data[key]))
     gamemodule_common.ensure_backup_config(server, backupfiles=["dedicated.toml", "content", "playlists", "bans.json"],
                                          targets=["dedicated.toml", "content", "playlists", "bans.json"])
     return gamemodule_common.finalize_configure(server)
@@ -79,6 +84,8 @@ def install(server):
     """Install only the public server program; owned game assets stay separate."""
     root = Path(server.data["dir"])
     root.mkdir(parents=True, exist_ok=True)
+    for subdir in ("game", "content/Maps", "content/Game Modes", "content/Mods", "playlists"):
+        (root / subdir).mkdir(parents=True, exist_ok=True)
     executable = root / "project-reclaimer.exe"
     if not executable.is_file() or _sha256(executable) != SERVER_SHA256:
         try:
@@ -134,8 +141,7 @@ def sync_server_config(server):
         "rcon_password": server.data["rconpassword"],
         "map": server.data["map"], "game": server.data["gamemode"],
     })
-    path.write_text(text, encoding="utf-8")
-    path.chmod(0o600)
+    atomic_write_text(path, text, mode=0o600)
 
 
 def prestart(server):
@@ -150,7 +156,7 @@ def prestart(server):
 
 def get_start_command(server):
     """Launch natively on Windows or explicitly through Wine on Linux."""
-    executable = Path(server.data["dir"]) / "project-reclaimer.exe"
+    executable = Path(server.data["dir"]).absolute() / "project-reclaimer.exe"
     if not executable.is_file():
         raise ServerError("Reclaimer executable missing; run setup first")
     command = ["./project-reclaimer.exe" if server.data.get("runtime") == "docker" else str(executable), "dedicated"]
@@ -193,7 +199,9 @@ def backup(server, profile=None):
 
 
 def checkvalue(server, key, *value):
-    original_key = key
+    original_key = [key] if isinstance(key, str) else key
+    if original_key and original_key[0] == "backup":
+        return gamemodule_common.handle_basic_checkvalue(server, original_key, *value)
     if isinstance(key, (tuple, list)):
         if len(key) != 1:
             raise ServerError("Reclaimer settings only support top-level keys")
@@ -238,6 +246,11 @@ def get_runtime_requirements(server):
     requirements["network_mode"] = "host"
     requirements.update(stop_signal="SIGINT", stop_timeout=30)
     return requirements
+
+
+def get_platform_requirements(_server):
+    return {"process": {"platforms": process_platforms, "architectures": process_architectures},
+            "docker": {"operating_system": "linux"}}
 
 
 def get_container_spec(server):

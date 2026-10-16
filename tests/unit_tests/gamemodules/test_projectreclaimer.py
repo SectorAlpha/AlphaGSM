@@ -95,6 +95,38 @@ def test_set_uses_real_parsed_key_paths(game, key, value, expected):
     assert module.checkvalue(server, [key], value) == expected
 
 
+def test_real_server_set_updates_managed_values(game, monkeypatch):
+    from server.server import Server
+    from server import port_manager
+    module, original = game
+    server = Server.__new__(Server)
+    server.name, server.data, server.module = original.name, original.data, module
+    monkeypatch.setattr(port_manager, "detect_conflicts", lambda _server: [])
+    for key, value in (("map", "Guardian"), ("maxplayers", "32"), ("rconpassword", "new-private-password"),
+                       ("hostname", "Friends"), ("port", "49180")):
+        server.doset(key, value)
+    assert server.data["maxplayers"] == 32
+    assert server.data["servername"] == "Friends"
+    assert server.data["port"] == 49180
+    text = (Path(server.data["dir"]) / "dedicated.toml").read_text()
+    assert "max_players = 32" in text and "port = 49180" in text
+
+
+def test_relative_setup_directory_is_stored_as_absolute(tmp_path, monkeypatch):
+    from gamemodules import projectreclaimer as module
+    monkeypatch.chdir(tmp_path)
+    server = SimpleNamespace(name="halo", data=Data())
+    module.configure(server, False, 49176, "servers/halo")
+    assert Path(server.data["dir"]).is_absolute()
+
+
+@pytest.mark.parametrize("port", [1, 65536])
+def test_setup_rejects_invalid_ports(tmp_path, port):
+    from gamemodules import projectreclaimer as module
+    with pytest.raises(ServerError, match="port"):
+        module.configure(SimpleNamespace(name="halo", data=Data()), False, port, str(tmp_path))
+
+
 def test_config_updates_instance_rcon_override(game):
     module, server = game
     root = Path(server.data["dir"])
