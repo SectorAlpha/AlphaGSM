@@ -99,6 +99,10 @@ If you are installing AlphaGSM from source on the host, you need:
 
 Some server types need one extra thing:
 
+For games that need files you already own, modules with an asset recipe can
+import a folder or downloaded archive with `setup --assets PATH`. See
+[Owned Game Assets](docs/owned-assets.md) for Windows and Linux examples.
+
 - Minecraft needs Java:
   ```bash
   sudo apt install openjdk-25-jre-headless

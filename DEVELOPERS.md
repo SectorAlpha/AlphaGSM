@@ -499,6 +499,33 @@ non-schema keys still fall through to `checkvalue` / `str_keys` unchanged.
 
 ## Download And Install Pipeline
 
+### Operator-owned game assets
+
+Modules can declare `get_asset_requirements(server)` to opt into `setup --assets
+PATH`, `assets import PATH`, `assets check [--json]` and `assets export SOURCE
+--output ZIP`. `server.assets` owns command orchestration; `utils.asset_import`
+owns portable staging, complete-input validation, hash ownership and rollback.
+Recipes use forward-slash paths: `roots` selects allowed source roots, `include`
+contains anchored allowlist globs, `required` lists nonempty source-relative
+files, and `target` is a relative destination prefix beneath the install root.
+`case_insensitive=True` normalizes source-relative filenames to lowercase.
+
+Only immutable game assets belong in these recipes. Keep credentials, saves,
+operator config and manager metadata out. Imports require a stopped server;
+setup imports run after module configure and port resolution, before install.
+ZIP exports exclude all files outside the allowlist and refuse output inside
+the source. Ownership lives in `.alphagsm/assets.json`, independent of mod state.
+Provider auth, exported settings and external services retain their own APIs.
+Required-file checks are presence checks; upstream version/format checks and
+real lifecycle evidence are still necessary. Project Reclaimer is the first
+consumer; existing BYO modules have not been migrated automatically.
+
+Reclaimer declares `reclaimer_rcon` for authenticated WebSocket status. Its
+Docker spec uses the existing Wine family with read-only game assets, host
+networking, `stop_signal="SIGINT"` and `stop_timeout=30`. Stop options are opt-in;
+existing modules retain their defaults. Refer to the module guide for the
+explicitly deferred real process/Docker validation and fixed-map limitations.
+
 The download subsystem is split between:
 
 - [src/downloader/downloader.py](src/downloader/downloader.py)

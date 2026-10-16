@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-09-09
+Last updated: 2026-10-16
 
 ## Summary
 
@@ -15,7 +15,7 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 | ENABLED (AUTH) | 49 |
 | ENABLED (BYO) | 45 |
 | DISABLED | 4 |
-| SKIPPED | 0 |
+| SKIPPED | 1 |
 
 ## Environment Coverage
 
@@ -34,7 +34,7 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 - **ENABLED (AUTH)** — Supported server module that still requires provider-managed authentication, credentials, tokens, licenses, or provisioning before setup/start can fully succeed.
 - **ENABLED (BYO)** — Supported server module that still requires an explicit operator-provided prerequisite such as owned assets, exported client files, an external service, or a direct URL.
 - **DISABLED** — Module is in `disabled_servers.conf`; known broken on Linux.
-- **SKIPPED** — Test file has `pytest.mark.skip`; needs prerequisite work before it can run.
+- **SKIPPED** — Test is awaiting explicit prerequisites or validation data before its real lifecycle can run.
 
 ## Counter-Strike Split
 
@@ -435,8 +435,10 @@ URLs.
 | counterstrikeglobaloffensive | SteamCMD app 740 installs legacy CS:GO build 1575; server reaches Steam, receives MasterRequestRestart, and self-shuts down while hibernating. Official CS2 dedicated servers were merged into app 730. |
 | memoriesofmarsserver | 505 Games shut down Memories of Mars online multiplayer on 2024-06-25. Fresh process and Docker runs reach the retired LIMBIC session service, fail to resolve `agclxre5zl.execute-api.eu-central-1.amazonaws.com`, report `Could not create session`, and crash before opening a query listener. |
 
-## SKIPPED (0)
+## SKIPPED (1)
 
 Tests with `pytest.mark.skip` or "a `require_proton()` / `require_command()` guard — need a prerequisite before they can run.
 
-All integration tests have been tested and categorized. No untested servers remain.
+| Test | Skip reason |
+|------|-------------|
+| projectreclaimer | New module awaiting real process/Docker lifecycle validation with owned MCC Halo 3 assets. User explicitly deferred that validation on 2026-10-16. Set `ALPHAGSM_RECLAIMER_ASSETS` to a legitimate game folder or export to exercise the opt-in test. Importer, configuration, RCON and runtime contract unit coverage is separate evidence; no enabled/pass state is claimed. |

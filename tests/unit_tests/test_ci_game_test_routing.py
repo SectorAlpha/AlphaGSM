@@ -370,7 +370,9 @@ def test_docker_backlog_ignores_docker_default_and_non_runtime_tests():
 
     backlog = set(routing.docker_enablement_backlog_tests(repo_root=Path(".")))
 
-    assert backlog == set()
+    # Reclaimer's real process/Docker validation was explicitly deferred; keep
+    # it visible instead of classifying it as a previously validated runtime.
+    assert backlog == {"tests/integration_tests/test_projectreclaimer.py"}
 
 
 def test_source_shared_batch_moves_out_of_docker_enablement_backlog():

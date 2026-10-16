@@ -18,6 +18,7 @@ from . import port_manager
 from . import runtime as runtime_module
 from . import diagnostics as diagnostics_module
 from . import worlds as worlds_module
+from . import assets as assets_module
 from .settable_keys import KeyResolutionError, resolve_requested_key
 from .settable_keys import get_effective_aliases
 from .errors import ServerError
@@ -399,6 +400,7 @@ class Server(object):
         "query",
         "info",
         "doctor",
+        "assets",
     )
     default_command_args = {
         "setup": CmdSpec(
@@ -411,7 +413,14 @@ class Server(object):
                     None,
                     False,
                 ),
+                OptSpec("", ["assets"], "Import an owned game folder or local ZIP/tar archive.", "assets_source", "PATH", str),
             )
+        ),
+        "assets": CmdSpec(
+            requiredarguments=(ArgSpec("ACTION", "check, import, or export", str),),
+            optionalarguments=(ArgSpec("SOURCE", "Owned local folder or archive", str),),
+            options=(OptSpec("", ["output"], "ZIP destination for export", "output", "ZIP", str),
+                     OptSpec("j", ["json"], "Print machine-readable asset results", "as_json", None, True)),
         ),
         "start": CmdSpec(),
         "stop": CmdSpec(),
@@ -606,6 +615,7 @@ class Server(object):
         "Use -j / --json to emit the result as a JSON object.\n"
         "Use -d / --detailed to include extended data (e.g. TeamSpeak 3 channel list).",
         "doctor": "Print runtime diagnostics for this server, including the effective backend, Docker image/container details, and local runtime health checks.",
+        "assets": "Check, import or export module-declared owned game assets from local folders or archives.",
     }
 
     def __init__(self, name, module=None):
@@ -833,6 +843,8 @@ class Server(object):
                 self.info(*args, **kwargs)
             elif command == "doctor":
                 self.doctor(*args, **kwargs)
+            elif command == "assets":
+                self.assets(*args, **kwargs)
         elif command in self.module.commands:
             if command == "update":
                 try:
@@ -849,7 +861,7 @@ class Server(object):
                 + "' can't be executed. Please check the help"
             )
 
-    def setup(self, *args, ask=True, **kwargs):
+    def setup(self, *args, ask=True, assets_source=None, **kwargs):
         """Setup this server. Once this returns the server should be ready to start."""
         explicit_keys = self._explicit_setup_port_keys(args, kwargs)
         claim_values_before = self._claim_affecting_value_snapshot(self.data)
@@ -866,9 +878,15 @@ class Server(object):
             runtime_module.assert_host_install_requirements(self, phase="setup")
         except runtime_module.RuntimeError as ex:
             raise ServerError(str(ex))
+        if assets_source is not None:
+            assets_module.import_for_setup(self, assets_source)
         self.module.install(self, *args, **kwargs)
         runtime_module.sync_runtime_metadata(self, save=True)
         diagnostics_module.record_installation_provenance(self, "setup")
+
+    def assets(self, action, source=None, *, output=None, as_json=False):
+        """Manage module-declared owned game content without launching a game."""
+        return assets_module.execute(self, action, source, output=output, as_json=as_json)
 
     def start(self, *args, **kwargs):
         """Start a server. Won't start it if the server is already running."""
@@ -1075,6 +1093,13 @@ class Server(object):
             protocol = "a2s"
             _explicit = False
         port = int(port)
+
+        if protocol == "reclaimer_rcon":
+            from utils import reclaimer
+            result = reclaimer.server_info(host, port, self.data.get("rconpassword", ""))
+            print("Server is responding (Reclaimer RCON on port {}): {} players on {}".format(
+                port, result["players"], result["map"]))
+            return
 
         if protocol == "a2s":
             wake_hook = _get_a2s_wake_hook(self.module)
@@ -1387,6 +1412,17 @@ class Server(object):
             protocol = "a2s"
             _explicit = False
         port = int(port)
+
+        if protocol == "reclaimer_rcon":
+            from utils import reclaimer
+            result = reclaimer.server_info(host, port, self.data.get("rconpassword", ""))
+            if as_json:
+                print(json.dumps({"protocol": protocol, "port": port, **result}))
+            else:
+                print("Server info (Reclaimer RCON on port {}):\n  Name        : {}\n"
+                      "  Map         : {}\n  Players     : {}/{}".format(
+                          port, result["name"], result["map"], result["players"], result["max_players"]))
+            return
 
         if protocol == "bedrock":
             try:
