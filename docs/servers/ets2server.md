@@ -126,5 +126,10 @@ returning protocol `a2s` instead of waiting for screen-log markers.
 Inspect this game's required files, source instructions and destinations with
 `alphagsm <server-name> assets requirements`; check the declared files with
 `alphagsm <server-name> assets check`. File checks do not establish game readiness.
-This module has an allowlisted local import recipe. Use its source instructions to prepare the required data before importing.
+Generate `server_packages.sii` and `server_packages.dat` in the owned client
+using `export_server_packages`. For a relative `configdir`, the allowlisted
+import places both exports under that directory in the server installation.
+For an absolute `configdir`, stage both files manually in that home;
+`assets requirements` and `assets check` support it, while managed import and
+export explain the manual-staging requirement.
 See [BYO files and private SteamCMD acquisition](../byo-files.md).

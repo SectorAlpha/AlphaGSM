@@ -149,4 +149,7 @@ Inspect this game's required files, source instructions and destinations with
 This module has an allowlisted local import recipe. It also declares `steam-owned` for explicit acquisition with
 `alphagsm <server-name> assets fetch steam-owned --auth-profile <profile>`.
 Authenticated downloads remain unverified here.
+The base-file helper checks PK3 archives for the configured multiplayer map in
+`.bsp` or `.d3dbsp` format. Archive member names may vary in case or use either
+slash style; installed filesystem paths must match the native server layout.
 See [BYO files and private SteamCMD acquisition](../byo-files.md).

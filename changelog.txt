@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-16
+- BYO files: check installed paths with native filename casing, accept equivalent
+  CoD map archive formats, and inspect absolute ETS2/ATS configuration homes
+  while keeping those external homes on the manual-staging path.
 - BYO files: declare game-specific requirements and acquisition guidance for all
   42 file-based BYO modules; add requirements reports and explicit SteamCMD
   staging that imports only declared files and removes temporary downloads.

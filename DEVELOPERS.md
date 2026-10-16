@@ -992,8 +992,9 @@ Regenerate per-game `set` tables with:
 PYTHONPATH=.:src python3 scripts/sync_server_guide_settings.py
 ```
 
-SteamCMD account login is not implemented yet. The public TODO is
-[docs/steamcmd-auth.md](docs/steamcmd-auth.md). Local design notes under
+SteamCMD session profiles support explicit owned-file acquisition on Linux;
+see [docs/steamcmd-auth.md](docs/steamcmd-auth.md) for their scope and validation
+limits. Local design notes under
 `docs/superpowers/` are gitignored and are not part of the published docs.
 
 ## Repo Automation Files
@@ -1168,20 +1169,32 @@ from the instance. Provider credentials stay in provider metadata/auth storage.
 Rich recipes declare `module`, `description`, `requirements`, `sources`,
 `managed_import`, `validation`, and source guidance. Requirements have a relative
 `path` and kind `file`, `glob`, `directory`, or `archive-member`; the latter
-includes a relative archive `member` pattern. `any_of` declares alternative
-paths and `optional` marks advisory content. Files must be nonempty unless a
-requirement explicitly says otherwise. Checks reject symlinks and report
+includes a relative archive `member` pattern or a nonempty `member_any_of`
+list. `member_case_insensitive` controls archive member matching independently
+of filesystem path casing; member separators are normalized before comparison.
+`any_of` declares alternative paths and `optional` marks advisory content.
+Files must be nonempty unless a requirement explicitly says otherwise. Checks reject symlinks and report
 `game_readiness: not-checked`. Manual recipes use `sentinel-only` validation.
 
 Managed recipes also supply the existing importer fields `roots`, `include`,
 `required`, and `target`. Required patterns are ANDed; each `required_any` group
 is ORed internally and ANDed with other groups. `destination_names` explicitly
 preserves a native filename when case-insensitive source matching would otherwise
-normalize it (for example COD4's `fileSysCheck.cfg`). The importer validates
+normalize it (for example COD4's `fileSysCheck.cfg`). `inspect_files` uses
+native filesystem casing for installed and selected staged files. Acquisition
+prechecks explicitly use `source=True` to honor source `case_insensitive`
+matching before normalization. The importer validates
 selected staged bytes against rich requirements before publication or export,
 while preserving rollback and ownership hashes. It never infers that unrelated
 files from a full Steam installation may be copied. Existing Reclaimer recipes
 without rich requirements remain compatible.
+
+ETS2/ATS manifests opt in with `config_home_setting: configdir`. Relative homes
+retain installation-relative paths and existing ownership metadata. For an
+absolute home, the loader separates that inspection root from relative export
+filenames and marks the recipe manual-only; it never passes an absolute target
+to the importer. Requirements/check work without extending publication rights
+to that external directory.
 
 A Steam source records `id`, `kind: steamcmd`, numeric `app_id`, explicit
 `platform`, `authentication: required` or `anonymous`, optional public `branch`,
