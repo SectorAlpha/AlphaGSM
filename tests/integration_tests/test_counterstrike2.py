@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -20,12 +21,11 @@ from conftest import (
     run_and_assert_ok,
     run_alphagsm,
     log_command_result,
+    capture_alphagsm_stop,
+    assert_alphagsm_result_ok,
     wait_for_info_protocol,
-    read_info_json,
-    find_source_server_cfg,
     set_source_hibernation,
     assert_source_server_empty,
-    wait_for_runtime_log_marker,
     wait_for_a2s_ready,
     wait_for_udp_closed,
 )
@@ -104,7 +104,27 @@ def _run_setup(env, server_name, port, install_dir):
     return result
 
 
-@pytest.mark.timeout(SETUP_TIMEOUT + 3 * START_TIMEOUT + STOP_TIMEOUT + 600)
+def _prepare_empty_competitive_server(install_dir):
+    """Configure this disposable fixture after Valve's competitive defaults."""
+    config_dir = Path(install_dir) / 'game/csgo/cfg'
+    server_cfg = config_dir / 'server.cfg'
+    assert server_cfg.is_file(), f'CS2 native server config missing: {server_cfg}'
+    override = config_dir / 'gamemode_competitive_server.cfg'
+    assert not (override.exists() or override.is_symlink()), f'Unexpected existing CS2 test override: {override}'
+    set_source_hibernation(server_cfg, enabled=False)
+    override.write_text('bot_quota 0\nbot_kick\nsv_hibernate_when_empty 0\n', encoding='utf-8')
+
+
+def _assert_empty_cs2_info(data, port):
+    """Require the actual managed A2S endpoint and expected empty native map."""
+    assert data.get('protocol') == 'a2s', data
+    assert data.get('port') == port, data
+    assert data.get('map') == 'de_dust2', data
+    assert data.get('bots') == 0, data
+    assert_source_server_empty(data)
+
+
+@pytest.mark.timeout(SETUP_TIMEOUT + 2 * START_TIMEOUT + STOP_TIMEOUT + 600)
 def test_counterstrike2_lifecycle(tmp_path):
     require_integration_opt_in()
     require_steamcmd_opt_in()
@@ -139,25 +159,20 @@ def test_counterstrike2_lifecycle(tmp_path):
 
     _run_setup(env, server_name, port, install_dir)
 
-    server_cfg_path = find_source_server_cfg(install_dir)
-    set_source_hibernation(server_cfg_path, enabled=False)
+    _prepare_empty_competitive_server(install_dir)
 
     run_and_assert_ok(env, server_name, "start")
 
     try:
         log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
-        wait_for_runtime_log_marker(
-            env,
-            server_name,
-            ["SV_ActivateServer", "VAC secure mode"],
-            START_TIMEOUT,
-        )
-
         run_and_assert_ok(env, server_name, "status")
 
-        wait_for_a2s_ready(query_host, port, 600, log_path=log_path)
-        awake_info = wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT)
-        assert_source_server_empty(awake_info)
+        # Native A2S, followed by the CLI's structured A2S result, proves
+        # readiness without depending on Source1 console strings or flush timing.
+        wait_for_a2s_ready(query_host, port, START_TIMEOUT, log_path=log_path)
+        awake_info = wait_for_info_protocol(
+            env, server_name, "a2s", START_TIMEOUT, expected_port=port)
+        _assert_empty_cs2_info(awake_info, port)
 
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
@@ -171,11 +186,12 @@ def test_counterstrike2_lifecycle(tmp_path):
 
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
-        )
-        assert_source_server_empty(_info_data)
+        _assert_empty_cs2_info(_info_data, port)
     finally:
-        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        stop_result = capture_alphagsm_stop(
+            env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT)
 
+    assert_alphagsm_result_ok(stop_result)
     wait_for_udp_closed(query_host, port, STOP_TIMEOUT)
+    final_status = run_and_assert_ok(env, server_name, 'status')
+    assert "isn't running" in final_status.stdout

@@ -25,9 +25,10 @@ Use `set dedicated 2` to restore Internet mode. These native mode values follow
 The disposable smoke and integration cases select LAN mode and still require
 real Quake status on the exact managed port, `mp_airfield`, positive capacity,
 and complete shutdown. These checks do not validate Internet authentication,
-public listing, or remote-player joining. The LAN correction needs a fresh CI
-pass after run `38775144746` reported a DemonWare DNS/authentication failure in
-the implicit Internet mode.
+public listing, or remote-player joining. The LAN smoke passed in
+[run 38812335342](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38812335342/job/116691510049),
+after run `38775144746` reported a DemonWare DNS/authentication failure in the
+implicit Internet mode.
 
 ## Quick Start
 

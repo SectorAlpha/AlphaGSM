@@ -1,6 +1,6 @@
 # Integration Test Status
 
-Last updated: 2026-10-15
+Last updated: 2026-10-16
 
 ## Summary
 
@@ -43,6 +43,16 @@ documented `ENABLED (AUTH)` / `ENABLED (BYO)` rows and CI now validates that
 
 ## Pending Replacement CI (Not Support States)
 
+- Run `38812335342` completed CS2 setup in both runtimes. The process recheck
+  then reported native A2S with `de_dust2`, two players and two bots, failing the
+  empty-server assertion. Docker stayed running after map spawn but never
+  emitted the Source 1 readiness strings required before the A2S probe.
+  Replacement disposable configurations apply zero-bot/awake rules in the native
+  competitive override after game-mode defaults; Docker readiness now goes
+  directly through real A2S and AlphaGSM info, still requiring the selected map,
+  managed port and zero players/bots. These replacements are pending remote CI.
+  CoDWaW's LAN smoke correction passed in
+  [batch 10](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38812335342/job/116691510049).
 - Run `38775144746` passed all 21 required anonymous Workshop integration suites
   in both runtimes and their matching smoke scenarios, including the corrected
   TF2/Wreckfest capture paths. All 331 expected artifacts were retained. The
@@ -319,7 +329,7 @@ support-state tables and do not change the summary counts or record a new pass.
 | minecraft_waterfall | Direct download |
 | medievalengineersserver | Docker runtime (Wine/Proton) — PASSED 2026-06-03; anonymous SteamCMD setup for app `367970` completes, AlphaGSM stages `instance-data/MedievalEngineers-Dedicated.cfg`, and validates `query`, `info`, and `info --json` on the generic `tcp` health surface at the managed game port. The host Proton path now uses Xvfb as the Docker path already did, preventing the dedicated server's immediate window-handle crash. |
 | miscreatedserver | Docker runtime (Wine/Proton) — PASSED 2026-05-29; the supported Linux path reads `user/server.log` and uses generic `tcp` health on the managed main port. CI now keeps one Docker-default lifecycle rather than duplicating an unproven host-Proton lane. |
-| codwawserver | Docker runtime — historical PASSED 2026-05-30; native Quake status on the managed game port. Run `38775144746` smoke failed during external DemonWare DNS/authentication. Replacement disposable smoke/integration explicitly select LAN dedicated mode and require map identity, capacity and complete shutdown; this validation is pending. Internet mode remains the new-server default and its authentication/client joins are not established by LAN CI. |
+| codwawserver | Docker runtime — LAN smoke PASSED 2026-10-15 in run `38812335342`, following the earlier external DemonWare DNS/authentication failure. Disposable smoke/integration explicitly select LAN dedicated mode and require map identity, native Quake status, capacity and complete shutdown. Internet mode remains the new-server default and its authentication/client joins are not established by LAN CI. |
 | mumbleserver | Docker runtime — PASSED 2026-05-18; standard integration/smoke use the shared `simple-tcp` Docker runtime because upstream does not publish an anonymous standalone Linux server binary. Process mode remains available for operators with a host `mumble-server`/`murmurd` package, but CI keeps one Docker-default lifecycle. |
 | mtaserver | Docker runtime — PASSED 2026-05-30; fresh focused integration and smoke now both pass on the branch-local `steamcmd-linux` runtime image once AlphaGSM auto-installs the official `baseconfig.tar.gz` payload, syncs `mods/deathmatch/mtaserver.conf` before launch, disables `ase` so no unmanaged `port + 123` listener is required, and aligns `query`, `info`, and `info --json` to MTA's real built-in HTTP listener on `httpport = port + 2` instead of the older stale ncurses/A2S assumptions |
 | mordserver | SteamCMD |

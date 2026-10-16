@@ -30,12 +30,12 @@ def test_lifecycle_timeout_preserves_download_and_each_readiness_budget(lifecycl
     item.add_marker(pytest.mark.integration)
     helpers.pytest_collection_modifyitems([item])
 
-    expected = lifecycle.SETUP_TIMEOUT + 3 * lifecycle.START_TIMEOUT + lifecycle.STOP_TIMEOUT + 600
+    expected = lifecycle.SETUP_TIMEOUT + 2 * lifecycle.START_TIMEOUT + lifecycle.STOP_TIMEOUT + 600
     # The global integration hook appends 1200s. The explicit function marker
     # must remain closest/first, which is the marker pytest-timeout consumes.
     assert item.get_closest_marker('timeout').args == (expected,)
     assert [mark.args[0] for mark in item.iter_markers('timeout')] == [expected, 1200]
-    assert expected == 6090
+    assert expected == 5490
     assert helpers.INTEGRATION_TEST_TIMEOUT == 1200
 
 
@@ -118,3 +118,128 @@ def test_setup_diagnostics_survive_missing_install_and_steam_logs(lifecycle, mon
     assert 'error' in payload['disk']
     assert payload['steam_logs'] == []
     assert payload['app_manifests'] == []
+
+
+@pytest.mark.parametrize('backend', ['process', 'docker'])
+@pytest.mark.parametrize('failure', [
+    None, 'a2s', 'a2s-stop', 'a2s-stop-timeout', 'bots', 'missingbots', 'humans',
+    'protocol', 'port', 'map', 'json', 'finalbots', 'stop',
+])
+def test_lifecycle_requires_native_empty_a2s_and_always_stops(
+        lifecycle, monkeypatch, tmp_path, backend, failure):
+    calls = []
+    helpers = importlib.import_module('tests.integration_tests.conftest')
+    monkeypatch.setenv('ALPHAGSM_TEST_RUNTIME_BACKEND', backend)
+    for name in ('require_integration_opt_in', 'require_steamcmd_opt_in',
+                 'require_command_for_runtime', 'write_config'):
+        monkeypatch.setattr(lifecycle, name, lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(lifecycle, 'alphagsm_env', lambda _path: {})
+    monkeypatch.setattr(lifecycle, 'pick_free_udp_port', lambda: 27015)
+    monkeypatch.setattr(lifecycle, 'detect_query_host', lambda: '127.0.0.1')
+    monkeypatch.setattr(lifecycle, 'log_command_result', lambda *_args, **_kwargs: None)
+
+    def setup(_env, name, port, install):
+        assert (name, port) == ('itcounterstrike2', 27015)
+        calls.append('setup')
+        config = install / 'game/csgo/cfg/server.cfg'
+        config.parent.mkdir(parents=True)
+        config.write_text('sv_hibernate_when_empty 1\n')
+
+    monkeypatch.setattr(lifecycle, '_run_setup', setup)
+    data = {'protocol': 'a2s', 'port': 27015, 'map': 'de_dust2', 'players': 0, 'bots': 0}
+
+    def run(_env, name, action, *args, **kwargs):
+        assert name == 'itcounterstrike2'
+        calls.append(action)
+        if action == 'stop':
+            assert kwargs == {'timeout': lifecycle.STOP_TIMEOUT}
+            if failure == 'a2s-stop-timeout':
+                raise subprocess.TimeoutExpired(['alphagsm', name, action], kwargs['timeout'])
+        if action == 'start':
+            config = tmp_path / 'server/game/csgo/cfg'
+            assert 'sv_hibernate_when_empty 0' in (config / 'server.cfg').read_text()
+            assert (config / 'gamemode_competitive_server.cfg').read_text() == (
+                'bot_quota 0\nbot_kick\nsv_hibernate_when_empty 0\n')
+        if action == 'info':
+            if args:
+                final = dict(data)
+                if failure == 'json':
+                    final['protocol'] = 'tcp'
+                elif failure == 'finalbots':
+                    final['bots'] = 2
+                text = json.dumps(final)
+            else:
+                text = 'Players     : 0/16'
+        elif action == 'status':
+            text = "Server isn't running" if 'stop' in calls else 'Server is running'
+        elif action == 'query':
+            text = 'Server is responding'
+        else:
+            text = 'ok'
+        status = 3 if action == 'stop' and failure in ('stop', 'a2s-stop') else 0
+        return subprocess.CompletedProcess([action], status, text, 'stop failed' if status else '')
+
+    def a2s(host, port, timeout, log_path):
+        assert (host, port, timeout) == ('127.0.0.1', 27015, lifecycle.START_TIMEOUT)
+        assert log_path.name.endswith('itcounterstrike2.log')
+        calls.append('native-a2s')
+        if failure in ('a2s', 'a2s-stop', 'a2s-stop-timeout'):
+            pytest.fail('native A2S unavailable')
+
+    def ready(_env, name, protocol, timeout, expected_port):
+        assert (name, protocol, timeout, expected_port) == (
+            'itcounterstrike2', 'a2s', lifecycle.START_TIMEOUT, 27015)
+        calls.append('ready-info')
+        overrides = {
+            'bots': {'bots': 2}, 'humans': {'players': 1}, 'protocol': {'protocol': 'tcp'},
+            'port': {'port': 27016}, 'map': {'map': 'de_mirage'},
+        }
+        result = dict(data, **overrides.get(failure, {}))
+        if failure == 'missingbots':
+            del result['bots']
+        return result
+
+    def closed(host, port, timeout):
+        assert (host, port, timeout) == ('127.0.0.1', 27015, lifecycle.STOP_TIMEOUT)
+        calls.append('udp-closed')
+
+    monkeypatch.setattr(lifecycle, 'run_alphagsm', run)
+    monkeypatch.setattr(helpers, 'run_alphagsm', run)
+    monkeypatch.setattr(helpers, 'log_command_result', lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(lifecycle, 'run_and_assert_ok', run)
+    monkeypatch.setattr(lifecycle, 'wait_for_a2s_ready', a2s)
+    monkeypatch.setattr(lifecycle, 'wait_for_info_protocol', ready)
+    monkeypatch.setattr(lifecycle, 'wait_for_udp_closed', closed)
+    # An obsolete console-readiness prerequisite must not hide a real A2S
+    # response behind Source1 marker strings or buffered Source2 stdout.
+    monkeypatch.setattr(lifecycle, 'wait_for_runtime_log_marker', lambda *_args, **_kwargs: (
+        pytest.fail('obsolete log gate called')), raising=False)
+
+    if failure in ('a2s', 'a2s-stop', 'a2s-stop-timeout'):
+        with pytest.raises(pytest.fail.Exception, match='native A2S unavailable'):
+            lifecycle.test_counterstrike2_lifecycle(tmp_path)
+    elif failure:
+        with pytest.raises(AssertionError):
+            lifecycle.test_counterstrike2_lifecycle(tmp_path)
+    else:
+        lifecycle.test_counterstrike2_lifecycle(tmp_path)
+        assert calls == ['create', 'setup', 'start', 'status', 'native-a2s', 'ready-info',
+                         'query', 'info', 'info', 'stop', 'udp-closed', 'status']
+    assert calls.count('stop') == 1
+    if failure:
+        assert 'udp-closed' not in calls
+
+
+@pytest.mark.parametrize('missing', ['cfg-directory', 'server-config', 'existing-override'])
+def test_competitive_fixture_refuses_missing_or_preexisting_native_config(lifecycle, tmp_path, missing):
+    config = tmp_path / 'game/csgo/cfg'
+    if missing != 'cfg-directory':
+        config.mkdir(parents=True)
+    if missing == 'existing-override':
+        (config / 'server.cfg').write_text('sv_hibernate_when_empty 1\n')
+        (config / 'gamemode_competitive_server.cfg').write_text('operator config\n')
+    with pytest.raises(AssertionError):
+        lifecycle._prepare_empty_competitive_server(tmp_path)
+    if missing == 'existing-override':
+        assert (config / 'gamemode_competitive_server.cfg').read_text() == 'operator config\n'
+        assert (config / 'server.cfg').read_text() == 'sv_hibernate_when_empty 1\n'

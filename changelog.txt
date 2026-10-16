@@ -7,6 +7,11 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-16
+- CS2 CI: apply empty-server rules after native competitive defaults and require
+  live A2S readiness directly instead of waiting for Source 1 log markers.
+  Smoke and integration still require the selected map and zero players/bots.
+
 2026-10-15
 - CoDWaW: expose explicit LAN/Internet dedicated modes while preserving legacy
   launch arguments. Disposable CI uses LAN mode with native map/status and

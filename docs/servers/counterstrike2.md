@@ -69,11 +69,22 @@ Integration setup now
 allows one bounded hour for that download. A timeout fails the test and retains
 captured output, bounded Steam content-log tails, download counters and free
 disk space; it no longer starts a short retry against a possibly active
-SteamCMD child or reports a timeout as a skip. The longer integration setup
-budget still needs a fresh CI lifecycle pass. This lifecycle also has its own
-outer test deadline covering setup, all three readiness waits, shutdown and
+SteamCMD child or reports a timeout as a skip. Both runtime installs completed
+in [run 38812335342](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38812335342),
+revealing separate readiness and bot-population failures. This lifecycle has its own
+outer test deadline covering setup, readiness waits, shutdown and
 command overhead, so the ordinary 20-minute integration default cannot abort
 the download first.
+
+Disposable smoke and integration installs now write
+`game/csgo/cfg/gamemode_competitive_server.cfg` with `bot_quota 0`, `bot_kick`
+and `sv_hibernate_when_empty 0`. CS2 executes game-mode defaults after
+`server.cfg`; the native override keeps the test empty and awake after those
+defaults. See [Valve's game-mode configuration order](https://developer.valvesoftware.com/wiki/Counter-Strike:_Global_Offensive/Game_Modes).
+These rules apply to the temporary test installation. Operator configuration
+is unchanged. Integration readiness requires real A2S and AlphaGSM info responses,
+including `de_dust2`, the managed port, and zero players/bots, rather than
+depending on Source 1 startup log strings. Replacement CI validation is pending.
 
 ## Notes
 
