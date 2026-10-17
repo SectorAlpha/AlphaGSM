@@ -15,6 +15,11 @@ Historical detail lives in git history. Keep this file focused on release-facing
   the tour never starts games or enables reporting/remote management.
 - Tests: add isolated real-terminal CLI integration/smoke coverage for first-run
   skip/replay, local creation and selector/reserved-name overwrite prevention.
+- CI: replay complete native smoke configuration blocks in the unit contract,
+  preserving multiline writes and excluding runtime JSON output.
+- CS2 CI: apply empty-server rules after native competitive defaults and require
+  live A2S readiness directly instead of waiting for Source 1 log markers.
+  Smoke and integration still require the selected map and zero players/bots.
 
 2026-10-15
 - Sector Alpha: never infer a player port from Trackmania XML-RPC, Enshrouded
@@ -52,32 +57,6 @@ Historical detail lives in git history. Keep this file focused on release-facing
   binding preserves existing permissions and never enables capabilities itself.
 - Sector Alpha: retry reporting after temporary configuration-lock contention
   during long lifecycle operations, keeping the reporting thread alive.
-
-2026-10-13
-- Sector Alpha: add an optional outbound HTTPS agent with separate reporting and
-  management opt-ins, exact local server bindings, private scoped credentials,
-  and durable results that prevent replay of lifecycle effects after a crash.
-- Remote actions are limited to status/start/stop/restart. Normal stop can fall
-  back to forceful termination; restart requires a running server. Both
-  capabilities remain disabled until explicitly enabled by the operator.
-- Public query interface: reviewed A2S_INFO and Minecraft Java SLP profiles with
-  pinned numerical destinations, total deadlines, bounded fragments/decompression
-  and JSON framing, and scalar observations without player names or credentials.
-- Credential rotation: independently replace reporting or management keys through
-  hidden local prompts, retaining existing bindings and capability opt-ins.
-- Lifecycle: POSIX port checks ignore closed TCP connections in TIME_WAIT while
-  continuing to reject active listeners; Windows keeps exclusive port probes.
-- Packaging/lint/coverage include the new agent package. Agent credential storage
-  currently supports POSIX; Windows enrollment fails closed pending an ACL adapter.
-
-2026-10-16
-- CI: replay complete native smoke configuration blocks in the unit contract,
-  preserving multiline writes and excluding runtime JSON output.
-- CS2 CI: apply empty-server rules after native competitive defaults and require
-  live A2S readiness directly instead of waiting for Source 1 log markers.
-  Smoke and integration still require the selected map and zero players/bots.
-
-2026-10-15
 - CoDWaW: expose explicit LAN/Internet dedicated modes while preserving legacy
   launch arguments. Disposable CI uses LAN mode with native map/status and
   shutdown checks, avoiding external DemonWare DNS/authentication dependencies.
@@ -186,6 +165,21 @@ Historical detail lives in git history. Keep this file focused on release-facing
   scheduled coverage and normal PR routing; keep regression validation on CI.
 
 2026-10-13
+- Sector Alpha: add an optional outbound HTTPS agent with separate reporting and
+  management opt-ins, exact local server bindings, private scoped credentials,
+  and durable results that prevent replay of lifecycle effects after a crash.
+- Remote actions are limited to status/start/stop/restart. Normal stop can fall
+  back to forceful termination; restart requires a running server. Both
+  capabilities remain disabled until explicitly enabled by the operator.
+- Public query interface: reviewed A2S_INFO and Minecraft Java SLP profiles with
+  pinned numerical destinations, total deadlines, bounded fragments/decompression
+  and JSON framing, and scalar observations without player names or credentials.
+- Credential rotation: independently replace reporting or management keys through
+  hidden local prompts, retaining existing bindings and capability opt-ins.
+- Lifecycle: POSIX port checks ignore closed TCP connections in TIME_WAIT while
+  continuing to reject active listeners; Windows keeps exclusive port probes.
+- Packaging/lint/coverage include the new agent package. Agent credential storage
+  currently supports POSIX; Windows enrollment fails closed pending an ACL adapter.
 - tModLoader: add public-release dedicated-server installation, contained world
   configuration and native Workshop package activation, with Census command
   execution verified through process and Docker lifecycle tests.
