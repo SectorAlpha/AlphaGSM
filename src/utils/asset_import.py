@@ -126,7 +126,10 @@ def _zip_entries(bundle):
         is_directory = member.is_dir()
         if stat.S_IFMT(mode) not in (0, stat.S_IFREG, stat.S_IFDIR):
             raise ServerError("Unsafe nonregular archive member: %s" % member.filename)
-        name = _portable_name(member.filename, directory=is_directory)
+        # ZipInfo.filename rewrites "\\" to "/" on Windows before callers see it.
+        # orig_filename keeps the stored archive name on every host.
+        raw_name = getattr(member, "orig_filename", None) or member.filename
+        name = _portable_name(raw_name, directory=is_directory)
         if name:
             _register_name(names, name, directory=is_directory)
             if not is_directory:

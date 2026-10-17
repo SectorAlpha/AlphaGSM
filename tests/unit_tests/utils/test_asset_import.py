@@ -153,13 +153,23 @@ def test_case_insensitive_recipe_normalizes_selected_paths(tmp_path):
     assert (tmp_path / "server/game/halo3/halo3.dll").read_text() == "engine"
 
 
+def _zip_member(name):
+    """Store *name* without ZipInfo rewriting Windows separators."""
+
+    info = zipfile.ZipInfo(filename="placeholder")
+    info.filename = name
+    info.orig_filename = name
+    info.date_time = (1980, 1, 1, 0, 0, 0)
+    return info
+
+
 @pytest.mark.parametrize("unsafe", ["../escape", "/absolute", "C:/drive", "halo3/CON.dll", "halo3/bad?.dll", "halo3/trailing. ", "halo3\\bad.dll"])
 def test_archive_rejects_unsafe_paths(tmp_path, unsafe):
     archive = tmp_path / "assets.zip"
     with zipfile.ZipFile(archive, "w") as bundle:
         bundle.writestr("halo3/halo3.dll", b"engine")
         bundle.writestr("halo3/maps/shared.map", b"maps")
-        bundle.writestr(unsafe, b"unsafe")
+        bundle.writestr(_zip_member(unsafe), b"unsafe")
 
     with pytest.raises(ServerError, match="[Uu]nsafe|portable"):
         asset_import.import_assets(archive, tmp_path / "server", RECIPE)

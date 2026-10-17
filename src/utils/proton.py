@@ -536,6 +536,16 @@ def get_container_spec(
     return spec
 
 
+def host_independent_start_command(server, get_start_command):
+    """Return a Docker start command without a local Wine or Proton install.
+
+    Process launches still fail when neither runtime is installed. Manifest
+    generation only needs the underlying dedicated-server command.
+    """
+
+    return _get_container_start_command(server, get_start_command)
+
+
 def _get_container_start_command(server, get_start_command):
     """Return a start command suitable for Docker manifest generation.
 

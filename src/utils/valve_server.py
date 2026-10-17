@@ -19,13 +19,10 @@ from utils.simple_kv_config import rewrite_space_config, rewrite_single_token_sp
 from utils.gamemodules import common as gamemodule_common
 from utils.settings import settings
 import utils.steamcmd as steamcmd
+from utils.valve_console import parse_source_bool_cvar, parse_source_console_status
 
 STEAMCLIENT_DST = os.path.expanduser("~/.steam/sdk64/steamclient.so")
 STEAMCLIENT_32_DST = os.path.expanduser("~/.steam/sdk32/steamclient.so")
-_SOURCE_STATUS_PLAYERS_RE = re.compile(
-    r"(?P<players>\d+) humans, (?P<bots>\d+) bots \((?P<max_players>\d+) max\)"
-)
-_SOURCE_BOOL_CVAR_RE = re.compile(r'"?(?P<name>[^"=]+)"?\s*=\s*"?(?P<value>[01])"?')
 _SOURCE_UNKNOWN_COMMAND_RE = re.compile(r'^Unknown command "(?P<name>[^"]+)"$', re.MULTILINE)
 
 _COMMAND_ARGS = gamemodule_common.build_setup_update_restart_command_args(
@@ -214,51 +211,6 @@ def send_console_command_and_collect_response(server, command, parser, timeout=5
     return parsed
 
 
-def parse_source_console_status(output):
-    """Parse the latest Source ``status`` block from console log output."""
-
-    lines = output.splitlines()
-    status_indexes = [index for index, line in enumerate(lines) if line.strip() == "status"]
-    if not status_indexes:
-        status_indexes = [0]
-
-    for start in reversed(status_indexes):
-        parsed = {}
-        for raw_line in lines[start + 1 :]:
-            line = raw_line.strip()
-            if not line:
-                continue
-            if line == "status" and parsed:
-                break
-            if line.startswith("hostname:"):
-                parsed["name"] = line.split(":", 1)[1].strip()
-            elif line.startswith("version :"):
-                parsed["version"] = line.split(":", 1)[1].strip()
-            elif line.startswith("udp/ip  :"):
-                parsed["address"] = line.split(":", 1)[1].strip()
-            elif line.startswith("map     :"):
-                map_value = line.split(":", 1)[1].strip()
-                parsed["map"] = map_value.split(" at:", 1)[0].strip()
-            elif line.startswith("players :"):
-                match = _SOURCE_STATUS_PLAYERS_RE.search(line.split(":", 1)[1].strip())
-                if match is not None:
-                    parsed.update(
-                        {
-                            "players": int(match.group("players")),
-                            "bots": int(match.group("bots")),
-                            "max_players": int(match.group("max_players")),
-                        }
-                    )
-            elif line.startswith("tags    :"):
-                parsed["tags"] = line.split(":", 1)[1].strip()
-            elif line.startswith("steamid :"):
-                parsed["steamid"] = line.split(":", 1)[1].strip()
-
-        if {"name", "version", "map", "players", "bots", "max_players"}.issubset(parsed):
-            return parsed
-    return None
-
-
 def source_console_status(server, timeout=5.0):
     """Request and parse a Source ``status`` block from the live console."""
 
@@ -294,22 +246,6 @@ def source_query_address(server):
         int(server.data.get("queryport", server.data["port"])),
         "a2s",
     )
-
-
-def parse_source_bool_cvar(output, cvar_name):
-    """Parse a Source boolean cvar response from console log output."""
-
-    for raw_line in reversed(output.splitlines()):
-        line = raw_line.strip()
-        if not line:
-            continue
-        match = _SOURCE_BOOL_CVAR_RE.search(line)
-        if match is None:
-            continue
-        if match.group("name").strip() != cvar_name:
-            continue
-        return match.group("value") == "1"
-    return None
 
 
 def source_hibernation_allowed(server, timeout=5.0):

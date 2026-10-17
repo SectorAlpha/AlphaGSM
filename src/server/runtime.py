@@ -10,6 +10,7 @@ but Docker is only selected when configuration opts into it.
 
 from __future__ import annotations
 
+import builtins
 from collections import deque
 import copy
 import contextvars
@@ -1410,7 +1411,7 @@ def build_container_spec(
         list(requirements.get("mounts") or []),
         _mount_snapshot=mount_snapshot,
     )
-    command, cwd = get_start_command(server)
+    command, cwd = _start_command_for_container_spec(server, get_start_command)
     command, mapped_cwd, resolved_mounts = resolve_container_launch_context(
         server,
         mounts=requirements.get("mounts"),
@@ -1518,6 +1519,21 @@ def _map_container_path_to_host(mounts, container_path):
             return source_abs
         return os.path.join(source_abs, relative_path)
     return None
+
+
+def _start_command_for_container_spec(server, get_start_command):
+    """Build a container command when the host has no Wine or Proton.
+
+    This module's ``RuntimeError`` is the container-spec error, not the
+    missing-runtime error raised by ``utils.proton``.
+    """
+
+    try:
+        return get_start_command(server)
+    except builtins.RuntimeError as exc:
+        if "Neither Wine nor Proton-GE is available" not in str(exc):
+            raise
+    return proton.host_independent_start_command(server, get_start_command)
 
 
 def resolve_container_launch_context(

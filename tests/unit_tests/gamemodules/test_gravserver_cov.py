@@ -40,7 +40,9 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
     mod.configure(server, ask=True)
 
 
-def test_get_start_command(tmp_path):
+def test_get_start_command(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod.proton, "find_wine", lambda: "wine")
+    monkeypatch.setattr(mod.proton, "find_proton", lambda: None)
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "CAGGameServer-Win32-Shipping"

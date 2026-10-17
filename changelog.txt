@@ -8,6 +8,10 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-17
+- CI: keep shared Valve helpers under the module line limit, refresh the
+  module parity report, build Docker commands when the host has no Wine or
+  Proton, store the FOUNDRY example as app.cfg, and reject backslash names
+  in owned-asset archives on Windows.
 - GRAV lifecycle: anonymous Steam app 332500 mounts no depot. An entitled
   profile installs the Win32 dedicated server. Linux launches
   Binaries/Win32/CAGGameServer-Win32-Shipping.exe with Wine. The server
