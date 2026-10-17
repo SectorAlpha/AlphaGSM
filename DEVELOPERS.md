@@ -997,7 +997,8 @@ see [docs/steamcmd-auth.md](docs/steamcmd-auth.md) for their scope and validatio
 limits. Live Steam-auth and BYO lifecycle tests live in `local_tests/` and run
 through `./run_local_tests.sh`. Disposable integration files default to the
 checkout's `.local-tests/` directory. Set `ALPHAGSM_LOCAL_WORK_ROOT` to put
-that tree on another disk. SteamCMD still uses the configured Steam location.
+that tree on another disk. SteamCMD uses `steamcmd_path` when set, and
+otherwise the Steam client directory for Linux, macOS, or Windows.
 `pytest.ini` excludes that directory
 from normal collection, and CI must not invoke the script. Profile directories,
 passwords, and tokens stay gitignored. When AlphaGSM launches a game container,

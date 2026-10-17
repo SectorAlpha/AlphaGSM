@@ -18,13 +18,110 @@ from server.modsupport.errors import ModSupportError
 _CONFIGURED_STEAMCMD_DIR = settings.user.getsection("downloader").getsection("steamcmd").get(
     "steamcmd_path"
 )
-_DEFAULT_STEAMCMD_DIR = (
-    "~/.local/share/Steam/"
-    if os.path.isdir(os.path.expanduser("~/.local/share/Steam/"))
-    else "~/Steam/"
+_LINUX_STEAM_CANDIDATES = (
+    "~/.local/share/Steam",
+    "~/.steam/root",
+    "~/.steam/steam",
 )
-STEAMCMD_DIR = os.path.expanduser(_CONFIGURED_STEAMCMD_DIR or _DEFAULT_STEAMCMD_DIR)
-STEAMCMD_EXE = os.path.join(STEAMCMD_DIR, "steamcmd.sh")
+_MAC_STEAM_CANDIDATE = "~/Library/Application Support/Steam"
+_STEAM_FALLBACK = "~/Steam"
+
+
+def _windows_registry_steam_dir():
+    """Return the Steam client directory recorded in the Windows registry."""
+
+    if os.name != "nt":
+        return None
+    import winreg  # pylint: disable=import-outside-toplevel
+
+    queries = (
+        (winreg.HKEY_CURRENT_USER, r"Software\Valve\Steam", "SteamPath"),
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath"),
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Valve\Steam", "InstallPath"),
+    )
+    for hive, subkey, value_name in queries:
+        try:
+            with winreg.OpenKey(hive, subkey) as key:
+                value, _kind = winreg.QueryValueEx(key, value_name)
+        except OSError:
+            continue
+        if value:
+            return os.path.normpath(str(value))
+    return None
+
+
+def _steam_dir_candidates(platform):
+    """Return Steam client directories to probe for *platform*, in order."""
+
+    if platform == "windows":
+        candidates = []
+        registry = _windows_registry_steam_dir()
+        if registry:
+            candidates.append(registry)
+        seen = {os.path.normcase(os.path.normpath(path)) for path in candidates}
+        for key in ("ProgramFiles(x86)", "ProgramFiles"):
+            root = os.environ.get(key)
+            if not root:
+                continue
+            candidate = os.path.join(root, "Steam")
+            marker = os.path.normcase(os.path.normpath(candidate))
+            if marker in seen:
+                continue
+            seen.add(marker)
+            candidates.append(candidate)
+        return candidates
+    if platform == "macos":
+        return [_MAC_STEAM_CANDIDATE]
+    return list(_LINUX_STEAM_CANDIDATES)
+
+
+def _directory_with_separator(path):
+    """Return *path* expanded and ending in a path separator."""
+
+    expanded = os.path.expanduser(path)
+    if expanded.endswith(("/", "\\")):
+        return expanded
+    return os.path.join(expanded, "")
+
+
+def default_steamcmd_dir(platform=None):
+    """Return the Steam directory for SteamCMD on this operating system.
+
+    An existing client directory wins. Linux checks ``~/.local/share/Steam``,
+    ``~/.steam/root``, and ``~/.steam/steam``. macOS checks
+    ``~/Library/Application Support/Steam``. Windows checks the Steam
+    registry path, then Program Files (x86) and Program Files. The fallback
+    is ``~/Steam``, except on macOS, where the Library path is the fallback.
+    """
+
+    selected = platform or PLATFORM
+    for candidate in _steam_dir_candidates(selected):
+        expanded = os.path.expanduser(candidate)
+        if os.path.isdir(expanded):
+            return _directory_with_separator(expanded)
+    if selected == "macos":
+        return _directory_with_separator(_MAC_STEAM_CANDIDATE)
+    return _directory_with_separator(_STEAM_FALLBACK)
+
+
+def resolve_steamcmd_dir(configured=None, platform=None):
+    """Return ``steamcmd_path`` when set, otherwise the detected directory."""
+
+    if configured:
+        return os.path.expanduser(str(configured))
+    return default_steamcmd_dir(platform)
+
+
+def steamcmd_executable_name(platform=None):
+    """Return ``steamcmd.exe`` on Windows and ``steamcmd.sh`` elsewhere."""
+
+    if (platform or PLATFORM) == "windows":
+        return "steamcmd.exe"
+    return "steamcmd.sh"
+
+
+STEAMCMD_DIR = resolve_steamcmd_dir(_CONFIGURED_STEAMCMD_DIR)
+STEAMCMD_EXE = os.path.join(STEAMCMD_DIR, steamcmd_executable_name())
 STEAMCMD_URL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
 STEAMCMD_SCRIPTS = os.path.expanduser(
     settings.user.getsection("steamcmd").get(

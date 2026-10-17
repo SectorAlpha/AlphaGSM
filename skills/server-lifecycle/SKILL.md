@@ -266,8 +266,9 @@ Steam-auth-gated installs should grow into this same provider-backed contract.
 When running local integration or smoke verification, keep disposable server
 files under the checkout's `.local-tests/` directory. That directory is
 gitignored. Set `ALPHAGSM_LOCAL_WORK_ROOT` when the checkout disk is too
-small. SteamCMD still uses `steamcmd_path` from settings, or
-`~/.local/share/Steam/` when that directory exists, otherwise `~/Steam/`.
+small. SteamCMD uses `steamcmd_path` when set. Otherwise it detects the
+Steam client directory for Linux, macOS, or Windows, and falls back to
+`~/Steam` (`~/Library/Application Support/Steam` on macOS).
 
 If a game server module genuinely does not implement one of these commands,
 the module itself needs to be fixed to provide a meaningful result (e.g. TCP
@@ -523,7 +524,7 @@ SteamCMD game servers can be very large (1–15 GB each). When disk space is lim
   (`make integration-test` does this automatically via `run_integration_tests.sh`.)
 - Check free space before each test with `df -h /`.
 - If a test installs a large game and fails, clean up before retrying.
-- Consider keeping a SteamCMD download cache (`~/Steam/steamapps/`) across runs to avoid re-downloading unchanged files — but delete per-server install dirs from the work dir.
+- Consider keeping a SteamCMD download cache (`steamapps/` under the detected Steam directory) across runs to avoid re-downloading unchanged files — but delete per-server install dirs from the work dir.
 
 ## Files To Inspect
 

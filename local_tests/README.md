@@ -40,8 +40,11 @@ Disposable servers go under `<checkout>/.local-tests/local-auth/` unless you
 pass `--work-dir`. That path is gitignored. Do not point it at the git
 checkout. Set `ALPHAGSM_LOCAL_WORK_ROOT` when the checkout disk is too small.
 The integration runner refuses a work directory outside that root. SteamCMD
-keeps the configured Steam location (`steamcmd_path`, otherwise
-`~/.local/share/Steam/` when that directory exists, else `~/Steam/`).
+keeps `steamcmd_path` when it is set. Otherwise it uses the Steam client
+directory for this operating system: Linux `~/.local/share/Steam` or the
+`~/.steam` links, macOS `~/Library/Application Support/Steam`, Windows the
+Steam registry path or Program Files. `~/Steam` is the fallback, except on
+macOS.
 
 The same login is used when AlphaGSM itself is the host process and game
 servers use Docker. Set `ALPHAGSM_LOCAL_RUNTIME=docker` for that integration

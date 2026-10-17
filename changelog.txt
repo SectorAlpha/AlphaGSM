@@ -8,6 +8,13 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-17
+- SteamCMD: detect the default Steam directory from the host operating
+  system. Linux keeps `~/.local/share/Steam` and the `~/.steam` links,
+  macOS uses `~/Library/Application Support/Steam`, and Windows uses the
+  Steam registry path or Program Files. `~/Steam` remains the fallback
+  except on macOS. An explicit `steamcmd_path` still wins. The installer
+  remains the Linux SteamCMD client, using `steamcmd.exe` only as the
+  Windows executable name.
 - Local tests: disposable server files default to the checkout's
   `.local-tests/` directory. Set `ALPHAGSM_LOCAL_WORK_ROOT` to place that
   tree on another disk. SteamCMD still uses the configured Steam location.
