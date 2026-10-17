@@ -12,8 +12,8 @@ SERVERS=""
 PROFILE=""
 ASSETS=""
 STATE_DIR="${ALPHAGSM_LOCAL_AUTH_STATE:-}"
-SSD_LOCAL_ROOT="/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers"
-WORK_DIR="${ALPHAGSM_LOCAL_WORK_DIR:-$SSD_LOCAL_ROOT/local-auth}"
+LOCAL_WORK_ROOT="${ALPHAGSM_LOCAL_WORK_ROOT:-$ROOT/.local-tests}"
+WORK_DIR="${ALPHAGSM_LOCAL_WORK_DIR:-$LOCAL_WORK_ROOT/local-auth}"
 CONFIRM_ALL=0
 PUBLIC=0
 
@@ -43,8 +43,11 @@ Options:
                            server. Do not combine this with --profile or
                            --assets. This does not log in to Steam.
   --work-dir PATH          Disposable server files. Default:
-                           the SSD .local-tests/byo-file-helpers/local-auth
-                           directory. Integration refuses any other disk.
+                           <checkout>/.local-tests/local-auth.
+                           Set ALPHAGSM_LOCAL_WORK_ROOT to put that tree
+                           on another disk. Integration refuses a path
+                           outside that root. SteamCMD uses its configured
+                           Steam location, not this directory.
   --help                   Show this help.
 
 Examples:
@@ -200,6 +203,7 @@ export ALPHAGSM_LOCAL_PUBLIC="$PUBLIC"
 export ALPHAGSM_LOCAL_AUTH_PROFILE="$PROFILE"
 export ALPHAGSM_LOCAL_ASSETS="$ASSETS"
 export ALPHAGSM_LOCAL_AUTH_STATE="$STATE_DIR"
+export ALPHAGSM_LOCAL_WORK_ROOT="$LOCAL_WORK_ROOT"
 export ALPHAGSM_LOCAL_WORK_DIR="$WORK_DIR"
 
 cd "$ROOT"

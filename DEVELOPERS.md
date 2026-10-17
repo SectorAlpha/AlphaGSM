@@ -995,7 +995,10 @@ PYTHONPATH=.:src python3 scripts/sync_server_guide_settings.py
 SteamCMD session profiles support explicit owned-file acquisition on Linux;
 see [docs/steamcmd-auth.md](docs/steamcmd-auth.md) for their scope and validation
 limits. Live Steam-auth and BYO lifecycle tests live in `local_tests/` and run
-through `./run_local_tests.sh`. `pytest.ini` excludes that directory
+through `./run_local_tests.sh`. Disposable integration files default to the
+checkout's `.local-tests/` directory. Set `ALPHAGSM_LOCAL_WORK_ROOT` to put
+that tree on another disk. SteamCMD still uses the configured Steam location.
+`pytest.ini` excludes that directory
 from normal collection, and CI must not invoke the script. Profile directories,
 passwords, and tokens stay gitignored. When AlphaGSM launches a game container,
 the private `steam-auth/` directory is not a container mount, and a mount that

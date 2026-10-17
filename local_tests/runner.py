@@ -23,9 +23,20 @@ def server_name(module_name):
 
 
 RESERVED_PORTS = frozenset({27016, 27960, 27961, 28960, 36736, 41000, 41001, 41002, 42202, 43511, 47183, 49440, 50333, 51535, 53777, 56171, 57831, 58844})
-SSD_LOCAL_ROOT = Path(
-    "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests"
-)
+
+
+def local_work_root():
+    """Return the directory local integration is allowed to write.
+
+    The default is this checkout's ``.local-tests`` directory.
+    ``ALPHAGSM_LOCAL_WORK_ROOT`` moves that tree to another disk.
+    SteamCMD keeps its configured Steam location.
+    """
+
+    override = os.environ.get("ALPHAGSM_LOCAL_WORK_ROOT", "").strip()
+    if override:
+        return Path(override).expanduser().resolve()
+    return (REPO_ROOT / ".local-tests").resolve()
 
 
 def free_port():
@@ -212,10 +223,11 @@ def _assert_port_free(port):
 def lifecycle(module_name, *, profile, assets, state_dir, work_dir, ready_timeout):
     """Create, set up, query, and stop one server through AlphaGSM commands."""
 
-    work_path = Path(work_dir).resolve()
-    if not work_path.is_relative_to(SSD_LOCAL_ROOT.resolve()):
+    root = local_work_root()
+    work_path = Path(work_dir).expanduser().resolve()
+    if not work_path.is_relative_to(root):
         raise AssertionError(
-            "Local integration work must stay under " + str(SSD_LOCAL_ROOT)
+            "Local integration work must stay under " + str(root)
         )
     home_dir = work_path / server_name(module_name)
     install_dir = home_dir / "server"

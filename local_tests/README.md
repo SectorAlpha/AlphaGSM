@@ -36,8 +36,12 @@ name. The profile directory stays in the AlphaGSM state directory, normally
 somewhere else. That directory must be a Linux filesystem that stores Unix
 owners and modes.
 
-Disposable servers go under `.local-tests/local-auth/` unless you pass
-`--work-dir`. That path is gitignored. Do not point it at the git checkout.
+Disposable servers go under `<checkout>/.local-tests/local-auth/` unless you
+pass `--work-dir`. That path is gitignored. Do not point it at the git
+checkout. Set `ALPHAGSM_LOCAL_WORK_ROOT` when the checkout disk is too small.
+The integration runner refuses a work directory outside that root. SteamCMD
+keeps the configured Steam location (`steamcmd_path`, otherwise
+`~/.local/share/Steam/` when that directory exists, else `~/Steam/`).
 
 The same login is used when AlphaGSM itself is the host process and game
 servers use Docker. Set `ALPHAGSM_LOCAL_RUNTIME=docker` for that integration

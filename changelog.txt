@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-17
+- Local tests: disposable server files default to the checkout's
+  `.local-tests/` directory. Set `ALPHAGSM_LOCAL_WORK_ROOT` to place that
+  tree on another disk. SteamCMD still uses the configured Steam location.
 - CI: keep shared Valve helpers under the module line limit, refresh the
   module parity report, build Docker commands when the host has no Wine or
   Proton, store the FOUNDRY example as app.cfg, and reject backslash names

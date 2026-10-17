@@ -3024,7 +3024,7 @@ def test_container_runtime_rejects_manager_container_only_mount_paths(monkeypatc
         lambda: [
             {
                 "source": "/host/alphagsm",
-                "destination": "/home/cosmosquark/sector_alpha/github/AlphaGSM/.alphagsm-docker",
+                "destination": "/srv/alphagsm-docker",
             }
         ],
     )
@@ -3048,7 +3048,7 @@ def test_container_runtime_allows_mount_paths_under_manager_identity_root(monkey
             "env": {},
             "mounts": [
                 {
-                    "source": "/home/cosmosquark/sector_alpha/github/AlphaGSM/.alphagsm-docker/servers/scp",
+                    "source": "/srv/alphagsm-docker/servers/scp",
                     "target": "/srv/server",
                     "mode": "rw",
                 },
@@ -3081,7 +3081,7 @@ def test_container_runtime_allows_mount_paths_under_manager_identity_root(monkey
         lambda: [
             {
                 "source": "/host/alphagsm",
-                "destination": "/home/cosmosquark/sector_alpha/github/AlphaGSM/.alphagsm-docker",
+                "destination": "/srv/alphagsm-docker",
             }
         ],
     )
@@ -3106,7 +3106,7 @@ def test_build_container_spec_rejects_manager_container_only_paths_before_start_
         lambda: [
             {
                 "source": "/host/alphagsm",
-                "destination": "/home/cosmosquark/sector_alpha/github/AlphaGSM/.alphagsm-docker",
+                "destination": "/srv/alphagsm-docker",
             }
         ],
     )

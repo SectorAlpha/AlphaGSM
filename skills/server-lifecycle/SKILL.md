@@ -263,9 +263,11 @@ Steam-auth-gated installs should grow into this same provider-backed contract.
 - Prefer evidence-backed notes that make that future migration straightforward
   once the shared SteamCMD auth profile work lands.
 
-When running local integration or smoke verification, prefer the repository's
-shared scratch root under
-
+When running local integration or smoke verification, keep disposable server
+files under the checkout's `.local-tests/` directory. That directory is
+gitignored. Set `ALPHAGSM_LOCAL_WORK_ROOT` when the checkout disk is too
+small. SteamCMD still uses `steamcmd_path` from settings, or
+`~/.local/share/Steam/` when that directory exists, otherwise `~/Steam/`.
 
 If a game server module genuinely does not implement one of these commands,
 the module itself needs to be fixed to provide a meaningful result (e.g. TCP
@@ -556,7 +558,7 @@ lost if a session is interrupted.
 ### How to regenerate the list from scratch
 
 ```bash
-cd /home/cosmosquark/sector_alpha/github/AlphaGSM
+# Run from the AlphaGSM checkout root.
 # Build disabled list
 cut -f1 disabled_servers.conf | grep -v '^#' | grep -v '^$' | sort > /tmp/disabled.txt
 # Build passed list (update with known-passed test names)
