@@ -78,7 +78,7 @@ def run_lifecycle(work_dir, source, backend="process", image=None, timeout=180):
         while True:
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
-                    udp.bind(("0.0.0.0", port))
+                    udp.bind(("127.0.0.1", port))
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as tcp:
                     tcp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                     tcp.bind(("127.0.0.1", port + 1))
