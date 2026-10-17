@@ -151,6 +151,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
   Live authenticated and CI integration validation are deferred.
 - Owned assets: support required file patterns and explicit alternatives while
   retaining ownership, rollback and safe wrapped-directory selection.
+- Workshop: name a missing item or collection and say it may be private, unlisted,
+  or removed. A found entry prints its visibility, including public, and its title.
 - Owned assets: add portable folder/ZIP/tar import, checks and ZIP export for
   module-declared files, with ownership hashes, update conflicts and rollback.
 - Project Reclaimer: add a checksum-pinned dedicated server module using the

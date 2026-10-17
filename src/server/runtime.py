@@ -2221,14 +2221,14 @@ def get_container_spec(
     merged.setdefault("env", {})
     merged.setdefault("mounts", [])
     merged.setdefault("ports", [])
-    if "init" in merged and not isinstance(merged["init"], bool):
-        raise RuntimeError("Container init must be a boolean")
     if "stop_signal" in merged and merged["stop_signal"] not in ("SIGINT", "SIGTERM"):
         raise RuntimeError("Container stop_signal must be SIGINT or SIGTERM")
     if "stop_timeout" in merged and (not isinstance(merged["stop_timeout"], int)
                                     or isinstance(merged["stop_timeout"], bool)
                                     or not 1 <= merged["stop_timeout"] <= 300):
         raise RuntimeError("Container stop_timeout must be an integer from 1 to 300")
+    if "init" in merged and not isinstance(merged["init"], bool):
+        raise RuntimeError("Container init must be a boolean")
     if merged.get("runtime_family") == "java":
         if merged.get("stop_mode") == "exec-console":
             if not merged.get("stdin_open") and not merged.get("tty"):
