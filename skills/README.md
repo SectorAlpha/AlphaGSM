@@ -4,6 +4,10 @@ The [canonical catalogue](../SKILLS.md) lists all skills by task. Start with
 `alphagsm-agent-operations` for running servers or `alphagsm-agent-development`
 for repository maintenance.
 
+Use [server-requirements](alphagsm-server-requirements/SKILL.md) before provisioning
+or dependency-related repairs. Its [installation policy](alphagsm-server-requirements/references/approval-gates.md)
+distinguishes new software from ordinary managed work and ambiguous server intent.
+
 Each directory contains a `SKILL.md` with YAML `name` and `description`, followed
 by focused instructions. Names match directories. Canonical files stay here so
 existing documentation links remain stable. `.agents/skills/<name>` contains a

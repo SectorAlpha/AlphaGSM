@@ -5,6 +5,8 @@ description: "Use when moving an AlphaGSM server between hosts with verified dat
 
 # Migrate a server
 
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
+
 Inputs: explicit source/destination access, owner/tag/module, data locations, port/address choices, transfer method, downtime and cutover scope. Read [backup/restore](../alphagsm-backup-restore/SKILL.md), [install-layout](../install-layout/SKILL.md), and destination [preflight](../alphagsm-host-preflight/SKILL.md). There is no AlphaGSM migrate command.
 
 Inventory install tree, worlds/datadir outside it, mods, game config, manager datastore and private secrets. An ordinary game-directory archive does not capture all manager metadata or external data. Record source runtime/version privately and plan new destination paths/ports. Do not copy source claim/runtime identities blindly.

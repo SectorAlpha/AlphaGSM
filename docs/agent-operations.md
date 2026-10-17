@@ -2,7 +2,7 @@
 
 An AI agent with terminal access to your AlphaGSM installation can create,
 configure, run, check, back up and maintain your servers using the same commands
-you use yourself. The repository includes 35 skills covering server operation
+you use yourself. The repository includes 36 skills covering server operation
 and development. The [skill catalogue](../SKILLS.md) lists them all.
 
 ## Get started
@@ -10,6 +10,11 @@ and development. The [skill catalogue](../SKILLS.md) lists them all.
 Open this repository in your agent and give it access to the host where AlphaGSM
 is installed. Tell it which server to work on and what result you want. If you
 use a separate installed AlphaGSM binary or config, give it that location too.
+
+The agent prefers the AlphaGSM manager and game servers in Docker. Existing
+Docker and repository image pulls/builds need no separate approval. If Docker
+or another external host runtime is missing, it asks before installing that new
+software.
 
 For server management, ask it to use `alphagsm-agent-operations`. For code changes,
 ask it to use `alphagsm-agent-development`. These entry skills select the focused
@@ -31,6 +36,8 @@ discovery requires working directory links. See
 - “Back up mymc and tell me which archive was created and what it includes.”
 - “Install MetaMod and SourceMod on mytf2, then verify that the server loads
   them and answers queries.”
+- “If this checkout supports Workshop, apply this TF2 multiplayer map and verify
+  that the running game loads it. Report process and Docker evidence separately.”
 - “Update first and second, keep them running afterward, and report each result.”
 - “Enable mymc on reboot, but leave it stopped today.”
 - “Use alphagsm-agent-development. Fix this integration failure and open a PR
@@ -48,10 +55,59 @@ readiness. A running process alone is not a healthy server. It reports the
 resulting running state, meaningful checks, backup/recovery artifacts and any
 remaining blocker. Fleet results are reported per server.
 
+## Requirements and installation intent
+
+Ask “Use alphagsm-server-requirements. Check what this host needs for
+minecraft.vanilla version [my version].” The agent checks the exact type/version,
+platform, manager/installer tools, game runtime, resources, ports, settings,
+worlds, credentials and assets. It reports what exists and what is still needed.
+An assessment-only request does not start/recreate the Docker manager, download
+images or install game files. If live diagnostics are unavailable, the agent
+reports that limitation using source/config inspection.
+
+For every game type:
+
+- “Run a TF2 server” with no TF2 installed: it asks to install it, then proceeds
+  through the supported workflow once you agree.
+- The same request with TF2 already installed: it clarifies whether you want to
+  start that server, change it or create another. If several match, it clarifies
+  which one.
+- “Start mytf2” or another explicit action on an existing server: it performs the
+  action without another confirmation.
+- An explicit or already-approved installation: its managed steps proceed
+  without repeated approval questions.
+
+**Hard approval gates apply only to new software installation.** AlphaGSM's
+code, helpers, repository images/builds, project-local pinned dependencies and
+supported mod/plugin prerequisites are part of the requested work. They do not
+need separate permission. A requested SourceMod installation includes its
+supported MetaMod prerequisite; an approved fresh game installation includes
+its AlphaGSM-managed setup recipe.
+
+New external software outside that managed scope, such as a missing host Docker
+engine/Compose, host Java or system package, still requires an installation
+request describing what will be installed and where. That can be included in
+the fresh-server installation question. The agent reuses the approval for that
+scope and continues independent work while a needed reply is pending.
+
+AlphaGSM manager/game images come from publication or builds of
+[SectorAlpha/AlphaGSM](https://github.com/SectorAlpha/AlphaGSM). The agent selects
+those images directly rather than asking for approval to pull/build each one.
+The supported [manager](docker-manager.md) uses the host Docker socket and
+sibling containers. True Docker-in-Docker uses a nested daemon and is not
+provided by the checked-in deployment; this is a capability distinction, not
+another consent gate.
+
 For a code change, it follows the repository's lifecycle, runtime and support
 contracts, updates tests/docs/changelog as needed, and includes executed
 validation in the requested PR. Preparing a release is a separate request from
 publishing it.
+
+On a Workshop-capable version, the agent distinguishes downloading an item from
+activating it through a native game loader. It checks the matching game's support
+matrix and validates fresh load evidence; a downloaded file or stock-server pass
+does not prove mod loading. An older checkout uses only its advertised commands.
+Public Workshop visibility does not guarantee anonymous download permission.
 
 Some games require your provider login, token or license (**ENABLED (AUTH)**).
 Others need owned assets, exported files, a download URL or a local service

@@ -2,6 +2,12 @@
 
 This is the recommended quickest-first-run deployment mode.
 
+For agent-operated setup, the [installation policy](../skills/alphagsm-server-requirements/references/approval-gates.md)
+requires approval only for new software outside the requested managed workflow,
+such as missing host Docker/Compose. Using Docker, repository images and wrapper
+pull/build fallback has no separate consent gate. The deployment below uses the
+host socket; it does not implement a nested Docker-in-Docker daemon.
+
 AlphaGSM can still run directly on the host exactly as before. This guide is
 only for the case where you want AlphaGSM itself to run in a Docker container
 while still launching game-server containers through the host Docker daemon.
