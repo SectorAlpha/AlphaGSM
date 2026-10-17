@@ -16,6 +16,7 @@ from conftest import (
     log_command_result,
     skip_for_known_steamcmd_issue,
     wait_for_runtime_log_marker,
+    wait_for_quake_ready,
     wait_for_tcp_closed,
 )
 
@@ -24,6 +25,7 @@ pytestmark = pytest.mark.integration
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 RTCW_REQUIRED_MULTIPLAYER_ASSETS = (
+    "pak0.pk3",
     "mp_bin.pk3",
     "mp_pak0.pk3",
     "mp_pak1.pk3",
@@ -40,8 +42,8 @@ RTCW_REQUIRED_MULTIPLAYER_ASSETS = (
     "mp_pakmaps6.pk3",
 )
 BYO_SKIP_REASON = (
-    "ENABLED (BYO): requires original RTCW multiplayer assets "
-    "(main/mp_bin.pk3, mp_pak*.pk3, mp_pakmaps*.pk3)"
+    "ENABLED (BYO): requires original RTCW assets "
+    "(main/pak0.pk3, mp_bin.pk3, mp_pak*.pk3, mp_pakmaps*.pk3)"
 )
 
 
@@ -103,6 +105,7 @@ def test_rtcwserver_lifecycle(tmp_path):
 
     try:
         # wait for readiness
+        log_path = home_dir / "logs" / f"AlphaGSM-IT#{server_name}.log"
         wait_for_runtime_log_marker(
             env,
             server_name,
@@ -113,6 +116,9 @@ def test_rtcwserver_lifecycle(tmp_path):
         # status
         run_and_assert_ok(env, server_name, "status")
 
+        # RTCW's ioRTCW dedicated server speaks Quake UDP getstatus, not A2S.
+        wait_for_quake_ready("127.0.0.1", port, 300, log_path=log_path)
+
         # query
         query_result = run_and_assert_ok(env, server_name, "query")
         assert (
@@ -122,15 +128,15 @@ def test_rtcwserver_lifecycle(tmp_path):
         # info
         info_result = run_and_assert_ok(env, server_name, "info")
         assert (
-            "Players     : 0/" in info_result.stdout
+            "Players" in info_result.stdout
         ), f"Unexpected info output: {info_result.stdout!r}"
 
         # info --json
         import json as _info_json
         info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
         _info_data = _info_json.loads(info_json_result.stdout.strip())
-        assert _info_data["protocol"] == "a2s", (
-            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        assert _info_data["protocol"] == "quake", (
+            f"Expected quake protocol in info JSON: {_info_data!r}"
         )
         assert _info_data.get("players") == 0, (
             f"Expected 0 players on fresh server: {_info_data!r}"

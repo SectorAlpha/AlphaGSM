@@ -18,6 +18,7 @@ from . import port_manager
 from . import runtime as runtime_module
 from . import diagnostics as diagnostics_module
 from . import worlds as worlds_module
+from . import assets as assets_module
 from .modsupport import workshop_downloads
 from .settable_keys import KeyResolutionError, resolve_requested_key
 from .settable_keys import get_effective_aliases
@@ -291,7 +292,37 @@ def _query_robust_status_payload(query_utils, host, port):
     for key in ("connect_address", "auth", "build", "privacy_policy"):
         if key in info_payload:
             merged[key] = info_payload[key]
+    if "max_players" not in merged:
+        soft_max = merged.get("soft_max_players")
+        if isinstance(soft_max, int) and not isinstance(soft_max, bool):
+            merged["max_players"] = soft_max
     return used_host, merged
+
+
+def _slp_info_payload(result):
+    """Copy an SLP result and add lifecycle info fields."""
+
+    payload = dict(result)
+    if "name" not in payload:
+        description = payload.get("description", "")
+        if isinstance(description, str):
+            payload["name"] = description
+        elif description is None:
+            payload["name"] = ""
+        else:
+            payload["name"] = str(description)
+    for source_key, dest_key in (
+        ("players_online", "players"),
+        ("players_max", "max_players"),
+    ):
+        if dest_key in payload:
+            continue
+        value = payload.get(source_key)
+        if isinstance(value, int) and not isinstance(value, bool):
+            payload[dest_key] = value
+    if "map" not in payload:
+        payload["map"] = None
+    return payload
 
 
 def _query_http_status_payload(query_utils, host, port, server=None):
@@ -400,6 +431,7 @@ class Server(object):
         "query",
         "info",
         "doctor",
+        "assets",
     )
     default_command_args = {
         "setup": CmdSpec(
@@ -412,7 +444,17 @@ class Server(object):
                     None,
                     False,
                 ),
+                OptSpec("", ["assets"], "Import an owned game folder or local ZIP/tar archive.", "assets_source", "PATH", str),
+                OptSpec("", ["auth-profile"], "Acquire owned files with a private SteamCMD session.", "auth_profile", "NAME", str),
+                OptSpec("", ["steam-dir"], "Import owned files from an explicit Steam library.", "steam_dir", "PATH", str),
             )
+        ),
+        "assets": CmdSpec(
+            requiredarguments=(ArgSpec("ACTION", "requirements, check, import, export, or fetch", str),),
+            optionalarguments=(ArgSpec("SOURCE", "Owned local path or declared acquisition source ID", str),),
+            options=(OptSpec("", ["output"], "ZIP destination for export", "output", "ZIP", str),
+                     OptSpec("", ["auth-profile"], "Private SteamCMD session for file acquisition", "auth_profile", "NAME", str),
+                     OptSpec("j", ["json"], "Print machine-readable asset results", "as_json", None, True)),
         ),
         "start": CmdSpec(),
         "stop": CmdSpec(),
@@ -607,6 +649,7 @@ class Server(object):
         "Use -j / --json to emit the result as a JSON object.\n"
         "Use -d / --detailed to include extended data (e.g. TeamSpeak 3 channel list).",
         "doctor": "Print runtime diagnostics for this server, including the effective backend, Docker image/container details, and local runtime health checks.",
+        "assets": "Check, import or export module-declared owned game assets from local folders or archives.",
     }
 
     def __init__(self, name, module=None):
@@ -841,6 +884,8 @@ class Server(object):
                 self.info(*args, **kwargs)
             elif command == "doctor":
                 self.doctor(*args, **kwargs)
+            elif command == "assets":
+                self.assets(*args, **kwargs)
         elif command in self.module.commands:
             if command == "update":
                 try:
@@ -857,8 +902,10 @@ class Server(object):
                 + "' can't be executed. Please check the help"
             )
 
-    def setup(self, *args, ask=True, **kwargs):
+    def setup(self, *args, ask=True, assets_source=None, auth_profile=None, steam_dir=None, **kwargs):
         """Setup this server. Once this returns the server should be ready to start."""
+        if sum(source is not None for source in (assets_source, auth_profile, steam_dir)) > 1:
+            raise ServerError("Select only one of --auth-profile, --steam-dir or --assets")
         explicit_keys = self._explicit_setup_port_keys(args, kwargs)
         claim_values_before = self._claim_affecting_value_snapshot(self.data)
         args, kwargs = self.module.configure(self, ask, *args, **kwargs)
@@ -874,9 +921,16 @@ class Server(object):
             runtime_module.assert_host_install_requirements(self, phase="setup")
         except runtime_module.RuntimeError as ex:
             raise ServerError(str(ex))
+        assets_module.prepare_for_setup(
+            self, assets_source=assets_source, auth_profile=auth_profile, steam_dir=steam_dir
+        )
         self.module.install(self, *args, **kwargs)
         runtime_module.sync_runtime_metadata(self, save=True)
         diagnostics_module.record_installation_provenance(self, "setup")
+
+    def assets(self, action, source=None, *, output=None, as_json=False, auth_profile=None):
+        """Manage module-declared owned game content without launching a game."""
+        return assets_module.execute(self, action, source, output=output, as_json=as_json, auth_profile=auth_profile)
 
     def start(self, *args, **kwargs):
         """Start a server. Won't start it if the server is already running."""
@@ -1083,6 +1137,13 @@ class Server(object):
             protocol = "a2s"
             _explicit = False
         port = int(port)
+
+        if protocol == "reclaimer_rcon":
+            from utils import reclaimer
+            result = reclaimer.server_info(host, port, self.data.get("rconpassword", ""))
+            print("Server is responding (Reclaimer RCON on port {}): {} players on {}".format(
+                port, result["players"], result["map"]))
+            return
 
         if protocol == "a2s":
             wake_hook = _get_a2s_wake_hook(self.module)
@@ -1407,6 +1468,17 @@ class Server(object):
             _explicit = False
         port = int(port)
 
+        if protocol == "reclaimer_rcon":
+            from utils import reclaimer
+            result = reclaimer.server_info(host, port, self.data.get("rconpassword", ""))
+            if as_json:
+                print(json.dumps({"protocol": protocol, "port": port, **result}))
+            else:
+                print("Server info (Reclaimer RCON on port {}):\n  Name        : {}\n"
+                      "  Map         : {}\n  Players     : {}/{}".format(
+                          port, result["name"], result["map"], result["players"], result["max_players"]))
+            return
+
         if protocol == "bedrock":
             try:
                 result = query_utils.bedrock_info(host, port, timeout=10.0)
@@ -1435,7 +1507,8 @@ class Server(object):
             try:
                 result = query_utils.slp_info(host, port)
                 if as_json:
-                    print(json.dumps({"protocol": "slp", "port": port, **result}))
+                    payload = _slp_info_payload(result)
+                    print(json.dumps({"protocol": "slp", "port": port, **payload}))
                     return
                 print(
                     "Server info (SLP on port {port}):\n"
@@ -2071,6 +2144,18 @@ class Server(object):
             return
         if key is None:
             raise ServerError("Error: set requires a key")
+
+        if key.split(".", 1)[0] == "steam_auth_profile":
+            if key != "steam_auth_profile" or len(args) != 1 or kwargs:
+                raise ServerError("Use set steam_auth_profile NAME or set steam_auth_profile DELETE")
+            value = args[0]
+            if value == "DELETE":
+                self.data.pop("steam_auth_profile", None)
+            else:
+                assets_module.validate_profile_reference(self, value)
+                self.data["steam_auth_profile"] = value
+            self.data.save()
+            return
 
         resolved = None
         schema = self.get_setting_schema()

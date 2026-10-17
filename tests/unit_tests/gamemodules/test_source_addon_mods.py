@@ -2,6 +2,7 @@
 
 import importlib
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess as sp
@@ -55,13 +56,23 @@ class DummyServer:
 
 
 def test_sfcserver_install_requests_sfclassic_mod_payload(tmp_path, monkeypatch):
+    monkeypatch.delenv("ALPHAGSM_RUN_INTEGRATION", raising=False)
     server = DummyServer("sfcmods")
     module = importlib.import_module("gamemodules.sfcserver")
 
     module.configure(server, ask=False, port=27015, dir=str(tmp_path))
     calls = []
 
-    def fake_download(path, app_id, anonymous, validate=True, mod=None, force_windows=False, force_platform=None):
+    def fake_download(
+        path,
+        app_id,
+        anonymous,
+        validate=True,
+        mod=None,
+        force_windows=False,
+        force_platform=None,
+        beta_branch=None,
+    ):
         calls.append(
             {
                 "path": path,
@@ -71,6 +82,7 @@ def test_sfcserver_install_requests_sfclassic_mod_payload(tmp_path, monkeypatch)
                 "mod": mod,
                 "force_windows": force_windows,
                 "force_platform": force_platform,
+                "beta_branch": beta_branch,
             }
         )
         (tmp_path / "srcds_run").write_text("", encoding="utf-8")
@@ -82,6 +94,8 @@ def test_sfcserver_install_requests_sfclassic_mod_payload(tmp_path, monkeypatch)
 
     module.install(server)
 
+    cfg_text = (tmp_path / "sfclassic" / "cfg" / "server.cfg").read_text(encoding="utf-8")
+    assert "sv_hibernate_when_empty 0" in cfg_text
     assert calls == [
         {
             "path": server.data["dir"],
@@ -91,8 +105,50 @@ def test_sfcserver_install_requests_sfclassic_mod_payload(tmp_path, monkeypatch)
             "mod": "sfclassic",
             "force_windows": False,
             "force_platform": None,
+            "beta_branch": "previous2021",
         }
     ]
+
+
+def test_sfcserver_prestart_aliases_dedicated_libraries_and_marks_launchers(tmp_path, monkeypatch):
+    monkeypatch.delenv("ALPHAGSM_RUN_INTEGRATION", raising=False)
+    server = DummyServer("sfcmods")
+    module = importlib.import_module("gamemodules.sfcserver")
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    monkeypatch.setattr(module.MODULE, "prestart", lambda *args, **kwargs: None)
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    engine_srv = bin_dir / "engine_srv.so"
+    engine = bin_dir / "engine.so"
+    dedicated_srv = bin_dir / "dedicated_srv.so"
+    engine_srv.write_bytes(b"beta-library")
+    engine.write_bytes(b"stale")
+    dedicated_srv.write_bytes(b"dedicated")
+    os.utime(engine_srv, (2_000_000_000, 2_000_000_000))
+    os.utime(engine, (1_000_000_000, 1_000_000_000))
+    launcher = tmp_path / "srcds_linux"
+    script = tmp_path / "srcds_run"
+    launcher.write_text("", encoding="utf-8")
+    script.write_text("", encoding="utf-8")
+    launcher.chmod(0o644)
+    script.chmod(0o644)
+
+    module.prestart(server)
+
+    cfg_text = (tmp_path / "sfclassic" / "cfg" / "server.cfg").read_text(encoding="utf-8")
+    assert "sv_hibernate_when_empty 0" in cfg_text
+    assert engine.read_bytes() == b"beta-library"
+    assert (bin_dir / "dedicated.so").read_bytes() == b"dedicated"
+    assert launcher.stat().st_mode & 0o111
+    assert script.stat().st_mode & 0o111
+
+    engine.write_bytes(b"beta-library")
+    os.utime(engine, (2_100_000_000, 2_100_000_000))
+    os.utime(engine_srv, (2_000_000_000, 2_000_000_000))
+
+    module.prestart(server)
+
+    assert engine.stat().st_mtime == 2_100_000_000
 
 
 def test_sfcserver_start_command_accepts_staged_mod_content(tmp_path):
@@ -121,6 +177,102 @@ def test_zmrserver_install_requires_staged_mod_content(tmp_path):
         module.install(server)
 
 
+def test_zmrserver_install_requests_previous2021_and_keeps_server_awake(tmp_path, monkeypatch):
+    monkeypatch.delenv("ALPHAGSM_RUN_INTEGRATION", raising=False)
+    server = DummyServer("zmrmods")
+    module = importlib.import_module("gamemodules.zmrserver")
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    calls = []
+
+    def fake_download(
+        path,
+        app_id,
+        anonymous,
+        validate=True,
+        mod=None,
+        force_windows=False,
+        force_platform=None,
+        beta_branch=None,
+    ):
+        calls.append(
+            {
+                "path": path,
+                "app_id": app_id,
+                "anonymous": anonymous,
+                "validate": validate,
+                "mod": mod,
+                "force_windows": force_windows,
+                "force_platform": force_platform,
+                "beta_branch": beta_branch,
+            }
+        )
+        (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+        required_map = tmp_path / "zombie_master_reborn" / "maps" / "zm_docksofthedead.bsp"
+        required_map.parent.mkdir(parents=True, exist_ok=True)
+        required_map.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr("utils.valve_server.steamcmd.download", fake_download)
+
+    module.install(server)
+
+    cfg_text = (tmp_path / "zombie_master_reborn" / "cfg" / "server.cfg").read_text(encoding="utf-8")
+    assert "sv_hibernate_when_empty 0" in cfg_text
+    assert calls == [
+        {
+            "path": server.data["dir"],
+            "app_id": module.steam_app_id,
+            "anonymous": True,
+            "validate": False,
+            "mod": None,
+            "force_windows": False,
+            "force_platform": None,
+            "beta_branch": "previous2021",
+        }
+    ]
+
+
+def test_zmrserver_prestart_aliases_dedicated_libraries_and_marks_launchers(tmp_path, monkeypatch):
+    monkeypatch.delenv("ALPHAGSM_RUN_INTEGRATION", raising=False)
+    server = DummyServer("zmrmods")
+    module = importlib.import_module("gamemodules.zmrserver")
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    monkeypatch.setattr(module.MODULE, "prestart", lambda *args, **kwargs: None)
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    engine_srv = bin_dir / "engine_srv.so"
+    engine = bin_dir / "engine.so"
+    dedicated_srv = bin_dir / "dedicated_srv.so"
+    engine_srv.write_bytes(b"beta-library")
+    engine.write_bytes(b"stale")
+    dedicated_srv.write_bytes(b"dedicated")
+    os.utime(engine_srv, (2_000_000_000, 2_000_000_000))
+    os.utime(engine, (1_000_000_000, 1_000_000_000))
+    launcher = tmp_path / "srcds_linux"
+    script = tmp_path / "srcds_run"
+    launcher.write_text("", encoding="utf-8")
+    script.write_text("", encoding="utf-8")
+    launcher.chmod(0o644)
+    script.chmod(0o644)
+
+    module.prestart(server)
+
+    cfg_text = (tmp_path / "zombie_master_reborn" / "cfg" / "server.cfg").read_text(encoding="utf-8")
+    assert "sv_hibernate_when_empty 0" in cfg_text
+    assert engine.read_bytes() == b"beta-library"
+    assert (bin_dir / "dedicated.so").read_bytes() == b"dedicated"
+    assert launcher.stat().st_mode & 0o111
+    assert script.stat().st_mode & 0o111
+
+    engine.write_bytes(b"beta-library")
+    os.utime(engine, (2_100_000_000, 2_100_000_000))
+    os.utime(engine_srv, (2_000_000_000, 2_000_000_000))
+
+    module.prestart(server)
+
+    assert engine.stat().st_mtime == 2_100_000_000
+
+
 def test_zmrserver_start_command_accepts_staged_mod_content(tmp_path):
     server = DummyServer("zmrmods")
     module = importlib.import_module("gamemodules.zmrserver")
@@ -135,6 +287,51 @@ def test_zmrserver_start_command_accepts_staged_mod_content(tmp_path):
 
     assert cmd[0] == "./srcds_run"
     assert cwd == server.data["dir"]
+
+
+def test_ndserver_recipe_declares_one_authenticated_steamcmd_source():
+    module = importlib.import_module("gamemodules.ndserver")
+    recipe = module.get_asset_requirements(DummyServer("ndmods"))
+    steam_sources = [source for source in recipe["sources"] if source["kind"] == "steamcmd"]
+
+    assert recipe["managed_import"] is True
+    assert len(steam_sources) == 1
+    assert steam_sources[0]["app_id"] == 111710
+    assert steam_sources[0]["authentication"] == "required"
+    assert steam_sources[0]["platform"] == "linux"
+    assert "nucleardawn/maps/hydro.bsp" in recipe["required"]
+    assert "nucleardawn/maps/*.bsp" in recipe["include"]
+
+
+def test_ndserver_install_keeps_server_awake_when_content_is_staged(tmp_path):
+    server = DummyServer("ndmods")
+    module = importlib.import_module("gamemodules.ndserver")
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    required_map = tmp_path / "nucleardawn" / "maps" / "hydro.bsp"
+    required_map.parent.mkdir(parents=True)
+    required_map.write_text("map", encoding="utf-8")
+
+    module.install(server)
+
+    cfg_text = (tmp_path / "nucleardawn" / "cfg" / "server.cfg").read_text(encoding="utf-8")
+    assert "sv_hibernate_when_empty 0" in cfg_text
+
+
+def test_ndserver_prestart_marks_linux_launcher_executable(tmp_path):
+    server = DummyServer("ndmods")
+    module = importlib.import_module("gamemodules.ndserver")
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    launcher = tmp_path / "srcds_linux"
+    script = tmp_path / "srcds_run"
+    launcher.write_text("", encoding="utf-8")
+    script.write_text("", encoding="utf-8")
+    launcher.chmod(0o644)
+    script.chmod(0o644)
+
+    module.prestart(server)
+
+    assert launcher.stat().st_mode & 0o111
+    assert script.stat().st_mode & 0o111
 
 
 def test_ndserver_install_requires_staged_mod_content(tmp_path):

@@ -5,7 +5,7 @@ This guide covers the `goldeneyesourceserver` module in AlphaGSM.
 `goldeneyesourceserver` is `ENABLED (BYO)`. AlphaGSM can run a complete
 operator-staged GoldenEye: Source dedicated server tree through either the
 process or Docker runtime, but it does not download that tree during setup.
-This status does not claim a current integration pass.
+This status does not claim a current integration pass. `query` and `info` use A2S.
 
 ## Why Setup Is BYO
 
@@ -128,3 +128,12 @@ This module does not declare schema-backed keys. `set --list` after
 create is still the live source of truth.
 
 <!-- alphagsm-server-variables:end -->
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This helper checks known sentinels only and directs you to stage the complete
+compatible distribution manually; managed import is unavailable for this recipe.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

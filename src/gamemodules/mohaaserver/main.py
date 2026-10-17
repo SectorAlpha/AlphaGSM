@@ -119,13 +119,13 @@ def get_start_command(server):
 
 
 def get_query_address(server):
-    """MOHAA only exposes a conservative UDP reachability probe here."""
+    """Return the Quake III UDP getstatus endpoint on the MOHAA game port."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "udp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
 
 
 def get_info_address(server):
-    """Reuse the MOHAA UDP reachability probe for info."""
+    """Return the Quake III status endpoint used by the MOHAA info command."""
 
     return get_query_address(server)
 
@@ -176,3 +176,9 @@ get_container_spec = gamemodule_common.make_container_spec_builder(
     port_definitions=({"key": "port", "protocol": "udp"},),
     stdin_open=True,
 )
+
+
+def get_asset_requirements(server):
+    """Describe this game's owned files, acquisition routes and staging limits."""
+    from utils.byo_files import load_requirements
+    return load_requirements(server, __file__, 'byo_assets.json')

@@ -1,0 +1,25 @@
+{
+  "description": "The Specialists complete multiplayer content",
+  "requirements": [
+    {
+      "path": "ts/maps/ts_neobaroque.bsp",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Obtain the matching The Specialists 3.0 full Linux server distribution, not only the Windows client. Stage the complete ts/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+      "live_validated": false,
+      "url": "https://www.moddb.com/mods/the-specialists/downloads"
+    }
+  ],
+  "defaults": {},
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "tsserver",
+  "guide": "docs/servers/tsserver.md",
+  "schema_version": 1
+}

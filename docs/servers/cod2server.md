@@ -23,11 +23,17 @@ Create the server:
 alphagsm mycod2serv create cod2server
 ```
 
-Run setup:
+For an owned Steam copy, sign in once and let setup acquire the declared files:
 
 ```bash
-alphagsm mycod2serv setup
+alphagsm steam-auth login owned your_steam_username
+alphagsm mycod2serv setup --auth-profile owned
 ```
+
+Enter credentials only at the local SteamCMD prompts. For an existing local
+Steam library, use `setup --steam-dir /path/to/SteamLibrary/steamapps` instead.
+Local process setup with an entitled profile was validated on 2026-10-16.
+Query and info use Quake UDP getstatus on the game port. Docker was not rerun.
 
 Start it:
 
@@ -61,7 +67,7 @@ Setup configures:
 dedicated binary for you, but the official archive still does not include the
 localized retail files the server expects at startup.
 
-Before `start`, copy the required owned files from a legitimate Call of Duty 2
+If using setup without an asset source or saved profile, before `start` copy the required owned files from a legitimate Call of Duty 2
 installation into the AlphaGSM server tree:
 
 ```text
@@ -69,7 +75,7 @@ installation into the AlphaGSM server tree:
 <install_dir>/main/default_localize_mp.cfg
 ```
 
-Minimal operator flow:
+Manual-copy alternative:
 
 ```bash
 alphagsm mycod2serv create cod2server
@@ -134,6 +140,7 @@ alphagsm myserver set KEY VALUE
 
 - **Config file**: `<moddir>/server.cfg` (default `main/server.cfg`)
 - `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
+- Setup stages the upstream gcc 3.2 libraries beside `cod2_lnxded` and starts it with `LD_LIBRARY_PATH=.`, `fs_basepath` `.`, and `fs_homepath` `.` so the dedicated server does not use `~/.callofduty2`.
 - **Owned base assets still required**: `main/localized_*.iwd`,
   `main/default_localize_mp.cfg`
 - **Copy target before first start**: `<install_dir>/main/`
@@ -165,3 +172,17 @@ alphagsm mycod2serv mod add url https://example.com/custom-content.zip
 alphagsm mycod2serv mod apply
 alphagsm mycod2serv mod cleanup
 ```
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+The preferred Steam-owned path is `alphagsm steam-auth login owned <username>`,
+then `alphagsm <server-name> setup --auth-profile owned`. Setup remembers the
+profile name and fetches missing required files before installing the engine.
+Use `setup --steam-dir /path/to/SteamLibrary/steamapps` to import from an existing
+Steam library instead. Direct file acquisition remains available through
+`assets fetch steam-owned --auth-profile owned`.
+Authenticated downloads remain unverified here.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

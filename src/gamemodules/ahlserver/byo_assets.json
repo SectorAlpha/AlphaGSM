@@ -1,0 +1,25 @@
+{
+  "description": "Action Half-Life complete multiplayer content",
+  "requirements": [
+    {
+      "path": "action/maps/ahl_hydro.bsp",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Choose a complete compatible original Action Half-Life Linux server distribution; do not substitute AHL2 or an incompatible Deleted Scenes build. Stage the complete action/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+      "live_validated": false,
+      "url": "https://www.moddb.com/mods/action-half-life/downloads"
+    }
+  ],
+  "defaults": {},
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "ahlserver",
+  "guide": "docs/servers/ahlserver.md",
+  "schema_version": 1
+}

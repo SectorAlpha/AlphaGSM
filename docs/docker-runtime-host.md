@@ -116,6 +116,24 @@ output will show that clearly.
 ./alphagsm mymc stop
 ```
 
+## Steam-owned files
+
+Log in on the host before setup. SteamCMD runs in the AlphaGSM process, whether
+that process is the `alphagsm` command, a standalone binary, or a Python
+library call that later starts a Docker game server:
+
+```bash
+./alphagsm steam-auth login owned your_steam_username
+./alphagsm myserver setup --auth-profile owned
+```
+
+The profile stays under `[core] alphagsm_path` on a Linux filesystem. AlphaGSM
+refuses to mount that `steam-auth/` directory, a parent that contains it, or a
+path inside it into the game container. The refusal happens before `docker run`.
+Anonymous SteamCMD SDK libraries outside the profile can still be mounted.
+Keep the server install directory outside `steam-auth/`. A login without a
+terminal is rejected. See [SteamCMD session profiles](steamcmd-auth.md).
+
 ## Notes
 
 - AlphaGSM uses the runtime-family image declared by the module or the shared

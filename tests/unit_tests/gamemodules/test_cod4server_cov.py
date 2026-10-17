@@ -38,53 +38,184 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
     server.data["download_name"] = "test.zip"
     mod.configure(server, ask=True)
 
+
+COD4X_RELEASE_URL = (
+    "https://github.com/callofduty4x/CoD4x_Server/releases/download/21.2/cod4x18_dedrun"
+)
+STEAM_MP_MAPS = [
+    "mp_backlot", "mp_bloc", "mp_bog", "mp_broadcast", "mp_carentan",
+    "mp_cargoship", "mp_citystreets", "mp_convoy", "mp_countdown", "mp_crash",
+    "mp_crash_snow", "mp_creek", "mp_crossfire", "mp_farm", "mp_killhouse",
+    "mp_overgrown", "mp_pipeline", "mp_shipment", "mp_showdown", "mp_strike",
+    "mp_vacant",
+]
+
+
+def test_configure_defaults_to_cod4x_release_binary(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=28960, dir=str(tmp_path))
+    assert server.data["exe_name"] == "cod4x18_dedrun"
+    assert server.data["url"] == COD4X_RELEASE_URL
+    assert server.data["download_name"] == "cod4x18_dedrun"
+
+
+def test_install_accepts_steam_fastfiles_without_filesyscheck(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "cod4x18_dedrun"
+    server.data["url"] = COD4X_RELEASE_URL
+    server.data["download_name"] = "cod4x18_dedrun"
+    recipe = mod.get_asset_requirements(server)
+    assert recipe["multiplayer_maps"] == STEAM_MP_MAPS
+
+    def fake_install_binary(_server):
+        binary = tmp_path / "cod4x18_dedrun"
+        binary.write_bytes(b"elf")
+        binary.chmod(0o644)
+        (tmp_path / "libstdc++.so.6").write_bytes(b"oldstd")
+        (tmp_path / "libgcc_s.so.1").write_bytes(b"oldgcc")
+        (tmp_path / "pbsetup.run").write_bytes(b"redist")
+        main_dir = tmp_path / "main"
+        main_dir.mkdir()
+        (main_dir / "iw_00.iwd").write_bytes(b"iwd")
+        zone = tmp_path / "zone" / "english"
+        zone.mkdir(parents=True)
+        for name in (
+            "localized_common_mp.ff",
+            "localized_code_post_gfx_mp.ff",
+            "code_post_gfx_mp.ff",
+            "common_mp.ff",
+            "ui_mp.ff",
+        ):
+            (zone / name).write_bytes(b"ff")
+        for name in STEAM_MP_MAPS:
+            (zone / f"{name}.ff").write_bytes(b"map")
+
+    mod.install_binary = MagicMock(side_effect=fake_install_binary)
+    mod.install(server)
+    mod.install_binary.side_effect = None
+
+    exe = tmp_path / "cod4x18_dedrun"
+    assert exe.is_file()
+    assert exe.stat().st_mode & 0o111
+    assert not (tmp_path / "fileSysCheck.cfg").exists()
+    assert not (tmp_path / "libstdc++.so.6").exists()
+    assert not (tmp_path / "libgcc_s.so.1").exists()
+    assert not (tmp_path / "pbsetup.run").exists()
+    assert (tmp_path / "main" / "iw_00.iwd").is_file()
+    assert (tmp_path / "zone" / "english" / "localized_common_mp.ff").is_file()
+    for name in STEAM_MP_MAPS:
+        assert (tmp_path / "zone" / "english" / f"{name}.ff").is_file()
+
+
+def test_get_start_command_uses_cod4x_without_bundled_runtime(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "cod4x18_dedrun"
+    (tmp_path / "cod4x18_dedrun").write_text("")
+    server.data["hostname"] = "test"
+    server.data["moddir"] = "main"
+    server.data["port"] = 28960
+    server.data["startmap"] = "mp_crash"
+    cmd, cwd = mod.get_start_command(server)
+    assert cmd == [
+        "./cod4x18_dedrun",
+        "+set",
+        "dedicated",
+        "2",
+        "+set",
+        "sv_punkbuster",
+        "0",
+        "+set",
+        "fs_basepath",
+        ".",
+        "+set",
+        "fs_homepath",
+        ".",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+set",
+        "net_port",
+        "28960",
+        "+map",
+        "mp_crash",
+    ]
+    assert cwd == server.data["dir"]
+    assert "libstdc++.so.5" not in cmd
+    assert "LD_LIBRARY_PATH=." not in cmd
+    assert "sv_authtoken" not in cmd
+    assert mod.get_query_address(server) == (
+        mod.get_query_address(server)[0],
+        28960,
+        "quake",
+    )
+    assert mod.get_info_address(server) == mod.get_query_address(server)
+
+
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "cod4_lnxded"
+    server.data["exe_name"] = "cod4x18_dedrun"
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
 
-    def fake_install_archive(_server, _compression):
+    def fake_install_binary(_server):
+        binary = tmp_path / "cod4x18_dedrun"
+        binary.write_bytes(b"elf")
+        binary.chmod(0o644)
         (tmp_path / "fileSysCheck.cfg").write_text("", encoding="utf-8")
         main_dir = tmp_path / "main"
         main_dir.mkdir()
         (main_dir / "localized_english_iw00.iwd").write_text("", encoding="utf-8")
 
-    mod.install_archive.side_effect = fake_install_archive
+    mod.install_binary.side_effect = fake_install_binary
     mod.install(server)
-    mod.install_archive.side_effect = None
+    mod.install_binary.side_effect = None
+    assert os.access(tmp_path / "cod4x18_dedrun", os.X_OK)
 
 
 def test_install_rejects_missing_base_assets(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "cod4_lnxded"
+    server.data["exe_name"] = "cod4x18_dedrun"
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
 
-    def fake_install_archive(_server, _compression):
+    def fake_install_binary(_server):
         main_dir = tmp_path / "main"
         main_dir.mkdir()
         (main_dir / "iw_12.iwd").write_text("", encoding="utf-8")
 
-    mod.install_archive.side_effect = fake_install_archive
+    mod.install_binary.side_effect = fake_install_binary
     with pytest.raises(ServerError, match="ENABLED \\(BYO\\): cod4server"):
         mod.install(server)
-    mod.install_archive.side_effect = None
+    mod.install_binary.side_effect = None
 
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
-    server.data["exe_name"] = "cod4_lnxded"
-    (tmp_path / "cod4_lnxded").write_text("")
+    server.data["exe_name"] = "cod4x18_dedrun"
+    (tmp_path / "cod4x18_dedrun").write_text("")
     server.data["hostname"] = "test"
     server.data["moddir"] = "test"
     server.data["port"] = 27015
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
-        "./cod4_lnxded",
+        "./cod4x18_dedrun",
+        "+set",
+        "dedicated",
+        "2",
+        "+set",
+        "sv_punkbuster",
+        "0",
+        "+set",
+        "fs_basepath",
+        ".",
+        "+set",
+        "fs_homepath",
+        ".",
         "+set",
         "fs_game",
         "test",
@@ -98,6 +229,47 @@ def test_get_start_command(tmp_path):
         "test",
     ]
     assert cwd == server.data["dir"]
+    assert mod.get_query_address(server)[2] == "quake"
+    assert "libstdc++.so.5" not in cmd
+    assert "LD_LIBRARY_PATH=." not in cmd
+
+
+def test_install_drops_punkbuster_and_old_runtime_libs(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "cod4x18_dedrun"
+    server.data["url"] = mod.COD4_SERVER_URL
+    server.data["download_name"] = mod.COD4_SERVER_NAME
+
+    def fake_install_binary(_server):
+        binary = tmp_path / "cod4x18_dedrun"
+        binary.write_bytes(b"elf")
+        binary.chmod(0o644)
+        (tmp_path / "libstdc++.so.6").write_bytes(b"std6")
+        (tmp_path / "libgcc_s.so.1").write_bytes(b"gcc")
+        (tmp_path / "pbsetup.run").write_bytes(b"redist")
+        (tmp_path / "fileSysCheck.cfg").write_text("", encoding="utf-8")
+        main_dir = tmp_path / "main"
+        main_dir.mkdir()
+        (main_dir / "iw_12.iwd").write_bytes(b"iwd")
+        (main_dir / "localized_english_iw00.iwd").write_bytes(b"loc")
+        zone_dir = tmp_path / "zone" / "english"
+        zone_dir.mkdir(parents=True)
+        (zone_dir / "code_post_gfx_mp.ff").write_bytes(b"ff")
+
+    mod.install_binary.side_effect = fake_install_binary
+    mod.install(server)
+    mod.install_binary.side_effect = None
+
+    assert (tmp_path / "cod4x18_dedrun").is_file()
+    assert os.access(tmp_path / "cod4x18_dedrun", os.X_OK)
+    assert not (tmp_path / "libstdc++.so.6").exists()
+    assert not (tmp_path / "libgcc_s.so.1").exists()
+    assert (tmp_path / "main" / "iw_12.iwd").is_file()
+    assert (tmp_path / "main" / "localized_english_iw00.iwd").is_file()
+    assert (tmp_path / "zone" / "english" / "code_post_gfx_mp.ff").read_bytes() == b"ff"
+    assert not (tmp_path / "pbsetup.run").exists()
+    assert not (tmp_path / "libstdc++.so.5").exists()
 
 
 def test_setting_schema_exposes_cod4_launch_tokens():

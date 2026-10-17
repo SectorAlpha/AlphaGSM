@@ -470,6 +470,147 @@ def test_get_autoupdate_script_writes_goldsrc_mod_line(tmp_path, monkeypatch):
     )
 
 
+def _expand_under(home):
+    """Map a leading ``~`` onto *home* without touching the real account."""
+
+    def expand(path):
+        text = str(path)
+        if text == "~":
+            return home
+        if text.startswith("~/"):
+            return os.path.join(home, text[2:])
+        return text
+
+    return expand
+
+
+def test_default_steamcmd_dir_linux_prefers_xdg_client(monkeypatch):
+    home = "/home/player"
+    xdg = os.path.join(home, ".local", "share", "Steam")
+    steam_root = os.path.join(home, ".steam", "root")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", _expand_under(home))
+    monkeypatch.setattr(
+        steamcmd_module.os.path,
+        "isdir",
+        lambda path: os.path.normpath(path) in {xdg, steam_root},
+    )
+
+    found = steamcmd_module.default_steamcmd_dir("linux")
+
+    assert os.path.normpath(found) == xdg
+    assert found.endswith(os.sep)
+
+
+def test_default_steamcmd_dir_linux_uses_steam_root_link(monkeypatch):
+    home = "/home/player"
+    steam_root = os.path.join(home, ".steam", "root")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", _expand_under(home))
+    monkeypatch.setattr(
+        steamcmd_module.os.path,
+        "isdir",
+        lambda path: os.path.normpath(path) == steam_root,
+    )
+
+    found = steamcmd_module.default_steamcmd_dir("linux")
+
+    assert os.path.normpath(found) == steam_root
+
+
+def test_default_steamcmd_dir_linux_fallback(monkeypatch):
+    home = "/home/player"
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", _expand_under(home))
+    monkeypatch.setattr(steamcmd_module.os.path, "isdir", lambda _path: False)
+
+    found = steamcmd_module.default_steamcmd_dir("linux")
+
+    assert os.path.normpath(found) == os.path.join(home, "Steam")
+
+
+def test_default_steamcmd_dir_macos_library(monkeypatch):
+    home = "/Users/player"
+    library = os.path.join(home, "Library", "Application Support", "Steam")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", _expand_under(home))
+    monkeypatch.setattr(
+        steamcmd_module.os.path,
+        "isdir",
+        lambda path: os.path.normpath(path) == library,
+    )
+
+    found = steamcmd_module.default_steamcmd_dir("macos")
+
+    assert os.path.normpath(found) == library
+
+
+def test_default_steamcmd_dir_macos_fallback_stays_in_library(monkeypatch):
+    home = "/Users/player"
+    library = os.path.join(home, "Library", "Application Support", "Steam")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", _expand_under(home))
+    monkeypatch.setattr(steamcmd_module.os.path, "isdir", lambda _path: False)
+
+    found = steamcmd_module.default_steamcmd_dir("macos")
+
+    assert os.path.normpath(found) == library
+
+
+def test_default_steamcmd_dir_windows_registry(monkeypatch):
+    registered = os.path.join("D:/Games", "Steam")
+    monkeypatch.setattr(steamcmd_module, "_windows_registry_steam_dir", lambda: registered)
+    monkeypatch.setenv("ProgramFiles(x86)", "C:/Program Files (x86)")
+    monkeypatch.setattr(
+        steamcmd_module.os.path,
+        "isdir",
+        lambda path: os.path.normpath(path) == os.path.normpath(registered),
+    )
+
+    found = steamcmd_module.default_steamcmd_dir("windows")
+
+    assert os.path.normpath(found) == os.path.normpath(registered)
+
+
+def test_default_steamcmd_dir_windows_program_files(monkeypatch):
+    x86 = "C:/Program Files (x86)"
+    expected = os.path.join(x86, "Steam")
+    monkeypatch.setattr(steamcmd_module, "_windows_registry_steam_dir", lambda: None)
+    monkeypatch.setenv("ProgramFiles(x86)", x86)
+    monkeypatch.setenv("ProgramFiles", "C:/Program Files")
+    monkeypatch.setattr(
+        steamcmd_module.os.path,
+        "isdir",
+        lambda path: os.path.normpath(path) == os.path.normpath(expected),
+    )
+
+    found = steamcmd_module.default_steamcmd_dir("windows")
+
+    assert os.path.normpath(found) == os.path.normpath(expected)
+
+
+def test_default_steamcmd_dir_windows_fallback(monkeypatch):
+    home = "/Users/player"
+    monkeypatch.setattr(steamcmd_module, "_windows_registry_steam_dir", lambda: None)
+    monkeypatch.delenv("ProgramFiles(x86)", raising=False)
+    monkeypatch.delenv("ProgramFiles", raising=False)
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", _expand_under(home))
+    monkeypatch.setattr(steamcmd_module.os.path, "isdir", lambda _path: False)
+
+    found = steamcmd_module.default_steamcmd_dir("windows")
+
+    assert os.path.normpath(found) == os.path.join(home, "Steam")
+
+
+def test_resolve_steamcmd_dir_keeps_explicit_path(monkeypatch):
+    monkeypatch.setattr(steamcmd_module.os.path, "isdir", lambda _path: True)
+
+    found = steamcmd_module.resolve_steamcmd_dir("~/custom/Steam", "linux")
+
+    assert os.path.normpath(found) == os.path.normpath(os.path.expanduser("~/custom/Steam"))
+
+
+def test_steamcmd_executable_name_follows_platform():
+    assert steamcmd_module.steamcmd_executable_name("linux") == "steamcmd.sh"
+    assert steamcmd_module.steamcmd_executable_name("macos") == "steamcmd.sh"
+    assert steamcmd_module.steamcmd_executable_name("windows") == "steamcmd.exe"
+
+
 def test_linux_steamcmd_installer_rejects_windows_before_files_or_download(tmp_path, monkeypatch):
     import pytest
     monkeypatch.setattr(steamcmd_module, 'PLATFORM', 'windows', raising=False)

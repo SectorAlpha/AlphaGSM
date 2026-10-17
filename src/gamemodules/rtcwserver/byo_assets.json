@@ -1,0 +1,135 @@
+{
+  "description": "Return to Castle Wolfenstein multiplayer data",
+  "requirements": [
+    {
+      "path": "main/pak0.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "main/mp_bin.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "main/mp_pak0.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "main/mp_pak1.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "main/mp_pak2.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "main/mp_pak3.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "main/mp_pak4.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "main/mp_pak5.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "main/mp_pakmaps0.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "main/mp_pakmaps1.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "main/mp_pakmaps2.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "main/mp_pakmaps3.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "main/mp_pakmaps4.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "main/mp_pakmaps5.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "main/mp_pakmaps6.pk3",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Copy legitimate main/pak0.pk3 plus the original multiplayer PK3 set (mp_bin.pk3, mp_pak0.pk3 through mp_pak5.pk3, and mp_pakmaps0.pk3 through mp_pakmaps6.pk3). The ioRTCW dedicated binary refuses to start without retail pak0.pk3. Do not merge all of patch-data-141.zip: an owned 1.41 install already contains the matching multiplayer packs, and that archive also includes PunkBuster and client binaries.",
+      "live_validated": false,
+      "url": "https://github.com/iortcw/iortcw/blob/master/README.md"
+    },
+    {
+      "id": "steam-owned",
+      "kind": "steamcmd",
+      "instructions": "Copy legitimate main/pak0.pk3 plus the original multiplayer PK3 set (mp_bin.pk3, mp_pak0.pk3 through mp_pak5.pk3, and mp_pakmaps0.pk3 through mp_pakmaps6.pk3). The ioRTCW dedicated binary refuses to start without retail pak0.pk3. Do not merge all of patch-data-141.zip: an owned 1.41 install already contains the matching multiplayer packs, and that archive also includes PunkBuster and client binaries.",
+      "live_validated": true,
+      "app_id": 9010,
+      "platform": "windows",
+      "authentication": "required",
+      "url": "https://store.steampowered.com/app/9010/"
+    }
+  ],
+  "defaults": {},
+  "managed_import": true,
+  "validation": "declared-files-and-content-sentinels",
+  "manual_reason": "Import requires a complete compatible distribution and manual staging. See assets requirements for this game.",
+  "roots": [
+    ""
+  ],
+  "target": "",
+  "include": [
+    "main/pak0.pk3",
+    "main/mp_bin.pk3",
+    "main/mp_pak0.pk3",
+    "main/mp_pak1.pk3",
+    "main/mp_pak2.pk3",
+    "main/mp_pak3.pk3",
+    "main/mp_pak4.pk3",
+    "main/mp_pak5.pk3",
+    "main/mp_pakmaps0.pk3",
+    "main/mp_pakmaps1.pk3",
+    "main/mp_pakmaps2.pk3",
+    "main/mp_pakmaps3.pk3",
+    "main/mp_pakmaps4.pk3",
+    "main/mp_pakmaps5.pk3",
+    "main/mp_pakmaps6.pk3"
+  ],
+  "required": [
+    "main/pak0.pk3",
+    "main/mp_bin.pk3",
+    "main/mp_pak0.pk3",
+    "main/mp_pak1.pk3",
+    "main/mp_pak2.pk3",
+    "main/mp_pak3.pk3",
+    "main/mp_pak4.pk3",
+    "main/mp_pak5.pk3",
+    "main/mp_pakmaps0.pk3",
+    "main/mp_pakmaps1.pk3",
+    "main/mp_pakmaps2.pk3",
+    "main/mp_pakmaps3.pk3",
+    "main/mp_pakmaps4.pk3",
+    "main/mp_pakmaps5.pk3",
+    "main/mp_pakmaps6.pk3"
+  ],
+  "case_insensitive": true,
+  "module": "rtcwserver",
+  "guide": "docs/servers/rtcwserver.md",
+  "schema_version": 1,
+  "multiplayer_maps": [
+    "mp_assault", "mp_base", "mp_beach", "mp_castle", "mp_chateau", "mp_dam",
+    "mp_depot", "mp_destruction", "mp_ice", "mp_keep", "mp_rocket", "mp_sub",
+    "mp_tram", "mp_trenchtoast", "mp_village"
+  ]
+}

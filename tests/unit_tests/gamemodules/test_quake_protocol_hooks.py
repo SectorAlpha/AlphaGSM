@@ -5,6 +5,7 @@ import gamemodules.q3server as q3server
 import gamemodules.q4server as q4server
 import gamemodules.qlserver as qlserver
 import gamemodules.qwserver as qwserver
+import gamemodules.rtcwserver as rtcwserver
 
 
 class _DummyServer:
@@ -36,6 +37,12 @@ def test_qwserver_uses_explicit_quake_protocol():
     server = _DummyServer(27500)
     assert qwserver.get_query_address(server) == ("127.0.0.1", 27500, "quakeworld")
     assert qwserver.get_info_address(server) == ("127.0.0.1", 27500, "quakeworld")
+
+
+def test_rtcwserver_uses_explicit_quake_protocol():
+    server = _DummyServer(27960)
+    assert rtcwserver.get_query_address(server) == ("127.0.0.1", 27960, "quake")
+    assert rtcwserver.get_info_address(server) == ("127.0.0.1", 27960, "quake")
 
 
 def test_qlserver_uses_steam_a2s_protocol():
