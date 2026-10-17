@@ -25,6 +25,13 @@ The everyday flow is always the same:
 Then `stop`, `backup`, or `update` as needed. Pick a game from
 [the server guides](docs/README.md) if you want the exact module name.
 
+After installation, run `./alphagsm` in a terminal for an optional setup tour.
+Press Enter to skip, use `./alphagsm --welcome` to replay, or
+`./alphagsm --skip-welcome` to skip from a script. The tour can help create a
+local server and show everyday commands. Downloads need a separate confirmation;
+Sector Alpha enrollment is optional and reporting/management stay off unless
+you enable them separately. See [First-run setup](docs/first-run-setup.md).
+
 You can also ask an AI agent with terminal access to do this work. Start with
 “Use alphagsm-agent-operations to run my server,” and give it the game, server
 name and desired result. See [Run AlphaGSM With An AI Agent](docs/agent-operations.md)
@@ -534,3 +541,58 @@ Use:
 - License: GPL v3.0, see [LICENSE](LICENSE)
 - Credits: see [CREDITS](CREDITS)
 - Changelog: [changelog.txt](changelog.txt)
+
+## Optional Sector Alpha connection
+
+AlphaGSM can connect to a compatible Sector Alpha service over outbound HTTPS.
+Reporting and remote management are separate opt-ins and stay disabled until
+you enable them locally. You choose each published server and which of status,
+start, stop and restart it permits. Local AlphaGSM works without a connection.
+
+```sh
+alphagsm agent enroll
+alphagsm agent bind '*'
+```
+
+Enrollment, binding registration, reports and management use
+`https://gameserver-api.sector-alpha.net`. Public accounts and the directory stay
+at `https://sector-alpha.net`. Existing official connections normalize to the API
+origin on upgrade, preserving IDs, credentials and permissions; restart the agent
+after updating. Custom provider origins stay unchanged.
+
+The quoted `'*'` binds all
+eligible local servers, inferring their settings and registering website IDs
+automatically. Use `agent bind my-minecraft` for one server. Review the suggested
+public address, player port, query port, publication and remote actions before saving.
+The player port comes from the local game's main port; `--port` overrides the
+query port and `--connect-port` overrides the player port for NAT. For Minecraft,
+`--port` sets both unless `--connect-port` is also supplied. Existing bindings
+keep their saved metadata until you rebind and approve a player port. Binding
+does not enable reporting; approved endpoints are sent only in reports.
+Update the receiving service before creating or rebinding servers: older
+receivers reject the new player-port field. Existing saved bindings remain
+compatible until you approve the field through rebinding.
+
+Use `--host game.mygameserver.com` for an existing hostname. Public reports check
+that all its DNS addresses match this machine's expected public IPs; `--public-ip`
+provides an explicit override. `agent check-endpoint my-minecraft` tests the
+advertised query port separately.
+
+Multiple games can share one machine and public IP with separate subdomains:
+
+```sh
+alphagsm agent bind my-minecraft --host minecraft.mygameserver.com
+alphagsm agent bind my-tf2 --host tf2.mygameserver.com
+```
+
+Each keeps its own player/query ports and permissions. Bulk binding also accepts
+a different hostname at each server's endpoint prompt.
+Follow the [step-by-step subdomain setup](docs/sector-alpha-agent.md#multiple-game-subdomains-on-one-machine)
+for DNS records, NAT overrides, port checks and publication.
+
+See [the connection guide](docs/sector-alpha-agent.md). The open source project’s
+home is https://alphagsm.sector-alpha.net/; the gaming community and server
+directory belong on https://sector-alpha.net/.
+
+Use the owner dashboard and `alphagsm agent replace-credential reporting` or
+`management` for independent key rotation; enter secrets only at hidden prompts.

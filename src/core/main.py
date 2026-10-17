@@ -11,6 +11,7 @@ import sys
 import traceback
 from . import program
 from .version import get_version
+from .server_names import RESERVED_SERVER_NAMES
 from sys import stderr, stdout
 from textwrap import dedent
 
@@ -58,6 +59,16 @@ def main(name, args):
     The main role of this function is to sanitize the command input from the user.
     """
 
+    if not args or args[0] in ("--welcome", "--skip-welcome"):
+        from .welcome import dispatch as welcome_dispatch
+        result = welcome_dispatch(name, args, main)
+        if result is not None:
+            return result
+
+    if args and args[0].lower() == "agent":
+        from agent.cli import run as run_agent
+        return run_agent(args[1:])
+
     if len(args) == 1 and args[0].lower() in ("-v", "--version", "version"):
         print("AlphaGSM %s" % (get_version(),))
         return 0
@@ -90,22 +101,8 @@ def main(name, args):
             help(name, None)
             return 2
     #  prevent servers having similar names to commnds
-    banned = set(
-        (
-            "help",
-            "create",
-            "up",
-            "down",
-            "shell",
-            "logs",
-            "compose",
-            "ps",
-            "self-update",
-        )
-        + Server.default_commands
-    )
     for s in raw_servers:
-        if s.lower() in banned:
+        if s.lower() in RESERVED_SERVER_NAMES:
             print(
                 s,
                 "is a banned server name as it's too similar to a command",
@@ -322,6 +319,9 @@ def _run_one_unlocked(name, server, cmd, args):
             #  try running the command
             try:
                 server.run_command(cmd, *args, **opts)
+                if cmd in ("set", "start", "stop", "restart", "setup"):
+                    from agent.cli import notify_success
+                    notify_success(tag)
                 #  developers: be sure to check if command_functions dictionary
                 #  has been filled, otherwise the error called here will make
                 #  no sense
@@ -696,6 +696,8 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                 file=file,
             )
 
+        print(name, "--welcome : Replay the optional setup tour.", file=file)
+        print(name, "--skip-welcome : Skip the first-run tour.", file=file)
         print("Top-level commands:", file=file)
         print(
             dedent("""

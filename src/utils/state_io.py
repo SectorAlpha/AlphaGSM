@@ -156,3 +156,45 @@ def _after_fork():
 
 if hasattr(os, "register_at_fork"):
     os.register_at_fork(after_in_child=_after_fork)
+
+
+def held_descriptor(filename):
+    """Return this thread's held POSIX lock for a trusted bounded child helper."""
+    path = str(Path(filename).resolve()) + ".lock"
+    with _REGISTRY_MUTEX:
+        entry = _LOCKS.get(path)
+    if entry is None or not entry.mutex.acquire(blocking=False):
+        return None
+    try:
+        return entry.descriptor if entry.depth else None
+    finally:
+        entry.mutex.release()
+
+
+@contextmanager
+def inherited_state_lock(filename, descriptor):
+    """Adopt an inherited open-file lock without releasing the parent's lock.
+
+    The inode must match the selected datastore sidecar. Nested datastore calls
+    reuse ownership. The descriptor is not inherited by further command children.
+    Only the internal helper uses this; ordinary commands acquire their own lock.
+    """
+    path = str(Path(filename).resolve()) + ".lock"
+    expected, actual = os.stat(path), os.fstat(descriptor)
+    if (expected.st_dev, expected.st_ino) != (actual.st_dev, actual.st_ino):
+        raise ValueError("Inherited lock does not match selected server")
+    os.set_inheritable(descriptor, False)
+    _try_lock(descriptor)
+    entry = _LockState(depth=1, descriptor=descriptor)
+    with _REGISTRY_MUTEX:
+        if path in _LOCKS and _LOCKS[path].depth:
+            raise ValueError("Lock already registered")
+        _LOCKS[path] = entry
+    with entry.mutex:
+        try:
+            yield
+        finally:
+            with _REGISTRY_MUTEX:
+                _LOCKS.pop(path, None)
+            # Do not LOCK_UN: this open-file description is shared with the parent.
+            os.close(descriptor)
