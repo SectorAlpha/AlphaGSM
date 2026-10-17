@@ -129,8 +129,43 @@ alphagsm '*' status
 `*` means every server for the current user. `username/server` runs as that
 user through `sudo` when permitted.
 
-## Not implemented yet
+## SteamCMD session profiles
 
-SteamCMD auth profiles (`alphagsm steam-auth login`) are planned so AUTH-gated
-Steam apps can `setup`. They are **not** a command today. See
-[SteamCMD Auth Profiles](steamcmd-auth.md).
+SteamCMD session profiles support explicit owned-file setup for declared BYO
+Steam sources. See [SteamCMD session profiles](steamcmd-auth.md) for their scope;
+legacy AUTH-gated modules are not automatically migrated.
+
+
+## Game-specific BYO files
+
+```bash
+alphagsm myserver assets requirements
+alphagsm myserver assets check --json
+alphagsm myserver assets import /path/to/owned-game
+alphagsm steam-auth login owned your_steam_username
+alphagsm myserver setup --auth-profile owned
+alphagsm myserver setup --steam-dir /path/to/SteamLibrary/steamapps
+alphagsm myserver assets fetch steam-owned --auth-profile owned
+alphagsm steam-auth status owned
+alphagsm steam-auth logout owned
+```
+
+Only recipes that declare managed import support can import or fetch files.
+The server must be stopped for those actions. `requirements` explains the
+game-specific source, files and destinations without login. `check` validates
+files, not server readiness. See [BYO files](byo-files.md) and
+[private SteamCMD sessions](steamcmd-auth.md).
+
+`setup --auth-profile NAME` remembers the profile name per server and downloads
+missing declared files. `setup --steam-dir PATH` locates the installed source
+app by AppID and imports its allowlisted files. It overrides remembered auth
+for that run, as does `--assets PATH`; explicit source options are mutually
+exclusive. Clear remembered auth with `set steam_auth_profile DELETE`.
+
+The same commands apply to a host binary and to a Python library call. When
+game servers use Docker, the login still runs in that AlphaGSM process and the
+private profile is not mounted into the game container. Inside the manager
+container, run `./alphagsm-docker steam-auth login owned your_steam_username`
+from a terminal. A non-terminal login is rejected. See
+[SteamCMD session profiles](steamcmd-auth.md). Live auth and BYO tests run
+locally with `./run_local_tests.sh`.

@@ -4,6 +4,7 @@ from utils.cmdparse import cmdparse
 from server import Server, ServerError, server as servermodule
 from . import multiplexer as mp
 from . import self_update
+from . import steam_auth
 import subprocess as sp
 import screen
 import os
@@ -62,6 +63,9 @@ def main(name, args):
         print("AlphaGSM %s" % (get_version(),))
         return 0
 
+    if len(args) >= 1 and args[0].lower() == "steam-auth":
+        return steam_auth.run_steam_auth(name, args[1:], stderr=stderr)
+
     if len(args) >= 1 and args[0].lower() == "self-update":
         return self_update.run_self_update(name, args[1:], stderr=stderr)
 
@@ -101,6 +105,7 @@ def main(name, args):
             "compose",
             "ps",
             "self-update",
+            "steam-auth",
         )
         + Server.default_commands
     )
@@ -711,6 +716,7 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                            checking what servers a wildcard matched or in
                            scripts to list the servers in a script processable
                            way.
+          steam-auth login|status|logout : Manage local SteamCMD sessions.
           self-update [OPTION]... : Check for a newer AlphaGSM release and
                            apply it when supported.
         """).rstrip(),
@@ -722,6 +728,9 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
         #  if we have a command, return help relating to the command to the
         #  specific command
         if server is None:
+            if cmd == "steam-auth":
+                steam_auth.print_usage(name, file)
+                return
             if cmd == "self-update":
                 cmdparse.longhelp(
                     cmd,

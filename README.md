@@ -25,6 +25,21 @@ The everyday flow is always the same:
 Then `stop`, `backup`, or `update` as needed. Pick a game from
 [the server guides](docs/README.md) if you want the exact module name.
 
+For supported Steam-owned files, log in with `./alphagsm steam-auth login owned <username>`,
+then run `./alphagsm myserver setup --auth-profile owned`. Setup remembers that
+profile name. `--steam-dir /path/to/SteamLibrary/steamapps` uses installed files
+instead. The [BYO file helpers](docs/byo-files.md) explain supported sources,
+client exports and manual staging. Supported installs keep compatible maps and
+their supporting server content.
+
+On a host install, including one whose game servers run in Docker, type the
+login in a terminal before `start`. The game container does not receive the
+Steam session. Inside the AlphaGSM manager container, run
+`./alphagsm-docker steam-auth login owned <username>` from a terminal. A login
+without a terminal is rejected. [SteamCMD session profiles](docs/steamcmd-auth.md)
+has both command sequences. Live auth and owned-file tests stay on your machine:
+`./run_local_tests.sh --help`.
+
 You can also ask an AI agent with terminal access to do this work. Start with
 “Use alphagsm-agent-operations to run my server,” and give it the game, server
 name and desired result. See [Run AlphaGSM With An AI Agent](docs/agent-operations.md)
@@ -98,6 +113,10 @@ If you are installing AlphaGSM from source on the host, you need:
 `gmodserver` note: setup also downloads common mountable Source content into a separate `_gmod_content/` directory and writes `garrysmod/cfg/mount.cfg` plus `mountdepots.txt` defaults.
 
 Some server types need one extra thing:
+
+For games that need files you already own, modules with an asset recipe can
+import a folder or downloaded archive with `setup --assets PATH`. See
+[Owned Game Assets](docs/owned-assets.md) for Windows and Linux examples.
 
 - Minecraft needs Java:
   ```bash

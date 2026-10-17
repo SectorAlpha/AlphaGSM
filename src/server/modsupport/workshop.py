@@ -15,6 +15,7 @@ MAX_WORKSHOP_NODES = 1000
 MAX_WORKSHOP_REQUESTS = 128
 _API_ROOT = "https://api.steampowered.com/ISteamRemoteStorage"
 _MAX_RESPONSE_BYTES = 2 * 1024 * 1024
+_VISIBILITY_LABELS = {0: "public", 1: "friends-only", 2: "private", 3: "unlisted"}
 
 
 def validate_workshop_identifier(value):
@@ -45,6 +46,31 @@ def normalize_workshop_identifier(value):
         raise ModSupportError("Expected a Workshop ID or Steam Community filedetails URL") from exc
 
 
+def _not_found_message(item_ids):
+    """Explain a Workshop id Steam did not return to this request."""
+    if len(item_ids) == 1:
+        return (f"Steam Workshop {item_ids[0]} was not found. "
+                "It may be private, unlisted, or removed.")
+    listed = ", ".join(item_ids)
+    return (f"Steam Workshop items {listed} were not found. "
+            "They may be private, unlisted, or removed.")
+
+
+def report_workshop_visibility(record):
+    """Print Steam's visibility label when a resolved record includes one."""
+    try:
+        label = _VISIBILITY_LABELS[int(record.get("visibility"))]
+        item_id = validate_workshop_identifier(record["publishedfileid"])
+    except (KeyError, TypeError, ValueError):
+        return
+    kind = "collection" if record.get("file_type") == 2 else "item"
+    title = " ".join(str(record.get("title") or "").split())
+    message = f"Steam Workshop {kind} {item_id} is {label}"
+    if title:
+        message += f": {title}"
+    print(message)
+
+
 def _post_details(method, ids, result_key, *, allow_not_found=False):
     """Read bounded public Valve metadata with finite transport retries."""
     count_key = "collectioncount" if method == "GetCollectionDetails" else "itemcount"
@@ -63,7 +89,11 @@ def _post_details(method, ids, result_key, *, allow_not_found=False):
             if len(by_id) != len(records) or set(by_id) != set(ids):
                 raise ValueError("Missing or unexpected Workshop IDs")
             allowed_results = (1, 9) if allow_not_found else (1,)
-            if any(record.get("result") not in allowed_results for record in records):
+            unexpected = [record for record in records if record.get("result") not in allowed_results]
+            if unexpected:
+                if all(record.get("result") == 9 for record in unexpected):
+                    missing = [validate_workshop_identifier(record["publishedfileid"]) for record in unexpected]
+                    raise ModSupportError(_not_found_message(missing))
                 raise ModSupportError("Steam Workshop item or collection is unavailable or inaccessible")
             return by_id
         except (KeyError, TypeError, ValueError, UnicodeError) as exc:
@@ -102,6 +132,7 @@ class _WorkshopResolver:
         missing = list(dict.fromkeys(value for value in ids if value not in self.metadata))
         if len(self.metadata) + len(missing) > MAX_WORKSHOP_NODES:
             raise ModSupportError("Steam Workshop collection exceeds the item limit")
+        pending = []
         for offset in range(0, len(missing), 100):
             records = self.request("GetPublishedFileDetails", missing[offset:offset + 100], "publishedfiledetails")
             for item_id, record in records.items():
@@ -136,7 +167,10 @@ class _WorkshopResolver:
                             record["file_type"] = 0
                 if record.get("file_type") not in (0, 2):
                     raise ModSupportError(f"Steam Workshop ID {item_id} is not a downloadable item or collection")
+                pending.append(record)
             self.metadata.update(records)
+        for record in pending:
+            report_workshop_visibility(record)
 
     def children(self, collection_id):
         """Read validated collection child IDs before traversal."""

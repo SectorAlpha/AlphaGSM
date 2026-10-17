@@ -33,8 +33,8 @@ def ensure_executable(path):
         os.chmod(path, os.stat(path).st_mode | 0o111)
 
 
-def sync_tree(source, target, *, skip_root_files=()):
-    """Recursively copy an extracted tree into the install directory."""
+def sync_tree(source, target, *, skip_root_files=(), skip_relative_files=()):
+    """Copy a tree, skipping exact source-relative files without pruning directories."""
 
     os.makedirs(target, exist_ok=True)
     for root, dirs, files in os.walk(source):
@@ -56,6 +56,8 @@ def sync_tree(source, target, *, skip_root_files=()):
             if rel_root == "." and filename in skip_root_files:
                 continue
             src_file = os.path.join(root, filename)
+            if os.path.relpath(src_file, source) in skip_relative_files:
+                continue
             tgt_file = os.path.join(target_root, filename)
             if os.path.islink(src_file):
                 link_target = os.readlink(src_file)
@@ -82,8 +84,8 @@ def resolve_archive_root(downloadpath, *, archive_name=None):
     return downloadpath
 
 
-def install_archive(server, compression):
-    """Download and install an archive-backed server into the configured dir."""
+def install_archive(server, compression, *, skip_relative_files=()):
+    """Install an archive, optionally skipping exact extracted-root-relative files."""
 
     os.makedirs(server.data["dir"], exist_ok=True)
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
@@ -102,7 +104,12 @@ def install_archive(server, compression):
         skip_root_files = ()
         if os.path.normpath(source_root) == os.path.normpath(downloadpath):
             skip_root_files = (server.data["download_name"],)
-        sync_tree(source_root, server.data["dir"], skip_root_files=skip_root_files)
+        sync_tree(
+            source_root,
+            server.data["dir"],
+            skip_root_files=skip_root_files,
+            skip_relative_files=skip_relative_files,
+        )
         server.data["current_url"] = server.data["url"]
     else:
         print("Skipping download")

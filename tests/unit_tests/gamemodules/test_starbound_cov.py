@@ -13,12 +13,79 @@ with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMoc
     from server import ServerError
     mod.runtime_module.send_to_server = MagicMock()
 
+def test_setup_command_accepts_port_then_dir():
+    names = [spec.name for spec in mod.command_args["setup"].optionalarguments]
+    assert names[:2] == ["PORT", "DIR"]
+
+
+def test_recipe_declares_one_authenticated_steamcmd_source():
+    server = DummyServer()
+    recipe = mod.get_asset_requirements(server)
+    steam_sources = [source for source in recipe["sources"] if source["kind"] == "steamcmd"]
+    assert [source["kind"] for source in recipe["sources"]] == ["operator-files", "steamcmd"]
+    assert len(steam_sources) == 1
+    source = steam_sources[0]
+    assert source["app_id"] == 211820
+    assert source["authentication"] == "required"
+    assert source["platform"] == "linux"
+    assert "linux64/starbound_server" in recipe["include"]
+    assert "assets/packed.pak" in recipe["include"]
+    assert "win64/starbound_server.exe" not in recipe["include"]
+
+
 def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
     assert server.data["Steam_AppID"] == 211820
     assert server.data["backupfiles"] == ["giraffe_storage", "linux64/sbboot.config"]
     assert server.data["exe_name"] == "linux64/starbound_server"
+    assert server.data["port"] == 27015
+
+
+def test_configure_defaults_to_documented_game_port(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, dir=str(tmp_path))
+    assert server.data["port"] == 21025
+
+
+def test_sync_server_config_enables_a2s_query_server(tmp_path):
+    import json
+
+    server = DummyServer("sb")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 21025
+    config_path = tmp_path / "storage" / "starbound_server.config"
+    config_path.parent.mkdir()
+    config_path.write_text(json.dumps({
+        "runQueryServer": False,
+        "queryServerPort": 1,
+        "gameServerPort": 1,
+        "maxPlayers": 4,
+        "serverUsers": {"admin": {"admin": True, "password": "secret"}},
+    }), encoding="utf-8")
+
+    mod.sync_server_config(server)
+
+    payload = json.loads(config_path.read_text(encoding="utf-8"))
+    assert payload["runQueryServer"] is True
+    assert payload["queryServerPort"] == 21025
+    assert payload["gameServerPort"] == 21025
+    assert payload["maxPlayers"] == 4
+    assert payload["serverUsers"]["admin"]["password"] == "secret"
+    assert "port" in mod.config_sync_keys
+
+
+def test_prestart_writes_query_server_config(tmp_path):
+    import json
+
+    server = DummyServer("sb")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 21025
+    mod.prestart(server)
+    payload = json.loads((tmp_path / "storage" / "starbound_server.config").read_text(encoding="utf-8"))
+    assert payload["runQueryServer"] is True
+    assert payload["queryServerPort"] == 21025
+    assert payload["gameServerPort"] == 21025
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -31,10 +98,11 @@ def test_configure_ask_defaults(tmp_path, monkeypatch):
 
 
 def test_configure_ask_custom(tmp_path, monkeypatch):
-    inputs = iter([str(tmp_path / 'custom')])
+    inputs = iter(["21030", str(tmp_path / 'custom')])
     monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
     server = DummyServer()
     mod.configure(server, ask=True)
+    assert server.data["port"] == 21030
 
 
 def test_install(tmp_path):
@@ -46,7 +114,40 @@ def test_install(tmp_path):
     exe_path = tmp_path / "linux64/starbound_server"
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
+    mod.steamcmd.download = MagicMock()
     mod.install(server)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/", 211820, True
+    )
+    assert server.data["exe_name"] == "linux64/starbound_server"
+
+
+def test_install_passes_saved_steam_auth_profile(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "linux64/starbound_server"
+    server.data["steam_auth_profile"] = "owned"
+    exe_path = tmp_path / "linux64/starbound_server"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("server")
+    mod.steamcmd.download = MagicMock()
+    mod.install(server)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/", 211820, True, auth_profile="owned"
+    )
+
+
+def test_install_selects_linux_binary_when_linux64_is_absent(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "linux64/starbound_server"
+    exe_path = tmp_path / "linux/starbound_server"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("server")
+    mod.steamcmd.download = MagicMock()
+    mod.install(server)
+    assert server.data["exe_name"] == "linux/starbound_server"
+    assert "auth_profile" not in mod.steamcmd.download.call_args.kwargs
 
 
 def test_install_without_staged_tree_requires_byo(tmp_path):
@@ -71,6 +172,19 @@ def test_update_with_restart(tmp_path):
     )
     assert server._stopped
     assert server._started
+
+
+def test_update_passes_saved_steam_auth_profile(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = 211820
+    server.data["Steam_anonymous_login_possible"] = True
+    server.data["steam_auth_profile"] = "owned"
+    mod.steamcmd.download = MagicMock()
+    mod.update(server, validate=False, restart=False)
+    mod.steamcmd.download.assert_called_once_with(
+        str(tmp_path) + "/", 211820, True, validate=False, auth_profile="owned"
+    )
 
 
 def test_update_no_restart(tmp_path):
@@ -103,6 +217,15 @@ def test_restart():
     assert server._started
 
 
+def test_get_query_address_uses_game_port(monkeypatch):
+    server = DummyServer()
+    server.data["port"] = 21025
+    server.data["queryport"] = 27015
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.1.2.3")
+    assert mod.get_query_address(server) == ("10.1.2.3", 21025, "a2s")
+    assert mod.get_info_address(server) == ("10.1.2.3", 21025, "a2s")
+
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -111,8 +234,8 @@ def test_get_start_command(tmp_path):
     exe_path.parent.mkdir(parents=True, exist_ok=True)
     exe_path.write_text("")
     cmd, cwd = mod.get_start_command(server)
-    assert cmd == ["./linux64/starbound_server"]
-    assert cwd == server.data["dir"]
+    assert cmd == ["./starbound_server"]
+    assert cwd == str(tmp_path / "linux64")
 
 
 def test_get_start_command_missing_exe(tmp_path):

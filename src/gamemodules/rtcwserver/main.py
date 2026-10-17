@@ -41,7 +41,9 @@ RTCW_ALLOWED_MOD_SUFFIXES = {
     ".tar.xz": "tar",
     ".zip": "zip",
 }
+# ioRTCW's dedicated binary also checksums retail single-player main/pak0.pk3.
 RTCW_REQUIRED_MULTIPLAYER_ASSETS = (
+    "pak0.pk3",
     "mp_bin.pk3",
     "mp_pak0.pk3",
     "mp_pak1.pk3",
@@ -56,6 +58,24 @@ RTCW_REQUIRED_MULTIPLAYER_ASSETS = (
     "mp_pakmaps4.pk3",
     "mp_pakmaps5.pk3",
     "mp_pakmaps6.pk3",
+)
+# Loose files from the ioRTCW Linux release that a dedicated server does not run.
+# Multiplayer content packs, including main/mp_bin0.pk3, stay installed.
+RTCW_CLIENT_ONLY_ENGINE_FILES = (
+    "iowolfmp.x86_64",
+    "iowolfsp.x86_64",
+    "openurl.sh",
+    "renderer_mp_opengl1_x86_64.so",
+    "renderer_mp_rend2_x86_64.so",
+    "renderer_sp_opengl1_x86_64.so",
+    "renderer_sp_rend2_x86_64.so",
+    "main/cgame.mp.x86_64.so",
+    "main/cgame.sp.x86_64.so",
+    "main/qagame.sp.x86_64.so",
+    "main/ui.mp.x86_64.so",
+    "main/ui.sp.x86_64.so",
+    "main/vm/cgame.mp.qvm",
+    "main/vm/ui.mp.qvm",
 )
 
 commands = ("mod",)
@@ -476,14 +496,22 @@ def configure(
 
 
 def install(server):
-    """Download and install the RTCW server archive."""
+    """Download and install the RTCW dedicated-server archive."""
 
     if "url" not in server.data or not server.data["url"]:
         resolved_version, resolved_url = resolve_download(version=server.data.get("version"))
         server.data["version"] = resolved_version
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", os.path.basename(resolved_url))
-    install_archive(server, detect_compression(server.data["download_name"]))
+    # A configured executable remains installable even if it is a client binary.
+    configured_exe = os.path.normpath(server.data["exe_name"])
+    install_archive(
+        server,
+        detect_compression(server.data["download_name"]),
+        skip_relative_files=tuple(
+            path for path in RTCW_CLIENT_ONLY_ENGINE_FILES if path != configured_exe
+        ),
+    )
     sync_server_config(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
@@ -506,12 +534,14 @@ def _assert_required_base_assets(install_dir):
 
     missing_assets = _missing_required_base_assets(install_dir)
     if not missing_assets:
+        from utils.byo_files import require_module_multiplayer_maps
+        require_module_multiplayer_maps(install_dir, __file__)
         return
     gamemodule_common.raise_byo_requirement(
         "rtcwserver",
         "original RTCW multiplayer data",
         actions=(
-            "Copy the multiplayer pk3 set into <install_dir>/main/: {}".format(
+            "Copy retail pak0.pk3 and the multiplayer pk3 set into <install_dir>/main/: {}".format(
                 ", ".join(missing_assets)
             ),
             "Retry start once those files are present",
@@ -559,8 +589,19 @@ def get_start_command(server):
         require_explicit_tokens=True,
         value_transform=lambda _spec, current_value: str(current_value),
     )
+    # Keep generated files in the install directory for both process and Docker
+    # launches. An absolute host path would be wrong inside the container.
     return (
-        ["./" + server.data["exe_name"], *launch_args],
+        [
+            "./" + server.data["exe_name"],
+            "+set",
+            "fs_basepath",
+            ".",
+            "+set",
+            "fs_homepath",
+            ".",
+            *launch_args,
+        ],
         server.data["dir"],
     )
 
@@ -599,6 +640,18 @@ def get_container_spec(server):
         "ports": requirements.get("ports", []),
         "command": cmd,
     }
+
+
+def get_query_address(server):
+    """Return the Quake UDP query address used by the rtcwserver module."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
+
+
+def get_info_address(server):
+    """Return the Quake UDP info address used by the rtcwserver module."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
 
 
 def do_stop(server, j):
@@ -644,3 +697,9 @@ def checkvalue(server, key, *value):
         ),
         backup_module=backup_utils,
     )
+
+
+def get_asset_requirements(server):
+    """Describe this game's owned files, acquisition routes and staging limits."""
+    from utils.byo_files import load_requirements
+    return load_requirements(server, __file__, 'byo_assets.json')

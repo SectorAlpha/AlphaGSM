@@ -1,0 +1,31 @@
+{
+  "description": "Matching Technic Tekkit server pack",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    },
+    {
+      "path": "mods",
+      "kind": "directory"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Select the exact Technic Tekkit variant/version and use its Server Download. Preserve all bundled mods, libraries and config. A Tekkit.jar filename alone does not establish compatibility.",
+      "live_validated": false,
+      "url": "https://www.technicpack.net/modpack/tekkit"
+    }
+  ],
+  "defaults": {
+    "exe_name": "Tekkit.jar"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "minecraft.tekkit",
+  "guide": "docs/servers/minecraft-tekkit.md",
+  "schema_version": 1
+}

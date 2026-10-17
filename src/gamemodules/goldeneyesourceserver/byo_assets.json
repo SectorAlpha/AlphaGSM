@@ -1,0 +1,35 @@
+{
+  "description": "Complete Source 2007 plus GoldenEye: Source server",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    },
+    {
+      "path": "gesource/gameinfo.txt",
+      "kind": "file"
+    },
+    {
+      "path": "gesource/maps/*.bsp",
+      "kind": "glob"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Obtain a complete compatible Source 2007/AppID 310 base and official full GoldenEye: Source server distribution. Retain top-level gesource/ and sibling engine files. Existing automated URLs have documented access failures; the current official page advertises Windows content and is not a direct Linux artifact.",
+      "live_validated": false,
+      "url": "https://www.geshl2.com/server-downloads/"
+    }
+  ],
+  "defaults": {
+    "exe_name": "srcds_run"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "goldeneyesourceserver",
+  "guide": "docs/servers/goldeneyesourceserver.md",
+  "schema_version": 1
+}

@@ -588,6 +588,33 @@ non-schema keys still fall through to `checkvalue` / `str_keys` unchanged.
 
 ## Download And Install Pipeline
 
+### Operator-owned game assets
+
+Modules can declare `get_asset_requirements(server)` to opt into `setup --assets
+PATH`, `assets import PATH`, `assets check [--json]` and `assets export SOURCE
+--output ZIP`. `server.assets` owns command orchestration; `utils.asset_import`
+owns portable staging, complete-input validation, hash ownership and rollback.
+Recipes use forward-slash paths: `roots` selects allowed source roots, `include`
+contains anchored allowlist globs, `required` lists nonempty source-relative
+files, and `target` is a relative destination prefix beneath the install root.
+`case_insensitive=True` normalizes source-relative filenames to lowercase.
+
+Only immutable game assets belong in these recipes. Keep credentials, saves,
+operator config and manager metadata out. Imports require a stopped server;
+setup imports run after module configure and port resolution, before install.
+ZIP exports exclude all files outside the allowlist and refuse output inside
+the source. Ownership lives in `.alphagsm/assets.json`, independent of mod state.
+Provider auth, exported settings and external services retain their own APIs.
+Required-file checks are presence checks; upstream version/format checks and
+real lifecycle evidence are still necessary. Project Reclaimer is the first
+consumer; existing BYO modules have not been migrated automatically.
+
+Reclaimer declares `reclaimer_rcon` for authenticated WebSocket status. Its
+Docker spec uses the existing Wine family with read-only game assets, host
+networking, `stop_signal="SIGINT"` and `stop_timeout=30`. Stop options are opt-in;
+existing modules retain their defaults. Refer to the module guide for the
+explicitly deferred real process/Docker validation and fixed-map limitations.
+
 The download subsystem is split between:
 
 - [src/downloader/downloader.py](src/downloader/downloader.py)
@@ -965,8 +992,22 @@ Regenerate per-game `set` tables with:
 PYTHONPATH=.:src python3 scripts/sync_server_guide_settings.py
 ```
 
-SteamCMD account login is not implemented yet. The public TODO is
-[docs/steamcmd-auth.md](docs/steamcmd-auth.md). Local design notes under
+SteamCMD session profiles support explicit owned-file acquisition on Linux;
+see [docs/steamcmd-auth.md](docs/steamcmd-auth.md) for their scope and validation
+limits. Live Steam-auth and BYO lifecycle tests live in `local_tests/` and run
+through `./run_local_tests.sh`. Disposable integration files default to the
+checkout's `.local-tests/` directory. Set `ALPHAGSM_LOCAL_WORK_ROOT` to put
+that tree on another disk. SteamCMD uses `steamcmd_path` when set, and
+otherwise the Steam client directory for Linux, macOS, or Windows.
+`pytest.ini` excludes that directory
+from normal collection, and CI must not invoke the script. Profile directories,
+passwords, and tokens stay gitignored. When AlphaGSM launches a game container,
+the private `steam-auth/` directory is not a container mount, and a mount that
+would expose it is rejected before `docker run`. Anonymous
+SteamCMD SDK mounts are separate. The manager wrapper forwards ordinary
+commands with `docker compose exec -T`. `./alphagsm-docker steam-auth login PROFILE USERNAME`
+uses `exec -it` when stdin is a terminal, and a non-terminal login exits before
+compose exec. Local design notes under
 `docs/superpowers/` are gitignored and are not part of the published docs.
 
 ## Repo Automation Files
@@ -1129,3 +1170,108 @@ When upgrading an existing source environment that installed the obsolete
 `python -m pip uninstall crontab`, then install `requirements-runtime.txt` again.
 AlphaGSM uses the `python-crontab` distribution's `CronTab` API. A fresh binary or
 fresh environment does not need this cleanup.
+
+
+## Game-specific BYO file contracts
+
+File-based BYO modules expose `get_asset_requirements(server)` and own a nearby
+`byo_assets.json` (Minecraft family helpers use a prefixed local filename).
+`utils.byo_files.load_requirements` resolves only declared non-secret path keys
+from the instance. Provider credentials stay in provider metadata/auth storage.
+
+Rich recipes declare `module`, `description`, `requirements`, `sources`,
+`managed_import`, `validation`, and source guidance. Requirements have a relative
+`path` and kind `file`, `glob`, `directory`, or `archive-member`; the latter
+includes a relative archive `member` pattern or a nonempty `member_any_of`
+list. `member_case_insensitive` controls archive member matching independently
+of filesystem path casing; member separators are normalized before comparison.
+`any_of` declares alternative paths and `optional` marks advisory content.
+Files must be nonempty unless a requirement explicitly says otherwise. Checks reject symlinks and report
+`game_readiness: not-checked`. Manual recipes use `sentinel-only` validation.
+
+Managed recipes also supply the existing importer fields `roots`, `include`,
+`required`, and `target`. Required patterns are ANDed; each `required_any` group
+is ORed internally and ANDed with other groups. `destination_names` explicitly
+preserves a native filename when case-insensitive source matching would otherwise
+normalize it (for example COD4's `fileSysCheck.cfg`). `inspect_files` uses
+native filesystem casing for installed and selected staged files. Acquisition
+prechecks explicitly use `source=True` to honor source `case_insensitive`
+matching before normalization. The importer validates
+selected staged bytes against rich requirements before publication or export,
+while preserving rollback and ownership hashes. It never infers that unrelated
+files from a full Steam installation may be copied. Existing Reclaimer recipes
+without rich requirements remain compatible.
+
+ETS2/ATS manifests opt in with `config_home_setting: configdir`. Relative homes
+retain installation-relative paths and existing ownership metadata. For an
+absolute home, the loader separates that inspection root from relative export
+filenames and marks the recipe manual-only; it never passes an absolute target
+to the importer. Requirements/check work without extending publication rights
+to that external directory.
+
+A Steam source records `id`, `kind: steamcmd`, numeric `app_id`, explicit
+`platform`, `authentication: required` or `anonymous`, optional public `branch`,
+and human instructions/source links. Source identities are not successful
+entitlement/download evidence. `utils.byo_acquire.acquire` downloads the app to
+private temporary staging, validates declared content and imports only the
+allowlist. Passwords are never recipe fields. Explicit profile selection calls
+`steamcmd.download(..., auth_profile=profile)` using the session-only auth helper.
+
+Session profiles keep their own runtime/home under the AlphaGSM state root.
+Owner-only permissions, trusted ancestor checks, link rejection and an inherited
+child-held lock protect their lifecycle. Interactive SteamCMD receives passwords
+and Guard directly; automated downloads disable prompts and sanitize errors.
+Local profile status is not proof of server-side authentication. See
+[SteamCMD session profiles](docs/steamcmd-auth.md).
+
+No live authenticated or CI integration validation is claimed for these helpers.
+Unit tests use synthetic game files and fake SteamCMD child processes, including
+permission, cancellation, interrupted-parent locks, staging cleanup, failed
+publication and exact native filename cases. Later local validation must use
+one operator-selected game at a time with a real entitled session.
+
+### Auth-first BYO setup
+
+The setup source options `auth_profile`, `steam_dir` and `assets_source` are
+manager arguments, consumed before game configure/install hooks. Conflicting
+explicit selectors fail before configure. File preparation runs after existing
+host/port checks and before module.install, retaining stopped-instance and
+transactional importer guards. Without a selected source or remembered profile,
+existing module setup behavior stays unchanged.
+
+`steam_auth_profile` stores a validated profile reference only. It is manager
+metadata outside config_sync_keys and can be cleared with the shared `set` path.
+An explicit local source overrides it for one invocation. A complete installed
+file contract avoids a repeated full download; failures never trigger fallback.
+
+`utils.steam_library.find_installed_app` reads bounded public KeyValues app and
+library manifests, resolves only the declared AppID, and returns a source tree
+for the existing importer. Explicit steamapps paths restrict discovery to one
+library. Missing/ambiguous installs, unsafe metadata and installdir escapes
+fail before import; auth files and Steam content are never modified.
+
+BYO selection declarations should describe the complete runnable dedicated-server
+payload, not only the minimum `requirements` sentinels. Keep all compatible map
+and supporting resource sets from the declared source, including required game
+scripts and native libraries. Keep content archives intact. Omit known
+unrelated client engines/renderers during installation; never delete untracked
+operator content while tightening an existing recipe. A campaign row is only
+complete when the reproducible source-specific acquisition/install/import code
+and selection regression tests are checked in.
+
+`utils.archive_install.sync_tree(...)` and `install_archive(...)` accept optional
+keyword-only `skip_relative_files`, matching exact extracted-root-relative file
+paths. The default is empty for existing callers. Q3 declares its known loose
+client engine exclusions in `Q3_CLIENT_ONLY_ENGINE_FILES`; it retains an
+explicitly configured executable and never filters inside PK3 content archives.
+These exclusions control source publication and do not delete existing operator
+files during setup or updates.
+
+The sequential BYO campaign records native port query, AlphaGSM status, info
+and shutdown outcomes separately for every game. Establish exact configured
+endpoints and transport before testing; validate real protocol responses and
+matching server properties. When a failure exposes module or shared-helper
+wiring defects, check in the fix with a regression and rerun the selected real
+lifecycle before closing that row. Keep Docker wrappers/config-sync contracts
+and record probe scope so host-local success does not imply Docker or external
+reachability. Authenticated CI integration remains deferred.

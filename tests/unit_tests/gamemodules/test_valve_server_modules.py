@@ -151,6 +151,37 @@ def test_valve_module_configure_uses_alphagsm_config_defaults(monkeypatch, tmp_p
     assert server.data["backupfiles"] == ["cstrike", "cstrike/cfg/server.cfg"]
 
 
+def test_valve_doinstall_keeps_anonymous_unless_profile_is_saved(monkeypatch, tmp_path):
+    module = importlib.import_module("gamemodules.ndserver")
+    valve_server = importlib.import_module("utils.valve_server")
+    calls = []
+
+    def fake_download(*args, **kwargs):
+        calls.append((args, kwargs))
+
+    monkeypatch.setattr(valve_server.steamcmd, "download", fake_download)
+    server = SimpleNamespace(
+        name="ndalpha",
+        data={"dir": str(tmp_path) + "/", "exe_name": "srcds_run"},
+    )
+
+    module.doinstall(server)
+
+    assert calls == [(
+        (server.data["dir"], 111710, True),
+        {"validate": False, "mod": None},
+    )]
+
+    calls.clear()
+    server.data["steam_auth_profile"] = "owned"
+    module.doinstall(server)
+
+    assert calls == [(
+        (server.data["dir"], 111710, False),
+        {"validate": False, "mod": None, "auth_profile": "owned"},
+    )]
+
+
 def test_valve_module_install_updates_server_cfg_from_settings(monkeypatch, tmp_path):
     module = importlib.import_module("gamemodules.cssserver")
     valve_server = importlib.import_module("utils.valve_server")

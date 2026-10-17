@@ -28,8 +28,9 @@ with `update`.
 | Keep AlphaGSM on the host, run games in Docker | [Run Docker-Backed Servers From Host AlphaGSM](docker-runtime-host.md) |
 | See which games currently pass | [Game Server Support Tracker](game-server-support.md) |
 | Install TF2 / Source mods or Minecraft plugins | [Installing Mods](installing-mods.md) |
+| Import owned game files from a folder or archive | [Owned Game Assets](owned-assets.md) |
 | Update a game or AlphaGSM itself | [Updating Servers And AlphaGSM](updating.md) |
-| SteamCMD login for AUTH-gated games | [SteamCMD Auth Profiles](steamcmd-auth.md) (not implemented yet) |
+| Log in for Steam-owned file setup | [SteamCMD Auth Profiles](steamcmd-auth.md) |
 | Add or change a game module | [Adding A Game Server](adding-a-game-server.md) |
 | Work on AlphaGSM internals | [Developer Guide](../DEVELOPERS.md) |
 
@@ -264,6 +265,7 @@ Popular starting points:
 - [Squad 44](servers/squad44server.md)
 - [Squad](servers/squadserver.md)
 - [Space Station 14](servers/ss14server.md)
+- [Project Reclaimer — pending real BYO validation](servers/projectreclaimer.md)
 - [Starbound](servers/starbound.md)
 - [StarRupture](servers/starruptureserver.md)
 - [Stationeers](servers/stationeersserver.md)

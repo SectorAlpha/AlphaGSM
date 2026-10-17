@@ -12,9 +12,10 @@ into the Docker backend.
 
 - `screen`
 - Python packages from `requirements.txt`
-- Original Wolfenstein: Enemy Territory base assets in `etmain/`
-  - Minimum required file for the stock dedicated server: `etmain/pak0.pk3`
-  - Some mods may also require `etmain/pak1.pk3` and `etmain/pak2.pk3`
+- Stock Wolfenstein: Enemy Territory multiplayer packs in `etmain/`
+  - Required files: `etmain/pak0.pk3`, `etmain/pak1.pk3`, and `etmain/pak2.pk3`
+  - `setup` stages only those three packs from the official Splash Damage freeware archive
+  - `pak0.pk3` alone is not enough
 
 ## Quick Start
 
@@ -54,12 +55,14 @@ Setup configures:
 
 - the game port (default 27960)
 - the install directory
-- downloads and extracts the server archive
+- downloads and extracts the ET: Legacy engine archive
+- stages `etmain/pak0.pk3`, `etmain/pak1.pk3`, and `etmain/pak2.pk3` from the official Splash Damage freeware full-game archive
+- does not install the original client, PunkBuster, videos, or etkey tools
 - installs the public ET: Legacy engine and `legacy/` mod bundle
 
-This server is supported in `ENABLED (BYO)` mode. Before `start`, copy the original Wolfenstein: Enemy Territory base assets into
-the install's `etmain/` directory. Without `etmain/pak0.pk3`, the dedicated
-server exits at `FS_InitFilesystem: Original game data files not found`.
+This server is supported in `ENABLED (BYO)` mode. The engine download does not include the stock packs. `setup` copies only the three multiplayer packs out of the official freeware archive. A tree that contains `pak0.pk3` without `pak1.pk3` and `pak2.pk3` is still rejected. Without `etmain/pak0.pk3`, the dedicated server exits at `FS_InitFilesystem: Original game data files not found`.
+
+A local process run on 2026-10-16 answered Quake status on UDP 57831 (`oasis`, hostname ET: Legacy Host, 0/24) and stopped. Docker was not rerun. The stock multiplayer maps in those packs are `battery`, `fueldump`, `goldrush`, `oasis`, `radar`, and `railgun`.
 
 ## Useful Commands
 
@@ -130,7 +133,7 @@ alphagsm myserver set KEY VALUE
 - **Executable**: `etlded.x86_64`
 - **Location**: `<install_dir>/etlded.x86_64`
 - **Engine**: Custom
-- **Owned assets required before start**: `etmain/pak0.pk3` minimum; `pak1.pk3` / `pak2.pk3` may be needed for some mods
+- **Stock packs staged by install**: `etmain/pak0.pk3`, `etmain/pak1.pk3`, and `etmain/pak2.pk3` from the official Splash Damage freeware archive. `pak0.pk3` alone is rejected.
 
 ### Server Configuration
 
@@ -144,3 +147,11 @@ alphagsm myserver set KEY VALUE
 - **Mod directory**: `<fs_game>/` (default `legacy/`)
 - **Mod notes**: AlphaGSM can now track direct `.pk3` and archive `url` entries for ET: Legacy, install approved `.pk3` payloads into the active `fs_game` directory, and clean up only AlphaGSM-managed files from `.alphagsm/mods/etlegacyserver/`.
 - **Workshop support**: No
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This module has an allowlisted local import recipe. Use its source instructions to prepare the required data before importing.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

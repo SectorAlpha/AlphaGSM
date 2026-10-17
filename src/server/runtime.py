@@ -10,6 +10,7 @@ but Docker is only selected when configuration opts into it.
 
 from __future__ import annotations
 
+import builtins
 from collections import deque
 import copy
 import contextvars
@@ -32,6 +33,7 @@ import screen
 from utils.settings import settings
 from utils.gamemodules import common as gamemodule_common
 from utils import proton
+from utils import steam_auth
 from utils import steamcmd as steamcmd_module
 from utils.platform_info import PLATFORM
 
@@ -1249,6 +1251,74 @@ def validate_mount_path_identity(mounts, *, _mount_snapshot=None):
     )
 
 
+def _path_forms(path):
+    """Return lexical and symlink-resolved forms of *path* without reading files."""
+
+    absolute = os.path.abspath(path)
+    forms = [absolute]
+    try:
+        resolved = os.path.realpath(path)
+    except OSError:
+        return forms
+    if os.path.abspath(resolved) != absolute:
+        forms.append(resolved)
+    return forms
+
+
+def _path_is_same_or_nested(parent, child):
+    """Return whether *child* is *parent* or a path inside it."""
+
+    parent = os.path.abspath(parent)
+    child = os.path.abspath(child)
+    try:
+        return os.path.commonpath([parent, child]) == parent
+    except ValueError:
+        return False
+
+
+def _paths_overlap(left, right):
+    """Return whether either path is the same as or inside the other."""
+
+    return _path_is_same_or_nested(left, right) or _path_is_same_or_nested(right, left)
+
+
+def reject_steam_auth_profile_mounts(mounts):
+    """Refuse Docker mounts that would publish the private SteamCMD profile.
+
+    The check compares paths only. It does not open, copy, or read session files.
+    """
+
+    roots = [str(steam_auth._state_root() / "steam-auth")]  # pylint: disable=protected-access
+    translated_root = _translate_manager_container_path_to_host(roots[0])
+    if translated_root and os.path.abspath(translated_root) != os.path.abspath(roots[0]):
+        roots.append(translated_root)
+    root_forms = []
+    for root in roots:
+        for form in _path_forms(root):
+            if form not in root_forms:
+                root_forms.append(form)
+    for mount in mounts or ():
+        source = _mount_source(mount)
+        if not source:
+            continue
+        candidates = [str(source)]
+        visible = _host_visible_mount_source(source)
+        if visible and os.path.abspath(str(visible)) != os.path.abspath(str(source)):
+            candidates.append(str(visible))
+        candidate_forms = []
+        for candidate in candidates:
+            for form in _path_forms(candidate):
+                if form not in candidate_forms:
+                    candidate_forms.append(form)
+        for candidate in candidate_forms:
+            for root in root_forms:
+                if _paths_overlap(candidate, root):
+                    raise RuntimeError(
+                        "Docker mount exposes the private SteamCMD auth profile: "
+                        + str(source)
+                    )
+
+
 def _host_visible_mount_source(source):
     """Return the Docker-daemon-visible version of *source*."""
 
@@ -1341,7 +1411,7 @@ def build_container_spec(
         list(requirements.get("mounts") or []),
         _mount_snapshot=mount_snapshot,
     )
-    command, cwd = get_start_command(server)
+    command, cwd = _start_command_for_container_spec(server, get_start_command)
     command, mapped_cwd, resolved_mounts = resolve_container_launch_context(
         server,
         mounts=requirements.get("mounts"),
@@ -1449,6 +1519,21 @@ def _map_container_path_to_host(mounts, container_path):
             return source_abs
         return os.path.join(source_abs, relative_path)
     return None
+
+
+def _start_command_for_container_spec(server, get_start_command):
+    """Build a container command when the host has no Wine or Proton.
+
+    This module's ``RuntimeError`` is the container-spec error, not the
+    missing-runtime error raised by ``utils.proton``.
+    """
+
+    try:
+        return get_start_command(server)
+    except builtins.RuntimeError as exc:
+        if "Neither Wine nor Proton-GE is available" not in str(exc):
+            raise
+    return proton.host_independent_start_command(server, get_start_command)
 
 
 def resolve_container_launch_context(
@@ -2152,6 +2237,12 @@ def get_container_spec(
     merged.setdefault("env", {})
     merged.setdefault("mounts", [])
     merged.setdefault("ports", [])
+    if "stop_signal" in merged and merged["stop_signal"] not in ("SIGINT", "SIGTERM"):
+        raise RuntimeError("Container stop_signal must be SIGINT or SIGTERM")
+    if "stop_timeout" in merged and (not isinstance(merged["stop_timeout"], int)
+                                    or isinstance(merged["stop_timeout"], bool)
+                                    or not 1 <= merged["stop_timeout"] <= 300):
+        raise RuntimeError("Container stop_timeout must be an integer from 1 to 300")
     if "init" in merged and not isinstance(merged["init"], bool):
         raise RuntimeError("Container init must be a boolean")
     if merged.get("runtime_family") == "java":
@@ -3442,6 +3533,7 @@ class ContainerRuntime(BaseRuntime):
             home_plan = _validate_host_user_container_home(server, spec, identity)
         snapshot_token = _ACTIVE_MOUNT_TRANSLATION_SNAPSHOT.set(mount_snapshot)
         try:
+            reject_steam_auth_profile_mounts(spec.get("mounts"))
             self._validate_mount_path_identity(spec)
         finally:
             _ACTIVE_MOUNT_TRANSLATION_SNAPSHOT.reset(snapshot_token)
@@ -3457,6 +3549,10 @@ class ContainerRuntime(BaseRuntime):
         if home_plan is not None:
             _create_host_user_container_home(home_plan, identity)
         command = ["docker", "run", "-d"]
+        if spec.get("stop_signal"):
+            command.extend(["--stop-signal", spec["stop_signal"]])
+        if spec.get("stop_timeout"):
+            command.extend(["--stop-timeout", str(spec["stop_timeout"])])
         if spec.get("init", False):
             command.append("--init")
         if spec.get("stdin_open", False):
@@ -3491,9 +3587,10 @@ class ContainerRuntime(BaseRuntime):
         return self._container_running_state(name) is True
 
     def kill(self, server):
-        name = resolve_runtime_metadata(server).get("container_name", "alphagsm-" + server.name)
+        spec = resolve_runtime_metadata(server)
+        name = spec.get("container_name", "alphagsm-" + server.name)
         try:
-            self._run_check_output(["docker", "stop", "--time", "10", name], text=True)
+            self._run_check_output(["docker", "stop", "--time", str(spec.get("stop_timeout", 10)), name], text=True)
         except RuntimeError:
             pass
         self._run_check_output(["docker", "rm", "-f", name], text=True)

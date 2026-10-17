@@ -1,7 +1,7 @@
 """Integration test for ss14server.
 
-ENABLED (BYO): supply a direct Linux x64 server archive while the official
-Wizard's Den build feed publishes no server builds.
+Setup uses the Wizard's Den linux-x64 build. Set ALPHAGSM_SS14_SERVER_URL
+when that build is unavailable.
 """
 
 import os
@@ -33,9 +33,8 @@ pytestmark = [
 START_TIMEOUT = 600
 STOP_TIMEOUT = 90
 BYO_SKIP_REASON = (
-    "ENABLED (BYO): set ALPHAGSM_SS14_SERVER_URL to a direct Linux x64 "
-    "Space Station 14 server archive while the Wizard's Den build feed "
-    "publishes no server builds"
+    "ENABLED (BYO): the Wizard's Den linux-x64 build was unavailable. "
+    "Set ALPHAGSM_SS14_SERVER_URL to a direct Linux x64 server archive."
 )
 
 

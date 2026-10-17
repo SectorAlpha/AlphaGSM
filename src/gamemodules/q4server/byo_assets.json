@@ -1,0 +1,30 @@
+{
+  "description": "Quake 4 dedicated runtime and owned game data",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    },
+    {
+      "path": "q4base/*.pk4",
+      "kind": "glob"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Supply a compatible complete Linux dedicated tree and q4base/ data from your owned Quake 4 installation. The previously configured public installer URL is not verified working; no replacement download is invented.",
+      "live_validated": false
+    }
+  ],
+  "defaults": {
+    "exe_name": "q4ded.x86"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "q4server",
+  "guide": "docs/servers/q4server.md",
+  "schema_version": 1
+}

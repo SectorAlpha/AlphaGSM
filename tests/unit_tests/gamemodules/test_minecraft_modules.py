@@ -622,8 +622,17 @@ def test_custom_query_and_info_addresses_use_runtime_query_host(monkeypatch):
     server.data["port"] = 25565
     monkeypatch.setattr(custom.runtime_module, "resolve_query_host", lambda srv: "172.18.0.10")
 
-    assert custom.get_query_address(server) == ("172.18.0.10", 25565, "tcp")
+    assert custom.get_query_address(server) == ("172.18.0.10", 25565, "slp")
     assert custom.get_info_address(server) == ("172.18.0.10", 25565, "slp")
+
+
+def test_tekkit_query_and_info_addresses_use_server_list_ping(monkeypatch):
+    server = DummyServer("tekkit")
+    server.data["port"] = 25565
+    monkeypatch.setattr(tekkit.runtime_module, "resolve_query_host", lambda srv: "172.18.0.11")
+
+    assert tekkit.get_query_address(server) == ("172.18.0.11", 25565, "slp")
+    assert tekkit.get_info_address(server) == ("172.18.0.11", 25565, "slp")
 
 
 def test_vanilla_runtime_wrappers_use_java_family():

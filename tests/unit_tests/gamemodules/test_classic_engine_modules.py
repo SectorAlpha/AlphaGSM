@@ -267,7 +267,8 @@ def test_jk2server_runtime_requirements_use_quake_linux_family(tmp_path):
 def test_etlegacyserver_runtime_requirements_use_quake_linux_family(tmp_path):
     (tmp_path / "etl.x86_64").write_text("")
     (tmp_path / "etmain").mkdir()
-    (tmp_path / "etmain" / "pak0.pk3").write_text("")
+    for pak_name in ("pak0.pk3", "pak1.pk3", "pak2.pk3"):
+        (tmp_path / "etmain" / pak_name).write_text("")
     server = DummyServer("etl")
     server.data.update(
         {

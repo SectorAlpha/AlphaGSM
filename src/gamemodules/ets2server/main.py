@@ -257,3 +257,9 @@ def get_container_spec(server):
     )
     spec["command"][1] = "XDG_DATA_HOME=/srv/ets2-data"
     return spec
+
+
+def get_asset_requirements(server):
+    """Describe this game's owned files, acquisition routes and staging limits."""
+    from utils.byo_files import load_requirements
+    return load_requirements(server, __file__, 'byo_assets.json')

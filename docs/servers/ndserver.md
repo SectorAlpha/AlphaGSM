@@ -8,15 +8,18 @@ This guide covers the `ndserver` module in AlphaGSM.
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 - A staged Nuclear Dawn content tree under `<install_dir>/nucleardawn/`
+- Or an entitled Steam profile for dedicated server app `111710`
 
 ## Support Status
 
-`ndserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the
-anonymous dedicated-server scaffold, but the current public payload still lacks
-the full Nuclear Dawn game content needed for a working server. This checked-in
-support state is validated against the documented Ubuntu 24.04 Linux baseline,
-and the current GitHub integration lane still exercises both process and
-Docker runtime selection around that staged-content prerequisite.
+`ndserver` is supported in `ENABLED (BYO)` mode. Setup with no saved profile
+still installs Steam app `111710` anonymously. That public payload is only a
+partial tree and does not provide `nucleardawn/maps/hydro.bsp`. Setup with
+`--auth-profile NAME` downloads app `111710` through that profile and does not
+fall back to anonymous. This checked-in support state is validated against the
+documented Ubuntu 24.04 Linux baseline, and the current GitHub integration lane
+still exercises both process and Docker runtime selection around that
+content prerequisite.
 
 ## Quick Start
 
@@ -26,11 +29,21 @@ Create the server:
 alphagsm myndserver create ndserver
 ```
 
-Run setup:
+Run setup. Without a profile this stays anonymous. For an owned copy:
 
 ```bash
-alphagsm myndserver setup
+alphagsm steam-auth login owned your_steam_username
+alphagsm myndserver setup --auth-profile owned
 ```
+
+Enter credentials only at the local SteamCMD prompts. A later setup keeps the
+saved profile name when one is stored. A local process install with profile
+`owned` supplied app `111710`, including `nucleardawn/maps/hydro.bsp`. The
+NTFS install omitted the execute bit on `srcds_linux`, so the first start
+exited before A2S; `prestart` now restores that bit. After that, the same
+install answered A2S on UDP 36736 (hostname AlphaGSM Nuclear Dawn, map
+`hydro`, 0/32). The process was stopped and that UDP port was free. Docker
+was not run. UDP 27015 was left to an unrelated Left 4 Dead 2 server.
 
 Start it:
 
@@ -60,10 +73,12 @@ Setup configures:
 - SteamCMD downloads the server files
 - default configuration and backup settings
 
-Before `start`, stage the full Nuclear Dawn tree so
-`<install_dir>/nucleardawn/maps/hydro.bsp` exists. If `setup` or `start`
-reports an `ENABLED (BYO)` requirement, the anonymous dedicated payload is still
-missing the actual game content.
+Before `start`, `<install_dir>/nucleardawn/maps/hydro.bsp` must exist. An
+entitled `--auth-profile` install of app `111710` supplies it. Anonymous setup
+does not. You can still copy a complete owned tree into
+`<install_dir>/nucleardawn/` instead. If `setup` or `start` reports an
+`ENABLED (BYO)` requirement, the dedicated payload is still missing the game
+content.
 
 ## Useful Commands
 
@@ -132,6 +147,15 @@ alphagsm myserver set KEY VALUE
 - **Mod directory**: `nucleardawn/addons/`
 - **Workshop support**: No
 - **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/nucleardawn/`.
-- **Current status**: Supported in `ENABLED (BYO)` mode. The anonymous dedicated-server app still installs only a partial `nucleardawn/` tree, so stage the real game content before retrying startup.
+- **Current status**: Supported in `ENABLED (BYO)` mode. Anonymous app `111710` still installs only a partial `nucleardawn/` tree. An entitled `--auth-profile` install of the same app does not fall back to anonymous. The dedicated server stays awake (`sv_hibernate_when_empty 0`) so query and info use Source A2S.
 - **Map install**: Copy `.bsp` files into `nucleardawn/maps/` and add to `nucleardawn/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `nucleardawn/addons/`.
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+The managed recipe has one SteamCMD source, app `111710`, for an entitled
+profile. Anonymous setup does not use that source. File checks do not establish
+game readiness. See [BYO files and private SteamCMD acquisition](../byo-files.md).

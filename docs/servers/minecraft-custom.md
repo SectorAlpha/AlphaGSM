@@ -106,6 +106,7 @@ alphagsm mycustom set exe_name paper-1.21.1.jar
 
 - Module name: `minecraft.custom`
 - Default port: 25565
+- `query` and `info` use Java Edition Server List Ping (SLP) on the game port.
 
 <!-- alphagsm-server-variables:start -->
 
@@ -157,3 +158,12 @@ alphagsm myserver set KEY VALUE
 - **Workshop support**: No
 - **Map notes**: The world directory contains all world data.
 - **Mod notes**: Depends on the custom server type (Forge, Fabric, Spigot, etc.).
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This helper checks known sentinels only and directs you to stage the complete
+compatible distribution manually; managed import is unavailable for this recipe.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).
