@@ -215,7 +215,7 @@ def _assert_port_free(port):
 
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
         try:
-            probe.bind(("0.0.0.0", int(port)))
+            probe.bind(("127.0.0.1", int(port)))
         except OSError as exc:
             raise AssertionError("UDP port %s was still bound after stop: %s" % (port, exc)) from exc
 
