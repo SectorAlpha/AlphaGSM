@@ -3,10 +3,10 @@
 This guide covers the `ets2server` module in AlphaGSM.
 
 `ets2server` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04
-Linux baseline. The current GitHub integration lane still exercises both
-process and Docker runtime selection around that exported-client prerequisite,
-while local runs remain process-backed by default unless you opt into the
-Docker backend.
+Linux baseline. GitHub integration skips this lifecycle unless
+`ALPHAGSM_ETS2_SERVER_PACKAGES_DIR` supplies nonempty owned client exports.
+Local runs remain process-backed by default unless you opt into the Docker
+backend.
 
 ## Requirements
 

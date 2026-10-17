@@ -505,6 +505,18 @@ def get_container_spec(server):
     }
 
 
+def get_query_address(server):
+    """Return the Quake III UDP getstatus endpoint on the Jedi Outcast game port."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
+
+
+def get_info_address(server):
+    """Return the Quake III status endpoint used by the Jedi Outcast info command."""
+
+    return get_query_address(server)
+
+
 def do_stop(server, j):
     """Stop Jedi Outcast using the standard quit command."""
 

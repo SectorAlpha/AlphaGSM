@@ -508,6 +508,7 @@ def define_valve_server_module(
     config_default="server.cfg",
     default_server_config=None,
     enable_map_validation=False,
+    beta_branch=None,
 ):
     """Create a standard AlphaGSM game-module surface for a Valve-engine server."""
     default_port = port
@@ -681,12 +682,25 @@ def define_valve_server_module(
 
         if not os.path.isdir(server.data["dir"]):
             os.makedirs(server.data["dir"])
+        # No saved profile keeps the historical anonymous install. A saved
+        # profile must stay on that session and must not fall back to anonymous.
+        profile = server.data.get("steam_auth_profile")
+        download_kwargs = {
+            "validate": False,
+            "mod": app_id_mod,
+        }
+        if beta_branch:
+            download_kwargs["beta_branch"] = beta_branch
+        if profile:
+            download_kwargs["auth_profile"] = profile
+            anonymous = False
+        else:
+            anonymous = True
         steamcmd.download(
             server.data["dir"],
             steam_app_id,
-            True,
-            validate=False,
-            mod=app_id_mod,
+            anonymous,
+            **download_kwargs,
         )
 
     def install(server):
@@ -784,12 +798,17 @@ def define_valve_server_module(
             server.stop()
         except Exception:
             print("Server has probably already stopped, updating")
+        update_kwargs = {
+            "validate": validate,
+            "mod": app_id_mod,
+        }
+        if beta_branch:
+            update_kwargs["beta_branch"] = beta_branch
         steamcmd.download(
             server.data["dir"],
             steam_app_id,
             True,
-            validate=validate,
-            mod=app_id_mod,
+            **update_kwargs,
         )
         print("Server up to date")
         if restart:

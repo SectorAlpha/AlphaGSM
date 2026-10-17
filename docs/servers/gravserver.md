@@ -12,6 +12,7 @@ Docker backend.
 
 - `screen`
 - an owned GRAV dedicated server tree staged locally
+- On Linux, Wine and `xvfb-run`. The dedicated server is the Win32 build shipped inside the owned Steam game (app 332500). There is no separate Linux dedicated-server archive. Anonymous SteamCMD does not mount a depot. A local process start with a saved profile answered A2S on UDP 41002 (hostname `lagrav`, map `Reborn Update 9.8.1`, 0/255). The game port was 41000 and the peer port was 41001. The process was stopped and those UDP ports were free. Docker was not run. The default query port 27015 was already taken.
 - Python packages from `requirements.txt`
 
 ## Quick Start
@@ -29,9 +30,9 @@ alphagsm mygravserv setup
 ```
 
 GRAV is supported in `ENABLED (BYO)` mode in AlphaGSM. Before `setup` or
-`start`, copy an owned GRAV dedicated server tree into your chosen
-`<install_dir>/` so the executable
-`<install_dir>/CAGGameServer-Win32-Shipping` exists.
+`start`, stage an owned GRAV Windows tree so
+`<install_dir>/Binaries/Win32/CAGGameServer-Win32-Shipping.exe` exists.
+AlphaGSM also accepts `CAGGameServer-Win32-Shipping` at the install root.
 
 Start it:
 
@@ -63,7 +64,7 @@ Suggested flow:
 ```bash
 alphagsm mygravserv create gravserver
 alphagsm mygravserv setup -n 7777 /path/to/gravserver
-# copy the owned GRAV dedicated server files into /path/to/gravserver/
+# stage the owned Steam tree, including Binaries/Win32/CAGGameServer-Win32-Shipping.exe
 alphagsm mygravserv start
 ```
 
@@ -77,7 +78,11 @@ alphagsm mygravserv backup
 ## Notes
 
 - Module name: `gravserver`
-- Default port: 7777
+- Default game port: 7777
+- Default peer port: 7778
+- `query` and `info` use Steam A2S on the dedicated `queryport` (default 27015), not the game port.
+- Linux launches `Binaries/Win32/CAGGameServer-Win32-Shipping.exe` from `Binaries/` with Wine under Xvfb (`prefer_proton` is off). The Docker runtime family stays `steamcmd-linux`.
+- SteamCMD app 332500 is the owned GRAV install. Anonymous login may mount no depot. A saved Steam auth profile is passed to SteamCMD only when `steam_auth_profile` is set, and that session does not fall back to anonymous.
 
 <!-- alphagsm-server-variables:start -->
 
@@ -101,8 +106,9 @@ alphagsm myserver set KEY VALUE
 
 ### Run File
 
-- **Executable**: `CAGGameServer-Win32-Shipping`
-- **Location**: `<install_dir>/CAGGameServer-Win32-Shipping`
+- **Executable**: `CAGGameServer-Win32-Shipping.exe`
+- **Location**: `<install_dir>/Binaries/Win32/CAGGameServer-Win32-Shipping.exe`
+- **Working directory**: `<install_dir>/Binaries/`
 - **Engine**: Custom
 
 ### Server Configuration

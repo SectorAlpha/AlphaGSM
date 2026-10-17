@@ -153,13 +153,43 @@ Canonical campaign files in the managed worktree:
 - `docs/superpowers/specs/2026-10-16-auth-first-byo-setup-design.md`
 - `docs/superpowers/plans/2026-10-16-auth-first-byo-setup.md`
 
-The JSON has all 42 exact module/tag/manifest/guide/directory/source records, independent acquisition/file/lifecycle/Docker/content results, and explicit network/status/module-review fields. Q3 and RTCW have passing process outcomes. Preserve order and evidence.
+The JSON has all 42 exact module/tag/manifest/guide/directory/source records, independent acquisition/file/lifecycle/Docker/content results, and explicit network/status/module-review fields. Q3, RTCW, original Call of Duty, United Offensive, and Call of Duty 2 have passing process outcomes. Preserve order and evidence.
 
-First six: Q3 2200 → RTCW 9010 → **CoD 2620** → CoD United Offensive base assets 2620 → CoD2 2630 → CoD4 7940. All declared sources use Windows owned-game assets. UO still requires its separate expansion distribution; downloading original CoD base files is not a full UO pass.
+First six: Q3 2200 → RTCW 9010 → CoD 2620 → **CoD United Offensive** (base app 2620 plus expansion app 2640) → CoD2 2630 → CoD4 7940. All declared sources use Windows owned-game assets. Downloading original CoD base files is not a full UO pass.
 
 Next three: ET:Legacy owned ET assets, ETS2 client exports, ATS client exports. Steam login cannot generate truck-simulator `export_server_packages` outputs. The remaining 33 require complete manual distributions until their source/layout is verified. Three non-file prerequisites (Astroneer endpoint, Quake Live entitlement, Life is Feudal database) are outside the 42-file-helper queue.
 
-Next selected row is original Call of Duty, tag `byossdcod`, module `codserver`, Steam AppID 2620. It has not been acquired or tested in this campaign. Read its recipe, installation and real query protocol before acquisition. CoD-family hooks and integration tests currently expect TCP. That expectation is not validated and must not be accepted as genuine game-status proof. Keep one active SteamCMD acquisition at a time.
+Original Call of Duty, tag `byossdcod`, module `codserver`, Steam AppID 2620, is stopped on UDP 28960. Native Quake `getstatus` returned `AlphaGSM byossdcod`, map `mp_carentan`, 0/20. Evidence is `results/codserver/lifecycle.json`. Docker and external reachability were not run. Do not reuse UDP 27960, 27961, or 28960.
+
+United Offensive, tag `byossdcoduo`, module `coduoserver`, is stopped. Local integration on UDP 49440 answered native Quake `getstatus` for `mp_brecourt`. Evidence is `results/coduoserver/lifecycle.json`. Docker and external reachability were not run. Do not reuse UDP 27960, 27961, or 28960.
+
+Call of Duty 2, tag `byossdcod2`, module `cod2server`, is stopped. Local integration on UDP 43511 answered native Quake `getstatus` for `mp_toujane`. Evidence is `results/cod2server/lifecycle.json`. Docker and external reachability were not run. Do not reuse UDP 27960, 27961, or 28960.
+
+Call of Duty 4, tag `byossdcod4`, module `cod4server`, Steam AppID 7940, is complete on the process runtime and stopped. Local integration passed in 804.69s. CoD4x 21.2 `cod4x18_dedrun` answered native Quake getstatus on UDP 56171, map `mp_crash`, hostname AlphaGSM lacod4server. The published tree has 21 `zone/english/mp_*.ff` maps, `iw_00.iwd` through `iw_13.iwd`, and seven English localized IWDs. Docker and external reachability were not run. Do not reuse UDP 27960, 27961, 28960, 49440, 43511, or 56171.
+
+ET: Legacy is blocked. It needs owned `etmain/pak0.pk3`, `pak1.pk3`, and `pak2.pk3`, and those packs are not on this machine. Euro Truck Simulator 2 and American Truck Simulator are blocked on `server_packages.sii` and `server_packages.dat`. The later manual rows are recorded in the validation JSON as `BLOCKED_MISSING_OWNED_FILES` or `BLOCKED_NO_NATIVE_QUERY`. Do not download retail game archives and do not invent query protocols.
+
+Space Station 14 is complete on the process runtime and stopped. Local integration with `./run_local_tests.sh integration --server ss14server --public` passed in 27.06s. Robust status on TCP/UDP 47183 reported hostname AlphaGSM lass14server, 0 players, and max_players 30. The process runtime used a user-local .NET 10.0.13 install at `/home/cosmosquark/.dotnet`. Docker and external reachability were not run.
+
+ET: Legacy is complete on the process runtime and stopped. Local integration passed in 14.46s. A follow-up query on UDP 57831 reported Quake status, hostname ET: Legacy Host, map oasis, and 0/24. Setup staged only pak0.pk3, pak1.pk3, and pak2.pk3 from cdn.splashdamage.com. The six stock maps are present. Docker was not run.
+
+Alien Arena is complete on the process runtime and stopped. Anonymous Steam app 629540 mounted no depots. Setup linked the Debian/Ubuntu alien-arena packages. Quake II status on UDP 53777 reported hostname AlphaGSM laalienarenaserver, map dm-deathray, and 0/8. Docker was not run.
+
+Foundry is complete on the process runtime and stopped. Anonymous Steam app 2915550 installed the Windows dedicated server. Wine launched `FoundryDedicatedServer.exe`. A2S on UDP 27016 reported hostname AlphaGSM lafoundryserver, map Procedural, and 0/32. The game port was UDP/TCP 51535. Integration passed in 152.80s. Docker was not run. The container family is still `steamcmd-linux`.
+
+Starbound is complete on the process runtime and stopped. Anonymous app 211820 mounts no depots. Profile `owned` installed `linux/starbound_server`. A2S on UDP 50333 reported hostname AlphaGSM lastarbound, map Unknown, and 0/8. Integration passed in 171.27s. Docker was not run.
+
+Nuclear Dawn is complete on the process runtime and stopped. Profile `owned` installed app 111710, including hydro.bsp. The first scripted lifecycle timed out because NTFS left srcds_linux non-executable. prestart now restores that bit. A later start answered A2S on UDP 36736: hostname AlphaGSM Nuclear Dawn, map hydro, 0/32. Docker was not run.
+
+SourceForts Classic is complete on the process runtime and stopped. Anonymous app 244310 branch previous2021 plus the official ModDB 1.0 RC7 tree answered A2S on UDP 58844: A2S hostname Sourceforts Classic 1.0 [BUILD], map sf_astrodome, 0/32. The public local integration passed in 47.02s. prestart disables empty hibernation, aliases bin/*_srv.so, and restores the srcds execute bit. Docker was not run.
+
+Zombie Master: Reborn is complete on the process runtime and stopped. Anonymous app 244310 branch previous2021 plus the official Linux archive linked from zombiemaster.dev answered A2S on UDP 42202: hostname AlphaGSM Zombie Master: Reborn, map zm_docksofthedead, 0/16. The public local integration passed in 46.64s. This build reports sv_hibernate_when_empty as an unknown command. Docker was not run.
+
+GoldenEye: Source stays blocked. The project's only 5.0.6 server archive returned HTTP 403 from Cloudflare on 2026-10-17. Windows app 310 was not installed. No native Linux srcds_run tree is published.
+
+GRAV is complete on the process runtime and stopped. Anonymous app 332500 mounts no depot. Profile owned installed the Win32 tree. Wine answered A2S on UDP 41002: hostname lagrav, map Reborn Update 9.8.1, 0/255. Game port 41000, peer port 41001. Docker was not run.
+
+SteamCMD is idle. The remaining rows are blocked on missing owned exports, missing native query parsers, or official downloads that are not available. Do not reuse UDP 27016, 27960, 27961, 28960, 36736, 41000, 41001, 41002, 42202, 43511, 47183, 49440, 50333, 51535, 53777, 56171, 57831, or 58844. UDP 27015 is an unrelated L4D2 listener. Do not reserve 27005; that client port is on the L4D2 command line. Half-Life mods ahl, bb, ns, ts, and vs stay blocked: app 90 does not install their trees, and the checked-in ModDB, ENSL, ironoak, and vsmod URLs are not fetch targets.
 
 For each row: inspect recipe/help/settings and disk budget → configure a unique stopped SSD instance → preferred authenticated setup (or its legitimate local/export source) → verify complete server files/content → doctor → bounded real native protocol readiness, status/query/info/JSON → fix/retest code when needed → finally stop and prove all owned processes/listeners gone → update queue, guide, tracker/changelog. External missing input is an explicit blocker, never a pass. Keep secrets out of evidence.
 

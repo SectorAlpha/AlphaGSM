@@ -20,7 +20,7 @@ from server.modsupport.ownership import build_owned_manifest
 from server.modsupport.providers import resolve_direct_url_entry
 from server.modsupport.reconcile import reconcile_mod_state
 from server.settable_keys import SettingSpec, build_launch_arg_values, build_native_config_values
-from utils.archive_install import detect_compression, install_archive
+from utils.archive_install import install_binary
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
 from utils.simple_kv_config import rewrite_equals_config
@@ -28,8 +28,19 @@ from utils.simple_kv_config import rewrite_equals_config
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
 
-COD4_SERVER_URL = "https://0day.icculus.org/cod/cod4-linux-server-06282008.tar.bz2"
-COD4_SERVER_NAME = "cod4-linux-server-06282008.tar.bz2"
+COD4_SERVER_URL = (
+    "https://github.com/callofduty4x/CoD4x_Server/releases/download/21.2/cod4x18_dedrun"
+)
+COD4_SERVER_NAME = "cod4x18_dedrun"
+COD4_EXE_NAME = "cod4x18_dedrun"
+# The 2008 icculus archive's libstdc++.so.6 and libgcc_s.so.1 break CoD4x.
+# pbsetup.run is the optional PunkBuster redist, not a server file.
+# main/xbase_00.iwd is not a CoD4x 21.2 release asset, so it is not staged.
+COD4_INCOMPATIBLE_RUNTIME_FILES = (
+    "pbsetup.run",
+    "libstdc++.so.6",
+    "libgcc_s.so.1",
+)
 COD4_MOD_CACHE_DIRNAME = "cod4server"
 COD4_ALLOWED_MOD_SUFFIXES = {
     ".7z": "7z",
@@ -396,7 +407,7 @@ def cod4_mod_command(server, action, source=None, identifier=None, extra=None, *
 command_functions["mod"] = cod4_mod_command
 
 
-def configure(server, ask, port=None, dir=None, *, url=None, download_name=None, exe_name="cod4_lnxded"):
+def configure(server, ask, port=None, dir=None, *, url=None, download_name=None, exe_name=COD4_EXE_NAME):
     """Collect and store configuration values for a Call of Duty 4 server."""
 
     gamemodule_common.set_server_defaults(
@@ -432,7 +443,7 @@ def configure(server, ask, port=None, dir=None, *, url=None, download_name=None,
         download_name=download_name,
         default_url=COD4_SERVER_URL,
         default_name=COD4_SERVER_NAME,
-        prompt="Direct archive URL for the Call of Duty 4 server override",
+        prompt="Direct download URL for the Call of Duty 4 dedicated binary",
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
     ensure_mod_state(server)
@@ -441,12 +452,15 @@ def configure(server, ask, port=None, dir=None, *, url=None, download_name=None,
 
 
 def install(server):
-    """Download and install the Call of Duty 4 server archive."""
+    """Download the CoD4x dedicated binary and check owned base assets."""
 
     if "url" not in server.data or not server.data["url"]:
         server.data["url"] = COD4_SERVER_URL
         server.data.setdefault("download_name", COD4_SERVER_NAME)
-    install_archive(server, detect_compression(server.data["download_name"]))
+    server.data.setdefault("exe_name", COD4_EXE_NAME)
+    install_binary(server)
+    _mark_dedicated_executable(server)
+    _remove_incompatible_runtime_files(server)
     _assert_required_base_assets(server.data["dir"])
     sync_server_config(server)
     ensure_mod_state(server)
@@ -454,27 +468,60 @@ def install(server):
         apply_configured_mods(server)
 
 
+def _mark_dedicated_executable(server):
+    """Mark the staged CoD4x binary executable."""
+
+    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
+    if os.path.isfile(exe_path):
+        os.chmod(exe_path, os.stat(exe_path).st_mode | 0o111)
+
+
+def _remove_incompatible_runtime_files(server):
+    """Drop PunkBuster and the 2008 archive libraries beside CoD4x."""
+
+    root = server.data["dir"]
+    for relative in COD4_INCOMPATIBLE_RUNTIME_FILES:
+        path = os.path.join(root, *relative.split("/"))
+        if os.path.isfile(path) and not os.path.islink(path):
+            os.remove(path)
+
+
+def _has_modern_multiplayer_localization(install_dir):
+    """Return whether Steam's zone fastfiles supply English multiplayer text."""
+
+    patterns = (
+        os.path.join(install_dir, "zone", "localized_common_mp.ff"),
+        os.path.join(install_dir, "zone", "*", "localized_common_mp.ff"),
+        os.path.join(install_dir, "zone", "*", "*", "localized_common_mp.ff"),
+    )
+    return any(glob.glob(pattern) for pattern in patterns)
+
+
 def _assert_required_base_assets(install_dir):
     """Raise when the COD4 install is missing base-game files the binary requires."""
 
     missing_assets = []
-    if not os.path.isfile(os.path.join(install_dir, "fileSysCheck.cfg")):
-        missing_assets.append("fileSysCheck.cfg")
+    legacy_cfg = os.path.isfile(os.path.join(install_dir, "fileSysCheck.cfg"))
     localized_archives = glob.glob(os.path.join(install_dir, "main", "localized_*.iwd"))
-    if not localized_archives:
-        missing_assets.append("main/localized_*.iwd")
-    if not missing_assets:
-        return
-    gamemodule_common.raise_byo_requirement(
-        "cod4server",
-        "owned Call of Duty 4 base-game assets",
-        actions=(
-            "Copy fileSysCheck.cfg into <install_dir>/",
-            "Copy localized_*.iwd into <install_dir>/main/",
-            "Retry start once those files are present",
-        ),
-        docs_slug="cod4server",
-    )
+    modern_localization = _has_modern_multiplayer_localization(install_dir)
+    if not legacy_cfg and not modern_localization:
+        missing_assets.append("fileSysCheck.cfg or zone/*/localized_common_mp.ff")
+    if not localized_archives and not modern_localization:
+        missing_assets.append("main/localized_*.iwd or zone/*/localized_common_mp.ff")
+    if missing_assets:
+        gamemodule_common.raise_byo_requirement(
+            "cod4server",
+            "owned Call of Duty 4 base-game assets",
+            actions=(
+                "Copy main/*.iwd into <install_dir>/main/",
+                "Copy zone/*/mp_*.ff and zone/*/localized_common_mp.ff into <install_dir>/zone/",
+                "A legacy disc tree can instead provide fileSysCheck.cfg and main/localized_*.iwd",
+                "Retry start once those files are present",
+            ),
+            docs_slug="cod4server",
+        )
+    from utils.byo_files import require_module_multiplayer_maps
+    require_module_multiplayer_maps(install_dir, __file__)
 
 
 def sync_server_config(server):
@@ -506,9 +553,7 @@ def sync_server_config(server):
 def get_start_command(server):
     """Build the command used to launch a Call of Duty 4 dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+    _exe_path, launcher, working_dir = gamemodule_common.resolve_install_launcher(server)
     launch_args = build_launch_arg_values(
         server.data,
         setting_schema,
@@ -517,20 +562,37 @@ def get_start_command(server):
     )
     if gamemodule_common.should_omit_base_game_launch_arg(server.data.get("moddir"), "main"):
         launch_args = gamemodule_common.remove_launch_arg_value(launch_args, ("+set", "fs_game"))
+    # CoD4x defaults fs_homepath to ~/.callofduty4. Do not set LD_LIBRARY_PATH=.
+    # when the 2008 libstdc++.so.6 is present; that library breaks CoD4x.
     return (
-        ["./" + server.data["exe_name"], *launch_args],
-        server.data["dir"],
+        [
+            launcher,
+            "+set",
+            "dedicated",
+            "2",
+            "+set",
+            "sv_punkbuster",
+            "0",
+            "+set",
+            "fs_basepath",
+            ".",
+            "+set",
+            "fs_homepath",
+            ".",
+            *launch_args,
+        ],
+        working_dir,
     )
 
 
 def get_query_address(server):
-    """Return the TCP endpoint used by the Call of Duty 4 query command."""
+    """Return the Quake UDP getstatus endpoint on the Call of Duty 4 game port."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data.get("queryport", server.data["port"])), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
 
 
 def get_info_address(server):
-    """Return the TCP endpoint used by the Call of Duty 4 info command."""
+    """Return the Quake UDP status endpoint used by the Call of Duty 4 info command."""
 
     return get_query_address(server)
 

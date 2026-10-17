@@ -7,7 +7,117 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-17
+- GRAV lifecycle: anonymous Steam app 332500 mounts no depot. An entitled
+  profile installs the Win32 dedicated server. Linux launches
+  Binaries/Win32/CAGGameServer-Win32-Shipping.exe with Wine. The server
+  name is the last broker option so the A2S hostname is not merged with
+  later settings. Local process query and info answered A2S on UDP 41002
+  (hostname lagrav, map Reborn Update 9.8.1, 0/255). The game port was
+  41000 and the peer port was 41001. The server was stopped. Docker was
+  not rerun.
+- Zombie Master: Reborn lifecycle: anonymous Steam app 244310 on branch
+  previous2021 installs the 32-bit SDK scaffold. The official Linux archive
+  linked from zombiemaster.dev supplies zombie_master_reborn/, including
+  maps/zm_docksofthedead.bsp. prestart aliases bin/*_srv.so and restores
+  the srcds execute bit. This build reports sv_hibernate_when_empty as an
+  unknown command. Local process query and info still answered A2S on UDP
+  42202 (hostname AlphaGSM Zombie Master: Reborn, map zm_docksofthedead,
+  0/16) and stopped. The public local integration passed in 46.64s. Docker
+  was not rerun.
+- SourceForts Classic lifecycle: anonymous Steam app 244310 on branch
+  previous2021 installs the 32-bit SDK scaffold. The official ModDB 1.0 RC7
+  (Fix) tree supplies sfclassic/, including maps/sf_astrodome.bsp. prestart
+  aliases bin/*_srv.so, restores the srcds execute bit, and sets
+  sv_hibernate_when_empty 0. Local process query and info answered A2S on
+  UDP 58844 (A2S hostname Sourceforts Classic 1.0 [BUILD], map
+  sf_astrodome, 0/32) and stopped. The public local integration passed in
+  47.02s. Docker was not rerun.
+
 2026-10-16
+- Nuclear Dawn lifecycle: an entitled profile installs Steam app 111710,
+  including nucleardawn/maps/hydro.bsp. Anonymous install does not. NTFS
+  omitted the execute bit on srcds_linux, and prestart now restores it.
+  After that fix, local process query and info answered A2S on UDP 36736
+  (hostname AlphaGSM Nuclear Dawn, map hydro, 0/32) and stopped. The first
+  scripted lifecycle timed out before the fix. Docker was not rerun.
+- ET: Legacy lifecycle: local process setup staged etmain/pak0.pk3, pak1.pk3,
+  and pak2.pk3 from the Splash Damage freeware archive, answered native Quake
+  getstatus (oasis, 0/24, hostname ET: Legacy Host) on UDP 57831, and stopped.
+  Docker was not rerun. The six stock maps are battery, fueldump, goldrush,
+  oasis, radar, and railgun.
+- Alien Arena lifecycle: anonymous Steam app 629540 mounts no content depots.
+  Setup then links the Debian/Ubuntu alien-arena-server and alien-arena-data
+  packages. Local process query and info answered Quake II status
+  (dm-deathray, 0/8, hostname AlphaGSM laalienarenaserver) on UDP 53777 and
+  stopped. Docker was not rerun.
+- Minecraft Server List Ping info: info --json now also includes name,
+  players, max_players, and map. name comes from the SLP description. map is
+  null when the status payload has no map. The text status print is unchanged.
+- Foundry lifecycle: anonymous Steam app 2915550 installs the Windows
+  dedicated server. Linux launches FoundryDedicatedServer.exe with Wine.
+  Local process query and info answered A2S on UDP 27016 (game port 51535,
+  hostname AlphaGSM lafoundryserver, map Procedural, 0/32) and stopped.
+  Docker was not rerun. The default query port 27015 was already taken, so
+  setup moved the query port to 27016.
+- Starbound lifecycle: setup accepts a port before the install directory.
+  Anonymous Steam app 211820 mounts no depots. An entitled profile installs
+  the Linux dedicated server at linux/starbound_server. Local process query
+  and info answered A2S on UDP 50333 (hostname AlphaGSM lastarbound, map
+  Unknown, 0/8) and stopped. Docker was not rerun. Update keeps the saved
+  profile so a later update does not replace that tree with the empty
+  anonymous install.
+- Jedi Knight II query: query and info use Quake UDP getstatus on the game
+  port. The official dedicated archive still does not include retail PK3s.
+- Minecraft custom and Tekkit query: query and info use Server List Ping on
+  the game port. Custom servers still need an operator jar, and Tekkit still
+  needs an operator archive.
+- Dedicated maps: Quake III, Return to Castle Wolfenstein, Call of Duty,
+  United Offensive, Call of Duty 2, and Call of Duty 4 keep every multiplayer
+  map in the published build. Campaign maps and load screens are not required.
+  Call of Duty 4 Steam app 7940 is imported from main/iw_*.iwd and
+  zone/english/mp_*.ff, including localized_common_mp.ff, without
+  fileSysCheck.cfg. AlphaGSM installs CoD4x 21.2 cod4x18_dedrun for that
+  tree and does not stage the 2008 libstdc++.
+- Robust status info: Space Station 14 publishes `soft_max_players`.
+  `info --json` now also includes that value as `max_players`.
+- Space Station 14 lifecycle: local process setup of the current Wizard's Den
+  linux-x64 build answered Robust status for query and info (0/30) and
+  stopped cleanly. Docker was not rerun. The process runtime needs .NET 10.
+- Call of Duty 4 lifecycle: local authenticated setup of app 7940 with
+  CoD4x 21.2 answered native Quake getstatus for query and info
+  (`mp_crash`, hostname AlphaGSM lacod4server) and stopped cleanly.
+  Docker was not rerun.
+- Call of Duty query: original Call of Duty, United Offensive, Call of Duty 2,
+  and Call of Duty 4 use Quake UDP getstatus on the game port for query and info.
+- Call of Duty import: keep main/maps*.pk3 multiplayer map packs along with
+  pak*.pk3 and the English localization PK3s.
+- Call of Duty install: keep the English multiplayer PK3 set and Linux dedicated
+  binary, stage the upstream gcc 3.2 runtime beside it, and omit Windows client
+  libraries, PunkBuster client libraries, and non-English localization stubs.
+  Startup sets fs_basepath and fs_homepath to the install directory.
+- Call of Duty 2 lifecycle: local authenticated setup of app 2630 answered
+  native Quake getstatus for query and info (`mp_toujane`) and stopped cleanly.
+  Docker was not rerun.
+- United Offensive lifecycle: local authenticated setup answered native Quake
+  getstatus for query and info (`mp_brecourt`) and stopped cleanly. Docker was
+  not rerun.
+- United Offensive acquisition: authenticated setup downloads base app 2620 and
+  expansion app 2640, then keeps the English multiplayer PK3 sets from both.
+  The default start map mp_brecourt lives in the base PK3s. Expansion PK3s are
+  recognized by maps/mp/mp_uo_stanjel.bsp. Install also removes non-English
+  localization PK3s nested under main/ and uo/, including uo/language/.
+- Call of Duty lifecycle: local authenticated setup on UDP 28960 answered
+  native Quake getstatus for query and info (`mp_carentan`, 0/20) and stopped
+  cleanly. Docker was not rerun.
+- Local tests: `./run_local_tests.sh integration --public` runs a module
+  that downloads its own dedicated server, without a Steam profile or an
+  assets directory.
+- Local tests: file-based BYO modules must declare a native query and info
+  protocol. `./run_local_tests.sh unit` checks that contract, and integration
+  runs keep their server files on the SSD test disk.
+- Local tests: `./run_local_tests.sh` in the repository root runs the local
+  Steam-auth and BYO suite. CI does not call it.
 - Docker Steam auth: `./alphagsm-docker steam-auth login` is the only forwarded
   command that gets a terminal, a non-terminal login is rejected, and a game
   container cannot mount the private SteamCMD profile.

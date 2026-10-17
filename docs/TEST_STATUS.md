@@ -478,48 +478,48 @@ URLs.
 | astroneerserver | Docker runtime (Wine/Proton); provide an externally routable IPv4 endpoint through `ALPHAGSM_ASTRONEER_REGISTRATION_PUBLICIP` for registration validation. The lifecycle remains Docker-first and is explicitly skipped in CI when that external prerequisite is absent. |
 | aloftserver | owned Aloft server tree |
 | ahlserver | owned Action Half-Life mod content tree |
-| alienarenaserver | staged native Alien Arena dedicated server tree |
-| atsserver | owned exported client packages/settings |
+| alienarenaserver | Debian/Ubuntu `alien-arena-server` and `alien-arena-data`, because anonymous Steam app 629540 mounts no content depots; local process lifecycle validated 2026-10-16 on UDP 53777 (`quake2`, `dm-deathray`, hostname AlphaGSM laalienarenaserver, 0/8) with stopped process/listener verification; Docker not rerun in this local campaign |
+| atsserver | owned client export `server_packages.sii` and `server_packages.dat`; Steam login cannot create them and neither file is present locally |
 | atlasserver | staged `ServerGrid.json`, `ServerGrid.ServerOnly.json`, and `ServerGrid/` export under `ShooterGame/` |
 | bf1942server | direct archive URL or staged Battlefield 1942 Linux dedicated server tree |
 | bbserver | owned BrainBread mod content tree |
 | bfvserver | direct archive URL or staged Battlefield Vietnam Linux dedicated server tree |
-| cod2server | owned localized base-game assets |
-| cod4server | owned base-game assets |
-| codserver | owned multiplayer map content; the public dedicated archive ships the server payload and base PK3 files but no `maps/mp/*.bsp` map data |
-| coduoserver | owned base multiplayer assets |
+| cod2server | owned localized base-game assets; local authenticated Steam setup of app 2630 and native Quake UDP lifecycle validated 2026-10-16 (`mp_toujane`, hostname AlphaGSM lacod2server, maxclients 20) with the gcc 3.2 runtime staged beside `cod2_lnxded` and stopped process/listener verification; Docker not rerun in this local campaign |
+| cod4server | owned base-game assets; local authenticated Steam setup of app 7940 and native Quake UDP lifecycle validated 2026-10-16 (`mp_crash`, hostname AlphaGSM lacod4server, sv_maxclients 24) with CoD4x 21.2 `cod4x18_dedrun` and stopped process/listener verification; Docker not rerun in this local campaign |
+| codserver | owned multiplayer map content; the public dedicated archive ships the server payload and base PK3 files but no `maps/mp/*.bsp` map data; local authenticated Steam setup and native Quake UDP lifecycle validated 2026-10-16 on UDP 28960 (`mp_carentan`, 0/20) with the gcc 3.2 runtime staged beside `cod_lnxded` and stopped process/listener verification; Docker not rerun in this local campaign |
+| coduoserver | owned base and United Offensive multiplayer assets; local authenticated Steam setup of apps 2620 and 2640 and native Quake UDP lifecycle validated 2026-10-16 (`mp_brecourt`) with the gcc 3.2 runtime staged beside `coduo_lnxded` and stopped process/listener verification; Docker not rerun in this local campaign |
 | dstserver | cluster token plus staged cluster config |
-| etlegacyserver | owned base-game assets |
-| ets2server | owned exported client packages/settings |
-| foundryserver | staged native FOUNDRY dedicated server tree |
+| etlegacyserver | Splash Damage freeware `etmain/pak0.pk3`, `pak1.pk3`, and `pak2.pk3` staged by setup; local process lifecycle validated 2026-10-16 on UDP 57831 (`quake`, `oasis`, hostname ET: Legacy Host, 0/24) with the six stock maps and stopped process/listener verification; Docker not rerun in this local campaign |
+| ets2server | owned client export `server_packages.sii` and `server_packages.dat`; Steam login cannot create them and neither file is present locally |
+| foundryserver | anonymous Steam app 2915550 Windows dedicated server launched with Wine on Linux; local process lifecycle validated 2026-10-16 with A2S on UDP 27016 and game port 51535 (`Procedural`, hostname AlphaGSM lafoundryserver, 0/32) and stopped process/listener verification; Docker not rerun in this local campaign |
 | goldeneyesourceserver | complete operator-staged Source 2007/AppID 310 base plus preserved top-level `gesource` content; the official `/go/` path returns a 241-byte HTML meta-refresh in process and Docker CI, the authoritative ModDB release returns HTTP 403, and the signed official object returns HTTP 401, so AlphaGSM does not claim a network install or a current pass |
-| gravserver | owned GRAV dedicated server tree |
+| gravserver | entitled Steam app 332500 Win32 dedicated server; anonymous install mounts no depot; local process A2S validated 2026-10-17 on UDP 41002 (hostname lagrav, map Reborn Update 9.8.1, 0/255) with game port 41000 and peer port 41001; Linux uses Wine; Docker not rerun in this local campaign |
 | hogwarpserver | archive URL or staged Windows server tree |
 | identityserver | archive URL or staged Identity server tree |
 | jk2server | direct archive URL or staged Jedi Outcast Linux dedicated server tree |
 | minecraft_custom | user-supplied server jar; setup seeds managed properties plus the accepted-EULA file without launching the BYO jar |
 | minecraft_tekkit | direct Tekkit archive URL or staged Tekkit.jar |
 | mxbikesserver | user-supplied dedicated archive URL |
-| ndserver | staged Nuclear Dawn content tree |
+| ndserver | entitled Steam app 111710; anonymous install has no hydro.bsp; local process A2S validated 2026-10-16 on UDP 36736 (hostname AlphaGSM Nuclear Dawn, map hydro, 0/32) after prestart restored the srcds_linux execute bit; the first scripted lifecycle timed out before that fix; Docker not rerun in this local campaign |
 | nsserver | owned Natural Selection mod content tree |
 | q3server | owned base-game assets; local authenticated Steam setup and native Quake UDP lifecycle validated 2026-10-16, including dedicated-only engine selection and 36 retained maps, with stopped process/listener verification; Docker not rerun in this local campaign |
 | q4server | direct archive URL or staged Quake 4 Linux dedicated server tree |
 | qlserver | authenticated entitlement plus server auth/config |
 | rtcwserver | owned base-game assets; local authenticated Steam setup and native Quake UDP lifecycle validated 2026-10-16, including required retail `main/pak0.pk3`, dedicated-only engine selection and stopped process/listener verification; Docker not rerun in this local campaign |
 | sampserver | direct archive URL or staged SA-MP Linux dedicated server tree |
-| sfcserver | official SourceForts Classic ModDB full-version tree staged under `sfclassic/` |
+| sfcserver | anonymous Steam app 244310 branch previous2021 plus the official ModDB SourceForts Classic 1.0 RC7 tree; local process A2S validated 2026-10-17 on UDP 58844 (A2S hostname Sourceforts Classic 1.0 [BUILD], map sf_astrodome, 0/32) and the public local integration passed in 47.02s; Docker not rerun in this local campaign |
 | skyrimtogetherrebornserver | direct archive URL or staged Skyrim Together Reborn server tree |
-| ss14server | direct Linux x64 server archive while the official Wizard's Den build feed publishes no server builds; the managed `server_config.toml`, `robust_status`, process runtime, and Docker runtime lifecycle remain supported when an archive is supplied |
+| ss14server | Wizard's Den linux-x64 server build, or a direct archive URL; local process lifecycle validated 2026-10-16 on TCP/UDP 47183 (`robust_status`, hostname AlphaGSM lass14server, 0/30) with host .NET 10 and stopped process verification; Docker not rerun in this local campaign |
 | mohaaserver | owned MOHAA dedicated server tree |
 | sof2server | owned SOF2 dedicated server tree |
 | stormworksserver | authenticated Steam/SteamCMD access to install the Dedicated Server tool, then a staged installed server tree |
-| starbound | staged native Starbound server tree |
+| starbound | entitled Steam app 211820 Linux server at `linux/starbound_server`; anonymous install mounts no depots; local process lifecycle validated 2026-10-16 with A2S on UDP 50333 (hostname AlphaGSM lastarbound, map Unknown, 0/8) and stopped process/listener verification; Docker not rerun in this local campaign |
 | subnauticaserver | owned client installation path |
 | tsserver | owned The Specialists mod content tree |
 | ut3server | owned UT3 dedicated server tree; optional OpenSpy credentials for advertising |
 | vsserver | owned Vampire Slayer mod content tree |
 | lifeisfeudalserver | local MySQL/MariaDB service on `localhost` |
-| zmrserver | staged Zombie Master: Reborn content tree |
+| zmrserver | anonymous Steam app 244310 branch previous2021 plus the official Linux archive linked from zombiemaster.dev; local process A2S validated 2026-10-17 on UDP 42202 (hostname AlphaGSM Zombie Master: Reborn, map zm_docksofthedead, 0/16) and the public local integration passed in 46.64s; this build reports sv_hibernate_when_empty as an unknown command; Docker not rerun in this local campaign |
 
 ## DISABLED (4)
 

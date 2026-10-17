@@ -10,13 +10,13 @@
     {
       "id": "manual",
       "kind": "operator-files",
-      "instructions": "Official distribution instructions describe FoundryDedicatedServer.exe and companion Unity data. The existing module expects a native extensionless executable; that platform assumption remains unverified. Do not rename a Windows binary and claim Linux support.",
+      "instructions": "Steam app 2915550 is anonymous and Windows-only. Stage FoundryDedicatedServer.exe and its Unity data, or let setup download that depot. On Linux, AlphaGSM launches the Windows executable with Wine. Do not rename the executable and claim a native Linux build.",
       "live_validated": false,
       "url": "https://dedicated.foundry-game.com/"
     }
   ],
   "defaults": {
-    "exe_name": "FoundryDedicatedServer"
+    "exe_name": "FoundryDedicatedServer.exe"
   },
   "managed_import": false,
   "validation": "sentinel-only",

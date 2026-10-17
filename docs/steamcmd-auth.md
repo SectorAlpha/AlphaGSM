@@ -109,6 +109,6 @@ See [server support status](TEST_STATUS.md) for the difference between
 **ENABLED (AUTH)** provider requirements and **ENABLED (BYO)** owned assets.
 
 Local tests for those servers are not part of CI. Run them with
-[scripts/run_local_auth_tests.sh](../scripts/run_local_auth_tests.sh). The
+[`./run_local_tests.sh`](../run_local_tests.sh). The
 [local test readme](../local_tests/README.md) lists the unit and integration
 commands. Do not put profile directories, passwords, or tokens in git.

@@ -3,6 +3,7 @@
 import importlib
 import json
 from pathlib import Path
+import zipfile
 
 import pytest
 
@@ -97,6 +98,71 @@ def test_byo_server_imports_and_file_categories_have_a_recipe(row):
     encoded = json.dumps(recipe).lower()
     for marker in SECRET_MARKERS:
         assert marker not in encoded
+
+
+def _concrete_pattern(pattern):
+    return pattern.replace("*", "mpasset").replace("?", "a")
+
+
+def _write_server_payload(path, members):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.suffix.lower() in {".pk3", ".iwd", ".zip"}:
+        with zipfile.ZipFile(path, "w") as archive:
+            for member in members:
+                archive.writestr(member, b"map")
+        return
+    path.write_bytes(b"server-content")
+
+
+def test_managed_import_keeps_server_content_and_drops_client_files(tmp_path):
+    """A mixed owned tree publishes only recipe includes, not client or movie files."""
+
+    from utils import asset_import
+
+    junk_names = (
+        "CoDMP.exe",
+        "CoDSP.exe",
+        "movies/intro.bik",
+        "redist/dxsetup.exe",
+        "Install/setup.exe",
+        "main/singleplayer.sav",
+    )
+    for row in byo_servers():
+        module = _import_module(row["module"])
+        if not hasattr(module, "get_asset_requirements"):
+            continue
+        server = type("Server", (), {"data": {"dir": str(tmp_path), "name": "local"}, "name": "local"})()
+        recipe = module.get_asset_requirements(server)
+        if not recipe.get("managed_import"):
+            continue
+        source = tmp_path / row["module"] / "owned"
+        install = tmp_path / row["module"] / "server"
+        source.mkdir(parents=True)
+        install.mkdir()
+        for name in junk_names:
+            path = source.joinpath(*name.split("/"))
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b"client")
+        patterns = list(recipe.get("include", []))
+        for group in recipe.get("required", []):
+            patterns.append(group)
+        for group in recipe.get("required_any", []):
+            patterns.append(group[0])
+        members = ["maps/mp/mp_carentan.bsp", "maps/mp/mpasset.bsp", "maps/mp/mp_brecourt.bsp"]
+        for requirement in recipe.get("requirements", []):
+            for member in requirement.get("member_any_of") or []:
+                members.append(str(member))
+        for pattern in patterns:
+            relative = _concrete_pattern(str(pattern))
+            _write_server_payload(source.joinpath(*relative.split("/")), members)
+        report = asset_import.import_assets(source, install, recipe)
+        published = [name.replace("\\", "/").lower() for name in report["copied"]]
+        assert published, row["module"] + " published no server files"
+        for name in published:
+            assert not name.endswith((".exe", ".bik", ".sav", ".msi", ".dll")), (row["module"], name)
+            assert not name.startswith(("movies/", "redist/", "install/")), (row["module"], name)
+            assert "codmp.exe" not in name
+            assert "singleplayer" not in name
 
 
 def test_local_tree_contains_no_auth_material():

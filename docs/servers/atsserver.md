@@ -3,9 +3,10 @@
 This guide covers the `atsserver` module in AlphaGSM.
 
 `atsserver` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04 Linux
-baseline. The current GitHub integration lane still exercises both process and
-Docker runtime selection around that exported-client prerequisite, while local
-runs remain process-backed by default unless you opt into the Docker backend.
+baseline. GitHub integration skips this lifecycle until an owned client export
+is staged; it does not start the process or Docker runtime without those files.
+Local runs remain process-backed by default unless you opt into the Docker
+backend.
 
 ## Requirements
 
@@ -49,7 +50,8 @@ alphagsm myatsserve stop
 
 Setup configures:
 
-- the game port (default 27016)
+- the game port (default 27015)
+- the query port (default 27016)
 - the install directory
 - SteamCMD downloads the server files
 
@@ -69,7 +71,9 @@ alphagsm myatsserve backup
 ## Notes
 
 - Module name: `atsserver`
-- Default port: 27016
+- Default game port: 27015
+- Default query port: 27016
+- `query` and `info` use Steam A2S on the dedicated query port, not the game port.
 
 <!-- alphagsm-server-variables:start -->
 

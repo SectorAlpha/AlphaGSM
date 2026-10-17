@@ -534,6 +534,8 @@ def _assert_required_base_assets(install_dir):
 
     missing_assets = _missing_required_base_assets(install_dir)
     if not missing_assets:
+        from utils.byo_files import require_module_multiplayer_maps
+        require_module_multiplayer_maps(install_dir, __file__)
         return
     gamemodule_common.raise_byo_requirement(
         "rtcwserver",

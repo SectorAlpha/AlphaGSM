@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 import shutil
+import tarfile
 import zipfile
 
 from server import ServerError
@@ -20,6 +21,7 @@ from server.modsupport.ownership import build_owned_manifest
 from server.modsupport.providers import resolve_direct_url_entry
 from server.modsupport.reconcile import reconcile_mod_state
 from server.settable_keys import SettingSpec, build_launch_arg_values, build_native_config_values
+import downloader
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
@@ -30,6 +32,55 @@ from utils.gamemodules import common as gamemodule_common
 
 COD_SERVER_URL = "https://0day.icculus.org/cod/COD-lnxded-1.5-large.tar.bz2"
 COD_SERVER_NAME = "COD-lnxded-1.5-large.tar.bz2"
+COD_GCC3_LIBS_URL = "http://icculus.org/updates/cod/gcc3-libs.tar.bz2"
+COD_GCC3_LIBS_NAME = "cod-gcc3-libs.tar.bz2"
+COD_GCC3_RUNTIME_FILES = ("libstdc++.so.5", "libgcc_s.so.1")
+# The public 1.5 archive also ships Windows client libraries, PunkBuster
+# client libraries, and non-English localization stubs. The Linux dedicated
+# server uses game.mp.i386.so plus the English multiplayer PK3 set.
+COD_NON_MULTIPLAYER_FILES = (
+    "main/cgame_mp_x86.dll",
+    "main/game_mp_x86.dll",
+    "main/ui_mp_x86.dll",
+    "pb/pbcl.so",
+    "pb/pbcls.so",
+    "main/localized_chinese_pak3.pk3",
+    "main/localized_chinese_pak5.pk3",
+    "main/localized_french_pak2.pk3",
+    "main/localized_french_pak3.pk3",
+    "main/localized_french_pak4.pk3",
+    "main/localized_french_pak5.pk3",
+    "main/localized_german_pak2.pk3",
+    "main/localized_german_pak3.pk3",
+    "main/localized_german_pak4.pk3",
+    "main/localized_german_pak5.pk3",
+    "main/localized_italian_pak2.pk3",
+    "main/localized_italian_pak3.pk3",
+    "main/localized_italian_pak4.pk3",
+    "main/localized_italian_pak5.pk3",
+    "main/localized_japanese_pak2.pk3",
+    "main/localized_japanese_pak3.pk3",
+    "main/localized_japanese_pak4.pk3",
+    "main/localized_japanese_pak5.pk3",
+    "main/localized_korean_pak2.pk3",
+    "main/localized_korean_pak3.pk3",
+    "main/localized_korean_pak4.pk3",
+    "main/localized_korean_pak5.pk3",
+    "main/localized_polish_pak2.pk3",
+    "main/localized_polish_pak3.pk3",
+    "main/localized_polish_pa5k.pk3",
+    "main/localized_russian_pak3.pk3",
+    "main/localized_russian_pak4.pk3",
+    "main/localized_russian_pak5.pk3",
+    "main/localized_spanish_pak2.pk3",
+    "main/localized_spanish_pak3.pk3",
+    "main/localized_spanish_pak4.pk3",
+    "main/localized_spanish_pak5.pk3",
+    "main/localized_taiwanese_pak2.pk3",
+    "main/localized_taiwanese_pak3.pk3",
+    "main/localized_taiwanese_pak4.pk3",
+    "main/localized_taiwanese_pak5.pk3",
+)
 COD_MOD_CACHE_DIRNAME = "codserver"
 COD_ALLOWED_MOD_SUFFIXES = {
     ".7z": "7z",
@@ -169,6 +220,8 @@ def _assert_required_start_map(server):
         server.data.get("startmap", "mp_carentan"),
         _moddir(server),
     ):
+        from utils.byo_files import require_module_multiplayer_maps
+        require_module_multiplayer_maps(server.data["dir"], __file__)
         return
     gamemodule_common.raise_byo_requirement(
         "codserver",
@@ -491,13 +544,100 @@ def configure(server, ask, port=None, dir=None, *, url=None, download_name=None,
     return gamemodule_common.finalize_configure(server)
 
 
+def _remove_non_multiplayer_files(server):
+    """Drop client binaries and non-English stubs the dedicated archive ships."""
+
+    root = server.data["dir"]
+    for relative in COD_NON_MULTIPLAYER_FILES:
+        path = os.path.join(root, *relative.split("/"))
+        if os.path.isfile(path) and not os.path.islink(path):
+            os.remove(path)
+
+
+def _runtime_source_in_tree(root, name):
+    """Return a readable gcc 3.2 library inside an extracted download directory."""
+
+    direct = os.path.join(root, name)
+    if os.path.isfile(direct):
+        return direct
+    for dirpath, _dirnames, filenames in os.walk(root):
+        if name in filenames:
+            candidate = os.path.join(dirpath, name)
+            if os.path.isfile(candidate):
+                return candidate
+    return None
+
+
+def _copy_runtime_file(source, destination):
+    """Write one runtime library as a regular file, following cache symlinks."""
+
+    with open(source, "rb") as handle, open(destination, "wb") as output:
+        shutil.copyfileobj(handle, output)
+
+
+def _stage_gcc3_runtime_from_archive(archive_path, install_dir):
+    """Copy the gcc 3.2 SONAME libraries out of a tarball."""
+
+    with tarfile.open(archive_path, "r:*") as archive:
+        members = {member.name.rsplit("/", 1)[-1]: member for member in archive.getmembers()}
+        for name in COD_GCC3_RUNTIME_FILES:
+            member = members.get(name)
+            if member is None:
+                raise ServerError("Call of Duty gcc3 runtime archive is missing " + name)
+            source = archive.extractfile(member)
+            if source is None:
+                raise ServerError("Call of Duty gcc3 runtime archive is missing " + name)
+            destination = os.path.join(install_dir, name)
+            with source, open(destination, "wb") as output:
+                shutil.copyfileobj(source, output)
+
+
+def _stage_gcc3_runtime(server):
+    """Place the upstream gcc 3.2 libraries beside cod_lnxded when they are absent."""
+
+    install_dir = server.data["dir"]
+    if all(os.path.isfile(os.path.join(install_dir, name)) for name in COD_GCC3_RUNTIME_FILES):
+        return
+    exe_path = os.path.join(install_dir, server.data.get("exe_name", "cod_lnxded"))
+    if not os.path.isfile(exe_path):
+        return
+    download_path = downloader.getpath(
+        "url", (COD_GCC3_LIBS_URL, COD_GCC3_LIBS_NAME, "tar.bz2")
+    )
+    if os.path.isdir(download_path):
+        sources = {
+            name: _runtime_source_in_tree(download_path, name)
+            for name in COD_GCC3_RUNTIME_FILES
+        }
+        if all(sources.values()):
+            for name, source in sources.items():
+                _copy_runtime_file(source, os.path.join(install_dir, name))
+            return
+        archive_path = os.path.join(download_path, COD_GCC3_LIBS_NAME)
+        if os.path.isfile(archive_path):
+            _stage_gcc3_runtime_from_archive(archive_path, install_dir)
+            return
+        missing = next(name for name, source in sources.items() if source is None)
+        raise ServerError("Call of Duty gcc3 runtime archive is missing " + missing)
+    if os.path.isfile(download_path):
+        _stage_gcc3_runtime_from_archive(download_path, install_dir)
+        return
+    raise ServerError("Call of Duty gcc3 runtime download is missing")
+
+
 def install(server):
     """Download and install the Call of Duty server archive."""
 
     if "url" not in server.data or not server.data["url"]:
         server.data["url"] = COD_SERVER_URL
         server.data.setdefault("download_name", COD_SERVER_NAME)
-    install_archive(server, detect_compression(server.data["download_name"]))
+    install_archive(
+        server,
+        detect_compression(server.data["download_name"]),
+        skip_relative_files=COD_NON_MULTIPLAYER_FILES,
+    )
+    _remove_non_multiplayer_files(server)
+    _stage_gcc3_runtime(server)
     sync_server_config(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
@@ -548,20 +688,33 @@ def get_start_command(server):
     )
     if gamemodule_common.should_omit_base_game_launch_arg(server.data.get("moddir"), "main"):
         launch_args = gamemodule_common.remove_launch_arg_value(launch_args, ("+set", "fs_game"))
+    # The dedicated binary defaults fs_homepath to ~/.callofduty. Keep reads
+    # and generated files in the install directory for process and Docker runs.
     return (
-        [launcher, *launch_args],
+        [
+            "env",
+            "LD_LIBRARY_PATH=.",
+            launcher,
+            "+set",
+            "fs_basepath",
+            ".",
+            "+set",
+            "fs_homepath",
+            ".",
+            *launch_args,
+        ],
         working_dir,
     )
 
 
 def get_query_address(server):
-    """Return the TCP endpoint used by the Call of Duty query command."""
+    """Return the Quake UDP getstatus endpoint on the Call of Duty game port."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data.get("queryport", server.data["port"])), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
 
 
 def get_info_address(server):
-    """Return the TCP endpoint used by the Call of Duty info command."""
+    """Return the Quake UDP status endpoint used by the Call of Duty info command."""
 
     return get_query_address(server)
 

@@ -32,7 +32,8 @@ alphagsm mycod2serv setup --auth-profile owned
 
 Enter credentials only at the local SteamCMD prompts. For an existing local
 Steam library, use `setup --steam-dir /path/to/SteamLibrary/steamapps` instead.
-The authenticated download path still needs local validation.
+Local process setup with an entitled profile was validated on 2026-10-16.
+Query and info use Quake UDP getstatus on the game port. Docker was not rerun.
 
 Start it:
 
@@ -139,6 +140,7 @@ alphagsm myserver set KEY VALUE
 
 - **Config file**: `<moddir>/server.cfg` (default `main/server.cfg`)
 - `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
+- Setup stages the upstream gcc 3.2 libraries beside `cod2_lnxded` and starts it with `LD_LIBRARY_PATH=.`, `fs_basepath` `.`, and `fs_homepath` `.` so the dedicated server does not use `~/.callofduty2`.
 - **Owned base assets still required**: `main/localized_*.iwd`,
   `main/default_localize_mp.cfg`
 - **Copy target before first start**: `<install_dir>/main/`

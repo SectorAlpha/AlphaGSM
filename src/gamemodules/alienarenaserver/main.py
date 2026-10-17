@@ -1,8 +1,10 @@
 """Alien Arena dedicated server lifecycle helpers."""
 
+import glob
 import os
 from pathlib import Path
 import shutil
+import subprocess
 
 import server.runtime as runtime_module
 import utils.steamcmd as steamcmd
@@ -392,7 +394,7 @@ def configure(
         {
             "game": "arena",
             "hostname": "AlphaGSM %s" % (server.name,),
-            "startmap": "dm-deathvalley",
+            "startmap": "dm-deathray",
         },
     )
     gamemodule_common.ensure_backup_config(
@@ -425,13 +427,106 @@ _base_install = gamemodule_common.make_steamcmd_install_hook(
     steam_anonymous_login_possible=steam_anonymous_login_possible,
 )
 
+# Anonymous Steam app 629540 subscribes but mounts zero content depots.
+# These Debian/Ubuntu packages ship the dedicated binary and game data.
+DISTRO_BINARY_CANDIDATES = ("/usr/lib/games/alien-arena/alienarena-ded",)
+DISTRO_DATA_ROOT = "/usr/share/games/alien-arena"
+DISTRO_PACKAGES = ("alien-arena-server", "alien-arena-data")
+
+
+def _dedicated_executable(server):
+    return os.path.join(server.data["dir"], server.data.get("exe_name") or "crx-dedicated")
+
+
+def _dedicated_tree_ready(server):
+    root = server.data["dir"]
+    return os.path.isfile(_dedicated_executable(server)) and os.path.isdir(
+        os.path.join(root, "data1")
+    )
+
+
+def _extract_distro_packages(cache, runner):
+    """Download and unpack the distro dedicated server into *cache*."""
+
+    os.makedirs(cache, exist_ok=True)
+    env = os.environ.copy()
+    env["DEBIAN_FRONTEND"] = "noninteractive"
+    download = runner(
+        ["apt-get", "download", *DISTRO_PACKAGES],
+        cwd=cache,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=False,
+    )
+    if download.returncode != 0:
+        return
+    for deb in glob.glob(os.path.join(cache, "*.deb")):
+        runner(
+            ["dpkg-deb", "-x", deb, cache],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            check=False,
+        )
+
+
+def _resolve_distro_paths(cache, runner):
+    """Return a dedicated binary and game-data root, downloading packages if needed."""
+
+    data_root = DISTRO_DATA_ROOT
+    for binary in DISTRO_BINARY_CANDIDATES:
+        if os.path.isfile(binary) and os.path.isdir(os.path.join(data_root, "data1")):
+            return binary, data_root
+    extracted_binary = os.path.join(cache, "usr/lib/games/alien-arena/alienarena-ded")
+    extracted_data = os.path.join(cache, "usr/share/games/alien-arena")
+    if not (
+        os.path.isfile(extracted_binary)
+        and os.path.isdir(os.path.join(extracted_data, "data1"))
+    ):
+        _extract_distro_packages(cache, runner)
+    if os.path.isfile(extracted_binary) and os.path.isdir(
+        os.path.join(extracted_data, "data1")
+    ):
+        return extracted_binary, extracted_data
+    return None, None
+
+
+def _link_tree_entry(source, destination):
+    if os.path.lexists(destination) or not os.path.exists(source):
+        return
+    os.symlink(source, destination)
+
+
+def stage_public_dedicated_tree(server, runner=None):
+    """Link crx-dedicated to a distro build when SteamCMD delivers no payload."""
+
+    if _dedicated_tree_ready(server):
+        return True
+    if runner is None:
+        runner = subprocess.run
+    cache = os.path.join(server.data["dir"], ".alphagsm", "alienarena-distro")
+    binary, data_root = _resolve_distro_paths(cache, runner)
+    if not binary or not data_root:
+        return False
+    os.makedirs(server.data["dir"], exist_ok=True)
+    _link_tree_entry(binary, _dedicated_executable(server))
+    for name in ("arena", "data1"):
+        _link_tree_entry(
+            os.path.join(data_root, name),
+            os.path.join(server.data["dir"], name),
+        )
+    return _dedicated_tree_ready(server)
+
 
 def install(server):
-    """Download the Alien Arena server files via SteamCMD."""
+    """Download the Alien Arena server files via anonymous SteamCMD."""
 
     _base_install(server)
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
+    if not os.path.isfile(_dedicated_executable(server)):
+        stage_public_dedicated_tree(server)
+    if not os.path.isfile(_dedicated_executable(server)):
         gamemodule_common.raise_byo_requirement(
             "alienarenaserver",
             "stage a native Alien Arena dedicated server tree containing crx-dedicated "
@@ -470,12 +565,24 @@ def get_start_command(server):
             "stage a native Alien Arena dedicated server tree containing crx-dedicated "
             "in <install_dir> before setup/start",
         )
+    def _launch_value(spec, current_value):
+        text = str(current_value)
+        if spec.canonical_key == "hostname":
+            return '"%s"' % (text.replace('"', ""),)
+        return text
+
     launch_args = build_launch_arg_values(
         server.data,
         setting_schema,
         require_explicit_tokens=True,
-        value_transform=lambda _spec, current_value: str(current_value),
+        value_transform=_launch_value,
     )
+    gameplay = ["+set", "deathmatch", "1", "+set", "maxclients", "8"]
+    if "+map" in launch_args:
+        map_index = launch_args.index("+map")
+        launch_args = [*launch_args[:map_index], *gameplay, *launch_args[map_index:]]
+    else:
+        launch_args = [*launch_args, *gameplay]
     return (
         ["./" + server.data["exe_name"], *launch_args],
         server.data["dir"],
@@ -516,6 +623,18 @@ def get_container_spec(server):
         "ports": requirements.get("ports", []),
         "command": cmd,
     }
+
+
+def get_query_address(server):
+    """Return the Quake II UDP status endpoint on the Alien Arena game port."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake2")
+
+
+def get_info_address(server):
+    """Return the Quake II status endpoint used by the Alien Arena info command."""
+
+    return get_query_address(server)
 
 
 def do_stop(server, j):

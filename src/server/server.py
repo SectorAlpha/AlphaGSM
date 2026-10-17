@@ -292,7 +292,37 @@ def _query_robust_status_payload(query_utils, host, port):
     for key in ("connect_address", "auth", "build", "privacy_policy"):
         if key in info_payload:
             merged[key] = info_payload[key]
+    if "max_players" not in merged:
+        soft_max = merged.get("soft_max_players")
+        if isinstance(soft_max, int) and not isinstance(soft_max, bool):
+            merged["max_players"] = soft_max
     return used_host, merged
+
+
+def _slp_info_payload(result):
+    """Copy an SLP result and add lifecycle info fields."""
+
+    payload = dict(result)
+    if "name" not in payload:
+        description = payload.get("description", "")
+        if isinstance(description, str):
+            payload["name"] = description
+        elif description is None:
+            payload["name"] = ""
+        else:
+            payload["name"] = str(description)
+    for source_key, dest_key in (
+        ("players_online", "players"),
+        ("players_max", "max_players"),
+    ):
+        if dest_key in payload:
+            continue
+        value = payload.get(source_key)
+        if isinstance(value, int) and not isinstance(value, bool):
+            payload[dest_key] = value
+    if "map" not in payload:
+        payload["map"] = None
+    return payload
 
 
 def _query_http_status_payload(query_utils, host, port, server=None):
@@ -1477,7 +1507,8 @@ class Server(object):
             try:
                 result = query_utils.slp_info(host, port)
                 if as_json:
-                    print(json.dumps({"protocol": "slp", "port": port, **result}))
+                    payload = _slp_info_payload(result)
+                    print(json.dumps({"protocol": "slp", "port": port, **payload}))
                     return
                 print(
                     "Server info (SLP on port {port}):\n"

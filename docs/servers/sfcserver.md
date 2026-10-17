@@ -13,14 +13,21 @@ backend.
 - `screen`
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
-- An official SourceForts Classic full-version archive from ModDB, extracted under `<install_dir>/sfclassic/`
+- The official SourceForts Classic 1.0 RC7 (Fix) 7z from ModDB, extracted under `<install_dir>/sfclassic/`
 
 ## Support Status
 
-`sfcserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the
-generic Source SDK Base 2013 Dedicated Server scaffold from anonymous SteamCMD,
-but it still needs the real SourceForts Classic full-version content tree from
-the official ModDB files page.
+`sfcserver` is supported in `ENABLED (BYO)` mode. AlphaGSM installs Steam app
+`244310` from the anonymous `previous2021` branch. That legacy SDK 2013
+dedicated branch is the 32-bit launcher this game can start. The public branch
+of the same app does not finish startup. The install still needs the official
+SourceForts Classic 1.0 RC7 (Fix) tree from ModDB. Leave the 1.1b3 Linux64
+pre-release unstaged; this depot does not ship `srcds_linux64`. App `244310`
+publishes `bin/*_srv.so`. `prestart` copies those onto the unsuffixed names
+`srcds_linux` loads, restores the launcher execute bit, and writes
+`sv_hibernate_when_empty 0`. A local process start answered A2S on UDP 58844
+(map `sf_astrodome`, 0/32). The A2S hostname was `Sourceforts Classic 1.0 [BUILD]`.
+The process was stopped and that UDP port was free. Docker was not run.
 
 ## Quick Start
 
@@ -64,11 +71,12 @@ Setup configures:
 - SteamCMD downloads the server files
 - default configuration and backup settings
 
-Before `start`, download the latest SourceForts Classic full-version archive
-from the official ModDB files page and extract the resulting `sfclassic/` tree
-so `<install_dir>/sfclassic/maps/sf_astrodome.bsp` exists. If `setup` or
-`start` reports an `ENABLED (BYO)` requirement, the public app `244310` payload
-alone is still not enough for this module.
+Before `start`, download SourceForts Classic 1.0 RC7 (Fix) from
+[the official ModDB file page](https://www.moddb.com/mods/sourceforts/downloads/sourceforts-classic-10-release-candidate-7-fix-7z)
+and extract the resulting `sfclassic/` tree so
+`<install_dir>/sfclassic/maps/sf_astrodome.bsp` exists. If `setup` or `start`
+reports an `ENABLED (BYO)` requirement, app `244310` on `previous2021` is still
+only the SDK scaffold.
 
 ## Useful Commands
 
@@ -113,6 +121,7 @@ alphagsm myserver set KEY VALUE
 - **Location**: `<install_dir>/srcds_run`
 - **Engine**: Source
 - **SteamCMD App ID**: `244310`
+- **SteamCMD branch**: `previous2021`
 - **SteamCMD App Name**: `Source SDK Base 2013 Dedicated Server`
 
 ### Server Configuration
@@ -137,7 +146,7 @@ alphagsm myserver set KEY VALUE
 - **Mod directory**: `sfclassic/addons/`
 - **Workshop support**: No
 - **Mod notes**: AlphaGSM now supports `manifest`, direct archive `url`, `gamebanana`, and `moddb` addon sources for this server through the shared Source addon flow. The built-in manifest currently includes `metamod` and `sourcemod`. `mod cleanup` removes only AlphaGSM-tracked addon files and keeps cache/state under `.alphagsm/mods/sfclassic/`.
-- **Current status**: Supported in `ENABLED (BYO)` mode. Anonymous SteamCMD app `244310` still only provides the generic SDK scaffold, so stage the real `sfclassic/` content tree from the official SourceForts Classic ModDB full-version archive before retrying startup.
+- **Current status**: Supported in `ENABLED (BYO)` mode. Anonymous SteamCMD app `244310` on `previous2021` provides the 32-bit SDK scaffold, and the official ModDB 1.0 RC7 (Fix) tree provides `sfclassic/`. Local process A2S was validated on UDP 58844 (map `sf_astrodome`, 0/32) and the server was stopped. Docker was not rerun.
 - **Map install**: Copy `.bsp` files into `sfclassic/maps/` and add to `sfclassic/cfg/mapcycle.txt`.
 - **Mod install**: Copy addon folders into `sfclassic/addons/`.
 

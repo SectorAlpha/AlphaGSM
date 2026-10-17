@@ -230,3 +230,114 @@ def validate_staged_files(staging, recipe, target):
     report = inspect_files(staging, declaration)
     if not report['ready']:
         raise ServerError('Selected content lacks required files: ' + ', '.join(report['missing']))
+
+
+_ARCHIVE_SUFFIXES = {".pk3", ".iwd", ".zip"}
+_MP_MEMBER = re.compile(r"^maps/(?:mp/)?(mp_[^/]+)\.(?:bsp|d3dbsp)$", re.IGNORECASE)
+_Q3_MEMBER = re.compile(
+    r"^maps/(q3tourney6_ctf|q3dm\d+|q3tourney\d+|q3ctf\d+|pro-q3[a-z0-9]+|test_bigbox)\.bsp$",
+    re.IGNORECASE,
+)
+
+
+def _dedicated_map_name(filename):
+    """Return a dedicated multiplayer map stem, ignoring campaign and load screens."""
+
+    stem, extension = os.path.splitext(filename)
+    lowered = stem.casefold()
+    if extension.casefold() not in {".ff", ".bsp", ".d3dbsp"}:
+        return None
+    if lowered.startswith("sp_") or lowered.endswith("_load"):
+        return None
+    if lowered.startswith("mp_"):
+        return lowered
+    if _Q3_MEMBER.fullmatch("maps/" + stem + ".bsp"):
+        return lowered
+    return None
+
+
+def _maps_in_archive(path):
+    """Read multiplayer map names from a PK3, IWD or zip without extracting it."""
+
+    names = set()
+    try:
+        with zipfile.ZipFile(path) as bundle:
+            for info in bundle.infolist():
+                if info.file_size <= 0 or info.is_dir():
+                    continue
+                member = info.filename.replace("\\", "/")
+                while member.startswith("./"):
+                    member = member[2:]
+                match = _MP_MEMBER.fullmatch(member) or _Q3_MEMBER.fullmatch(member)
+                if match and not match.group(1).casefold().endswith("_load"):
+                    names.add(match.group(1).casefold())
+    except (OSError, ValueError, zipfile.BadZipFile):
+        return set()
+    return names
+
+
+def multiplayer_map_names(root):
+    """List dedicated multiplayer maps found as loose files or inside archives."""
+
+    names = set()
+    root = os.fspath(root)
+    if not os.path.isdir(root):
+        return []
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [
+            name for name in dirnames
+            if not os.path.islink(os.path.join(dirpath, name))
+        ]
+        for filename in filenames:
+            path = os.path.join(dirpath, filename)
+            if not os.path.isfile(path) or os.path.islink(path):
+                continue
+            if os.path.splitext(filename)[1].casefold() in _ARCHIVE_SUFFIXES:
+                names.update(_maps_in_archive(path))
+                continue
+            discovered = _dedicated_map_name(filename)
+            if discovered:
+                names.add(discovered)
+    return sorted(names)
+
+
+def missing_multiplayer_maps(root, required):
+    """Return required dedicated maps that are absent from a server build."""
+
+    found = set(multiplayer_map_names(root))
+    return [str(name) for name in required if str(name).casefold() not in found]
+
+
+def require_module_multiplayer_maps(install_dir, module_file):
+    """Apply the module recipe's dedicated multiplayer map list to one build."""
+
+    server = type("MapCheck", (), {"name": "map-check", "data": {}})()
+    recipe = load_requirements(server, module_file)
+    require_multiplayer_maps(install_dir, recipe.get("multiplayer_maps") or [])
+
+
+def require_multiplayer_maps(root, required):
+    """Fail when a build that already has dedicated maps is missing one of them.
+
+    An engine archive with no map bytes is not a map build. Callers still
+    reject that tree with their own base-asset check.
+    """
+
+    if not multiplayer_map_names(root):
+        return
+    missing = missing_multiplayer_maps(root, required)
+    if missing:
+        raise ServerError("Dedicated server is missing multiplayer maps: " + ", ".join(missing))
+
+
+def assert_multiplayer_maps_retained(source, published):
+    """Fail when publication drops a multiplayer map that the source contained."""
+
+    discovered = multiplayer_map_names(source)
+    if not discovered:
+        return
+    missing = missing_multiplayer_maps(published, discovered)
+    if missing:
+        raise ServerError(
+            "Published dedicated server is missing multiplayer maps: " + ", ".join(missing)
+        )

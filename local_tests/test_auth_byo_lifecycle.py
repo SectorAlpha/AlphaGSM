@@ -40,14 +40,17 @@ def pytest_configure(config):
 def test_selected_server_lifecycle(row):
     profile = os.environ.get("ALPHAGSM_LOCAL_AUTH_PROFILE", "").strip()
     assets = os.environ.get("ALPHAGSM_LOCAL_ASSETS", "").strip()
+    public = os.environ.get("ALPHAGSM_LOCAL_PUBLIC", "").strip() == "1"
     state_dir = os.environ.get("ALPHAGSM_LOCAL_AUTH_STATE", "").strip()
     work_dir = os.environ.get("ALPHAGSM_LOCAL_WORK_DIR", "").strip()
     if not work_dir:
         raise AssertionError("ALPHAGSM_LOCAL_WORK_DIR is required and must stay outside git")
     if profile and not state_dir:
         raise AssertionError("Pass --state-dir for the existing Steam auth profile directory")
-    if not profile and not assets:
-        raise AssertionError("Pass --profile NAME or --assets PATH. Do not pass a password.")
+    if public and (profile or assets):
+        raise AssertionError("Pass --public without a profile or an assets directory")
+    if not profile and not assets and not public:
+        raise AssertionError("Pass --profile NAME, --assets PATH, or --public. Do not pass a password.")
     if state_dir:
         state_path = Path(state_dir).expanduser()
         if profile and not (state_path / "steam-auth" / profile).is_dir():

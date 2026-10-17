@@ -168,4 +168,4 @@ private profile is not mounted into the game container. Inside the manager
 container, run `./alphagsm-docker steam-auth login owned your_steam_username`
 from a terminal. A non-terminal login is rejected. See
 [SteamCMD session profiles](steamcmd-auth.md). Live auth and BYO tests run
-locally with `scripts/run_local_auth_tests.sh`.
+locally with `./run_local_tests.sh`.

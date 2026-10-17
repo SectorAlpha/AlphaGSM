@@ -1,6 +1,7 @@
 """American Truck Simulator dedicated server lifecycle helpers."""
 
 import os
+import re
 
 import utils.steamcmd as steamcmd
 from server import ServerError
@@ -23,43 +24,78 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
 )
 command_functions = {}
 max_stop_wait = 1
+config_sync_keys = ("port", "queryport")
+_GAME_HOME_NAME = "American Truck Simulator"
 
 
 def _server_home_dir(server):
-    """Return the ATS user/home directory expected by the dedicated server."""
+    """Return the instance directory for exported packages and native config."""
 
-    configdir = server.data.get("configdir", ".local/share/American Truck Simulator")
+    configdir = server.data.get("configdir", ".local/share/" + _GAME_HOME_NAME)
     return os.path.join(server.data["dir"], configdir)
 
 
-def _required_export_paths(server):
-    """Return the exported ATS payload files required for startup."""
+def _xdg_data_home(server):
+    """Keep Linux's required game subdirectory compatible with custom configdir."""
+
+    home_dir = os.path.abspath(_server_home_dir(server))
+    if os.path.basename(home_dir) == _GAME_HOME_NAME:
+        return os.path.dirname(home_dir)
+    return os.path.join(server.data["dir"], ".alphagsm", "ats-user-data")
+
+
+def sync_server_config(server):
+    """Keep native dedicated ports aligned while retaining operator settings."""
 
     home_dir = _server_home_dir(server)
-    return (
-        os.path.join(home_dir, "server_packages.sii"),
-        os.path.join(home_dir, "server_packages.dat"),
-    )
+    os.makedirs(home_dir, exist_ok=True)
+    path = os.path.join(home_dir, "server_config.sii")
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8") as handle:
+            content = handle.read()
+    else:
+        content = "SiiNunit\n{\nserver_config : _nameless.alphagsm {\n}\n}\n"
+    for key, value in (
+        ("connection_dedicated_port", server.data.get("port", 27015)),
+        ("query_dedicated_port", server.data.get("queryport", 27016)),
+    ):
+        pattern = r"(?m)^[ \t]*" + key + r"[ \t]*:[^\n]*"
+        replacement = " " + key + ": " + str(int(value))
+        if re.search(pattern, content):
+            content = re.sub(pattern, replacement, content)
+        else:
+            content, count = re.subn(r"(?m)^[ \t]*}", replacement + "\n}", content, count=1)
+            if not count:
+                raise ServerError("Invalid ATS server_config.sii: missing closing brace")
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(content)
+    native_path = os.path.join(_xdg_data_home(server), _GAME_HOME_NAME)
+    if os.path.abspath(native_path) != os.path.abspath(home_dir):
+        os.makedirs(os.path.dirname(native_path), exist_ok=True)
+        if os.path.islink(native_path):
+            os.unlink(native_path)
+        if os.path.lexists(native_path):
+            raise ServerError("ATS managed user path is occupied: " + native_path)
+        os.symlink(os.path.abspath(home_dir), native_path, target_is_directory=True)
 
 
-def _ensure_exported_server_packages(server):
-    """Fail fast when the exported ATS server package files are missing."""
-
-    missing_paths = [path for path in _required_export_paths(server) if not os.path.isfile(path)]
-    if not missing_paths:
-        return
+def prestart(server):
+    """Require genuine client exports before launching the dedicated server."""
 
     home_dir = _server_home_dir(server)
-    gamemodule_common.raise_byo_requirement(
-        "atsserver",
-        "exported ATS server packages/settings from an owned client install",
-        actions=(
-            "Run export_server_packages from an owned American Truck Simulator client.",
-            f"Copy server_packages.sii and server_packages.dat into {home_dir}.",
-            "Retry start once the exported files are staged.",
-        ),
-        docs_slug="atsserver",
-    )
+    paths = [os.path.join(home_dir, name) for name in ("server_packages.sii", "server_packages.dat")]
+    if any(not os.path.isfile(path) or os.path.getsize(path) == 0 for path in paths):
+        gamemodule_common.raise_byo_requirement(
+            "atsserver",
+            "exported ATS server packages/settings from an owned client install",
+            actions=(
+                "Run export_server_packages from an owned American Truck Simulator client.",
+                f"Copy server_packages.sii and server_packages.dat into {home_dir}.",
+                "Retry start once both exported files are staged.",
+            ),
+            docs_slug="atsserver",
+        )
+    sync_server_config(server)
 
 
 def configure(server, ask, port=None, dir=None, *, exe_name="bin/linux_x64/americantruck_server"):
@@ -103,6 +139,7 @@ install = gamemodule_common.make_steamcmd_install_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 install.__doc__ = "Download the ATS server files via SteamCMD."
 
@@ -111,9 +148,22 @@ update = gamemodule_common.make_steamcmd_update_hook(
     steamcmd_module=steamcmd,
     steam_app_id=steam_app_id,
     steam_anonymous_login_possible=steam_anonymous_login_possible,
+    sync_server_config=sync_server_config,
 )
 
 restart = gamemodule_common.make_restart_hook()
+
+
+def get_query_address(server):
+    """ATS uses Steam A2S on the dedicated query port, same as ETS2."""
+
+    return (runtime_module.resolve_query_host(server), int(server.data["queryport"]), "a2s")
+
+
+def get_info_address(server):
+    """Return the A2S address used by the info command."""
+
+    return get_query_address(server)
 
 
 def get_start_command(server):
@@ -122,16 +172,11 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    _ensure_exported_server_packages(server)
     return (
         [
+            "env",
+            "XDG_DATA_HOME=" + _xdg_data_home(server),
             "./" + server.data["exe_name"],
-            "-ip",
-            "0.0.0.0",
-            "-port",
-            str(server.data["port"]),
-            "-query_port",
-            str(server.data["queryport"]),
         ],
         server.data["dir"],
     )
@@ -177,17 +222,45 @@ def checkvalue(server, key, *value):
         str_keys=("configdir", "exe_name", "dir"),
     )
 
+def _runtime_mounts(server):
+    """Extend the Steam SDK mounts before shared path validation and mapping."""
+
+    mounts = runtime_module.build_runtime_requirements(server, family="steamcmd-linux").get("mounts", [])
+    if not server.data.get("dir"):
+        return mounts
+    mounts.append({
+        "source": _server_home_dir(server),
+        "target": "/srv/ats-data/" + _GAME_HOME_NAME,
+        "mode": "rw",
+    })
+    return mounts
+
+
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        mounts=_runtime_mounts,
 )
 
-get_container_spec = gamemodule_common.make_container_spec_builder(
-        family='steamcmd-linux',
+
+def get_container_spec(server):
+    """Mount exported packages and config at a stable container-visible path."""
+
+    spec = runtime_module.build_container_spec(
+        server,
+        family="steamcmd-linux",
         get_start_command=get_start_command,
-        port_definitions=({'key': 'queryport', 'protocol': 'udp'}, {'key': 'queryport', 'protocol': 'tcp'}, {'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        mounts=_runtime_mounts(server),
+        port_definitions=(
+            {"key": "queryport", "protocol": "udp"},
+            {"key": "queryport", "protocol": "tcp"},
+            {"key": "port", "protocol": "udp"},
+            {"key": "port", "protocol": "tcp"},
+        ),
         stdin_open=True,
-)
+    )
+    spec["command"][1] = "XDG_DATA_HOME=/srv/ats-data"
+    return spec
 
 
 def get_asset_requirements(server):

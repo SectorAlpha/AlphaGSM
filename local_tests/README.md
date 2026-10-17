@@ -6,10 +6,10 @@ owned files. `make test`, `pytest tests`, and GitHub Actions do not collect it.
 Run it with:
 
 ```bash
-scripts/run_local_auth_tests.sh unit
-scripts/run_local_auth_tests.sh integration --suite byo --server q3server --profile owned
-scripts/run_local_auth_tests.sh integration --suite auth --server acserver --profile owned
-scripts/run_local_auth_tests.sh integration --server codserver --assets /path/to/owned-files
+./run_local_tests.sh unit
+./run_local_tests.sh integration --suite byo --server q3server --profile owned
+./run_local_tests.sh integration --suite auth --server acserver --profile owned
+./run_local_tests.sh integration --server codserver --assets /path/to/owned-files
 ```
 
 `unit` checks that every ENABLED (AUTH) and ENABLED (BYO) module imports, that

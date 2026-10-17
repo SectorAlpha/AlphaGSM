@@ -221,6 +221,18 @@ def status(server, verbose):
         print("Status check failed: " + str(exc))
 
 
+def get_query_address(server):
+    """Return the Server List Ping address for this Java Tekkit server."""
+
+    return (runtime_module.resolve_query_host(server), server.data["port"], "slp")
+
+
+def get_info_address(server):
+    """Return the same SLP address used by query."""
+
+    return get_query_address(server)
+
+
 def get_asset_requirements(server):
     """Describe this game's owned files, acquisition routes and staging limits."""
     from utils.byo_files import load_requirements

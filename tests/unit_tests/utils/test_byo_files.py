@@ -123,12 +123,14 @@ def test_steam_sources_use_base_game_not_dedicated_app(tmp_path):
     from gamemodules import coduoserver, q3server, rtcwserver
     server = SimpleNamespace(name="test", data={"dir": str(tmp_path)})
     for module, app_id, live_validated in (
-        (coduoserver, 2620, False),
+        (coduoserver, 2620, True),
         (q3server, 2200, True),
         (rtcwserver, 9010, True),
     ):
         source = next(s for s in module.get_asset_requirements(server)["sources"] if s["kind"] == "steamcmd")
         assert source["app_id"] == app_id
+        if module is coduoserver:
+            assert source["additional_app_ids"] == [2640]
         assert source["platform"] == "windows"
         assert source["authentication"] == "required"
         assert source["live_validated"] is live_validated
@@ -284,6 +286,92 @@ def test_config_home_opt_in_only_accepts_config_settings(tmp_path, setting):
 
     with pytest.raises(ServerError, match='configuration home setting'):
         helpers().load_requirements(server, str(tmp_path / 'main.py'))
+
+
+def _write_zip(path, members):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(path, "w") as bundle:
+        for name in members:
+            bundle.writestr(name, b"map")
+
+
+def test_multiplayer_map_names_keep_dedicated_maps_only(tmp_path):
+    """Dedicated installs count multiplayer maps and ignore campaign content."""
+
+    _write_zip(tmp_path / "main" / "pak0.pk3", [
+        "maps/mp/mp_carentan.bsp",
+        "maps/brecourt.bsp",
+        "maps/MP/mp_ship.bsp",
+        "maps/mp_beach.bsp",
+    ])
+    _write_zip(tmp_path / "baseq3" / "pak0.pk3", [
+        "maps/q3dm1.bsp",
+        "maps/q3dm17.bsp",
+        "maps/test_bigbox.bsp",
+    ])
+    zone = tmp_path / "zone" / "english"
+    zone.mkdir(parents=True)
+    (zone / "mp_crash.ff").write_bytes(b"ff")
+    (zone / "mp_crash_load.ff").write_bytes(b"ff")
+    (zone / "sp_bog.ff").write_bytes(b"ff")
+    (zone / "ac130.ff").write_bytes(b"ff")
+
+    names = helpers().multiplayer_map_names(tmp_path)
+
+    assert names == [
+        "mp_beach", "mp_carentan", "mp_crash", "mp_ship", "q3dm1", "q3dm17", "test_bigbox",
+    ]
+
+
+def test_missing_multiplayer_maps_reports_absent_dedicated_maps(tmp_path):
+    _write_zip(tmp_path / "main" / "pak0.pk3", ["maps/mp/mp_carentan.bsp"])
+
+    missing = helpers().missing_multiplayer_maps(tmp_path, ["mp_carentan", "mp_ship"])
+
+    assert missing == ["mp_ship"]
+
+
+def test_require_multiplayer_maps_rejects_a_partial_dedicated_set(tmp_path):
+    _write_zip(tmp_path / "main" / "pak0.pk3", ["maps/mp/mp_carentan.bsp"])
+
+    with pytest.raises(ServerError, match="mp_ship"):
+        helpers().require_multiplayer_maps(tmp_path, ["mp_carentan", "mp_ship"])
+
+
+def test_require_multiplayer_maps_allows_an_engine_archive_without_map_bytes(tmp_path):
+    """Placeholder engine files are not a dedicated map build."""
+
+    (tmp_path / "baseq3").mkdir()
+    (tmp_path / "baseq3" / "pak0.pk3").write_text("")
+
+    helpers().require_multiplayer_maps(tmp_path, ["q3dm1", "q3dm17"])
+
+
+@pytest.mark.parametrize("module_id,archive,member", [
+    ("q3server", "baseq3/pak0.pk3", "maps/q3dm1.bsp"),
+    ("rtcwserver", "main/pak0.pk3", "maps/mp/mp_beach.bsp"),
+    ("codserver", "main/pak0.pk3", "maps/mp/mp_carentan.bsp"),
+    ("coduoserver", "main/pak0.pk3", "maps/mp/mp_carentan.bsp"),
+    ("cod2server", "main/iw_00.iwd", "maps/mp/mp_toujane.d3dbsp"),
+])
+def test_known_dedicated_map_set_rejects_a_partial_archive(tmp_path, module_id, archive, member):
+    module = importlib.import_module("gamemodules." + module_id)
+    recipe = module.get_asset_requirements(SimpleNamespace(name="test", data={"dir": str(tmp_path)}))
+    _write_zip(tmp_path / archive, [member])
+
+    with pytest.raises(ServerError, match="multiplayer maps"):
+        helpers().require_multiplayer_maps(tmp_path, recipe["multiplayer_maps"])
+
+
+def test_cod4_partial_fastfile_set_rejects_the_dedicated_build(tmp_path):
+    from gamemodules import cod4server
+    recipe = cod4server.get_asset_requirements(SimpleNamespace(name="test", data={"dir": str(tmp_path)}))
+    zone = tmp_path / "zone" / "english"
+    zone.mkdir(parents=True)
+    (zone / (recipe["multiplayer_maps"][0] + ".ff")).write_bytes(b"map")
+
+    with pytest.raises(ServerError, match="multiplayer maps"):
+        helpers().require_multiplayer_maps(tmp_path, recipe["multiplayer_maps"])
 
 
 @pytest.mark.parametrize('requirement', [

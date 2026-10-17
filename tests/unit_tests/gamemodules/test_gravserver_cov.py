@@ -69,12 +69,101 @@ def test_get_start_command_missing_exe(tmp_path):
         mod.get_start_command(server)
 
 
-def test_install_missing_owned_files_raises_byo(tmp_path):
+def test_install_missing_owned_files_raises_byo(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "CAGGameServer-Win32-Shipping"
+    download = MagicMock()
+    monkeypatch.setattr(mod.steamcmd, "download", download)
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\)"):
+        mod.install(server)
+    download.assert_called_once()
+    assert "auth_profile" not in download.call_args.kwargs
+
+
+def test_linux_start_uses_wine_xvfb_not_proton(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    seen = {}
+
+    def fake_wrap(command, wineprefix=None, prefer_proton=False):
+        seen["command"] = list(command)
+        seen["wineprefix"] = wineprefix
+        seen["prefer_proton"] = prefer_proton
+        return ["xvfb-run", "-a", *command]
+
+    monkeypatch.setattr(mod.proton, "wrap_xvfb_command", fake_wrap)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "CAGGameServer-Win32-Shipping"
+    server.data["wineprefix"] = str(tmp_path / "wineprefix")
+    server.data["adminpassword"] = ""
+    server.data["maxplayers"] = 32
+    server.data["peerport"] = 7778
+    server.data["port"] = 7777
+    server.data["queryport"] = 27111
+    server.data["servername"] = "GravServer"
+    (tmp_path / "CAGGameServer-Win32-Shipping").write_text("")
+    cmd, cwd = mod.get_start_command(server)
+    assert seen["prefer_proton"] is False
+    assert seen["wineprefix"] == str(tmp_path / "wineprefix")
+    assert seen["command"][0] == "./CAGGameServer-Win32-Shipping"
+    assert any("QueryPort=27111" in part for part in seen["command"])
+    assert "SteamAppId=332500" in cmd
+    assert "xvfb-run" in cmd
+    assert cwd == server.data["dir"]
+
+
+def test_linux_binaries_worker_cwd_uses_wine_xvfb(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    seen = {}
+
+    def fake_wrap(command, wineprefix=None, prefer_proton=False):
+        seen["command"] = list(command)
+        seen["prefer_proton"] = prefer_proton
+        return ["xvfb-run", "-a", *command]
+
+    monkeypatch.setattr(mod.proton, "wrap_xvfb_command", fake_wrap)
+    exe_dir = tmp_path / "Binaries" / "Win32"
+    exe_dir.mkdir(parents=True)
+    (exe_dir / "CAGGameServer-Win32-Shipping.exe").write_text("")
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "CAGGameServer-Win32-Shipping"
+    server.data["adminpassword"] = ""
+    server.data["maxplayers"] = 32
+    server.data["peerport"] = 7778
+    server.data["port"] = 7777
+    server.data["queryport"] = 27111
+    server.data["servername"] = "GravServer"
+    cmd, cwd = mod.get_start_command(server)
+    assert seen["prefer_proton"] is False
+    assert seen["command"][0] == "./Win32/CAGGameServer-Win32-Shipping.exe"
+    assert cwd == os.path.join(str(tmp_path), "Binaries", "")
+    assert "xvfb-run" in cmd
+
+
+def test_install_passes_saved_auth_profile_only_when_set(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    calls = []
+
+    def fake_download(*args, **kwargs):
+        calls.append((args, kwargs))
+
+    monkeypatch.setattr(mod.steamcmd, "download", fake_download)
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "CAGGameServer-Win32-Shipping"
     with pytest.raises(ServerError, match="ENABLED \\(BYO\\)"):
         mod.install(server)
+    assert calls[0][0][:3] == (str(tmp_path) + "/", 332500, True)
+    assert "auth_profile" not in calls[0][1]
+    assert calls[0][1].get("force_windows") is True
+
+    server.data["steam_auth_profile"] = "owned"
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\)"):
+        mod.install(server)
+    assert calls[1][1].get("auth_profile") == "owned"
+    assert calls[1][1].get("force_windows") is True
 
 
 def test_do_stop():

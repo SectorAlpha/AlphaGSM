@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from types import SimpleNamespace
+import zipfile
 
 import pytest
 
@@ -44,6 +45,73 @@ def test_acquire_selects_profile_and_publishes_only_allowlisted_files(tmp_path, 
     assert all(not path.exists() for path in staging_paths)
     assert report["source"] == "steam-owned"
     assert report["game_readiness"] == "not-checked"
+
+
+def test_additional_app_ids_merge_before_the_allowlist(tmp_path, monkeypatch):
+    module = acquisition()
+    calls = []
+
+    def download(path, app, anonymous, **kwargs):
+        calls.append(app)
+        root = Path(path)
+        if app == 2200:
+            (root / "baseq3").mkdir()
+            (root / "baseq3" / "pak0.pk3").write_bytes(b"base")
+            (root / "steamapps").mkdir()
+            (root / "steamapps" / "secret.txt").write_text("must not be copied")
+        elif app == 2201:
+            (root / "uo").mkdir()
+            (root / "uo" / "pak0.pk3").write_bytes(b"expansion")
+            (root / "CoDUO.exe").write_bytes(b"client")
+        else:
+            raise AssertionError(app)
+
+    monkeypatch.setattr(module.steamcmd, "download", download)
+    definition = recipe()
+    definition["sources"][0]["additional_app_ids"] = [2201]
+    definition["include"] = ["baseq3/pak*.pk3", "uo/pak*.pk3"]
+    definition["required"] = ["baseq3/pak0.pk3", "uo/pak0.pk3"]
+    definition["requirements"] = [
+        {"path": "baseq3/pak0.pk3", "kind": "file"},
+        {"path": "uo/pak0.pk3", "kind": "file"},
+    ]
+    server = SimpleNamespace(name="test", data={"dir": str(tmp_path / "server")})
+
+    module.acquire(server, definition, "steam-owned", auth_profile="personal")
+
+    assert calls == [2200, 2201]
+    assert (tmp_path / "server/baseq3/pak0.pk3").read_bytes() == b"base"
+    assert (tmp_path / "server/uo/pak0.pk3").read_bytes() == b"expansion"
+    assert not (tmp_path / "server/CoDUO.exe").exists()
+    assert not (tmp_path / "server/steamapps").exists()
+
+
+def test_acquire_rejects_publication_that_drops_a_multiplayer_map(tmp_path, monkeypatch):
+    """A dedicated build must keep every multiplayer map from the owned source."""
+
+    module = acquisition()
+
+    def download(path, app, anonymous, **kwargs):
+        root = Path(path)
+        (root / "main").mkdir()
+        with zipfile.ZipFile(root / "main" / "pak0.pk3", "w") as bundle:
+            bundle.writestr("maps/mp/mp_carentan.bsp", b"map")
+            bundle.writestr("maps/brecourt.bsp", b"campaign")
+        with zipfile.ZipFile(root / "main" / "extra.pk3", "w") as bundle:
+            bundle.writestr("maps/mp/mp_ship.bsp", b"map")
+            bundle.writestr("maps/bastogne1.bsp", b"campaign")
+
+    monkeypatch.setattr(module.steamcmd, "download", download)
+    definition = recipe()
+    definition["include"] = ["main/pak0.pk3"]
+    definition["required"] = ["main/pak0.pk3"]
+    definition["requirements"] = [{"path": "main/pak0.pk3", "kind": "file"}]
+    server = SimpleNamespace(name="test", data={"dir": str(tmp_path / "server")})
+
+    with pytest.raises(ServerError, match="mp_ship"):
+        module.acquire(server, definition, "steam-owned", auth_profile="personal")
+
+    assert not (tmp_path / "server" / "main" / "extra.pk3").exists()
 
 
 def test_authentication_is_required_before_downloading(tmp_path, monkeypatch):

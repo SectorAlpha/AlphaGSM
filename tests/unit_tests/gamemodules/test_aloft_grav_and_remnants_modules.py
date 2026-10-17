@@ -53,7 +53,16 @@ def test_aloft_get_start_command_builds_expected_args(tmp_path):
     assert cwd == server.data["dir"]
 
 
-def test_grav_get_start_command_builds_expected_args(tmp_path):
+def test_grav_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(gravserver, "IS_LINUX", True)
+    seen = {}
+
+    def fake_wrap(command, wineprefix=None, prefer_proton=False):
+        seen["prefer_proton"] = prefer_proton
+        seen["wineprefix"] = wineprefix
+        return ["xvfb-run", "-a", *command]
+
+    monkeypatch.setattr(gravserver.proton, "wrap_xvfb_command", fake_wrap)
     server = DummyServer("grav")
     exe = tmp_path / "CAGGameServer-Win32-Shipping"
     exe.write_text("")
@@ -72,9 +81,11 @@ def test_grav_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = gravserver.get_start_command(server)
 
-    assert cmd[0] == "./CAGGameServer-Win32-Shipping"
-    assert "Port=7777" in cmd[1]
-    assert 'ServerName="GravServer"' in cmd[1]
+    assert seen["prefer_proton"] is False
+    assert "./CAGGameServer-Win32-Shipping" in cmd
+    assert any("Port=7777" in part for part in cmd)
+    assert any("ServerName=GravServer" in part for part in cmd)
+    assert any(part.endswith("?ServerName=GravServer") for part in cmd)
     assert cwd == server.data["dir"]
 
 

@@ -185,7 +185,7 @@ test: skills-check
 	PYTHONPATH=.:src $(PYTHON_BIN) -m pytest tests/unit_tests -n auto
 
 local-test:
-	PYTHON_BIN=$(PYTHON_BIN) bash scripts/run_local_auth_tests.sh unit
+	PYTHON_BIN=$(PYTHON_BIN) bash run_local_tests.sh unit
 
 coverage:
 	PYTHONPATH=.:src $(PYTHON_BIN) -m pytest tests/unit_tests \

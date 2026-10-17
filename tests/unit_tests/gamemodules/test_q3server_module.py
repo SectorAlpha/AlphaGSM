@@ -136,8 +136,8 @@ def test_q3server_install_keeps_dedicated_code_and_all_content(
     pk3_paths.append("missionpack/pak0.pk3")
     for relative_path in pk3_paths:
         with zipfile.ZipFile(source / relative_path, "w") as archive:
-            archive.writestr("maps/q3dm6.bsp", "first map")
-            archive.writestr("maps/q3dm17.bsp", "second map")
+            for map_name in q3server.get_asset_requirements(DummyServer("q3"))["multiplayer_maps"]:
+                archive.writestr(f"maps/{map_name}.bsp", "map")
             archive.writestr("vm/cgame.qvm", "client VM served to players")
         payload[relative_path] = (source / relative_path).read_bytes()
     (stage_root / "Linux.zip").write_text("download archive")

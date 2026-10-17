@@ -5,7 +5,7 @@ This guide covers the `goldeneyesourceserver` module in AlphaGSM.
 `goldeneyesourceserver` is `ENABLED (BYO)`. AlphaGSM can run a complete
 operator-staged GoldenEye: Source dedicated server tree through either the
 process or Docker runtime, but it does not download that tree during setup.
-This status does not claim a current integration pass.
+This status does not claim a current integration pass. `query` and `info` use A2S.
 
 ## Why Setup Is BYO
 

@@ -126,5 +126,10 @@
   "case_insensitive": true,
   "module": "rtcwserver",
   "guide": "docs/servers/rtcwserver.md",
-  "schema_version": 1
+  "schema_version": 1,
+  "multiplayer_maps": [
+    "mp_assault", "mp_base", "mp_beach", "mp_castle", "mp_chateau", "mp_dam",
+    "mp_depot", "mp_destruction", "mp_ice", "mp_keep", "mp_rocket", "mp_sub",
+    "mp_tram", "mp_trenchtoast", "mp_village"
+  ]
 }

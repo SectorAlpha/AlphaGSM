@@ -46,13 +46,51 @@ def test_cod4_preserves_exact_native_case_and_satisfies_lifecycle_validator(tmp_
     (source/'zone/english').mkdir(parents=True)
     (source/'fileSysCheck.cfg').write_bytes(b'owned config')
     (source/'main/localized_english.iwd').write_bytes(b'owned game data')
-    (source/'zone/english/mp.ff').write_bytes(b'fastfile')
+    (source/'zone/english/code_post_gfx_mp.ff').write_bytes(b'fastfile')
     target=tmp_path/'server'
     recipe=cod4server.get_asset_requirements(SimpleNamespace(name='test',data={}))
     import_assets(source,target,recipe)
     assert (target/'fileSysCheck.cfg').is_file()
     cod4server._assert_required_base_assets(str(target))
     assert inspect_files(target,recipe)['ready']
+
+
+def test_cod4_steam_depot_publishes_every_multiplayer_fastfile(tmp_path):
+    """The 2018 Steam depot has no fileSysCheck.cfg. Keep every mp fastfile."""
+
+    from gamemodules import cod4server
+    source = tmp_path / "owned"
+    (source / "main").mkdir(parents=True)
+    zone = source / "zone" / "english"
+    zone.mkdir(parents=True)
+    (source / "main" / "iw_00.iwd").write_bytes(b"iwd")
+    (source / "iw3mp.exe").write_bytes(b"client")
+    (source / "main" / "video").mkdir()
+    (source / "main" / "video" / "attract.bik").write_bytes(b"movie")
+    (zone / "ac130.ff").write_bytes(b"campaign")
+    (zone / "localized_common_mp.ff").write_bytes(b"loc")
+    (zone / "localized_code_post_gfx_mp.ff").write_bytes(b"loc")
+    (zone / "code_post_gfx_mp.ff").write_bytes(b"code")
+    (zone / "common_mp.ff").write_bytes(b"common")
+    (zone / "ui_mp.ff").write_bytes(b"ui")
+    recipe = cod4server.get_asset_requirements(SimpleNamespace(name="test", data={}))
+    for name in recipe["multiplayer_maps"]:
+        (zone / f"{name}.ff").write_bytes(b"map")
+        (zone / f"{name}_load.ff").write_bytes(b"load")
+
+    report = inspect_files(source, recipe, source=True)
+    assert report["ready"], report["missing"]
+    target = tmp_path / "server"
+    import_assets(source, target, recipe)
+    published = {path.name for path in target.rglob("*") if path.is_file()}
+    assert "iw3mp.exe" not in published
+    assert "attract.bik" not in published
+    assert "ac130.ff" not in published
+    for name in recipe["multiplayer_maps"]:
+        assert f"{name}.ff" in published
+        assert f"{name}_load.ff" in published
+    from utils.byo_files import require_multiplayer_maps
+    require_multiplayer_maps(target, recipe["multiplayer_maps"])
 
 
 def test_cod4_requires_localization_in_addition_to_general_iwd(tmp_path):
@@ -64,6 +102,33 @@ def test_cod4_requires_localization_in_addition_to_general_iwd(tmp_path):
     (tmp_path/'fileSysCheck.cfg').write_bytes(b'cfg')
     recipe=cod4server.get_asset_requirements(SimpleNamespace(name='test',data={}))
     assert not inspect_files(tmp_path,recipe)['ready']
+
+
+def test_coduo_expansion_map_is_separate_from_base_start_map(tmp_path):
+    """Retail United Offensive keeps mp_brecourt in Main and expansion maps in uo."""
+
+    from gamemodules import coduoserver
+    source = tmp_path / "owned"
+    (source / "Main").mkdir(parents=True)
+    (source / "uo").mkdir()
+    (source / "CoDUOMP.exe").write_bytes(b"client")
+    (source / "Main" / "pak0.pk3").write_bytes(b"base")
+    with zipfile.ZipFile(source / "Main" / "pak4.pk3", "w") as bundle:
+        bundle.writestr("maps/MP/mp_carentan.bsp", b"map")
+        bundle.writestr("maps/MP/mp_brecourt.bsp", b"map")
+    with zipfile.ZipFile(source / "uo" / "pakuo01.pk3", "w") as bundle:
+        bundle.writestr("maps/mp/mp_uo_stanjel.bsp", b"map")
+        bundle.writestr("maps/mp/mp_kharkov.bsp", b"map")
+    recipe = coduoserver.get_asset_requirements(SimpleNamespace(name="test", data={}))
+
+    report = inspect_files(source, recipe, source=True)
+    assert report["ready"], report["missing"]
+    target = tmp_path / "server"
+    import_assets(source, target, recipe)
+    published = {path.relative_to(target).as_posix().lower() for path in target.rglob("*") if path.is_file()}
+    assert "main/pak4.pk3" in published
+    assert any(name.endswith("uo/pakuo01.pk3") for name in published)
+    assert not any(name.endswith(".exe") for name in published)
 
 
 @pytest.mark.parametrize("startmap,member", [

@@ -29,10 +29,17 @@ Run setup:
 alphagsm myalienare setup
 ```
 
-`alienarenaserver` is supported in `ENABLED (BYO)` mode. The current anonymous
-SteamCMD app does not deliver the native server payload, so before `setup` or
-`start` you should stage a native Alien Arena dedicated server tree containing
-`crx-dedicated` inside your chosen `<install_dir>/`.
+`alienarenaserver` is supported in `ENABLED (BYO)` mode. Anonymous SteamCMD
+app `629540` subscribes but mounts no content depots, so it does not deliver
+`crx-dedicated`. On Debian and Ubuntu, `setup` then downloads the
+`alien-arena-server` and `alien-arena-data` packages and links that dedicated
+binary plus `arena` and `data1` into `<install_dir>/`. If those packages are
+not available, stage a native dedicated tree containing `crx-dedicated`
+yourself before `setup` or `start`.
+
+A local process run on 2026-10-16 answered Quake II status on UDP 53777
+(`dm-deathray`, hostname AlphaGSM laalienarenaserver, 0/8) and stopped.
+Docker was not rerun.
 
 Start it:
 
@@ -79,6 +86,7 @@ alphagsm myalienare backup
 
 - Module name: `alienarenaserver`
 - Default port: 27910
+- `query` and `info` use Quake II UDP `status` on the game port.
 
 <!-- alphagsm-server-variables:start -->
 

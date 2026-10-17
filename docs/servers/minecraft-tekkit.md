@@ -54,6 +54,8 @@ Setup configures:
 - the game port (default 27015)
 - the install directory
 
+`query` and `info` use Java Edition Server List Ping (SLP) on the game port.
+
 Suggested flow:
 
 ```bash

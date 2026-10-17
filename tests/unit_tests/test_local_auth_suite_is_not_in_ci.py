@@ -30,6 +30,7 @@ def test_github_workflows_do_not_run_local_auth_tests():
         text = path.read_text(encoding="utf-8")
         assert "local_tests" not in text
         assert "run_local_auth_tests.sh" not in text
+        assert "run_local_tests.sh" not in text
 
 
 def test_gitignore_covers_auth_material_and_local_runtime():

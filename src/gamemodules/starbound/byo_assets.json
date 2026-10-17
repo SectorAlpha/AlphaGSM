@@ -2,7 +2,10 @@
   "description": "Starbound complete compatible server tree",
   "requirements": [
     {
-      "path": "{exe_name}",
+      "any_of": [
+        "linux64/starbound_server",
+        "linux/starbound_server"
+      ],
       "kind": "file"
     },
     {
@@ -14,17 +17,47 @@
     {
       "id": "manual",
       "kind": "operator-files",
-      "instructions": "Copy a complete owned Starbound native server tree including linux64 runtime libraries and assets/packed.pak. A Windows executable alone cannot satisfy the native module.",
+      "instructions": "Copy a complete owned Starbound native server tree including the Linux runtime libraries and assets/packed.pak. The dedicated binary is linux64/starbound_server or linux/starbound_server. A Windows executable alone cannot satisfy the native module.",
       "live_validated": false,
       "url": "https://starbounder.org/Guide:Setting_Up_Multiplayer"
+    },
+    {
+      "id": "steam-owned",
+      "kind": "steamcmd",
+      "instructions": "Steam app 211820 supplies the owned Linux dedicated server. Import linux64/starbound_server when that build ships it, otherwise linux/starbound_server, plus assets/packed.pak and the Linux runtime files beside the binary. Do not use a Windows executable as the Linux server. Anonymous SteamCMD mounts no depots for this app.",
+      "live_validated": true,
+      "app_id": 211820,
+      "platform": "linux",
+      "authentication": "required",
+      "url": "https://store.steampowered.com/app/211820/"
     }
   ],
   "defaults": {
     "exe_name": "linux64/starbound_server"
   },
-  "managed_import": false,
-  "validation": "sentinel-only",
-  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "managed_import": true,
+  "validation": "declared-files-and-content-sentinels",
+  "manual_reason": "Import requires a complete compatible distribution and manual staging. See assets requirements for this game.",
+  "roots": [
+    ""
+  ],
+  "target": "",
+  "include": [
+    "linux64/starbound_server",
+    "linux64/*",
+    "linux/starbound_server",
+    "linux/*",
+    "assets/packed.pak"
+  ],
+  "required": [
+    "assets/packed.pak"
+  ],
+  "required_any": [
+    [
+      "linux64/starbound_server",
+      "linux/starbound_server"
+    ]
+  ],
   "module": "starbound",
   "guide": "docs/servers/starbound.md",
   "schema_version": 1

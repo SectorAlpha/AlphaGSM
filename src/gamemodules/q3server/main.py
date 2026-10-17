@@ -528,6 +528,8 @@ def _assert_required_base_assets(install_dir):
     """Raise when the Quake 3 install lacks the required licensed base data."""
 
     if os.path.isfile(os.path.join(install_dir, "baseq3", "pak0.pk3")):
+        from utils.byo_files import require_module_multiplayer_maps
+        require_module_multiplayer_maps(install_dir, __file__)
         return
     gamemodule_common.raise_byo_requirement(
         "q3server",

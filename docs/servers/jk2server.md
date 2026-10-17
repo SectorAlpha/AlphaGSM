@@ -92,6 +92,7 @@ alphagsm myjk2serve set url https://example.invalid/jk2-dedicated.tar.gz
 
 - Module name: `jk2server`
 - Default port: 28070
+- `query` and `info` use Quake III UDP `getstatus` on the game port.
 
 <!-- alphagsm-server-variables:start -->
 

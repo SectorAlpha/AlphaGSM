@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-10-16",
+  "updated": "2026-10-17T01:10:00",
   "mode": "SELECTED_ROW_COMPLETE",
   "scope": "All 42 checked-in file-based BYO helpers; one game at a time",
   "code_root": "/home/cosmosquark/.codex/worktrees/byo-file-helpers/AlphaGSM",
@@ -297,28 +297,45 @@
         }
       ],
       "selected_source": "steam-owned",
-      "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
-      "lifecycle_result": "NOT_RUN",
+      "acquisition_result": "PASSED",
+      "file_check_result": "PASSED",
+      "lifecycle_result": "PASSED_PROCESS_QUAKE_UDP",
       "docker_result": "NOT_RUN",
-      "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
       "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
-      "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "SSD results/codserver/lifecycle.json",
+        "Working tree past 0e39a10f stages gcc 3.2 libraries, drops non-multiplayer dedicated-archive files, and sets fs_basepath/fs_homepath. That tree was not committed.",
+        "UDP 127.0.0.1:28960 Quake getstatus: AlphaGSM byossdcod, mp_carentan, 0/20. Stop released the process and the port."
+      ],
+      "reusable_installer_result": "PASSED_PUBLIC_ENGINE_PLUS_OWNED_PK3",
+      "content_result": "PASSED_ENGLISH_MP_PK3",
       "network_checks": {
-        "endpoints": [],
-        "protocol": null,
-        "probe_scope": null,
-        "port_query_result": "NOT_RUN",
-        "status_result": "NOT_RUN",
-        "info_result": "NOT_RUN",
-        "shutdown_result": "NOT_RUN"
+        "endpoints": [
+          "udp://127.0.0.1:28960"
+        ],
+        "protocol": "quake",
+        "probe_scope": "HOST_LOOPBACK",
+        "port_query_result": "PASSED",
+        "status_result": "PASSED_RUNNING_AND_STOPPED",
+        "info_result": "PASSED_NATIVE_QUAKE",
+        "shutdown_result": "PASSED_PROCESS_AND_UDP_RELEASE",
+        "observed_server": {
+          "name": "AlphaGSM byossdcod",
+          "map": "mp_carentan",
+          "players": 0,
+          "max_players": 20
+        }
       },
-      "module_review_result": "NOT_ASSESSED",
-      "module_changes": []
+      "module_review_result": "QUERY_HOOKS_GCC3_RUNTIME_AND_MP_FILTER_FIXED",
+      "module_changes": [
+        "Explicit Quake UDP query and info hooks",
+        "English multiplayer PK3 import; dedicated install omits Windows client libraries, PunkBuster client libraries, and non-English stubs",
+        "Upstream gcc 3.2 runtime staged beside cod_lnxded",
+        "Relative fs_basepath and fs_homepath for process and Docker launches"
+      ]
     },
     {
       "order": 4,
@@ -360,28 +377,43 @@
         }
       ],
       "selected_source": "steam-owned",
-      "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
-      "lifecycle_result": "NOT_RUN",
+      "acquisition_result": "PASSED",
+      "file_check_result": "PASSED",
+      "lifecycle_result": "PASSED_PROCESS_QUAKE_UDP",
       "docker_result": "NOT_RUN",
-      "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
       "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
-      "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "SSD results/coduoserver/lifecycle.json",
+        "Working tree past 0e39a10f. Local integration ./run_local_tests.sh passed in 125.69s. Docker was not run.",
+        "UDP port 49440, start map mp_brecourt, moddir uo. Game log mapname mp_brecourt. Stop released the process and the port."
+      ],
+      "reusable_installer_result": "PASSED_PUBLIC_ENGINE_PLUS_OWNED_PK3",
+      "content_result": "PASSED_ENGLISH_MP_PK3_AND_UO_EXPANSION",
       "network_checks": {
-        "endpoints": [],
-        "protocol": null,
-        "probe_scope": null,
-        "port_query_result": "NOT_RUN",
-        "status_result": "NOT_RUN",
-        "info_result": "NOT_RUN",
-        "shutdown_result": "NOT_RUN"
+        "endpoints": [
+          "udp://127.0.0.1:49440"
+        ],
+        "protocol": "quake",
+        "probe_scope": "HOST_LOOPBACK",
+        "port_query_result": "PASSED",
+        "status_result": "PASSED_RUNNING_AND_STOPPED",
+        "info_result": "PASSED_NATIVE_QUAKE",
+        "shutdown_result": "PASSED_PROCESS_AND_UDP_RELEASE",
+        "observed_server": {
+          "map": "mp_brecourt",
+          "moddir": "uo"
+        }
       },
-      "module_review_result": "NOT_ASSESSED",
-      "module_changes": []
+      "module_review_result": "QUERY_HOOKS_GCC3_RUNTIME_AND_MP_FILTER_FIXED",
+      "module_changes": [
+        "Start map may live in main or uo PK3s; expansion sentinel is maps/mp/mp_uo_stanjel.bsp",
+        "English multiplayer PK3 import; dedicated install omits client libraries and non-English stubs, including uo/language",
+        "Upstream gcc 3.2 runtime staged beside coduo_lnxded",
+        "Relative fs_basepath and fs_homepath for process and Docker launches"
+      ]
     },
     {
       "order": 5,
@@ -417,8 +449,8 @@
         {
           "id": "steam-owned",
           "kind": "steamcmd",
-          "instructions": "Copy the owned Call of Duty 2 main/ data. Localization config can reside inside an IWD; use the complete original main content, not only the dedicated Linux download. SteamCMD access requires the appropriate entitlement; it is not live validated.",
-          "live_validated": false,
+          "instructions": "Copy the owned Call of Duty 2 main/ data. Localization config can reside inside an IWD; use the complete original main content, not only the dedicated Linux download. SteamCMD access requires the appropriate entitlement. Local process lifecycle was validated with app 2630.",
+          "live_validated": true,
           "app_id": 2630,
           "platform": "windows",
           "authentication": "required",
@@ -426,28 +458,44 @@
         }
       ],
       "selected_source": "steam-owned",
-      "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
-      "lifecycle_result": "NOT_RUN",
+      "acquisition_result": "PASSED",
+      "file_check_result": "PASSED",
+      "lifecycle_result": "PASSED_PROCESS_QUAKE_UDP",
       "docker_result": "NOT_RUN",
-      "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
       "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
-      "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "SSD results/cod2server/lifecycle.json",
+        "Working tree past 0e39a10f. Local integration ./run_local_tests.sh passed in 322.36s. Docker was not run.",
+        "UDP port 43511, start map mp_toujane, moddir main. Game log mapname mp_toujane, sv_maxclients 20. Stop released the process and the port."
+      ],
+      "reusable_installer_result": "PASSED_PUBLIC_ENGINE_PLUS_OWNED_IWD",
+      "content_result": "PASSED_ENGLISH_MP_IWD",
       "network_checks": {
-        "endpoints": [],
-        "protocol": null,
-        "probe_scope": null,
-        "port_query_result": "NOT_RUN",
-        "status_result": "NOT_RUN",
-        "info_result": "NOT_RUN",
-        "shutdown_result": "NOT_RUN"
+        "endpoints": [
+          "udp://127.0.0.1:43511"
+        ],
+        "protocol": "quake",
+        "probe_scope": "HOST_LOOPBACK",
+        "port_query_result": "PASSED",
+        "status_result": "PASSED_RUNNING_AND_STOPPED",
+        "info_result": "PASSED_NATIVE_QUAKE",
+        "shutdown_result": "PASSED_PROCESS_AND_UDP_RELEASE",
+        "observed_server": {
+          "name": "AlphaGSM lacod2server",
+          "map": "mp_toujane",
+          "max_players": 20
+        }
       },
-      "module_review_result": "NOT_ASSESSED",
-      "module_changes": []
+      "module_review_result": "QUERY_HOOKS_GCC3_RUNTIME_AND_MP_FILTER_FIXED",
+      "module_changes": [
+        "Explicit Quake UDP query and info hooks",
+        "English multiplayer IWD import",
+        "Upstream gcc 3.2 runtime staged beside cod2_lnxded",
+        "Relative fs_basepath and fs_homepath for process and Docker launches"
+      ]
     },
     {
       "order": 6,
@@ -456,26 +504,28 @@
       "phase": "steamcmd",
       "manifest": "src/gamemodules/cod4server/byo_assets.json",
       "guide": "docs/servers/cod4server.md",
-      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/cod4",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/local-auth/lacod4server/server",
       "managed_import": true,
       "validation": "declared-files-and-content-sentinels",
       "requirements": [
-        {
-          "path": "fileSysCheck.cfg",
-          "kind": "file"
-        },
         {
           "path": "main/*.iwd",
           "kind": "glob"
         },
         {
-          "path": "main/localized_*.iwd",
+          "any_of": [
+            "zone/*.ff",
+            "zone/*/*.ff",
+            "zone/*/*/*.ff"
+          ],
           "kind": "glob"
         },
         {
           "any_of": [
-            "zone/*.ff",
-            "zone/*/*.ff"
+            "main/localized_*.iwd",
+            "zone/localized_common_mp.ff",
+            "zone/*/localized_common_mp.ff",
+            "zone/*/*/localized_common_mp.ff"
           ],
           "kind": "glob"
         }
@@ -485,15 +535,15 @@
         {
           "id": "manual",
           "kind": "operator-files",
-          "instructions": "Obtain the original 2007 Call of Duty 4, not the remaster. Copy fileSysCheck.cfg, all main/*.iwd and the full compatible zone/ fastfiles. Do not replace existing server.cfg. Managed import selects only the declared IWD/config and recognized fastfile paths. Any additional zone content requires manual staging; file checks do not prove completeness.",
+          "instructions": "Obtain the original 2007 Call of Duty 4, not the remaster. Copy main/*.iwd and every multiplayer fastfile under zone/. A legacy tree uses fileSysCheck.cfg plus main/localized_*.iwd. A current Steam tree uses zone/english/localized_common_mp.ff instead.",
           "live_validated": false,
           "url": "https://github.com/callofduty4x/CoD4x_Server"
         },
         {
           "id": "steam-owned",
           "kind": "steamcmd",
-          "instructions": "Obtain the original 2007 Call of Duty 4, not the remaster. Copy fileSysCheck.cfg, all main/*.iwd and the full compatible zone/ fastfiles. Do not replace existing server.cfg. SteamCMD access requires the appropriate entitlement; it is not live validated. Managed import selects only the declared IWD/config and recognized fastfile paths. Any additional zone content requires manual staging; file checks do not prove completeness.",
-          "live_validated": false,
+          "instructions": "Steam app 7940 supplies main/iw_*.iwd, localized_english_iw*.iwd, and zone/english multiplayer fastfiles. CoD4x 21.2 cod4x18_dedrun serves that tree. Local process lifecycle was validated on mp_crash.",
+          "live_validated": true,
           "app_id": 7940,
           "platform": "windows",
           "authentication": "required",
@@ -501,28 +551,46 @@
         }
       ],
       "selected_source": "steam-owned",
-      "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
-      "lifecycle_result": "NOT_RUN",
+      "acquisition_result": "PASSED",
+      "file_check_result": "PASSED",
+      "lifecycle_result": "PASSED_PROCESS_QUAKE_UDP",
       "docker_result": "NOT_RUN",
-      "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
       "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
-      "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "SSD results/cod4server/lifecycle.json",
+        "Working tree past 0e39a10f. Local integration ./run_local_tests.sh passed in 804.69s. Docker was not run.",
+        "UDP port 56171, start map mp_crash, moddir main. Game log mapname mp_crash, hostname AlphaGSM lacod4server, sv_maxclients 24, CoD4 X build 1154. Stop released the process and the port.",
+        "Published tree has iw_00.iwd through iw_13.iwd, seven localized_english_iw*.iwd, 21 zone/english/mp_*.ff maps, and no client executables or campaign fastfiles."
+      ],
+      "reusable_installer_result": "PASSED_COD4X_PLUS_OWNED_FASTFILES",
+      "content_result": "PASSED_21_MP_FASTFILES",
+      "installed_map_count": 21,
       "network_checks": {
-        "endpoints": [],
-        "protocol": null,
-        "probe_scope": null,
-        "port_query_result": "NOT_RUN",
-        "status_result": "NOT_RUN",
-        "info_result": "NOT_RUN",
-        "shutdown_result": "NOT_RUN"
+        "endpoints": [
+          "udp://127.0.0.1:56171"
+        ],
+        "protocol": "quake",
+        "probe_scope": "HOST_LOOPBACK",
+        "port_query_result": "PASSED",
+        "status_result": "PASSED_RUNNING_AND_STOPPED",
+        "info_result": "PASSED_NATIVE_QUAKE",
+        "shutdown_result": "PASSED_PROCESS_AND_UDP_RELEASE",
+        "observed_server": {
+          "name": "AlphaGSM lacod4server",
+          "map": "mp_crash",
+          "max_players": 24
+        }
       },
-      "module_review_result": "NOT_ASSESSED",
-      "module_changes": []
+      "module_review_result": "COD4X_BINARY_AND_STEAM_FASTFILE_RECIPE",
+      "module_changes": [
+        "Default executable is CoD4x 21.2 cod4x18_dedrun",
+        "Launch uses dedicated 2, sv_punkbuster 0, and relative fs_basepath and fs_homepath",
+        "The 2008 libstdc++.so.6 and libgcc_s.so.1 are not staged",
+        "Managed import keeps every mp_*.ff and shared multiplayer fastfiles"
+      ]
     },
     {
       "order": 7,
@@ -538,6 +606,14 @@
         {
           "path": "etmain/pak0.pk3",
           "kind": "file"
+        },
+        {
+          "path": "etmain/pak1.pk3",
+          "kind": "file"
+        },
+        {
+          "path": "etmain/pak2.pk3",
+          "kind": "file"
         }
       ],
       "defaults": {},
@@ -545,21 +621,21 @@
         {
           "id": "manual",
           "kind": "operator-files",
-          "instructions": "Use an original Enemy Territory installation or the upstream FAQ-linked free game distribution. Copy pak0.pk3 to etmain/; pak1.pk3 and pak2.pk3 may be needed by third-party mods. This is separate from the ET: Legacy engine download.",
+          "instructions": "Use an original Enemy Territory installation or the upstream FAQ-linked free game distribution. Copy etmain/pak0.pk3, pak1.pk3, and pak2.pk3. pak0.pk3 alone is not enough. This is separate from the ET: Legacy engine download.",
           "live_validated": false,
           "url": "https://github.com/etlegacy/etlegacy/wiki/FAQ"
         }
       ],
       "selected_source": "manual",
-      "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
-      "lifecycle_result": "NOT_RUN",
+      "acquisition_result": "PASSED_SPLASHDAMAGE_FREEWARE",
+      "file_check_result": "PASSED_THREE_PAKS_SIX_MAPS",
+      "lifecycle_result": "PASSED_PROCESS_QUAKE",
       "docker_result": "NOT_RUN",
-      "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
       "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "tested_commit": "0e39a10f",
+      "evidence": "SSD results/etlegacyserver/lifecycle.json; integration 1 passed in 14.46s; follow-up info JSON quake UDP 57831 oasis 0/24 hostname ET: Legacy Host",
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -571,7 +647,7 @@
         "info_result": "NOT_RUN",
         "shutdown_result": "NOT_RUN"
       },
-      "module_review_result": "NOT_ASSESSED",
+      "module_review_result": "PUBLIC_FREEWARE_PACKS_AND_QUAKE",
       "module_changes": []
     },
     {
@@ -608,14 +684,16 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_EXPORT_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_MISSING_CLIENT_EXPORT",
+      "blocker": "The dedicated server needs server_packages.sii and server_packages.dat from an owned client export_server_packages run. Steam login cannot create those files. Neither file is present in the campaign trees or the private profile. Integration was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "No server_packages.sii or server_packages.dat was found under the SSD campaign root or the private profile."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -664,14 +742,16 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_EXPORT_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_MISSING_CLIENT_EXPORT",
+      "blocker": "The dedicated server needs server_packages.sii and server_packages.dat from an owned client export_server_packages run. Steam login cannot create those files. Neither file is present in the campaign trees or the private profile. Integration was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "No server_packages.sii or server_packages.dat was found under the SSD campaign root or the private profile."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -714,14 +794,17 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_FILES_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_MISSING_OWNED_FILES",
+      "blocker": "Owned Action Half-Life tree with maps/ahl_hydro.bsp was not found. Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "Owned Action Half-Life tree with maps/ahl_hydro.bsp was not found.",
+        "Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -769,15 +852,15 @@
         }
       ],
       "selected_source": "manual",
-      "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
-      "lifecycle_result": "NOT_RUN",
+      "acquisition_result": "PASSED_DEBIAN_PACKAGES",
+      "file_check_result": "PASSED_CRX_DEDICATED_AND_35_BSP",
+      "lifecycle_result": "PASSED_PROCESS_QUAKE2",
       "docker_result": "NOT_RUN",
-      "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
       "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "tested_commit": "0e39a10f",
+      "evidence": "SSD results/alienarenaserver/lifecycle.json; info JSON quake2 UDP 53777 dm-deathray 0/8 hostname AlphaGSM laalienarenaserver",
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -789,7 +872,7 @@
         "info_result": "NOT_RUN",
         "shutdown_result": "NOT_RUN"
       },
-      "module_review_result": "NOT_ASSESSED",
+      "module_review_result": "STEAM_629540_EMPTY_DISTRO_FALLBACK",
       "module_changes": []
     },
     {
@@ -826,10 +909,13 @@
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_NO_NATIVE_QUERY",
+      "blocker": "No native query hook. Windows dedicated scripts require Steam. Hook left unchanged.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "No native query hook. Windows dedicated scripts require Steam. Hook left unchanged.",
+        "The query hook was not changed and no server was started."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -880,14 +966,17 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_FILES_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_MISSING_OWNED_FILES",
+      "blocker": "ServerGrid.json export was not found. Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "ServerGrid.json export was not found.",
+        "Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -930,14 +1019,17 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_FILES_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_MISSING_OWNED_FILES",
+      "blocker": "Owned BrainBread tree with maps/bb_chp4_slaywatch.bsp was not found. Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "Owned BrainBread tree with maps/bb_chp4_slaywatch.bsp was not found.",
+        "Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -985,10 +1077,13 @@
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_NO_NATIVE_QUERY",
+      "blocker": "GameSpy v1 is not an implemented native protocol, and byo_assets.json has no verified download URL.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "GameSpy v1 is not an implemented native protocol, and byo_assets.json has no verified download URL.",
+        "The query hook was not changed and no server was started."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1036,10 +1131,13 @@
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_NO_NATIVE_QUERY",
+      "blocker": "GameSpy v2 is not an implemented native protocol, and byo_assets.json has no verified download URL.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "GameSpy v2 is not an implemented native protocol, and byo_assets.json has no verified download URL.",
+        "The query hook was not changed and no server was started."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1098,10 +1196,13 @@
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_NO_NATIVE_QUERY",
+      "blocker": "Klei UDP is not an implemented native protocol. The cluster token remains an owned export.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "Klei UDP is not an implemented native protocol. The cluster token remains an owned export.",
+        "The query hook was not changed and no server was started."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1145,15 +1246,15 @@
         }
       ],
       "selected_source": "manual",
-      "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
-      "lifecycle_result": "NOT_RUN",
+      "acquisition_result": "PASSED_ANONYMOUS_STEAM_2915550_WINDOWS",
+      "file_check_result": "PASSED_WINE_DEDICATED_EXE",
+      "lifecycle_result": "PASSED_PROCESS_A2S",
       "docker_result": "NOT_RUN",
-      "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
       "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "tested_commit": "0e39a10f",
+      "evidence": "SSD results/foundryserver/lifecycle.json; integration 1 passed in 152.80s; info JSON a2s UDP 27016 Procedural 0/32; game port 51535",
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1165,7 +1266,7 @@
         "info_result": "NOT_RUN",
         "shutdown_result": "NOT_RUN"
       },
-      "module_review_result": "NOT_ASSESSED",
+      "module_review_result": "WINDOWS_DEPOT_WINE_A2S",
       "module_changes": []
     },
     {
@@ -1206,14 +1307,19 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_FILES_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_MISSING_OWNED_FILES",
+      "blocker": "The project's only 5.0.6 server archive is the ModDB release named by geshl2.com. That page returned HTTP 403 from Cloudflare on 2026-10-17. No other mirror was used. Windows app 310 was not installed. No native Linux srcds_run tree exists. Integration was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "/tmp/byo-ges.md",
+        "https://www.geshl2.com/server-downloads/ HTTP 200. Artifact GoldenEye_Source_v5.0.6_full_server_windows.7z SHA-256 79643189e9d6549e13ed9545d2277cb34bac05fff645d44d9de1f0ab030610d3. Only href /go/5-0-6-linuxwin-server-full-moddb/ is a 241-byte meta-refresh to the project ModDB release. ModDB was not requested.",
+        "https://www.moddb.com/mods/goldeneye-source/downloads/ges-v506-linuxwindow-server-7z returned HTTP 403, Cloudflare challenge, on 2026-10-17. No archive bytes were saved. Windows app 310 was not installed.",
+        "https://docs.geshl2.com/server/getting-started/install/linux/ documents Wine, Xvfb, SteamCMD force platform windows, anonymous app_update 310, and extracting gesource from that archive. Public app 310 has no gesource depot."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1225,7 +1331,7 @@
         "info_result": "NOT_RUN",
         "shutdown_result": "NOT_RUN"
       },
-      "module_review_result": "NOT_ASSESSED",
+      "module_review_result": "REVIEWED_2026_10_16_NO_COMPLETE_LINUX_ARCHIVE",
       "module_changes": []
     },
     {
@@ -1235,7 +1341,7 @@
       "phase": "manual-distribution",
       "manifest": "src/gamemodules/gravserver/byo_assets.json",
       "guide": "docs/servers/gravserver.md",
-      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/grav",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/grav-process/server",
       "managed_import": false,
       "validation": "sentinel-only",
       "requirements": [
@@ -1251,34 +1357,51 @@
         {
           "id": "manual",
           "kind": "operator-files",
-          "instructions": "Use the owned complete GRAV game tree and its Binaries/ server launch scripts. The configured flat extensionless executable is a legacy module assumption, not proof of a native Linux distribution.",
-          "live_validated": false,
+          "instructions": "Install Steam app 332500 with an entitled profile. Anonymous login mounts no depot. Linux runs the Win32 dedicated server with Wine.",
+          "live_validated": true,
           "url": "https://steamcommunity.com/app/332500/discussions/4/496881136901566007/"
         }
       ],
       "selected_source": "manual",
-      "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
-      "lifecycle_result": "NOT_RUN",
+      "acquisition_result": "PASSED_OWNED_STEAM_332500",
+      "file_check_result": "PASSED_WIN32_DEDICATED_EXE",
+      "lifecycle_result": "PASSED_PROCESS_A2S",
       "docker_result": "NOT_RUN",
-      "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
       "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "SSD results/gravserver/lifecycle.json",
+        "Anonymous app 332500 returned no subscription. Profile owned installed Binaries/Win32/CAGGameServer-Win32-Shipping.exe. Coordinator A2S on UDP 41002 after moving ServerName to the end of the broker URL. Docker was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED",
+      "content_result": "PASSED_OWNED_WIN32_TREE",
       "network_checks": {
-        "endpoints": [],
-        "protocol": null,
-        "probe_scope": null,
-        "port_query_result": "NOT_RUN",
-        "status_result": "NOT_RUN",
-        "info_result": "NOT_RUN",
-        "shutdown_result": "NOT_RUN"
+        "endpoints": [
+          "udp://127.0.0.1:41002"
+        ],
+        "protocol": "a2s",
+        "probe_scope": "HOST_LOOPBACK",
+        "port_query_result": "PASSED",
+        "status_result": "PASSED_RUNNING_AND_STOPPED",
+        "info_result": "PASSED_NATIVE_A2S",
+        "shutdown_result": "PASSED_PROCESS_AND_UDP_RELEASE",
+        "observed_server": {
+          "name": "lagrav",
+          "map": "Reborn Update 9.8.1",
+          "players": 0,
+          "max_players": 255,
+          "game_port": 41000,
+          "peer_port": 41001
+        }
       },
-      "module_review_result": "NOT_ASSESSED",
-      "module_changes": []
+      "module_review_result": "OWNED_WIN32_WINE_A2S",
+      "module_changes": [
+        "owned Steam app 332500 download with auth_profile when saved",
+        "Linux Wine/Xvfb launch of the Win32 dedicated executable",
+        "ServerName is the last unquoted broker option"
+      ]
     },
     {
       "order": 21,
@@ -1314,10 +1437,13 @@
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_NO_NATIVE_QUERY",
+      "blocker": "No implemented native query hook.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "No implemented native query hook.",
+        "The query hook was not changed and no server was started."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1365,10 +1491,13 @@
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_NO_NATIVE_QUERY",
+      "blocker": "Upstream dedicated binary is unverified and byo_assets.json has no URL.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "Upstream dedicated binary is unverified and byo_assets.json has no URL.",
+        "The query hook was not changed and no server was started."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1421,14 +1550,17 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_FILES_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_MISSING_OWNED_FILES",
+      "blocker": "Official JK2_DEDICATED_URL returns HTTP 404. https://mrwonko.de/jk3files/files/2711_jk2linuxded103a.zip returns HTTP 200 and contains only the 32-bit jk2ded binary, readme, and base/server.cfg. The readme requires retail assets0.pk3, assets1.pk3, and 1.03 assets2.pk3. A binary-only start exited before Quake getstatus. No mirror was added. Query and info hooks now return quake. Integration was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "No operator archive URL is configured and jk2mvded.x86_64 was not found.",
+        "Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1440,7 +1572,7 @@
         "info_result": "NOT_RUN",
         "shutdown_result": "NOT_RUN"
       },
-      "module_review_result": "NOT_ASSESSED",
+      "module_review_result": "REVIEWED_2026_10_16_NOT_LIFECYCLE",
       "module_changes": []
     },
     {
@@ -1472,14 +1604,17 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_FILES_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_MISSING_OWNED_FILES",
+      "blocker": "query and info now use the SLP protocol instead of generic TCP. No operator minecraft_server.jar was found. SLP info JSON still uses description/players_online/players_max and omits name/map/players/max_players, so the local lifecycle runner cannot pass yet. Integration was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "No operator-supplied Minecraft server jar was found.",
+        "Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1491,7 +1626,7 @@
         "info_result": "NOT_RUN",
         "shutdown_result": "NOT_RUN"
       },
-      "module_review_result": "NOT_ASSESSED",
+      "module_review_result": "REVIEWED_2026_10_16_NOT_LIFECYCLE",
       "module_changes": []
     },
     {
@@ -1528,14 +1663,17 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_FILES_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_MISSING_OWNED_FILES",
+      "blocker": "query and info now use SLP. Technic still publishes stable server zips. Classic and tekkitmain predate modern SLP. Tekkit Legends answered SLP on Java 8 after eula=true, but this host's java is 21, unattended setup does not accept the EULA, and info JSON omits name/map/players/max_players. No new download URL was added. Integration was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "No operator Tekkit archive URL is configured and Tekkit.jar was not found.",
+        "Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1547,7 +1685,7 @@
         "info_result": "NOT_RUN",
         "shutdown_result": "NOT_RUN"
       },
-      "module_review_result": "NOT_ASSESSED",
+      "module_review_result": "REVIEWED_2026_10_16_NOT_LIFECYCLE",
       "module_changes": []
     },
     {
@@ -1583,14 +1721,17 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_FILES_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_MISSING_OWNED_FILES",
+      "blocker": "BLOCKED_MISSING_OWNED_FILES. No publisher URL in byo_assets.json. Checked icculus mohaa paths returned HTTP 404. Retail main/*.pk3 are still required. OpenMoHAA was not substituted. Integration was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "Owned Medal of Honor Allied Assault tree with mohaa_lnxded was not found.",
+        "Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1602,7 +1743,7 @@
         "info_result": "NOT_RUN",
         "shutdown_result": "NOT_RUN"
       },
-      "module_review_result": "NOT_ASSESSED",
+      "module_review_result": "REVIEWED_2026_10_16_NO_COMPLETE_LINUX_ARCHIVE",
       "module_changes": []
     },
     {
@@ -1639,10 +1780,13 @@
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_NO_NATIVE_QUERY",
+      "blocker": "The proprietary UDP query is not an implemented native protocol.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "The proprietary UDP query is not an implemented native protocol.",
+        "The query hook was not changed and no server was started."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1683,15 +1827,15 @@
         }
       ],
       "selected_source": "manual",
-      "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
-      "lifecycle_result": "NOT_RUN",
+      "acquisition_result": "PASSED_OWNED_STEAM_111710",
+      "file_check_result": "PASSED_HYDRO_BSP",
+      "lifecycle_result": "PASSED_PROCESS_A2S_AFTER_EXECUTE_BIT_FIX",
       "docker_result": "NOT_RUN",
-      "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
       "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "tested_commit": "0e39a10f",
+      "evidence": "SSD results/ndserver/lifecycle.json; first pytest timed out; post-fix info JSON a2s UDP 36736 hydro 0/32 hostname AlphaGSM Nuclear Dawn",
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1703,7 +1847,7 @@
         "info_result": "NOT_RUN",
         "shutdown_result": "NOT_RUN"
       },
-      "module_review_result": "NOT_ASSESSED",
+      "module_review_result": "OWNED_PROFILE_NTFS_EXECUTE_BIT",
       "module_changes": []
     },
     {
@@ -1734,14 +1878,17 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_FILES_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_MISSING_OWNED_FILES",
+      "blocker": "Owned Natural Selection tree with maps/ns_hera.bsp was not found. Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "Owned Natural Selection tree with maps/ns_hera.bsp was not found.",
+        "Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1793,10 +1940,13 @@
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_NO_NATIVE_QUERY",
+      "blocker": "The hook returns quake, but Quake 4 uses Doom 3 getInfo/infoResponse, which is not implemented. Owned q4base files are also absent.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "The hook returns quake, but Quake 4 uses Doom 3 getInfo/infoResponse, which is not implemented. Owned q4base files are also absent.",
+        "The query hook was not changed and no server was started."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1848,10 +1998,13 @@
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_NO_NATIVE_QUERY",
+      "blocker": "SA-MP query opcodes are not implemented, and byo_assets.json has no validated URL.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "SA-MP query opcodes are not implemented, and byo_assets.json has no validated URL.",
+        "The query hook was not changed and no server was started."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -1873,7 +2026,7 @@
       "phase": "manual-distribution",
       "manifest": "src/gamemodules/sfcserver/byo_assets.json",
       "guide": "docs/servers/sfcserver.md",
-      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/sfc",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/local-auth/lasfcserver/server",
       "managed_import": false,
       "validation": "sentinel-only",
       "requirements": [
@@ -1893,28 +2046,44 @@
         }
       ],
       "selected_source": "manual",
-      "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
-      "lifecycle_result": "NOT_RUN",
+      "acquisition_result": "PASSED_PUBLIC_STEAM_244310_PREVIOUS2021_PLUS_MODDB_RC7",
+      "file_check_result": "PASSED_SF_ASTRODOME",
+      "lifecycle_result": "PASSED_PROCESS_A2S",
       "docker_result": "NOT_RUN",
-      "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
       "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "SSD results/sfcserver/lifecycle.json",
+        "Anonymous app 244310 branch previous2021 plus the official ModDB 1.0 RC7 tree. Coordinator info JSON was A2S on UDP 58844. Public integration local_tests/test_auth_byo_lifecycle.py passed in 47.02s. Docker was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED",
+      "content_result": "PASSED_RC7_SFCLASSIC_MAPS",
       "network_checks": {
-        "endpoints": [],
-        "protocol": null,
-        "probe_scope": null,
-        "port_query_result": "NOT_RUN",
-        "status_result": "NOT_RUN",
-        "info_result": "NOT_RUN",
-        "shutdown_result": "NOT_RUN"
+        "endpoints": [
+          "udp://127.0.0.1:58844"
+        ],
+        "protocol": "a2s",
+        "probe_scope": "HOST_LOOPBACK",
+        "port_query_result": "PASSED",
+        "status_result": "PASSED_RUNNING_AND_STOPPED",
+        "info_result": "PASSED_NATIVE_A2S",
+        "shutdown_result": "PASSED_PROCESS_AND_UDP_RELEASE",
+        "observed_server": {
+          "name": "Sourceforts Classic 1.0 [BUILD]",
+          "map": "sf_astrodome",
+          "players": 0,
+          "max_players": 32
+        }
       },
-      "module_review_result": "NOT_ASSESSED",
-      "module_changes": []
+      "module_review_result": "PUBLIC_SDK_PREVIOUS2021_MODDB_RC7_AWAKE",
+      "module_changes": [
+        "previous2021 beta for app 244310",
+        "alias bin/*_srv.so onto unsuffixed dedicated libraries",
+        "restore srcds_run and srcds_linux execute bits",
+        "sv_hibernate_when_empty 0 during install and prestart"
+      ]
     },
     {
       "order": 33,
@@ -1950,10 +2119,13 @@
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_NO_NATIVE_QUERY",
+      "blocker": "The custom protocol is not a native query hook.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "The custom protocol is not a native query hook.",
+        "The query hook was not changed and no server was started."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -2001,14 +2173,17 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_FILES_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_MISSING_OWNED_FILES",
+      "blocker": "BLOCKED_MISSING_OWNED_FILES. No publisher URL in byo_assets.json. Checked icculus sof2 paths returned HTTP 404. Retail base/*.pk3 are still required. Integration was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "Owned Soldier of Fortune 2 tree with sof2ded was not found.",
+        "Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -2020,7 +2195,7 @@
         "info_result": "NOT_RUN",
         "shutdown_result": "NOT_RUN"
       },
-      "module_review_result": "NOT_ASSESSED",
+      "module_review_result": "REVIEWED_2026_10_16_NO_COMPLETE_LINUX_ARCHIVE",
       "module_changes": []
     },
     {
@@ -2030,7 +2205,7 @@
       "phase": "manual-distribution",
       "manifest": "src/gamemodules/ss14server/byo_assets.json",
       "guide": "docs/servers/ss14server.md",
-      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/ss14",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/local-auth/lass14server/server",
       "managed_import": false,
       "validation": "sentinel-only",
       "requirements": [
@@ -2052,28 +2227,44 @@
         }
       ],
       "selected_source": "manual",
-      "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
-      "lifecycle_result": "NOT_RUN",
+      "acquisition_result": "PASSED",
+      "file_check_result": "PASSED",
+      "lifecycle_result": "PASSED_PROCESS_ROBUST_STATUS",
       "docker_result": "NOT_RUN",
-      "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
       "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
-      "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "SSD results/ss14server/lifecycle.json",
+        "Working tree past 0e39a10f. Local integration ./run_local_tests.sh integration --server ss14server --public passed in 27.06s. Docker was not run.",
+        "TCP/UDP port 47183. Robust status name AlphaGSM lass14server, players 0, soft_max_players 30. Stop released the process. UDP was free. TCP stayed in TIME-WAIT only."
+      ],
+      "reusable_installer_result": "PASSED_WIZARDS_DEN_LINUX_X64",
+      "content_result": "PASSED_PUBLIC_ROBUST_SERVER",
       "network_checks": {
-        "endpoints": [],
-        "protocol": null,
-        "probe_scope": null,
-        "port_query_result": "NOT_RUN",
-        "status_result": "NOT_RUN",
-        "info_result": "NOT_RUN",
-        "shutdown_result": "NOT_RUN"
+        "endpoints": [
+          "tcp://127.0.0.1:47183",
+          "udp://127.0.0.1:47183"
+        ],
+        "protocol": "robust_status",
+        "probe_scope": "HOST_LOOPBACK",
+        "port_query_result": "PASSED",
+        "status_result": "PASSED_RUNNING_AND_STOPPED",
+        "info_result": "PASSED_NATIVE_ROBUST_STATUS",
+        "shutdown_result": "PASSED_PROCESS_AND_UDP_RELEASE",
+        "observed_server": {
+          "name": "AlphaGSM lass14server",
+          "map": null,
+          "players": 0,
+          "max_players": 30
+        }
       },
-      "module_review_result": "NOT_ASSESSED",
-      "module_changes": []
+      "module_review_result": "PUBLIC_FEED_AND_MAX_PLAYERS_FIELD",
+      "module_changes": [
+        "info --json copies soft_max_players to max_players",
+        "Local process setup uses the current Wizard's Den linux-x64 build"
+      ]
     },
     {
       "order": 36,
@@ -2108,15 +2299,15 @@
         }
       ],
       "selected_source": "manual",
-      "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
-      "lifecycle_result": "NOT_RUN",
+      "acquisition_result": "PASSED_OWNED_STEAM_211820",
+      "file_check_result": "PASSED_LINUX_STARBOUND_SERVER_AND_PACKED_PAK",
+      "lifecycle_result": "PASSED_PROCESS_A2S",
       "docker_result": "NOT_RUN",
-      "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
       "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "tested_commit": "0e39a10f",
+      "evidence": "SSD results/starbound/lifecycle.json; integration 1 passed in 171.27s; info JSON a2s UDP 50333 Unknown 0/8 hostname AlphaGSM lastarbound",
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -2128,7 +2319,7 @@
         "info_result": "NOT_RUN",
         "shutdown_result": "NOT_RUN"
       },
-      "module_review_result": "NOT_ASSESSED",
+      "module_review_result": "OWNED_PROFILE_LINUX_BINARY",
       "module_changes": []
     },
     {
@@ -2169,10 +2360,13 @@
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_NO_NATIVE_QUERY",
+      "blocker": "No implemented native status protocol. install and update still require an owned server64.exe.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "No implemented native status protocol. install and update still require an owned server64.exe.",
+        "The query hook was not changed and no server was started."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -2223,10 +2417,13 @@
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_NO_NATIVE_QUERY",
+      "blocker": "Nitrox has no http_status hook. An owned client path is required.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "Nitrox has no http_status hook. An owned client path is required.",
+        "The query hook was not changed and no server was started."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -2269,14 +2466,17 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_FILES_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_MISSING_OWNED_FILES",
+      "blocker": "Owned The Specialists tree with maps/ts_neobaroque.bsp was not found. Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "Owned The Specialists tree with maps/ts_neobaroque.bsp was not found.",
+        "Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -2329,14 +2529,17 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_FILES_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_NO_NATIVE_QUERY",
+      "blocker": "The Epic/icculus post https://icculus.org/news/news.php?id=4104 links a complete Linux dedicated server at https://0day.icculus.org/ut3/UT3-linux-server-12172007.bin (1,744,621,651 bytes). It was not downloaded. info --json for protocol ut3 reports only protocol and port because ut3_status does not parse GameSpy4. Lifecycle was not run. Docker was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "Owned Unreal Tournament 3 dedicated tree was not found.",
+        "Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -2348,7 +2551,7 @@
         "info_result": "NOT_RUN",
         "shutdown_result": "NOT_RUN"
       },
-      "module_review_result": "NOT_ASSESSED",
+      "module_review_result": "OFFICIAL_ARCHIVE_TOO_LARGE_AND_QUERY_UNPARSED",
       "module_changes": []
     },
     {
@@ -2379,14 +2582,17 @@
       ],
       "selected_source": "manual",
       "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
+      "file_check_result": "FAILED_FILES_ABSENT",
       "lifecycle_result": "NOT_RUN",
       "docker_result": "NOT_RUN",
       "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
-      "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "status": "BLOCKED_MISSING_OWNED_FILES",
+      "blocker": "Owned Vampire Slayer tree with maps/vs_frost.bsp was not found. Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run.",
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "Owned Vampire Slayer tree with maps/vs_frost.bsp was not found.",
+        "Sentinel search under /media/cosmosquark/SSD/sector_alpha/servers and the SSD campaign root found none of the required files. Integration was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
       "content_result": "NOT_ASSESSED",
       "network_checks": {
@@ -2408,7 +2614,7 @@
       "phase": "manual-distribution",
       "manifest": "src/gamemodules/zmrserver/byo_assets.json",
       "guide": "docs/servers/zmrserver.md",
-      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/servers/zmr",
+      "game_directory": "/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers/local-auth/lazmrserver/server",
       "managed_import": false,
       "validation": "sentinel-only",
       "requirements": [
@@ -2422,34 +2628,50 @@
         {
           "id": "manual",
           "kind": "operator-files",
-          "instructions": "Obtain the official compatible complete Linux release. Source SDK scaffold alone does not contain the real mod. Stage the complete zombie_master_reborn/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
-          "live_validated": false,
-          "url": "https://zombiemaster.dev/blog/"
+          "instructions": "Stage the official Zombie Master: Reborn Beta 6 Linux archive linked from the project page, together with the anonymous Source SDK 2013 dedicated branch previous2021.",
+          "live_validated": true,
+          "url": "https://zombiemaster.dev/"
         }
       ],
       "selected_source": "manual",
-      "acquisition_result": "NOT_ATTEMPTED",
-      "file_check_result": "NOT_RUN",
-      "lifecycle_result": "NOT_RUN",
+      "acquisition_result": "PASSED_PUBLIC_STEAM_244310_PREVIOUS2021_PLUS_OFFICIAL_LINUX_ARCHIVE",
+      "file_check_result": "PASSED_ZM_DOCKSOFTHEDEAD",
+      "lifecycle_result": "PASSED_PROCESS_A2S",
       "docker_result": "NOT_RUN",
-      "final_running_state": "NOT_CREATED",
-      "status": "NOT_STARTED",
+      "final_running_state": "STOPPED",
+      "status": "COMPLETE_PROCESS_DOCKER_NOT_RUN",
       "blocker": null,
-      "tested_commit": null,
-      "evidence": [],
+      "tested_commit": "0e39a10f",
+      "evidence": [
+        "SSD results/zmrserver/lifecycle.json",
+        "Anonymous app 244310 branch previous2021 plus the official Linux archive linked from zombiemaster.dev. Public integration passed in 46.64s. Coordinator reconfirmed A2S on UDP 42202. This build reports sv_hibernate_when_empty as an unknown command. Docker was not run."
+      ],
       "reusable_installer_result": "NOT_ASSESSED",
-      "content_result": "NOT_ASSESSED",
+      "content_result": "PASSED_BETA6_LINUX_MAPS",
       "network_checks": {
-        "endpoints": [],
-        "protocol": null,
-        "probe_scope": null,
-        "port_query_result": "NOT_RUN",
-        "status_result": "NOT_RUN",
-        "info_result": "NOT_RUN",
-        "shutdown_result": "NOT_RUN"
+        "endpoints": [
+          "udp://127.0.0.1:42202"
+        ],
+        "protocol": "a2s",
+        "probe_scope": "HOST_LOOPBACK",
+        "port_query_result": "PASSED",
+        "status_result": "PASSED_RUNNING_AND_STOPPED",
+        "info_result": "PASSED_NATIVE_A2S",
+        "shutdown_result": "PASSED_PROCESS_AND_UDP_RELEASE",
+        "observed_server": {
+          "name": "AlphaGSM Zombie Master: Reborn",
+          "map": "zm_docksofthedead",
+          "players": 0,
+          "max_players": 16
+        }
       },
-      "module_review_result": "NOT_ASSESSED",
-      "module_changes": []
+      "module_review_result": "PUBLIC_SDK_PREVIOUS2021_OFFICIAL_LINUX_B6",
+      "module_changes": [
+        "previous2021 beta for app 244310",
+        "alias bin/*_srv.so onto unsuffixed dedicated libraries",
+        "restore srcds_run and srcds_linux execute bits",
+        "sv_hibernate_when_empty 0 is written; this build reports the command as unknown"
+      ]
     }
   ],
   "shared_auth_status": {
@@ -2457,7 +2679,7 @@
     "cache_fix_commit": "0da848f3",
     "remote_entitlement": "VERIFIED_APP_2200_ONLY"
   },
-  "next_module": "rtcwserver",
+  "next_module": null,
   "content_policy": "Runnable dedicated server plus fullest compatible maps/content from declared legitimate source; reusable checked-in installer required; discard staging and unrelated client binaries.",
   "network_validation_policy": {
     "required_commands": [

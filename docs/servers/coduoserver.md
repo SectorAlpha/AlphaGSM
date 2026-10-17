@@ -32,7 +32,8 @@ alphagsm mycoduoser setup --auth-profile owned
 
 Enter credentials only at the local SteamCMD prompts. For an existing local
 Steam library, use `setup --steam-dir /path/to/SteamLibrary/steamapps` instead.
-The authenticated download path still needs local validation.
+Local process setup with an entitled profile was validated on 2026-10-16.
+Query and info use Quake UDP getstatus on the game port. Docker was not rerun.
 
 Start it:
 
@@ -74,8 +75,11 @@ installation into the AlphaGSM server tree:
 <install_dir>/main/default_mp.cfg
 ```
 
-The current blocker is satisfied by the base Call of Duty multiplayer assets,
-not by files copied only into the `uo/` expansion directory.
+A manual tree also needs the expansion PK3s under `uo/`, including the
+multiplayer map `maps/mp/mp_uo_stanjel.bsp`. The default start map
+`mp_brecourt` is stored in the base `main` PK3s. Authenticated setup downloads
+base app 2620 and expansion app 2640, keeps the English multiplayer PK3s, and
+drops client executables and non-English localization PK3s.
 
 Manual-copy alternative:
 
@@ -139,6 +143,7 @@ alphagsm myserver set KEY VALUE
 
 - **Config file**: `<moddir>/server.cfg` (default `uo/server.cfg`)
 - `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
+- Setup stages the upstream gcc 3.2 libraries beside `coduo_lnxded` and starts it with `LD_LIBRARY_PATH=.`, `fs_basepath` `.`, and `fs_homepath` `.` so the dedicated server does not use `~/.callofduty`.
 - **Owned base assets still required**: `main/pak0.pk3`,
   `main/default_mp.cfg`
 - **Copy target before first start**: `<install_dir>/main/`

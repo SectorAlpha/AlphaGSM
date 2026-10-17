@@ -3,14 +3,14 @@
 This guide covers the `ss14server` module in AlphaGSM.
 
 `ss14server` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04 Linux
-baseline. AlphaGSM supports the complete `Robust.Server` lifecycle through
-both the process and Docker runtimes, but the official Wizard's Den build feed
-currently publishes no server builds. Supply a direct Linux x64 server archive
-URL until that feed resumes.
+baseline. Setup downloads the current Wizard's Den linux-x64 `Robust.Server`
+build. Pass `--url` for another direct Linux x64 archive. A local process
+lifecycle answered the Robust status API and stopped cleanly. Docker was not
+rerun in that check.
 
 ## Requirements
 
-- a direct Linux x64 Space Station 14 server archive URL
+- network access to the Wizard's Den build feed, or a direct Linux x64 archive URL
 - process runtime: `screen` and a host-installed `.NET 10` runtime (`dotnet`)
 - Docker runtime: Docker; the shared runtime image supplies the server runtime
 - Python packages from `requirements.txt`
@@ -26,7 +26,8 @@ alphagsm myss14serv create ss14server
 Run setup:
 
 ```bash
-alphagsm myss14serv setup --url https://example.invalid/ss14-server-linux-x64.zip
+alphagsm myss14serv setup
+# or: alphagsm myss14serv setup --url https://example.invalid/ss14-server-linux-x64.zip
 ```
 
 Start it:
@@ -53,7 +54,7 @@ Setup configures:
 
 - the game port (default 1212)
 - the install directory
-- downloads and extracts the operator-supplied server archive
+- downloads and extracts the Wizard's Den linux-x64 build, or the archive from `--url`
 - writes the managed `server_config.toml`
 - enables the built-in HTTP status endpoint AlphaGSM uses for `query` and `info`
 - launches `Robust.Server` through the selected process or Docker runtime
@@ -69,8 +70,9 @@ alphagsm myss14serv backup
 
 - Module name: `ss14server`
 - Default port: 1212
-- `setup` without `--url` will automatically use the official Wizard's Den
-  build feed again when that feed publishes server builds.
+- `setup` without `--url` uses the current Wizard's Den linux-x64 server build.
+- Local process query and info used `robust_status` and reported
+  `max_players` from the server's `soft_max_players` value. Docker was not rerun.
 - GitHub integration and smoke coverage accept
   `ALPHAGSM_SS14_SERVER_URL` to validate a supplied archive end to end.
 

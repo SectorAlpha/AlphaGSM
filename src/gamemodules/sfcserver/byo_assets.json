@@ -10,9 +10,9 @@
     {
       "id": "manual",
       "kind": "operator-files",
-      "instructions": "Select the full SourceForts Classic release compatible with the configured module, not original SourceForts or an arbitrary prerelease. Stage the complete sfclassic/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+      "instructions": "Stage the official SourceForts Classic 1.0 RC7 (Fix) 7z linked from the ModDB project page. That build is the 32-bit SDK 2013 port and matches Steam app 244310 on the previous2021 branch. Do not stage the 1.1b3 Linux64 pre-release; this depot has no srcds_linux64. Copy the complete sfclassic/ tree, including maps, native libraries, models, sounds and supporting resources. The map sentinel does not prove completeness.",
       "live_validated": false,
-      "url": "https://www.moddb.com/mods/sourceforts"
+      "url": "https://www.moddb.com/mods/sourceforts/downloads/sourceforts-classic-10-release-candidate-7-fix-7z"
     }
   ],
   "defaults": {},

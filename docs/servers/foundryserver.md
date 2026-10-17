@@ -11,7 +11,7 @@ Docker backend.
 ## Requirements
 
 - `screen`
-- a native FOUNDRY dedicated server tree containing `FoundryDedicatedServer`
+- `wine` and `xvfb-run` on Linux
 - SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
 - Python packages from `requirements.txt`
 
@@ -29,10 +29,15 @@ Run setup:
 alphagsm myfoundrys setup
 ```
 
-`foundryserver` is supported in `ENABLED (BYO)` mode. The current anonymous
-SteamCMD app does not deliver the required native server payload, so before
-`setup` or `start` you should stage a native FOUNDRY dedicated server tree
-containing `FoundryDedicatedServer` inside your chosen `<install_dir>/`.
+`foundryserver` is supported in `ENABLED (BYO)` mode. Anonymous SteamCMD app
+`2915550` downloads the Windows dedicated server (`FoundryDedicatedServer.exe`).
+There is no native Linux depot. On Linux, AlphaGSM launches that executable
+with Wine and `xvfb-run`. A staged tree in `<install_dir>/` is only needed
+when that anonymous download cannot supply the executable.
+
+A local process run on 2026-10-16 answered A2S on UDP 27016, with game port
+51535 (`Procedural`, hostname AlphaGSM lafoundryserver, 0/32) and stopped.
+UDP 27015 was already in use, so setup selected 27016. Docker was not rerun.
 
 Start it:
 
@@ -57,14 +62,25 @@ alphagsm myfoundrys stop
 Setup configures:
 
 - the game port (default 37200)
+- the Steam query port (default 27015)
 - the install directory
+
+Before each start, AlphaGSM writes `app.cfg` next to `FoundryDedicatedServer.exe`.
+That file keeps `server_is_public=true`, sets `pause_server_when_empty=false`,
+and sets `server_query_port` to the query port. It also writes `steam_appid.txt`
+with the game client id `983870`, which is what the official launcher writes.
+FOUNDRY answers Steam A2S only when the server is public, and the query port
+is separate from the game port. The default query port is 27015. If that port
+is already in use, setup chooses the next free port instead of the game port.
+`alphagsm <server-name> query` uses that existing A2S port. Change the query
+port with `alphagsm <server-name> set queryport <port>`. A `server_password`
+already in `app.cfg` is left in place.
 
 Suggested flow:
 
 ```bash
 alphagsm myfoundrys create foundryserver
 alphagsm myfoundrys setup -n 37200 /path/to/foundry
-# copy FoundryDedicatedServer and the rest of the native server tree into /path/to/foundry/
 alphagsm myfoundrys start
 ```
 
@@ -78,7 +94,9 @@ alphagsm myfoundrys backup
 ## Notes
 
 - Module name: `foundryserver`
-- Default port: 37200
+- Default game port: 37200
+- Default query port: 27015 (`server_query_port` in `app.cfg`), or the next free port when 27015 is busy
+- A2S requires `server_is_public=true`: https://dedicated.foundry-game.com/
 
 <!-- alphagsm-server-variables:start -->
 
@@ -101,15 +119,17 @@ create is still the live source of truth.
 
 ### Run File
 
-- **Executable**: `FoundryDedicatedServer`
-- **Location**: `<install_dir>/FoundryDedicatedServer`
-- **Engine**: Custom (SteamCMD)
+- **Executable**: `FoundryDedicatedServer.exe`
+- **Location**: `<install_dir>/FoundryDedicatedServer.exe`
+- **Engine**: Custom (SteamCMD, Windows build; Wine on Linux)
 - **SteamCMD App ID**: `2915550`
+- **Steam client App ID**: `983870` (`steam_appid.txt`)
 
 ### Server Configuration
 
-- **Config file**: See game module source
+- **Config file**: `<install_dir>/app.cfg`
 - **Template**: See [server-templates/foundryserver/](../server-templates/foundryserver/) if available
+- **Query**: Steam A2S on `queryport` after `server_is_public=true`
 
 ### Maps and Mods
 

@@ -8,6 +8,8 @@ Docker runtime selection around that owned-mod-content prerequisite, while
 local runs remain process-backed by default unless you opt into the Docker
 backend.
 
+`query` and `info` use A2S.
+
 ## Requirements
 
 - `screen`

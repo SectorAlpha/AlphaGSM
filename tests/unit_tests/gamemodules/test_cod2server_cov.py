@@ -45,7 +45,7 @@ def test_install(tmp_path):
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
 
-    def fake_install_archive(_server, _compression):
+    def fake_install_archive(_server, _compression, **_kwargs):
         main_dir = tmp_path / "main"
         main_dir.mkdir()
         (main_dir / "localized_english_iw00.iwd").write_text("", encoding="utf-8")
@@ -62,7 +62,7 @@ def test_install_rejects_missing_localized_assets(tmp_path):
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
 
-    def fake_install_archive(_server, _compression):
+    def fake_install_archive(_server, _compression, **_kwargs):
         main_dir = tmp_path / "main"
         main_dir.mkdir()
         (main_dir / "iw_15.iwd").write_text("", encoding="utf-8")
@@ -83,7 +83,15 @@ def test_get_start_command(tmp_path):
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
+        "env",
+        "LD_LIBRARY_PATH=.",
         "./cod2_lnxded",
+        "+set",
+        "fs_basepath",
+        ".",
+        "+set",
+        "fs_homepath",
+        ".",
         "+set",
         "fs_game",
         "test",
@@ -97,6 +105,97 @@ def test_get_start_command(tmp_path):
         "test",
     ]
     assert cwd == server.data["dir"]
+    assert mod.get_query_address(server)[2] == "quake"
+
+
+def test_install_drops_punkbuster_client_libraries_and_keeps_iwd(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "cod2_lnxded"
+    server.data["url"] = "https://example.com/test.zip"
+    server.data["download_name"] = "test.zip"
+
+    def fake_install_archive(_server, _compression, **_kwargs):
+        main_dir = tmp_path / "main"
+        main_dir.mkdir()
+        (main_dir / "iw_15.iwd").write_bytes(b"server-iwd")
+        (main_dir / "localized_english_iw00.iwd").write_bytes(b"loc")
+        pb_dir = tmp_path / "pb"
+        pb_dir.mkdir()
+        (pb_dir / "pbcl.so").write_bytes(b"cl")
+        (pb_dir / "pbcls.so").write_bytes(b"cls")
+        (pb_dir / "pbsv.so").write_bytes(b"sv")
+        (pb_dir / "pbag.so").write_bytes(b"ag")
+
+    mod.install_archive.side_effect = fake_install_archive
+    mod.install(server)
+    mod.install_archive.side_effect = None
+
+    assert (tmp_path / "main" / "iw_15.iwd").read_bytes() == b"server-iwd"
+    assert (tmp_path / "main" / "localized_english_iw00.iwd").is_file()
+    assert (tmp_path / "pb" / "pbsv.so").is_file()
+    assert (tmp_path / "pb" / "pbag.so").is_file()
+    assert not (tmp_path / "pb" / "pbcl.so").exists()
+    assert not (tmp_path / "pb" / "pbcls.so").exists()
+    assert not (tmp_path / "libstdc++.so.5").exists()
+
+
+def test_stage_gcc3_runtime_copies_extracted_cache_directory(tmp_path, monkeypatch):
+    install = tmp_path / "install"
+    install.mkdir()
+    (install / "cod2_lnxded").write_bytes(b"elf")
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    (cache / "libstdc++.so.5.0.3").write_bytes(b"realstd")
+    (cache / "libstdc++.so.5").symlink_to("libstdc++.so.5.0.3")
+    (cache / "libgcc_s.so.1").write_bytes(b"gcc")
+    (cache / "cod-gcc3-libs.tar.bz2").write_bytes(b"not-a-tar")
+    calls = []
+    monkeypatch.setattr(mod.downloader, "getpath", lambda *args: calls.append(args) or str(cache))
+
+    def reject_archive(*_args, **_kwargs):
+        raise AssertionError("extracted cache must not be opened as a tarball")
+
+    monkeypatch.setattr(mod.tarfile, "open", reject_archive)
+    server = DummyServer()
+    server.data["dir"] = str(install) + "/"
+    server.data["exe_name"] = "cod2_lnxded"
+
+    mod._stage_gcc3_runtime(server)
+
+    assert (install / "libstdc++.so.5").read_bytes() == b"realstd"
+    assert not (install / "libstdc++.so.5").is_symlink()
+    assert (install / "libgcc_s.so.1").read_bytes() == b"gcc"
+    assert calls == [("url", (mod.COD2_GCC3_LIBS_URL, mod.COD2_GCC3_LIBS_NAME, "tar.bz2"))]
+
+    mod._stage_gcc3_runtime(server)
+    assert len(calls) == 1
+
+
+def test_stage_gcc3_runtime_reads_a_tarball_path(tmp_path, monkeypatch):
+    import io
+    import tarfile
+
+    install = tmp_path / "install"
+    install.mkdir()
+    (install / "cod2_lnxded").write_bytes(b"elf")
+    archive_path = tmp_path / "libs.tar.bz2"
+    payload = io.BytesIO()
+    with tarfile.open(fileobj=payload, mode="w") as archive:
+        for name, content in (("libstdc++.so.5", b"std"), ("libgcc_s.so.1", b"gcc")):
+            info = tarfile.TarInfo(name="gcc3/" + name)
+            info.size = len(content)
+            archive.addfile(info, io.BytesIO(content))
+    archive_path.write_bytes(payload.getvalue())
+    monkeypatch.setattr(mod.downloader, "getpath", lambda *_args: str(archive_path))
+    server = DummyServer()
+    server.data["dir"] = str(install) + "/"
+    server.data["exe_name"] = "cod2_lnxded"
+
+    mod._stage_gcc3_runtime(server)
+
+    assert (install / "libstdc++.so.5").read_bytes() == b"std"
+    assert (install / "libgcc_s.so.1").read_bytes() == b"gcc"
 
 
 def test_setting_schema_exposes_cod2_launch_tokens():

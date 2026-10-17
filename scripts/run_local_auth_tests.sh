@@ -12,12 +12,14 @@ SERVERS=""
 PROFILE=""
 ASSETS=""
 STATE_DIR="${ALPHAGSM_LOCAL_AUTH_STATE:-}"
-WORK_DIR="${ALPHAGSM_LOCAL_WORK_DIR:-$ROOT/.local-tests/local-auth}"
+SSD_LOCAL_ROOT="/media/cosmosquark/SSD/sector_alpha/github/AlphaGSM/.local-tests/byo-file-helpers"
+WORK_DIR="${ALPHAGSM_LOCAL_WORK_DIR:-$SSD_LOCAL_ROOT/local-auth}"
 CONFIRM_ALL=0
+PUBLIC=0
 
 usage() {
     cat <<'EOF'
-Usage: scripts/run_local_auth_tests.sh [unit|integration] [options]
+Usage: ./run_local_tests.sh [unit|integration] [options]
 
 Runs the local-only tests in local_tests/. CI never collects that directory.
 The command accepts a Steam auth profile name or an owned-assets directory.
@@ -25,7 +27,7 @@ It does not accept a password, token, or Steam Guard code.
 
   unit              Import and recipe checks. No download and no login.
   integration       AlphaGSM create, setup, start, query, info, and stop.
-                    Requires --server and either --profile or --assets.
+                    Requires --server and one of --profile, --assets, or --public.
 
 Options:
   --suite auth|byo|all     Support list to read. Default: all.
@@ -37,14 +39,18 @@ Options:
   --state-dir PATH         Directory that already contains steam-auth/NAME.
                            Defaults to ~/.alphagsm when that profile exists.
   --assets PATH            Owned game files for setup --assets.
+  --public                 Set up a module that downloads its own dedicated
+                           server. Do not combine this with --profile or
+                           --assets. This does not log in to Steam.
   --work-dir PATH          Disposable server files. Default:
-                           .local-tests/local-auth, which git ignores.
+                           the SSD .local-tests/byo-file-helpers/local-auth
+                           directory. Integration refuses any other disk.
   --help                   Show this help.
 
 Examples:
-  scripts/run_local_auth_tests.sh unit
-  scripts/run_local_auth_tests.sh integration --suite byo --server q3server --profile owned
-  scripts/run_local_auth_tests.sh integration --suite auth --server acserver --profile owned
+  ./run_local_tests.sh unit
+  ./run_local_tests.sh integration --suite byo --server q3server --profile owned
+  ./run_local_tests.sh integration --suite auth --server acserver --profile owned
 
 Create the profile from a terminal before an authenticated setup:
   alphagsm steam-auth login owned YOUR_STEAM_USERNAME
@@ -102,6 +108,10 @@ while [[ $# -gt 0 ]]; do
             ASSETS="${2:-}"
             shift 2
             ;;
+        --public)
+            PUBLIC=1
+            shift
+            ;;
         --work-dir)
             WORK_DIR="${2:-}"
             shift 2
@@ -133,6 +143,11 @@ case "$SUITE" in
         exit 2
         ;;
 esac
+
+if [[ "$PUBLIC" == "1" && ( -n "$PROFILE" || -n "$ASSETS" ) ]]; then
+    echo "Use --public by itself, without --profile or --assets." >&2
+    exit 2
+fi
 
 if [[ -n "$PROFILE" && -n "$ASSETS" ]]; then
     echo "Use either --profile or --assets." >&2
@@ -172,8 +187,8 @@ if [[ "$MODE" == "integration" ]]; then
             exit 2
         fi
     done
-    if [[ -z "$PROFILE" && -z "$ASSETS" ]]; then
-        echo "Integration runs need --profile NAME or --assets PATH." >&2
+    if [[ "$PUBLIC" != "1" && -z "$PROFILE" && -z "$ASSETS" ]]; then
+        echo "Integration runs need --profile NAME, --assets PATH, or --public." >&2
         exit 2
     fi
 fi
@@ -181,6 +196,7 @@ fi
 export ALPHAGSM_RUN_LOCAL_TESTS=1
 export ALPHAGSM_LOCAL_SUITE="$SUITE"
 export ALPHAGSM_LOCAL_SERVERS="$SERVERS"
+export ALPHAGSM_LOCAL_PUBLIC="$PUBLIC"
 export ALPHAGSM_LOCAL_AUTH_PROFILE="$PROFILE"
 export ALPHAGSM_LOCAL_ASSETS="$ASSETS"
 export ALPHAGSM_LOCAL_AUTH_STATE="$STATE_DIR"
@@ -188,7 +204,7 @@ export ALPHAGSM_LOCAL_WORK_DIR="$WORK_DIR"
 
 cd "$ROOT"
 export PYTHONPATH="$ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
-TARGET=(local_tests/test_auth_byo_contracts.py)
+TARGET=(local_tests/test_auth_byo_contracts.py local_tests/test_byo_native_query_contract.py)
 if [[ "$MODE" == "integration" ]]; then
     TARGET=(local_tests/test_auth_byo_lifecycle.py)
 fi

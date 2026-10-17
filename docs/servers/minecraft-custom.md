@@ -106,6 +106,7 @@ alphagsm mycustom set exe_name paper-1.21.1.jar
 
 - Module name: `minecraft.custom`
 - Default port: 25565
+- `query` and `info` use Java Edition Server List Ping (SLP) on the game port.
 
 <!-- alphagsm-server-variables:start -->
 

@@ -10,9 +10,9 @@
     {
       "id": "manual",
       "kind": "operator-files",
-      "instructions": "Obtain the official compatible complete Linux release. Source SDK scaffold alone does not contain the real mod. Stage the complete zombie_master_reborn/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+      "instructions": "Stage the official Zombie Master: Reborn Beta 6 Linux archive, zombie_master_reborn_b6_1.tar.gz, linked from the project page. That build matches Steam app 244310 on the previous2021 branch. Copy the complete zombie_master_reborn/ tree, including every multiplayer map, native libraries, models, sounds and supporting resources. The map sentinel does not prove completeness.",
       "live_validated": false,
-      "url": "https://zombiemaster.dev/blog/"
+      "url": "https://zombiemaster.dev/"
     }
   ],
   "defaults": {},
