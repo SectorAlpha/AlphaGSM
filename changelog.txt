@@ -7,6 +7,14 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-18
+- Sector Alpha: send enrollment and binding registration to sector-alpha.net;
+  reserve gameserver-api.sector-alpha.net for stats and outbound remote execution.
+  Select the two official hosts locally without redirects, re-enrollment, credential
+  changes or additional consent. Explicit custom providers keep their exact origin.
+- Deployment: enable website onboarding routes before upgrading clients, then
+  restrict the API gateway to stats and execution routes. Restart existing agents.
+
 2026-10-16
 - First run: offer a skippable setup tour on bare interactive launches, with
   --welcome to replay and --skip-welcome for noninteractive opt-out.

@@ -20,20 +20,25 @@ alphagsm agent enroll
 alphagsm agent bind '*'
 ```
 
-Enter the enrollment code at its hidden prompt. Enrollment, binding registration,
-reporting and remote management all use the single default API origin
-`https://gameserver-api.sector-alpha.net`. Public accounts and the server directory
-remain at `https://sector-alpha.net`. Use `agent enroll --origin
-https://your-site.example` for another compatible service. Never put codes or
-credentials in shell arguments.
+Enter the enrollment code at its hidden prompt. Enrollment and binding
+registration use `https://sector-alpha.net`. POSTed stats and the outbound
+remote-execution channel use `https://gameserver-api.sector-alpha.net`. Owners
+request actions on the website; the agent polls for permitted jobs and posts
+results to the API. No inbound management listener is opened on your machine.
+The website also serves public accounts and the directory.
+
+Use `agent enroll --origin https://your-site.example` for another compatible
+service. Custom providers keep their exact single configured origin. Never put
+codes or credentials in shell arguments. The official two-host selection happens
+locally by approved route, without redirects or fallback to another host.
 
 After upgrading AlphaGSM, restart the foreground agent (or its user service).
-Existing connections using the old official `https://sector-alpha.net` origin
-normalize locally to the API origin, including equivalent host casing, `:443`
-and a root trailing slash. Enrollment IDs, binding IDs, credentials and local
-permissions are preserved. This requires no network redirect or re-enrollment;
-the normalized origin is saved on the next ordinary configuration write.
-Explicitly configured custom provider origins remain unchanged.
+Existing official connections keep their stored API provider origin, IDs,
+credentials, bindings and local permissions. Old official website-origin aliases
+still normalize locally; onboarding requests now select the website separately.
+No re-enrollment is needed. Deploy the website onboarding routes before upgrading
+clients, then restrict the API routes. Older clients cannot enroll/bind through
+the restricted API hostname. See the provider's deployment instructions.
 
 `agent bind '*'` discovers all eligible servers owned by your local AlphaGSM user,
 registers their website bindings, and saves the returned IDs automatically. Quote

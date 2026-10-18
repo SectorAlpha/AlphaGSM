@@ -1,4 +1,4 @@
-"""The official agent API upgrade is a local exact alias, never a redirect."""
+"""Official onboarding and execution origins are selected locally, never by redirect."""
 from contextlib import nullcontext
 import importlib
 import json
@@ -52,7 +52,7 @@ def test_legacy_official_origin_is_normalized_locally_without_changing_relations
 
 
 @pytest.mark.parametrize('old', ALIASES)
-def test_enroll_rewrites_known_alias_before_enrollment_code_submission(tmp_path, provider, old):
+def test_enroll_normalizes_provider_before_transport_submission(tmp_path, provider, old):
     assert cli.run(['enroll', '--origin', old], root=tmp_path / 'agent') == 0
     assert provider == [(API, 'POST', '/v1/agent/enroll', {'payload': {'code': 'hidden-code'}})]
     assert Config(tmp_path / 'agent').load()['origin'] == API
@@ -104,7 +104,7 @@ def test_old_relationship_uses_one_new_api_transport_for_reporting_and_managemen
     assert cfg.load()['bindings'] == before['bindings'] and cfg.load()['policy_version'] == before['policy_version']
 
 
-def test_legacy_official_registration_uses_api_and_keeps_existing_bindings(tmp_path, local_servers, provider, monkeypatch):
+def test_legacy_registration_preserves_provider_and_existing_bindings(tmp_path, local_servers, provider, monkeypatch):
     local_servers[1]('new-server')
     cfg, before = legacy_config(tmp_path, 'https://sector-alpha.net')
     answers(monkeypatch, ['', '', '', 'y'])
@@ -116,3 +116,33 @@ def test_legacy_official_registration_uses_api_and_keeps_existing_bindings(tmp_p
 
 def test_direct_transport_canonicalizes_old_official_origin_before_credentials():
     assert Transport('https://SECTOR-ALPHA.NET:443/').origin == API
+
+
+@pytest.mark.parametrize('provider,control,execution', [
+    *[(alias, 'https://sector-alpha.net', API) for alias in [API, API + ':443/', *ALIASES]],
+    ('https://control.example', 'https://control.example', 'https://control.example'),
+    ('https://sector-alpha.net:8443', 'https://sector-alpha.net:8443', 'https://sector-alpha.net:8443'),
+    ('https://gameserver-api.sector-alpha.net.attacker.example',
+     'https://gameserver-api.sector-alpha.net.attacker.example',
+     'https://gameserver-api.sector-alpha.net.attacker.example'),
+])
+def test_transport_routes_official_onboarding_to_website_and_execution_to_api(monkeypatch, provider, control, execution):
+    transport = Transport(provider)
+    sent = []
+    def capture(request, _timeout):
+        sent.append((request.full_url, request.get_method(), request.get_header('Authorization')))
+        return {'accepted': True}
+    monkeypatch.setattr(transport, '_read_response', capture)
+    credential = {'key_id': 'test-key', 'secret': 's' * 43}
+    for method, path, destination in (
+        ('POST', '/v1/agent/enroll', control),
+        ('POST', '/v1/agent/bindings', control),
+        ('POST', '/v1/agent/reports', execution),
+        ('POST', '/v1/agent/policy', execution),
+        ('GET', '/v1/agent/jobs', execution),
+        ('POST', '/v1/agent/jobs/job-1/authorize', execution),
+        ('POST', '/v1/agent/results', execution),
+    ):
+        transport.request(method, path, credential=credential)
+        assert sent[-1] == (destination + path, method, 'Bearer test-key.' + 's' * 43)
+    assert transport.origin == execution

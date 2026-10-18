@@ -36,7 +36,8 @@ status of 2.
 2. **Everyday commands.** See how to set up, start, check and stop a server without
    running any commands. See [Everyday Commands](commands.md) for more details.
 3. **Optional Sector Alpha connection.** Confirm before opening the existing
-   enrollment/binding wizard. It contacts `https://gameserver-api.sector-alpha.net`;
+   enrollment/binding wizard. It contacts `https://sector-alpha.net` for onboarding;
+   later stats and execution use `https://gameserver-api.sector-alpha.net`;
    obtain the enrollment code from your account at `https://sector-alpha.net`.
    That wizard previews the servers/endpoints and asks for binding permissions.
    See [Optional Sector Alpha connection](sector-alpha-agent.md).

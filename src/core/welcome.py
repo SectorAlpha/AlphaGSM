@@ -92,7 +92,8 @@ def _create(name, execute):
 
 def _connect(name, execute):
     print('\nOptional Sector Alpha connection: enrollment and binding contact')
-    print('https://gameserver-api.sector-alpha.net; get an enrollment code from https://sector-alpha.net.')
+    print('https://sector-alpha.net; get your enrollment code there too.')
+    print('Later stats and remote execution use https://gameserver-api.sector-alpha.net.')
     print('The existing wizard previews servers/endpoints and asks for binding permissions.')
     print('This tour never enables reporting or management. Existing choices are preserved.')
     print('After binding, reporting needs a separate explicit agent enable-reporting command.')

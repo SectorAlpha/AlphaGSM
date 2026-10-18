@@ -9,7 +9,7 @@ directly to the terminal or CI log as they run.
 Current smoke tests:
 
 - `run_sector_alpha_agent.sh`
-  Exercises the single `gameserver-api.sector-alpha.net` agent origin, trusted
+  Exercises website enrollment/binding and API stats/execution routing, trusted
   local upgrades from the old official website origin, preserved custom providers,
   independent opt-ins, private credential storage, strict contracts,
   local revocation, no-replay journaling, bounded lifecycle helper timeout and

@@ -1183,17 +1183,23 @@ final online authorization and persists executing before lifecycle effects.
 reconciles unknown and never repeats effects. A global foreground-service lock
 prevents competing pollers. No secrets are accepted as CLI arguments.
 
-The single default agent origin is `https://gameserver-api.sector-alpha.net` for
-enrollment, registration, reports and every management route. Public website,
-account and directory traffic remains at `https://sector-alpha.net`.
-`canonical_agent_origin()` applies an exact trusted local authority mapping from
-the old official HTTPS website origin (default/443 port, case and root-slash
-variants) before enrollment-code or credential submission. It does not follow
-network redirects or use domain suffix matching. `Config.load()` returns this
-normalized origin for existing installations; the next ordinary write persists
-it without changing IDs, keys, bindings or policy. Restart existing agent
-processes after upgrading. Explicit custom origins, including non-default ports,
-remain unchanged. There is one stored origin and one transport for all scopes.
+The official provider uses `https://sector-alpha.net` for only agent enrollment
+and binding registration, while `https://gameserver-api.sector-alpha.net` receives
+POST stats and carries the outbound execution protocol (policy acknowledgement,
+command polling, final authorization and results). Owners queue commands and view
+data on the website. `Transport` selects the official website only for its two
+approved onboarding paths. It retains one canonical API provider origin in local
+configuration and derives the fixed website authority in memory, without redirects
+or endpoint discovery. The same verified TLS/no-proxy/no-redirect transport applies
+to both hosts. No new persisted secret/origin fields are introduced.
+
+`canonical_agent_origin()` still maps exact official HTTPS website/API authorities
+(default/443 port, case and root-slash variants) to the canonical API provider
+origin. `Config.load()` and the next ordinary write retain this normalization,
+preserving IDs, keys, bindings and permissions. Explicit custom origins, lookalikes
+and non-default ports keep the exact configured single origin for every agent path.
+Restart foreground/user services after upgrading. Stage website onboarding routes
+before client upgrades; restrict the machine API after clients are updated.
 The generic origin syntax validator still requires HTTPS roots and normalizes an
 optional trailing slash. `agent.inventory` reads
 only owned current-user JSON datastores without constructing Server (which can

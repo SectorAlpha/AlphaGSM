@@ -554,11 +554,11 @@ alphagsm agent enroll
 alphagsm agent bind '*'
 ```
 
-Enrollment, binding registration, reports and management use
-`https://gameserver-api.sector-alpha.net`. Public accounts and the directory stay
-at `https://sector-alpha.net`. Existing official connections normalize to the API
-origin on upgrade, preserving IDs, credentials and permissions; restart the agent
-after updating. Custom provider origins stay unchanged.
+Enrollment, binding registration, accounts and the directory use
+`https://sector-alpha.net`. Stats and outbound remote command delivery/results use
+`https://gameserver-api.sector-alpha.net`. Updated clients select the correct
+host locally without redirects. Existing IDs, keys and permissions are preserved;
+restart the agent after updating. Custom providers keep their configured origin.
 
 The quoted `'*'` binds all
 eligible local servers, inferring their settings and registering website IDs
