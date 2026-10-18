@@ -7,6 +7,7 @@ RUN apt-get update -qq \
         bash \
         ca-certificates \
         libcurl4 \
+        libmariadb3 \
        python3 \
  && rm -rf /var/lib/apt/lists/*
 

@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 from utils.state_io import atomic_write_text, state_lock
 from .contracts import ACTIONS, identifier, integer, validate_metadata, exact
 
-DEFAULT_ORIGIN = "https://gameserver-api.sector-alpha.net"
+DEFAULT_ORIGIN = "https://alphagsm-api.sector-alpha.net"
 CONTROL_ORIGIN = "https://sector-alpha.net"
 
 
@@ -41,7 +41,7 @@ def canonical_agent_origin(value):
     """Map only trusted official HTTPS authorities locally, without redirects."""
     selected = origin(value)
     parsed = urlsplit(selected)
-    if parsed.hostname in ('sector-alpha.net', 'gameserver-api.sector-alpha.net') and parsed.port in (None, 443):
+    if parsed.hostname in ('sector-alpha.net', 'alphagsm-api.sector-alpha.net') and parsed.port in (None, 443):
         return DEFAULT_ORIGIN
     return selected
 

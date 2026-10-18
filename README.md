@@ -556,7 +556,7 @@ alphagsm agent bind '*'
 
 Enrollment, binding registration, accounts and the directory use
 `https://sector-alpha.net`. Stats and outbound remote command delivery/results use
-`https://gameserver-api.sector-alpha.net`. Updated clients select the correct
+`https://alphagsm-api.sector-alpha.net`. Updated clients select the correct
 host locally without redirects. Existing IDs, keys and permissions are preserved;
 restart the agent after updating. Custom providers keep their configured origin.
 

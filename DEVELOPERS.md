@@ -1184,7 +1184,7 @@ reconciles unknown and never repeats effects. A global foreground-service lock
 prevents competing pollers. No secrets are accepted as CLI arguments.
 
 The official provider uses `https://sector-alpha.net` for only agent enrollment
-and binding registration, while `https://gameserver-api.sector-alpha.net` receives
+and binding registration, while `https://alphagsm-api.sector-alpha.net` receives
 POST stats and carries the outbound execution protocol (policy acknowledgement,
 command polling, final authorization and results). Owners queue commands and view
 data on the website. `Transport` selects the official website only for its two

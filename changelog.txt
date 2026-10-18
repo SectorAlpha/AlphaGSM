@@ -8,6 +8,13 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-18
+- TeamSpeak 3: add MariaDB mode for Docker. An empty db_host starts a private
+  MariaDB 11.5 container and keeps the password in ts3db_mariadb.ini. The
+  container finds TeamSpeak's bundled MariaDB library through LD_LIBRARY_PATH.
+  SQLite remains the default. The service-console image installs libmariadb3.
+- Sector Alpha: use https://alphagsm-api.sector-alpha.net for stats and outbound
+  remote execution. Enrollment and binding stay on https://sector-alpha.net.
+  The unreleased gameserver-api.sector-alpha.net name is not an official alias.
 - Sector Alpha: send enrollment and binding registration to sector-alpha.net;
   reserve gameserver-api.sector-alpha.net for stats and outbound remote execution.
   Select the two official hosts locally without redirects, re-enrollment, credential

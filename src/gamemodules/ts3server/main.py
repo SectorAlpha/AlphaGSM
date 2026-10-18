@@ -4,6 +4,8 @@ import os
 import pathlib
 import re
 import shutil
+import subprocess
+import time
 import urllib.request
 
 import downloader
@@ -20,6 +22,8 @@ TEAMSPEAK_URL_TEMPLATE = (
     "teamspeak3-server_linux_amd64-%s.tar.bz2"
 )
 TEAMSPEAK_USER_AGENT = "AlphaGSM/1.0 (+https://github.com/SectorAlpha/AlphaGSM)"
+MANAGED_DB_IMAGE = "mariadb:11.5"
+MANAGED_DB_ALIAS = "database"
 
 commands = ()
 command_args = gamemodule_common.build_setup_version_url_command_args(
@@ -104,6 +108,7 @@ def configure(server, ask, port=None, dir=None, *, version=None, url=None, exe_n
     server.data.setdefault("queryport", "10011")
     server.data.setdefault("filetransferport", "30033")
     server.data.setdefault("license_accepted", True)
+    server.data.setdefault("db_mode", "sqlite")
 
     if port is None:
         port = server.data.get("port", 9987)
@@ -150,16 +155,17 @@ def get_start_command(server):
     exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
     if not os.path.isfile(exe_path):
         raise ServerError("Executable file not found")
-    return (
-        [
-            "./" + server.data["exe_name"],
-            "default_voice_port=%s" % (server.data["port"],),
-            "query_port=%s" % (server.data["queryport"],),
-            "filetransfer_port=%s" % (server.data["filetransferport"],),
-            "license_accepted=%s" % (1 if server.data.get("license_accepted", True) else 0,),
-        ],
-        server.data["dir"],
-    )
+    command = [
+        "./" + server.data["exe_name"],
+        "default_voice_port=%s" % (server.data["port"],),
+        "query_port=%s" % (server.data["queryport"],),
+        "filetransfer_port=%s" % (server.data["filetransferport"],),
+        "license_accepted=%s" % (1 if server.data.get("license_accepted", True) else 0,),
+    ]
+    if _uses_mariadb(server):
+        write_mariadb_parameter_file(server, mariadb_endpoint_host(server))
+        command.extend(mariadb_command_arguments(server))
+    return command, server.data["dir"]
 
 
 def get_runtime_requirements(server):
@@ -208,13 +214,213 @@ def get_container_spec(server):
 
     cmd, _cwd = get_start_command(server)
     requirements = get_runtime_requirements(server)
-    return {
+    spec = {
         "working_dir": "/srv/server",
         "stdin_open": True,
         "mounts": requirements.get("mounts", []),
         "ports": requirements.get("ports", []),
         "command": cmd,
     }
+    if _uses_managed_database(server):
+        spec["network_mode"] = database_network_name(server)
+    if _uses_mariadb(server):
+        # TeamSpeak 3.12 loads libmariadb.so.2 from its own redist directory.
+        env = dict(server.data.get("env") or {})
+        current = env.get("LD_LIBRARY_PATH", "")
+        redist = "/srv/server/redist"
+        if redist not in current.split(":"):
+            env["LD_LIBRARY_PATH"] = redist if not current else current + ":" + redist
+        env.setdefault("LANG", "C.UTF-8")
+        spec["env"] = env
+    return spec
+
+
+def prestart(server, *_args, **_kwargs):
+    """Start a managed MariaDB sidecar before a MariaDB-backed server."""
+
+    if not _uses_mariadb(server):
+        return
+    if _uses_managed_database(server):
+        _ensure_managed_database(server)
+    write_mariadb_parameter_file(server, mariadb_endpoint_host(server))
+
+
+def _uses_mariadb(server):
+    return str(server.data.get("db_mode", "sqlite")).strip().lower() == "mariadb"
+
+
+def _uses_managed_database(server):
+    if not _uses_mariadb(server):
+        return False
+    host = str(server.data.get("db_host", "")).strip().lower()
+    return host in ("", "managed")
+
+
+def _safe_name(server):
+    return re.sub(r"[^a-z0-9_.-]", "-", str(server.name).lower()).strip("-") or "server"
+
+
+def database_network_name(server):
+    """Return the private Docker network shared by TeamSpeak and MariaDB."""
+
+    return "alphagsm-ts3-" + _safe_name(server)
+
+
+def database_container_name(server):
+    """Return the managed MariaDB container name."""
+
+    return "alphagsm-ts3-db-" + _safe_name(server)
+
+
+def database_data_dir(server):
+    """Return the host directory that stores the MariaDB data directory."""
+
+    return os.path.join(server.data["dir"], ".alphagsm", "mariadb-data")
+
+
+def mariadb_endpoint_host(server):
+    """Return the hostname TeamSpeak should use for MariaDB."""
+
+    host = str(server.data.get("db_host", "")).strip()
+    if host and host.lower() != "managed":
+        return host
+    if str(server.data.get("runtime", "")).strip().lower() == "docker" or _uses_managed_database(server):
+        return MANAGED_DB_ALIAS
+    return "127.0.0.1"
+
+
+def mariadb_command_arguments(server):
+    """Return TeamSpeak arguments that select the MariaDB plugin."""
+
+    arguments = [
+        "dbplugin=ts3db_mariadb",
+        "dbsqlpath=sql/",
+        "dbsqlcreatepath=create_mariadb/",
+        "dbpluginparameter=ts3db_mariadb.ini",
+    ]
+    licensepath = str(server.data.get("licensepath", "")).strip()
+    if licensepath:
+        arguments.append("licensepath=%s" % (licensepath,))
+    return arguments
+
+
+def write_mariadb_parameter_file(server, host):
+    """Write the MariaDB plugin file without placing the password on the command line."""
+
+    password = str(server.data.get("db_password", ""))
+    if not password or any(character in password for character in "\r\n"):
+        raise ServerError("MariaDB mode requires a db_password on one line")
+    username = str(server.data.get("db_user", "root")).strip() or "root"
+    database = str(server.data.get("db_name", "ts3")).strip() or "ts3"
+    port = int(server.data.get("db_port", 3306))
+    directory = server.data["dir"]
+    os.makedirs(directory, exist_ok=True)
+    path = os.path.join(directory, "ts3db_mariadb.ini")
+    body = (
+        "[config]\n"
+        "host=%s\n"
+        "port=%s\n"
+        "username=%s\n"
+        "password=%s\n"
+        "database=%s\n"
+        "socket=\n"
+    ) % (host, port, username, password, database)
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+        handle.write(body)
+    os.chmod(path, 0o600)
+    return path
+
+
+def _run_docker(*args, check=True):
+    return subprocess.run(
+        ["docker", *args],
+        check=check,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _redact(text, secret):
+    if not text:
+        return ""
+    if secret:
+        text = text.replace(secret, "[redacted]")
+    return text.strip()
+
+
+def managed_database_run_args(server, *, initialize):
+    """Return the docker run arguments for a new managed MariaDB container."""
+
+    password = str(server.data.get("db_password", ""))
+    data_dir = database_data_dir(server)
+    command = [
+        "run", "-d",
+        "--name", database_container_name(server),
+        "--network", database_network_name(server),
+        "--network-alias", MANAGED_DB_ALIAS,
+        "--restart", "unless-stopped",
+        "-v", "%s:/var/lib/mysql" % (data_dir,),
+        "-e", "MARIADB_AUTO_UPGRADE=1",
+    ]
+    if initialize:
+        command.extend([
+            "-e", "MYSQL_ROOT_PASSWORD=%s" % (password,),
+            "-e", "MYSQL_DATABASE=%s" % (str(server.data.get("db_name", "ts3")),),
+        ])
+        user = str(server.data.get("db_user", "root")).strip()
+        if user and user.lower() != "root":
+            command.extend([
+                "-e", "MYSQL_USER=%s" % (user,),
+                "-e", "MYSQL_PASSWORD=%s" % (password,),
+            ])
+    command.append(MANAGED_DB_IMAGE)
+    return command
+
+
+def _ensure_managed_database(server):
+    """Launch the private MariaDB container and wait until it accepts connections."""
+
+    if shutil.which("docker") is None:
+        raise ServerError("Docker is required to launch the managed TeamSpeak MariaDB")
+    if str(server.data.get("runtime", "docker")).strip().lower() != "docker":
+        raise ServerError("Managed TeamSpeak MariaDB requires the docker runtime, or set db_host to an existing database")
+    password = str(server.data.get("db_password", ""))
+    network = database_network_name(server)
+    container = database_container_name(server)
+    inspect_network = _run_docker("network", "inspect", network, check=False)
+    if inspect_network.returncode != 0:
+        created = _run_docker("network", "create", network, check=False)
+        if created.returncode != 0:
+            raise ServerError("Could not create the TeamSpeak database network: " + _redact(created.stderr, password))
+    data_dir = database_data_dir(server)
+    os.makedirs(data_dir, exist_ok=True)
+    inspect_container = _run_docker("inspect", container, check=False)
+    if inspect_container.returncode != 0:
+        initialize = not os.path.isdir(os.path.join(data_dir, "mysql"))
+        started = _run_docker(*managed_database_run_args(server, initialize=initialize), check=False)
+        if started.returncode != 0:
+            raise ServerError("Could not start managed TeamSpeak MariaDB: " + _redact(started.stderr, password))
+    else:
+        running = _run_docker("inspect", "-f", "{{.State.Running}}", container, check=False)
+        if running.returncode != 0 or running.stdout.strip().lower() != "true":
+            restarted = _run_docker("start", container, check=False)
+            if restarted.returncode != 0:
+                raise ServerError("Could not restart managed TeamSpeak MariaDB: " + _redact(restarted.stderr, password))
+        _run_docker("network", "connect", "--alias", MANAGED_DB_ALIAS, network, container, check=False)
+    deadline = time.monotonic() + 60
+    last_detail = ""
+    while time.monotonic() < deadline:
+        ready = _run_docker(
+            "exec", container, "mariadb-admin", "--user=root", "--password=%s" % (password,),
+            "--host=127.0.0.1", "ping", "--silent",
+            check=False,
+        )
+        if ready.returncode == 0:
+            return
+        last_detail = _redact(ready.stderr or ready.stdout, password)
+        time.sleep(1)
+    raise ServerError("Managed TeamSpeak MariaDB did not become ready: " + last_detail)
 
 
 def get_query_address(server):
@@ -301,10 +507,15 @@ def checkvalue(server, key, *value):
         return backup_utils.checkdatavalue(server.data["backup"], key, *value)
     if len(value) == 0:
         raise ServerError("No value specified")
-    if key[0] in ("port", "queryport", "filetransferport"):
+    if key[0] in ("port", "queryport", "filetransferport", "db_port"):
         return int(value[0])
-    if key[0] in ("exe_name", "dir", "url", "version"):
+    if key[0] in ("exe_name", "dir", "url", "version", "db_name", "db_user", "db_password", "db_host", "licensepath"):
         return str(value[0])
+    if key[0] == "db_mode":
+        mode = str(value[0]).strip().lower()
+        if mode not in ("sqlite", "mariadb"):
+            raise ServerError("db_mode must be sqlite or mariadb")
+        return mode
     if key[0] == "license_accepted":
         return str(value[0]).lower() in ("1", "true", "yes", "on")
     raise ServerError("Unsupported key")

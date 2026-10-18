@@ -13,9 +13,10 @@ from agent.transport import Transport
 import agent.service as service_module
 from test_onboarding import answers, local_servers, provider
 
-API = 'https://gameserver-api.sector-alpha.net'
+API = 'https://alphagsm-api.sector-alpha.net'
 ALIASES = ['https://sector-alpha.net', 'https://sector-alpha.net/', 'https://sector-alpha.net:443',
-           'https://SECTOR-ALPHA.NET:443/', 'HTTPS://Sector-Alpha.Net/']
+           'https://SECTOR-ALPHA.NET:443/', 'HTTPS://Sector-Alpha.Net/',
+           'https://ALPHAGSM-API.SECTOR-ALPHA.NET:443/']
 
 
 def enrollment():
@@ -60,7 +61,8 @@ def test_enroll_normalizes_provider_before_transport_submission(tmp_path, provid
 
 @pytest.mark.parametrize('custom', ['https://control.example', 'https://CONTROL.example:443',
     'https://sector-alpha.net:8443', 'https://reports.sector-alpha.net', 'https://sector-alpha.net.attacker.example',
-    'https://gameserver-api.sector-alpha.net.attacker.example', 'https://sector-alpha%2Enet'])
+    'https://alphagsm-api.sector-alpha.net.attacker.example', 'https://sector-alpha%2Enet',
+    'https://gameserver-api.sector-alpha.net', 'https://gameserver-api.sector-alpha.net:443'])
 def test_custom_and_lookalike_origins_are_not_remapped(tmp_path, custom):
     config_module = importlib.import_module('agent.config')
     canonical = getattr(config_module, 'canonical_agent_origin', None)
@@ -122,9 +124,9 @@ def test_direct_transport_canonicalizes_old_official_origin_before_credentials()
     *[(alias, 'https://sector-alpha.net', API) for alias in [API, API + ':443/', *ALIASES]],
     ('https://control.example', 'https://control.example', 'https://control.example'),
     ('https://sector-alpha.net:8443', 'https://sector-alpha.net:8443', 'https://sector-alpha.net:8443'),
-    ('https://gameserver-api.sector-alpha.net.attacker.example',
-     'https://gameserver-api.sector-alpha.net.attacker.example',
-     'https://gameserver-api.sector-alpha.net.attacker.example'),
+    ('https://alphagsm-api.sector-alpha.net.attacker.example',
+     'https://alphagsm-api.sector-alpha.net.attacker.example',
+     'https://alphagsm-api.sector-alpha.net.attacker.example'),
 ])
 def test_transport_routes_official_onboarding_to_website_and_execution_to_api(monkeypatch, provider, control, execution):
     transport = Transport(provider)

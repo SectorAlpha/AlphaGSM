@@ -122,3 +122,47 @@ def test_ts3_runtime_requirements_include_udp_and_tcp_ports(tmp_path):
     ]
     assert spec["working_dir"] == "/srv/server"
     assert spec["command"][0] == "./ts3server"
+    assert "network_mode" not in spec
+
+
+def test_mariadb_command_keeps_password_out_of_argv_and_joins_private_network(tmp_path):
+    server = DummyServer("Voice One")
+    exe = tmp_path / "ts3server"
+    exe.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "ts3server",
+            "port": 9987,
+            "queryport": "10011",
+            "filetransferport": "30033",
+            "license_accepted": True,
+            "db_mode": "mariadb",
+            "db_name": "sa_teamspeak",
+            "db_user": "root",
+            "db_password": "secret-value",
+            "runtime": "docker",
+            "licensepath": "/srv/server",
+        }
+    )
+
+    cmd, _cwd = ts3server.get_start_command(server)
+    spec = ts3server.get_container_spec(server)
+    parameter = (tmp_path / "ts3db_mariadb.ini").read_text()
+
+    assert "dbplugin=ts3db_mariadb" in cmd
+    assert "dbpluginparameter=ts3db_mariadb.ini" in cmd
+    assert "licensepath=/srv/server" in cmd
+    assert all("secret-value" not in argument for argument in cmd)
+    assert "host=database" in parameter
+    assert "database=sa_teamspeak" in parameter
+    assert "password=secret-value" in parameter
+    assert oct((tmp_path / "ts3db_mariadb.ini").stat().st_mode & 0o777) == "0o600"
+    assert spec["network_mode"] == "alphagsm-ts3-voice-one"
+    assert spec["env"]["LD_LIBRARY_PATH"] == "/srv/server/redist"
+    assert spec["env"]["LANG"] == "C.UTF-8"
+    created = ts3server.managed_database_run_args(server, initialize=False)
+    assert "mariadb:11.5" in created
+    assert not any(argument == "-p" or argument.startswith("127.0.0.1:") or argument.startswith("0.0.0.0:") for argument in created)
+    fresh = ts3server.managed_database_run_args(server, initialize=True)
+    assert not any(argument.startswith("MYSQL_USER=") for argument in fresh)

@@ -22,7 +22,7 @@ alphagsm agent bind '*'
 
 Enter the enrollment code at its hidden prompt. Enrollment and binding
 registration use `https://sector-alpha.net`. POSTed stats and the outbound
-remote-execution channel use `https://gameserver-api.sector-alpha.net`. Owners
+remote-execution channel use `https://alphagsm-api.sector-alpha.net`. Owners
 request actions on the website; the agent polls for permitted jobs and posts
 results to the API. No inbound management listener is opened on your machine.
 The website also serves public accounts and the directory.
