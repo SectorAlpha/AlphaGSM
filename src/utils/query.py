@@ -1006,7 +1006,7 @@ def ts3_set_name(host, port, name, *, login, timeout=5.0, virtual_server=1):
         conn.close()
 
 
-def ts3_serverinfo(host, port, timeout=5.0, login=None):
+def ts3_serverinfo(host, port, timeout=5.0, login=None, details=False):
     """Connect to a TeamSpeak 3 ServerQuery interface and return server info.
 
     Opens a raw TCP session to the TS3 ServerQuery port (default 10011),
@@ -1021,7 +1021,10 @@ def ts3_serverinfo(host, port, timeout=5.0, login=None):
     * ``platform`` — host platform string (str)
     * ``version`` — server software version (str)
     * ``channels`` — list of channel dicts, each with ``id`` (int) and
-      ``name`` (str)
+      ``name`` (str). When *details* is true each channel also has
+      ``parent_id`` and ``order``, and the result includes ``clients``
+      (nickname, channel id, and client type only) plus ``roster_error``
+      when either list is refused.
 
     Optional *login* is a ``(username, password)`` tuple.  When provided a
     ``login`` command is sent before ``use 1``, which is required for
@@ -1100,9 +1103,24 @@ def ts3_serverinfo(host, port, timeout=5.0, login=None):
         _send("serverinfo")
         si_lines = _read_until_ok()
 
-        # Retrieve channel list.
-        _send("channellist")
-        cl_lines = _read_until_ok()
+        # Retrieve channel list. A detail read keeps the count when this list is refused.
+        roster_error = False
+        client_lines = []
+        try:
+            _send("channellist")
+            cl_lines = _read_until_ok()
+        except QueryError:
+            if not details:
+                raise
+            roster_error = True
+            cl_lines = []
+        if details and not roster_error:
+            try:
+                _send("clientlist")
+                client_lines = _read_until_ok()
+            except QueryError:
+                roster_error = True
+                client_lines = []
 
         _send("quit")
     finally:
@@ -1140,9 +1158,33 @@ def ts3_serverinfo(host, port, timeout=5.0, login=None):
         for entry in cl_lines[0].split("|"):
             ch = _parse_kv(entry)
             try:
-                channels.append({"id": int(ch.get("cid", 0)), "name": ch.get("channel_name", "")})
+                channels.append(
+                    {
+                        "id": int(ch.get("cid", 0)),
+                        "parent_id": int(ch.get("pid", 0)),
+                        "order": int(ch.get("channel_order", 0)),
+                        "name": ch.get("channel_name", ""),
+                    }
+                )
             except (ValueError, TypeError):
                 pass
     result["channels"] = channels
+    if details:
+        clients = []
+        if client_lines:
+            for entry in client_lines[0].split("|"):
+                client = _parse_kv(entry)
+                try:
+                    clients.append(
+                        {
+                            "nickname": client.get("client_nickname", ""),
+                            "channel_id": int(client.get("cid", 0)),
+                            "client_type": int(client.get("client_type", 1)),
+                        }
+                    )
+                except (ValueError, TypeError):
+                    pass
+        result["clients"] = clients
+        result["roster_error"] = roster_error
 
     return result
