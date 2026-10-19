@@ -21,6 +21,37 @@ def config(tmp_path):
     return cfg
 
 
+def test_teamspeak_publication_stays_a_website_choice(tmp_path):
+    cfg = Config(tmp_path / "agent")
+    cfg.enroll(
+        "https://control.example",
+        dict(
+            schema_version=1,
+            installation_id="install-1",
+            credential_generation=1,
+            reporting=dict(key_id="report-key", secret="x" * 43),
+            management=None,
+        ),
+    )
+    cfg.bind(
+        "binding-ts3",
+        "my-teamspeak",
+        1,
+        actions=[],
+        publication=False,
+        metadata=dict(
+            name="voice",
+            game_id="ts3server",
+            host="voice.example",
+            port=10011,
+            connect_port=9987,
+            capacity=64,
+        ),
+    )
+    with pytest.raises(ConfigError, match="website choice"):
+        cfg.publication("binding-ts3", True)
+
+
 def test_config_disabled_by_default_and_private(tmp_path):
     cfg = Config(tmp_path/'agent')
     assert cfg.load()['reporting_enabled'] is False

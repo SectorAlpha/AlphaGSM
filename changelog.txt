@@ -7,6 +7,24 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-19
+- TeamSpeak 3: client and player counts exclude ServerQuery connections,
+  including the connection opened by the status check. An empty server reports 0.
+- Sector Alpha: the website and `alphagsm agent query TAG` read any game that
+  answers an anonymous status protocol (A2S, Minecraft server-list ping, Quake
+  status, Bedrock ping, TeamSpeak ServerQuery). The local command does not
+  upload the result. Agent publication remains Minecraft Java, Minecraft Paper,
+  and Team Fortress 2. Other games are listed from the website after the name
+  check. TCP, UDP, and RCON checks are not status queries.
+- Sector Alpha: `alphagsm agent prove TAG` places a website SA- challenge in the
+  live TeamSpeak 3 server name, asks alphagsm-api to query it, and restores the
+  previous name. The token is prompted, not taken as a shell argument. An
+  in-progress player-count query is waited out with the same challenge.
+  This does not list the server.
+- Sector Alpha: TeamSpeak directory listing is a website choice after the name
+  check. alphagsm-api queries the TeamSpeak server and does not treat the local
+  publication switch, or a running agent, as proof the server is online.
+
 2026-10-18
 - TeamSpeak 3: add MariaDB mode for Docker. An empty db_host starts a private
   MariaDB 11.5 container and keeps the password in ts3db_mariadb.ini. The

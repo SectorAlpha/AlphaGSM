@@ -56,6 +56,25 @@ def test_public_registry_and_normalization(monkeypatch):
         PROFILES['custom'] = 'http'
 
 
+def test_anonymous_protocols_share_one_observation_and_drop_private_fields(monkeypatch):
+    monkeypatch.setattr(query, "quake_status", lambda *a, **k: dict(
+        name="Arena", map="q3dm1", players=1, max_players=8, players_list=["hidden"]))
+    assert query_public("q3server", "8.8.8.8", 27960) == dict(name="Arena", map="q3dm1", players=1, capacity=8)
+    monkeypatch.setattr(query, "bedrock_info", lambda *a, **k: dict(
+        name="Stone", map="world", players_online=0, players_max=10, version="1.21", server_guid=9))
+    assert query_public("minecraft.bedrock", "8.8.8.8", 19132) == dict(
+        name="Stone", map="world", players=0, capacity=10, version="1.21")
+    monkeypatch.setattr(query, "a2s_info", lambda *a, **k: b"raw")
+    monkeypatch.setattr(query, "parse_a2s_info", lambda raw: dict(
+        name="Dust", map="de_dust2", players=2, max_players=16, folder="csgo", game="CS", appid=730, bots=4))
+    assert query_public("counterstrike2", "8.8.8.8", 27015) == dict(
+        name="Dust", map="de_dust2", players=2, capacity=16)
+    with pytest.raises(query.QueryError, match="IPv4"):
+        query_public("counterstrike2", "2001:4860:4860::8888", 27015)
+    with pytest.raises(query.QueryError, match="Unsupported public profile"):
+        query_public("valheim", "8.8.8.8", 2456)
+
+
 def test_invalid_counts_fail(monkeypatch):
     monkeypatch.setattr(query, 'slp_info', lambda *a, **kw: dict(description='', players_online=-1,
                                                               players_max=20, version=''))

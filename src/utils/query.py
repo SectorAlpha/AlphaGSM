@@ -947,6 +947,65 @@ def _ts3_unescape(value):
     )
 
 
+def ts3_escape(value):
+    """Encode one ServerQuery argument without putting a raw newline on the wire."""
+    if type(value) is not str or any(ord(char) < 32 for char in value):
+        raise QueryError("TeamSpeak name contains a control character")
+    return value.replace("\\", "\\\\").replace(" ", "\\s").replace("|", "\\p").replace("/", "\\/")
+
+
+def ts3_set_name(host, port, name, *, login, timeout=5.0, virtual_server=1):
+    """Rename virtual server 1. The caller keeps the previous name and restores it."""
+    if login is None or len(login) != 2:
+        raise QueryError("TeamSpeak rename requires the local ServerQuery login")
+    if type(name) is not str or not name or len(name.encode()) > 64:
+        raise QueryError("TeamSpeak server name must be 1 to 64 bytes")
+    if type(virtual_server) is not int or virtual_server < 1:
+        raise QueryError("TeamSpeak virtual server id is invalid")
+    try:
+        conn = socket.create_connection((host, int(port)), timeout=timeout)
+    except OSError as exc:
+        raise QueryError("TS3 ServerQuery connection failed: " + str(exc)) from exc
+
+    def _recvline():
+        buf = bytearray()
+        while True:
+            chunk = conn.recv(1)
+            if not chunk:
+                raise QueryError("TS3 ServerQuery: connection closed unexpectedly")
+            buf.extend(chunk)
+            if buf.endswith(b"\n"):
+                return buf.decode("utf-8", errors="replace").strip()
+
+    def _send(cmd):
+        time.sleep(0.35)
+        conn.sendall((cmd + "\n").encode("utf-8"))
+
+    def _read_until_ok():
+        while True:
+            line = _recvline()
+            if line.startswith("error "):
+                if "id=0" not in line:
+                    raise QueryError("TS3 ServerQuery error: " + line)
+                return
+
+    try:
+        banner = _recvline()
+        if not banner.startswith("TS3"):
+            raise QueryError("TS3 ServerQuery: unexpected banner: " + banner)
+        _recvline()
+        user, password = login
+        _send("login %s %s" % (ts3_escape(user), ts3_escape(password)))
+        _read_until_ok()
+        _send("use %d" % virtual_server)
+        _read_until_ok()
+        _send("serveredit virtualserver_name=%s" % ts3_escape(name))
+        _read_until_ok()
+        _send("quit")
+    finally:
+        conn.close()
+
+
 def ts3_serverinfo(host, port, timeout=5.0, login=None):
     """Connect to a TeamSpeak 3 ServerQuery interface and return server info.
 
@@ -955,7 +1014,8 @@ def ts3_serverinfo(host, port, timeout=5.0, login=None):
     with the following keys:
 
     * ``name`` — virtual server name (str)
-    * ``clients_online`` — current number of connected clients (int)
+    * ``clients_online`` — voice clients, excluding ServerQuery connections (int)
+    * ``query_clients`` — ServerQuery connections, including this one (int)
     * ``max_clients`` — maximum allowed clients (int)
     * ``uptime`` — server uptime in seconds (int)
     * ``platform`` — host platform string (str)
@@ -1059,9 +1119,15 @@ def ts3_serverinfo(host, port, timeout=5.0, login=None):
         except (ValueError, TypeError):
             return 0
 
+    # virtualserver_clientsonline includes the ServerQuery session reading it.
+    raw_clients = _int(si, "virtualserver_clientsonline")
+    query_clients = _int(si, "virtualserver_queryclientsonline")
+    if query_clients > raw_clients:
+        raise QueryError("TeamSpeak query client count exceeds the online count")
     result = {
         "name": si.get("virtualserver_name", ""),
-        "clients_online": _int(si, "virtualserver_clientsonline"),
+        "clients_online": raw_clients - query_clients,
+        "query_clients": query_clients,
         "max_clients": _int(si, "virtualserver_maxclients"),
         "uptime": _int(si, "virtualserver_uptime"),
         "platform": si.get("virtualserver_platform", ""),

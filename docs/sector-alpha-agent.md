@@ -101,11 +101,17 @@ so a later matching DNS check can restore publication. Private bindings remain
 usable while DNS is being corrected. No DNS records are created or modified.
 
 `check-endpoint` additionally tests the advertised query port through the supported
-native game protocol, using only matched numerical addresses. It does not change
+anonymous status protocol, using only matched numerical addresses. It does not change
 publication or permissions. A failure may mean a stopped game, wrong forwarded
 port, firewall, or missing NAT loopback support; an external test is still needed
 when the router cannot reach its own public address. The website's separate
 ownership challenge and isolated query checks remain required.
+
+`alphagsm agent query TAG` runs that same anonymous query against the local
+server and prints the name, player count, and capacity. It does not send the
+result to Sector Alpha and it does not list the server. TeamSpeak uses anonymous
+ServerQuery. Games with only a TCP or UDP reachability check are refused. The
+website still makes its own query before a directory row is marked active.
 
 ## Multiple game subdomains on one machine
 
@@ -168,6 +174,23 @@ the enrollment instructions above and run `alphagsm agent enroll` first.
    `run` stays in the foreground; use your user service manager for continuous
    operation. Complete each endpoint's ownership challenge in the website to
    obtain verified public statistics. Reporting does not enable remote management.
+
+   For a TeamSpeak 3 binding, create the challenge on the website and then run:
+
+   ```sh
+   alphagsm agent prove my-teamspeak
+   ```
+
+   Paste the `SA-` token at the hidden prompt. AlphaGSM puts it in the live
+   server name, asks the API to query that name, and restores the previous name
+   whether or not the check passes. If a player-count query is already in
+   flight, the command waits and retries with the same challenge. This does not
+   list the server. After the check, the website's List in directory control
+   publishes it. alphagsm-api keeps that listing by querying the TeamSpeak
+   server on the same address, including while this agent is not running. A
+   query that cannot reach the server marks the listing offline. The local
+   publication switch is not used for TeamSpeak. The server name visitors see
+   changes until the check finishes, which is usually under a minute.
 
 You can also configure all local games in one guided pass:
 

@@ -6,11 +6,13 @@ import json
 from .config import Config, ConfigError, local_tag
 from .contracts import ACTIONS
 from .service import Service
-from .transport import Transport, TransportError
+from .transport import QueryBusy, Transport, TransportError
 from . import onboarding
 from .publication_config import PublicationConfigError, local_publication
 from .dns_lookup import PreflightError
 from . import endpoint_check
+from . import prove
+from . import local_query
 from .binding_ports import selected_ports
 
 
@@ -62,6 +64,10 @@ def run(args, *, root=None):
     publication = commands.add_parser("publication")
     publication.add_argument("binding_id")
     publication.add_argument("selection", choices=("on", "off"))
+    proof = commands.add_parser("prove")
+    proof.add_argument("local_tag")
+    queried = commands.add_parser("query")
+    queried.add_argument("local_tag")
     try:
         options = parser.parse_args(args)
     except SystemExit as exc:
@@ -83,6 +89,10 @@ def run(args, *, root=None):
                 getattr(options, key) is None for key in ("game", "host", "port", "name")
             ):
                 raise ConfigError("Legacy bind requires exact game, host, port and name")
+            if options.publish is True and options.game == "ts3server":
+                from .choices import TEAMSPEAK_DIRECTORY
+
+                raise ConfigError(TEAMSPEAK_DIRECTORY)
             if options.publish is True and options.game not in onboarding.PROFILES:
                 raise ConfigError("This game has no supported public query profile")
             # Verify that the local target exists under this user's normal AlphaGSM namespace.
@@ -124,6 +134,16 @@ def run(args, *, root=None):
             cfg.unbind(options.binding_id)
         elif options.command == "publication":
             cfg.publication(options.binding_id, options.selection == "on")
+        elif options.command == "prove":
+            return _prove(cfg, options.local_tag)
+        elif options.command == "query":
+            from utils.query import QueryError
+
+            try:
+                local_query.query_tag(cfg, options.local_tag)
+            except QueryError as exc:
+                print("Query failed: " + str(exc))
+                return 1
         elif options.command in ("enable-reporting", "disable-reporting", "enable-management", "disable-management"):
             scope = options.command.split("-")[1]
             cfg.enable(**{scope: options.command.startswith("enable")})
@@ -167,6 +187,86 @@ def run(args, *, root=None):
         return 1
     except KeyboardInterrupt:
         return 130
+
+
+def _prove(cfg, tag):
+    """Prompt for the website token, show it on TeamSpeak, and restore the old name."""
+    token = getpass.getpass("Ownership challenge: ").strip()
+    tag = local_tag(tag)
+    matches = [(key, item) for key, item in cfg.load()["bindings"].items() if item["tag"] == tag]
+    if len(matches) != 1:
+        raise ConfigError("Bind this exact local server tag before proving its name")
+    binding_id, binding = matches[0]
+    if binding["metadata"]["game_id"] != "ts3server":
+        raise ConfigError("Name proof is available for TeamSpeak 3")
+    value = cfg.load()
+    if not value["reporting_enabled"] or not value["reporting"]:
+        raise ConfigError("Reporting is disabled; use enable-reporting first")
+    from server.server import Server
+    from utils.query import QueryError, ts3_serverinfo, ts3_set_name
+
+    server = Server(tag)
+    credentials = server.module.get_query_credentials(server)
+    if not credentials:
+        raise ConfigError("TeamSpeak ServerQuery login is not available on this server")
+    query_port = int(server.data.get("queryport") or binding["metadata"]["port"])
+    address = ("127.0.0.1", query_port)
+
+    def read_name():
+        return ts3_serverinfo(address[0], address[1], login=credentials)["name"]
+
+    def write_name(name):
+        ts3_set_name(address[0], address[1], name, login=credentials)
+
+    transport = Transport(value["origin"])
+
+    def request():
+        try:
+            return transport.request(
+                "POST",
+                "/v1/agent/verify",
+                credential=value["reporting"],
+                payload={"binding_id": binding_id},
+                timeout=20,
+            )
+        except QueryBusy as exc:
+            raise prove.QueryBusy(str(exc)) from None
+
+    def poll(job_id):
+        return transport.request(
+            "GET",
+            "/v1/agent/verify/" + job_id,
+            credential=value["reporting"],
+            timeout=20,
+        )
+
+    try:
+        result = prove.prove_name(
+            tag,
+            token,
+            pending_path=cfg.root / "prove-name.json",
+            read_name=read_name,
+            write_name=write_name,
+            request=request,
+            poll=poll,
+        )
+    except prove.QueryBusy:
+        print("Sector Alpha is still querying this server. The previous TeamSpeak name has been restored. Try again.")
+        return 1
+    except ValueError as exc:
+        print(str(exc))
+        return 1
+    except QueryError as exc:
+        print("TeamSpeak name proof failed: " + str(exc).split(":", 1)[0])
+        return 1
+    except TransportError:
+        print("Sector Alpha did not accept the check. Create a fresh website challenge and try again.")
+        return 1
+    if result.get("verified") is True:
+        print("Control verified. The previous TeamSpeak name has been restored.")
+    else:
+        print("The name check did not verify. The previous TeamSpeak name has been restored.")
+    return 0
 
 
 def notify_success(tag):

@@ -18,6 +18,21 @@ class TransportError(OSError):
     """Bounded category-only network failures; credentials are never in errors."""
 
 
+class QueryBusy(TransportError):
+    """The name check can be requested again after the current query finishes."""
+
+
+_QUERY_BUSY = b'{"detail":"Request rejected","code":"query_busy"}'
+
+
+def _busy_body(exc):
+    try:
+        body = exc.read(len(_QUERY_BUSY) + 1)
+    except OSError:
+        return False
+    return body == _QUERY_BUSY
+
+
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise TransportError("Credential redirects are forbidden")
@@ -42,10 +57,15 @@ class Transport:
             "/v1/agent/policy",
             "/v1/agent/jobs",
             "/v1/agent/results",
+            "/v1/agent/verify",
         ) and not (
             path.startswith("/v1/agent/jobs/")
             and path.endswith("/authorize")
             and path.count("/") == 5
+            and all(c.isalnum() or c in "/_-" for c in path)
+        ) and not (
+            path.startswith("/v1/agent/verify/")
+            and path.count("/") == 4
             and all(c.isalnum() or c in "/_-" for c in path)
         ):
             raise ValueError("Unapproved agent route")
@@ -69,6 +89,8 @@ class Transport:
                 return self._report_request(request, min(timeout, REPORT_TIMEOUT))
             return self._read_response(request, timeout)
         except urllib.error.HTTPError as exc:
+            if exc.code == 403 and path == "/v1/agent/verify" and _busy_body(exc):
+                raise QueryBusy("Sector Alpha is still querying this server") from None
             raise TransportError("HTTPS request rejected (%s)" % exc.code) from None
         except (OSError, ValueError, http.client.HTTPException, RecursionError) as exc:
             if isinstance(exc, TransportError):

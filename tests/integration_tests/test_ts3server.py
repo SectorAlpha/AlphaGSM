@@ -114,10 +114,9 @@ def test_ts3server_lifecycle(tmp_path):
         assert isinstance(_info_data["clients_online"], int), (
             f"Expected clients_online integer: {_info_data!r}"
         )
-        # TS3 counts authenticated ServerQuery connections as clients, so a
-        # freshly started server may report 0 or 1 depending on timing.
-        assert _info_data["clients_online"] <= 1, (
-            f"Expected 0-1 clients on fresh server (SQ admin counts): {_info_data!r}"
+        # The info connection is a ServerQuery client and is not a voice user.
+        assert _info_data["clients_online"] == 0, (
+            f"Expected no voice clients on a fresh server: {_info_data!r}"
         )
         assert isinstance(_info_data["max_clients"], int) and _info_data["max_clients"] > 0, (
             f"Expected positive max_clients: {_info_data!r}"

@@ -4,8 +4,18 @@ from server.public_query import PROFILES
 from .config import ConfigError
 from .contracts import ACTIONS
 
+TEAMSPEAK_DIRECTORY = (
+    "TeamSpeak directory listing is a website choice after the name check. "
+    "The API queries the TeamSpeak server and does not use this local switch."
+)
+
 
 def publication_choice(game, approved, explicit):
+    if game == "ts3server":
+        print(TEAMSPEAK_DIRECTORY)
+        if explicit is True:
+            raise ConfigError(TEAMSPEAK_DIRECTORY)
+        return False
     if game not in PROFILES:
         print("Public listing unavailable for " + game + "; private binding and management are supported.")
         if explicit is True:

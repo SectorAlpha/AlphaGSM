@@ -3,7 +3,7 @@
 import ipaddress
 import time
 
-from server.public_query import PROFILES, query_public
+from server.public_query import IPV4_ONLY, protocol_for, query_public
 from .dns_lookup import DNS_TIMEOUT, PreflightError, resolve_host
 from .inventory import read_local
 from .network import suggest_public_host
@@ -17,9 +17,13 @@ def check_endpoint(binding, expected_public_ips=None, *, resolve=None, probe=Non
     """Probe only validated pinned machine IPs, retaining SLP's original host."""
     metadata = binding['metadata']
     game, host, port = metadata['game_id'], metadata['host'], metadata['port']
-    if game not in PROFILES:
+    protocol = protocol_for(game)
+    if protocol is None:
         raise PreflightError("This game has no supported public query profile; private binding remains available")
-    if type(port) is not int or not 1024 <= port <= 65535:  # pylint: disable=unidiomatic-typecheck
+    if protocol == "ts3":
+        if type(port) is not int or port != 10011:  # pylint: disable=unidiomatic-typecheck
+            raise PreflightError("TeamSpeak checks use query port 10011")
+    elif type(port) is not int or not 1024 <= port <= 65535:  # pylint: disable=unidiomatic-typecheck
         raise PreflightError("Public endpoint checks require an advertised port from 1024 to 65535")
     selected = dict(binding)
     if expected_public_ips is not None:
@@ -36,8 +40,8 @@ def check_endpoint(binding, expected_public_ips=None, *, resolve=None, probe=Non
         if time.monotonic() >= dns_deadline:
             raise PreflightError("DNS lookup timed out; no endpoint connection was attempted")
     addresses = matched_addresses(answers, expected)
-    if PROFILES[game] == 'a2s' and any(ipaddress.ip_address(address).version != 4 for address in addresses):
-        raise PreflightError("The A2S public profile supports IPv4 only; check the hostname AAAA record")
+    if protocol in IPV4_ONLY and any(ipaddress.ip_address(address).version != 4 for address in addresses):
+        raise PreflightError("This public query supports IPv4 only; check the hostname AAAA record")
     deadline = time.monotonic() + PROBE_TIMEOUT
     for address in addresses:
         remaining = deadline - time.monotonic()

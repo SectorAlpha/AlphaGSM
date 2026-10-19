@@ -162,6 +162,10 @@ class Config:
         from server.public_query import PROFILES
         from .publication_config import local_publication
 
+        if publication is True and metadata.get("game_id") == "ts3server":
+            from .choices import TEAMSPEAK_DIRECTORY
+
+            raise ConfigError(TEAMSPEAK_DIRECTORY)
         if publication is True and metadata.get("game_id") not in PROFILES:
             raise ConfigError("This game has no supported public query profile")
         identifier(binding_id)
@@ -237,7 +241,12 @@ class Config:
             value = self.load()
             if binding_id not in value["bindings"]:
                 raise ConfigError("Unknown local binding")
-            if enabled and value["bindings"][binding_id]["metadata"]["game_id"] not in PROFILES:
+            game_id = value["bindings"][binding_id]["metadata"]["game_id"]
+            if enabled and game_id == "ts3server":
+                from .choices import TEAMSPEAK_DIRECTORY
+
+                raise ConfigError(TEAMSPEAK_DIRECTORY)
+            if enabled and game_id not in PROFILES:
                 raise ConfigError("This game has no supported public query profile")
             value["bindings"][binding_id]["publication"] = enabled
             value["dirty_at"] = __import__("time").time()
