@@ -8,11 +8,12 @@ from .journal import Journal
 from .lifecycle import AlphaRuntime, Executor
 from .reporting import policy_snapshot, report_snapshot
 from .preflight import final_report, preflight_report
-from .transport import Transport, TransportError
+from .socket_channel import SocketChannel, SocketError
+from .transport import AgentLimit, Transport, TransportError
 
 
-class Service:
-    def __init__(self, config, *, runtime=None, transport=None):
+class Service:  # pylint: disable=too-many-instance-attributes
+    def __init__(self, config, *, runtime=None, transport=None, channel_factory=None):
         self.config = config
         self.runtime = runtime or AlphaRuntime()
         cfg = config.load()
@@ -21,6 +22,8 @@ class Service:
         self.journal = Journal(config.root / "journal.json")
         self.session_id = secrets.token_hex(16)
         self.stop = threading.Event()
+        if channel_factory is not None:
+            self.channel_factory = channel_factory
 
     def report_once(self):
         cfg = self.config.load()
@@ -43,14 +46,18 @@ class Service:
                 print("Publication withheld for " + binding_id + ": " + reason)
             return self.transport.request("POST", "/v1/agent/reports", credential=current["reporting"], payload=payload)
 
-    def management_once(self):
+    def management_once(self, *, wait=25):
         cfg = self.config.load()
         if not cfg["management_enabled"] or (cfg["origin"], cfg["installation_id"]) != self.relationship:
             return None
         credential = cfg["management"]
         self.transport.request("POST", "/v1/agent/policy", credential=credential, payload=policy_snapshot(cfg))
+        options = {"timeout": 35}
+        if wait == 0:
+            # A live socket must not also hold the 25-second poll.
+            options = {"timeout": 10, "query": "wait=0"}
         response = self.transport.request(
-            "GET", "/v1/agent/jobs", credential=credential, session_id=self.session_id, timeout=35
+            "GET", "/v1/agent/jobs", credential=credential, session_id=self.session_id, **options
         )
         # Poll establishes a session before sending any previously unacknowledged result.
         for result in self.journal.pending_results():
@@ -106,19 +113,85 @@ class Service:
                     # reporting's lock budget. Retry without ending the reporter.
                     # An outage never changes the result of a successful local CLI command.
 
+    def _open_channel(self, cfg):
+        factory = getattr(self, "channel_factory", None)
+        if factory is not None:
+            return factory(cfg, self.session_id)
+        return SocketChannel(cfg["origin"], cfg["reporting"], self.session_id)
+
+    def _connection_once(self):
+        cfg = self.config.load()
+        if (cfg["origin"], cfg["installation_id"]) != self.relationship:
+            return "idle"
+        if not cfg["reporting"]:
+            if cfg["management_enabled"]:
+                self.management_once()
+                return "rest"
+            return "idle"
+        try:
+            opened = self._open_channel(cfg)
+        except AgentLimit:
+            raise
+        except (OSError, TransportError, ValueError):
+            if cfg["management_enabled"]:
+                self.management_once()
+                return "fallback"
+            return "retry"
+        with opened as channel:
+            self._serve_channel(channel)
+        return "socket"
+
+    def _serve_channel(self, channel):
+        worker = None
+        interval = getattr(self, "heartbeat_interval", 30)
+        next_beat = time.monotonic() + interval
+        try:
+            while not self.stop.is_set():
+                if worker is not None and not worker.is_alive():
+                    worker = None
+                timeout = max(0.05, min(interval, next_beat - time.monotonic()))
+                frame = channel.recv(timeout)
+                # The frame only names a job. Fetching, local checks, authorize, and the result post stay on HTTPS.
+                if isinstance(frame, dict) and frame.get("type") == "request" and worker is None:
+                    worker = threading.Thread(target=self._run_requested_job, name="alphagsm-agent-job", daemon=True)
+                    worker.start()
+                elif isinstance(frame, dict) and frame.get("type") == "heartbeat":
+                    next_beat = time.monotonic() + interval
+                if time.monotonic() >= next_beat and not self.stop.is_set():
+                    channel.send({"type": "heartbeat"})
+                    next_beat = time.monotonic() + interval
+        finally:
+            if worker is not None:
+                worker.join()
+
+    def _run_requested_job(self):
+        try:
+            self.management_once(wait=0)
+        except (TransportError, ValueError, OSError):
+            pass
+
     def _management_loop(self):
         failures = 0
         while not self.stop.is_set():
-            cfg = self.config.load()
-            if not cfg["management_enabled"]:
+            try:
+                outcome = self._connection_once()
+            except AgentLimit:
+                failures = min(failures + 1, 6)
+                self.stop.wait(max(60, min(300, 2 ** failures)) + secrets.randbelow(5))
+                continue
+            except (SocketError, TransportError, ValueError, OSError):
+                failures = min(failures + 1, 6)
+                self.stop.wait(min(300, 2 ** failures) + secrets.randbelow(5))
+                continue
+            if outcome == "socket":
+                failures = 0
                 self.stop.wait(1)
                 continue
-            try:
-                self.management_once()
+            if outcome in ("rest", "fallback"):
                 failures = 0
-            except (TransportError, ValueError):
-                failures = min(failures + 1, 6)
-                self.stop.wait(min(300, 2**failures) + secrets.randbelow(5))
+                continue
+            failures = min(failures + 1, 6)
+            self.stop.wait(5 if outcome == "idle" else min(300, 2 ** failures) + secrets.randbelow(5))
 
     def run(self):
         with state_lock(self.config.root / "service", timeout=0):

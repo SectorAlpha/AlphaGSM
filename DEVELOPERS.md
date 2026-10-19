@@ -1176,9 +1176,11 @@ and exclude their own infrastructure before numeric connect.
 
 The optional `agent` package keeps scoped credentials and consent under a
 private POSIX directory outside game datastores. Policy and report credentials
-are independent. The foreground manager uses outbound HTTPS long polling,
-rechecks exact local bindings and policy under the normal CLI lock, obtains
-final online authorization and persists executing before lifecycle effects.
+are independent. The foreground manager opens one outbound WebSocket for
+presence and job wakes, and falls back to HTTPS long polling when the socket
+cannot open. It rechecks exact local bindings and policy under the normal CLI
+lock, obtains final online authorization and persists executing before lifecycle
+effects. A socket frame never skips those checks. Results are posted over HTTPS.
 `Journal` stores durable results until acknowledgement; interrupted execution
 reconciles unknown and never repeats effects. A global foreground-service lock
 prevents competing pollers. No secrets are accepted as CLI arguments.
@@ -1186,7 +1188,7 @@ prevents competing pollers. No secrets are accepted as CLI arguments.
 The official provider uses `https://sector-alpha.net` for only agent enrollment
 and binding registration, while `https://alphagsm-api.sector-alpha.net` receives
 POST stats and carries the outbound execution protocol (policy acknowledgement,
-command polling, final authorization and results). Owners queue commands and view
+the agent session socket, command polling, final authorization and results). Owners queue commands and view
 data on the website. `Transport` selects the official website only for its two
 approved onboarding paths. It retains one canonical API provider origin in local
 configuration and derives the fixed website authority in memory, without redirects

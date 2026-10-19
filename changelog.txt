@@ -8,6 +8,11 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-19
+- Sector Alpha: the agent keeps one outbound WebSocket to alphagsm-api for
+  presence and job wakes, with heartbeats about every 30 seconds. If the socket
+  cannot open, it uses the existing HTTPS job poll. Authorize and result posts
+  stay on HTTPS. An account can have ten live agents. Remote management stays
+  off until it is enabled.
 - TeamSpeak 3: client and player counts exclude ServerQuery connections,
   including the connection opened by the status check. An empty server reports 0.
 - Sector Alpha: the website and `alphagsm agent query TAG` read any game that

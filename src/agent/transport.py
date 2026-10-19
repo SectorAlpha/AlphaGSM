@@ -22,15 +22,24 @@ class QueryBusy(TransportError):
     """The name check can be requested again after the current query finishes."""
 
 
+class AgentLimit(TransportError):
+    """This account already has as many live agents as it allows."""
+
+
 _QUERY_BUSY = b'{"detail":"Request rejected","code":"query_busy"}'
+_AGENT_LIMIT = b'{"detail":"Request rejected","code":"agent_limit"}'
+
+
+def _exact_body(exc, expected):
+    try:
+        body = exc.read(len(expected) + 1)
+    except OSError:
+        return False
+    return body == expected
 
 
 def _busy_body(exc):
-    try:
-        body = exc.read(len(_QUERY_BUSY) + 1)
-    except OSError:
-        return False
-    return body == _QUERY_BUSY
+    return _exact_body(exc, _QUERY_BUSY)
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -49,7 +58,7 @@ class Transport:
             DeadlineHTTPSHandler(context=context or ssl.create_default_context()),
         )
 
-    def request(self, method, path, *, credential=None, payload=None, session_id=None, timeout=10):
+    def request(self, method, path, *, credential=None, payload=None, session_id=None, timeout=10, query=None):
         if path not in (
             "/v1/agent/enroll",
             "/v1/agent/bindings",
@@ -69,6 +78,8 @@ class Transport:
             and all(c.isalnum() or c in "/_-" for c in path)
         ):
             raise ValueError("Unapproved agent route")
+        if query is not None and not (method == "GET" and path == "/v1/agent/jobs" and query == "wait=0"):
+            raise ValueError("Unapproved agent route")
         headers = {"Accept": "application/json"}
         data = None
         if payload is not None:
@@ -83,7 +94,8 @@ class Transport:
         # Official onboarding stays on the website; reports and command execution
         # use the machine API. Custom providers retain their exact configured origin.
         destination = self.control_origin if path in ("/v1/agent/enroll", "/v1/agent/bindings") else self.origin
-        request = urllib.request.Request(destination + path, method=method, data=data, headers=headers)
+        target = destination + path if query is None else destination + path + "?" + query
+        request = urllib.request.Request(target, method=method, data=data, headers=headers)
         try:
             if method == "POST" and path == "/v1/agent/reports":
                 return self._report_request(request, min(timeout, REPORT_TIMEOUT))
@@ -91,6 +103,8 @@ class Transport:
         except urllib.error.HTTPError as exc:
             if exc.code == 403 and path == "/v1/agent/verify" and _busy_body(exc):
                 raise QueryBusy("Sector Alpha is still querying this server") from None
+            if exc.code == 403 and _exact_body(exc, _AGENT_LIMIT):
+                raise AgentLimit("Live agent cap reached") from None
             raise TransportError("HTTPS request rejected (%s)" % exc.code) from None
         except (OSError, ValueError, http.client.HTTPException, RecursionError) as exc:
             if isinstance(exc, TransportError):
