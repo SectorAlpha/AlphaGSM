@@ -91,12 +91,13 @@ def _create(name, execute):
 
 
 def _connect(name, execute):
-    print('\nOptional Sector Alpha connection: enrollment and binding contact')
-    print('https://sector-alpha.net; get your enrollment code there too.')
-    print('Later stats and remote execution use https://alphagsm-api.sector-alpha.net.')
-    print('The existing wizard previews servers/endpoints and asks for binding permissions.')
+    print('\nOptional Sector Alpha connection: get the enrollment code from your')
+    print('account at https://sector-alpha.net. The agent uses')
+    print('https://alphagsm-api.sector-alpha.net for every operation and does not')
+    print('ask you to choose a host. Another provider is used only with --origin.')
+    print('This tour opens agent setup. It previews servers and asks before saving.')
     print('This tour never enables reporting or management. Existing choices are preserved.')
-    print('After binding, reporting needs a separate explicit agent enable-reporting command.')
+    print('After this wizard, reporting needs a separate explicit agent enable-reporting command.')
     if _yes('Open the Sector Alpha enrollment/binding wizard?'):
         return execute(name, ['agent', 'setup'])
     return 0

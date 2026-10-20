@@ -10,7 +10,6 @@ from utils.state_io import atomic_write_text, state_lock
 from .contracts import ACTIONS, identifier, integer, validate_metadata, exact
 
 DEFAULT_ORIGIN = "https://alphagsm-api.sector-alpha.net"
-CONTROL_ORIGIN = "https://sector-alpha.net"
 
 
 class ConfigError(ValueError):

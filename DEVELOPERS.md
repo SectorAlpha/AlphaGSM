@@ -1185,23 +1185,23 @@ effects. A socket frame never skips those checks. Results are posted over HTTPS.
 reconciles unknown and never repeats effects. A global foreground-service lock
 prevents competing pollers. No secrets are accepted as CLI arguments.
 
-The official provider uses `https://sector-alpha.net` for only agent enrollment
-and binding registration, while `https://alphagsm-api.sector-alpha.net` receives
-POST stats and carries the outbound execution protocol (policy acknowledgement,
-the agent session socket, command polling, final authorization and results). Owners queue commands and view
-data on the website. `Transport` selects the official website only for its two
-approved onboarding paths. It retains one canonical API provider origin in local
-configuration and derives the fixed website authority in memory, without redirects
-or endpoint discovery. The same verified TLS/no-proxy/no-redirect transport applies
-to both hosts. No new persisted secret/origin fields are introduced.
+The official provider is `https://alphagsm-api.sector-alpha.net` for every
+agent operation: enrollment redemption, binding registration, ownership-challenge
+minting, POST stats, and the outbound execution protocol (policy acknowledgement,
+the agent session socket, command polling, final authorization and results).
+The agent does not ask which host to use. Sector Alpha verifies a challenge by
+querying the server. Owners queue commands and view data on the website.
+`Transport` sends every approved route to the one configured origin. It retains
+one canonical API provider origin in local configuration, without redirects or
+endpoint discovery. No new persisted secret/origin fields are introduced.
 
 `canonical_agent_origin()` still maps exact official HTTPS website/API authorities
 (default/443 port, case and root-slash variants) to the canonical API provider
 origin. `Config.load()` and the next ordinary write retain this normalization,
 preserving IDs, keys, bindings and permissions. Explicit custom origins, lookalikes
 and non-default ports keep the exact configured single origin for every agent path.
-Restart foreground/user services after upgrading. Stage website onboarding routes
-before client upgrades; restrict the machine API after clients are updated.
+Restart foreground/user services after upgrading. The website still accepts
+enrollment and binding registration from older clients.
 The generic origin syntax validator still requires HTTPS roots and normalizes an
 optional trailing slash. `agent.inventory` reads
 only owned current-user JSON datastores without constructing Server (which can

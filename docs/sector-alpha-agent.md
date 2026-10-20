@@ -17,33 +17,41 @@ with MFA, choose capabilities and create a ten-minute enrollment code. Locally:
 
 ```sh
 alphagsm agent enroll
-alphagsm agent bind '*'
+alphagsm agent run
 ```
 
-Enter the enrollment code at its hidden prompt. Enrollment and binding
-registration use `https://sector-alpha.net`. POSTed stats and the outbound
-remote-execution channel use `https://alphagsm-api.sector-alpha.net`. Owners
-request actions on the website. The agent opens one outbound WebSocket to the
-API for presence and job requests, and posts results back to the API. If that
-socket cannot open, the agent uses the HTTPS job poll instead. No inbound
-management listener is opened on your machine.
-The website also serves public accounts and the directory.
+Enter the enrollment code at its hidden prompt. The agent does not ask which
+host to use. Every operation uses `https://alphagsm-api.sector-alpha.net`:
+enrollment, binding registration, ownership challenges, POSTed stats, and the
+outbound remote-execution channel. `alphagsm agent enroll` registers each
+managed server that already has a global public address, turns reporting on,
+and leaves management off. A server without that address is skipped. Bind it
+later with `alphagsm agent bind TAG --host HOST`. After the first report,
+TeamSpeak 3 receives an ownership check in the virtual server name. Sector
+Alpha verifies that check by querying the server, and the previous name is
+restored. Other games print the SA- challenge to place in the public name.
+Owners request actions on the website. The agent opens one outbound WebSocket
+to the API for presence and job requests, and posts results back to the API.
+If that socket cannot open, the agent uses the HTTPS job poll instead. No
+inbound management listener is opened on your machine. The website also serves
+public accounts and the directory.
 
-Use `agent enroll --origin https://your-site.example` for another compatible
-service. Custom providers keep their exact single configured origin. Never put
-codes or credentials in shell arguments. The official two-host selection happens
-locally by approved route, without redirects or fallback to another host.
+Use `agent enroll --origin https://your-site.example` only when you want
+another compatible service. That saved origin is then used for every
+operation. Never put codes or credentials in shell arguments. Official
+website-host aliases normalize locally to the API, without redirects or a
+fallback to another host.
 
 After upgrading AlphaGSM, restart the foreground agent (or its user service).
 Existing official connections keep their stored API provider origin, IDs,
 credentials, bindings and local permissions. Old official website-origin aliases
-still normalize locally; onboarding requests now select the website separately.
-No re-enrollment is needed. Deploy the website onboarding routes before upgrading
-clients, then restrict the API routes. Older clients cannot enroll/bind through
-the restricted API hostname. See the provider's deployment instructions.
+still normalize locally to the API. No re-enrollment is needed. The website
+still accepts enrollment and binding registration from older clients.
+See the provider's deployment instructions.
 
 `agent bind '*'` discovers all eligible servers owned by your local AlphaGSM user,
-registers their website bindings, and saves the returned IDs automatically. Quote
+registers their bindings at the stored API origin, and saves the returned IDs
+automatically. Quote
 `'*'` so your shell passes it literally instead of expanding local filenames.
 For one server use `alphagsm agent bind my-minecraft`. `alphagsm agent setup`
 combines bulk binding with enrollment if needed. Existing bindings are reused.
@@ -221,8 +229,9 @@ requires a game-compatible proxy; configuring one is outside agent binding.
 
 New bindings default to private with no allowed remote actions. The prompts let
 you choose publication and actions; repeat runs preserve your previous choices.
-Enrollment and binding leave reporting and management disabled. Enable the
-capabilities you want once the preview is correct:
+`alphagsm agent enroll` turns reporting on and leaves management off.
+`alphagsm agent setup` and `alphagsm agent bind` still leave both off until
+you enable the capability you want:
 
 ```sh
 alphagsm agent enable-reporting

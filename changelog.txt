@@ -7,6 +7,20 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-20
+- Sector Alpha: the agent uses https://alphagsm-api.sector-alpha.net for
+  every operation, including enrollment. It does not ask which host to use.
+  Another provider is used only when `--origin` or the saved origin names one.
+  `alphagsm agent enroll` redeems the code there, turns reporting on, and
+  registers each managed server that already has a global public address.
+  Management stays off. A server
+  without that address is left unbound. After the first report, TeamSpeak 3
+  receives an ownership check in the virtual server name. Sector Alpha
+  verifies it by querying the server, and the previous name is restored.
+  Other games print the SA- challenge for the public name. `alphagsm agent
+  setup` and the first-run tour still ask before saving a binding and still
+  leave reporting off.
+
 2026-10-19
 - Sector Alpha: the agent keeps one outbound WebSocket to alphagsm-api for
   presence and job wakes, with heartbeats about every 30 seconds. If the socket

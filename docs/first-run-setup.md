@@ -36,10 +36,12 @@ status of 2.
 2. **Everyday commands.** See how to set up, start, check and stop a server without
    running any commands. See [Everyday Commands](commands.md) for more details.
 3. **Optional Sector Alpha connection.** Confirm before opening the existing
-   enrollment/binding wizard. It contacts `https://sector-alpha.net` for onboarding;
-   later stats and execution use `https://alphagsm-api.sector-alpha.net`;
-   obtain the enrollment code from your account at `https://sector-alpha.net`.
-   That wizard previews the servers/endpoints and asks for binding permissions.
+   enrollment/binding wizard. Obtain the enrollment code from your account at
+   `https://sector-alpha.net`. The tour's wizard previews the servers and asks
+   before it saves a binding, and it leaves reporting off. The agent uses
+   `https://alphagsm-api.sector-alpha.net` for every operation and does not ask
+   which host to use. `alphagsm agent enroll` redeems the code there, registers
+   bindings, and turns reporting on. Another provider is used only with `--origin`.
    See [Optional Sector Alpha connection](sector-alpha-agent.md).
 
 Press Enter or `s` at the menu to finish. Blank game/name answers cancel that

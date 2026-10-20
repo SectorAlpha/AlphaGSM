@@ -40,6 +40,8 @@ def provider(monkeypatch):
                 return dict(schema_version=1, installation_id='install-1', credential_generation=1,
                             reporting=dict(key_id='report-key', secret='r' * 43),
                             management=dict(key_id='manage-key', secret='m' * 43))
+            if path.endswith('/challenge'):
+                return dict(challenge='SA-' + 'a' * 43, expires_at=1)
             return dict(schema_version=1, binding_id='binding-' + str(len(calls)), binding_epoch=3)
 
     monkeypatch.setattr(cli, 'Transport', Provider)
@@ -70,10 +72,57 @@ def test_root_origin_slash_is_normalized_in_storage_and_transport(tmp_path):
 
 
 def test_enroll_default_only_prompts_for_hidden_code(tmp_path, provider, monkeypatch):
+    import server.server as server_module
+    empty = tmp_path / 'servers'
+    empty.mkdir()
+    monkeypatch.setattr(server_module, 'DATAPATH', str(empty))
     monkeypatch.setattr('builtins.input', lambda prompt: pytest.fail('unexpected visible prompt'))
     assert cli.run(['enroll'], root=tmp_path / 'agent') == 0
     assert provider == [('https://alphagsm-api.sector-alpha.net', 'POST', '/v1/agent/enroll', {'payload': {'code': 'hidden-code'}})]
-    assert not Config(tmp_path / 'agent').load()['management_enabled']
+    loaded = Config(tmp_path / 'agent').load()
+    assert loaded['reporting_enabled'] is True
+    assert not loaded['management_enabled']
+    assert not loaded['bindings']
+
+
+def test_enroll_binds_public_servers_and_requests_an_ownership_challenge(tmp_path, local_servers, provider, monkeypatch, capsys):
+    monkeypatch.setattr('builtins.input', lambda prompt: pytest.fail('unexpected visible prompt'))
+    local_servers[1]('world', publicip='8.8.8.8')
+    local_servers[1]('private', port=25566, servername='Private')
+    assert cli.run(['enroll'], root=tmp_path / 'agent') == 0
+    output = capsys.readouterr().out
+    assert 'alphagsm agent bind private --host HOST' in output
+    assert 'SA-' + 'a' * 43 in output
+    assert 'Sector Alpha verifies it by querying the server.' in output
+    assert [call[0:3] for call in provider] == [
+        ('https://alphagsm-api.sector-alpha.net', 'POST', '/v1/agent/enroll'),
+        ('https://alphagsm-api.sector-alpha.net', 'POST', '/v1/agent/bindings'),
+        ('https://alphagsm-api.sector-alpha.net', 'POST', '/v1/agent/reports'),
+        ('https://alphagsm-api.sector-alpha.net', 'POST', '/v1/agent/challenge'),
+    ]
+    value = Config(tmp_path / 'agent').load()
+    assert value['reporting_enabled'] is True and value['management_enabled'] is False
+    assert len(value['bindings']) == 1
+    item = next(iter(value['bindings'].values()))
+    assert item['tag'] == 'world' and item['publication'] is False and item['actions'] == []
+    assert item['metadata']['host'] == '8.8.8.8'
+    assert item['metadata']['port'] == 25565 and item['metadata']['connect_port'] == 25565
+    assert provider[1][3]['payload']['scope'] == 'reporting'
+
+
+def test_enroll_places_a_teamspeak_challenge_for_the_site_query(tmp_path, local_servers, provider, monkeypatch):
+    placed = []
+    monkeypatch.setattr('builtins.input', lambda prompt: pytest.fail('unexpected visible prompt'))
+    monkeypatch.setattr(
+        'agent.name_proof.prove_binding',
+        lambda cfg, tag, binding_id, binding, token, transport: placed.append((tag, token)) or {'verified': False},
+    )
+    local_servers[1]('lobby', module='ts3server', port=9987, queryport=10011, publicip='8.8.8.8', servername='Voice')
+    assert cli.run(['enroll'], root=tmp_path / 'agent') == 0
+    assert placed == [('lobby', 'SA-' + 'a' * 43)]
+    assert [call[2] for call in provider] == [
+        '/v1/agent/enroll', '/v1/agent/bindings', '/v1/agent/reports', '/v1/agent/challenge',
+    ]
 
 
 def test_guided_bind_infers_metadata_and_registers_only_scoped_hash(tmp_path, local_servers, provider, monkeypatch):

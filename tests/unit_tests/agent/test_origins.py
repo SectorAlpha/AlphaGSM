@@ -53,7 +53,11 @@ def test_legacy_official_origin_is_normalized_locally_without_changing_relations
 
 
 @pytest.mark.parametrize('old', ALIASES)
-def test_enroll_normalizes_provider_before_transport_submission(tmp_path, provider, old):
+def test_enroll_normalizes_provider_before_transport_submission(tmp_path, provider, old, monkeypatch):
+    import server.server as server_module
+    empty = tmp_path / 'servers'
+    empty.mkdir()
+    monkeypatch.setattr(server_module, 'DATAPATH', str(empty))
     assert cli.run(['enroll', '--origin', old], root=tmp_path / 'agent') == 0
     assert provider == [(API, 'POST', '/v1/agent/enroll', {'payload': {'code': 'hidden-code'}})]
     assert Config(tmp_path / 'agent').load()['origin'] == API
@@ -120,15 +124,14 @@ def test_direct_transport_canonicalizes_old_official_origin_before_credentials()
     assert Transport('https://SECTOR-ALPHA.NET:443/').origin == API
 
 
-@pytest.mark.parametrize('provider,control,execution', [
-    *[(alias, 'https://sector-alpha.net', API) for alias in [API, API + ':443/', *ALIASES]],
-    ('https://control.example', 'https://control.example', 'https://control.example'),
-    ('https://sector-alpha.net:8443', 'https://sector-alpha.net:8443', 'https://sector-alpha.net:8443'),
+@pytest.mark.parametrize('provider,destination', [
+    *[(alias, API) for alias in [API, API + ':443/', *ALIASES]],
+    ('https://control.example', 'https://control.example'),
+    ('https://sector-alpha.net:8443', 'https://sector-alpha.net:8443'),
     ('https://alphagsm-api.sector-alpha.net.attacker.example',
-     'https://alphagsm-api.sector-alpha.net.attacker.example',
      'https://alphagsm-api.sector-alpha.net.attacker.example'),
 ])
-def test_transport_routes_official_onboarding_to_website_and_execution_to_api(monkeypatch, provider, control, execution):
+def test_transport_uses_the_configured_origin_for_every_operation(monkeypatch, provider, destination):
     transport = Transport(provider)
     sent = []
     def capture(request, _timeout):
@@ -136,15 +139,16 @@ def test_transport_routes_official_onboarding_to_website_and_execution_to_api(mo
         return {'accepted': True}
     monkeypatch.setattr(transport, '_read_response', capture)
     credential = {'key_id': 'test-key', 'secret': 's' * 43}
-    for method, path, destination in (
-        ('POST', '/v1/agent/enroll', control),
-        ('POST', '/v1/agent/bindings', control),
-        ('POST', '/v1/agent/reports', execution),
-        ('POST', '/v1/agent/policy', execution),
-        ('GET', '/v1/agent/jobs', execution),
-        ('POST', '/v1/agent/jobs/job-1/authorize', execution),
-        ('POST', '/v1/agent/results', execution),
+    for method, path in (
+        ('POST', '/v1/agent/enroll'),
+        ('POST', '/v1/agent/bindings'),
+        ('POST', '/v1/agent/challenge'),
+        ('POST', '/v1/agent/reports'),
+        ('POST', '/v1/agent/policy'),
+        ('GET', '/v1/agent/jobs'),
+        ('POST', '/v1/agent/jobs/job-1/authorize'),
+        ('POST', '/v1/agent/results'),
     ):
         transport.request(method, path, credential=credential)
         assert sent[-1] == (destination + path, method, 'Bearer test-key.' + 's' * 43)
-    assert transport.origin == execution
+    assert transport.origin == destination

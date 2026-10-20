@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Offline non-player-port rejection, approved player/query ports, website onboarding/API execution routing, hostname preflight and consent gates.
+# Offline non-player-port rejection, approved player/query ports, one configured agent origin, hostname preflight and consent gates.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 PYTHONPATH=.:src "${PYTHON_BIN:-python3}" -m pytest \

@@ -8,7 +8,7 @@ import time
 import threading
 import urllib.error
 import urllib.request
-from .config import CONTROL_ORIGIN, DEFAULT_ORIGIN, canonical_agent_origin
+from .config import canonical_agent_origin
 from .http_deadline import DeadlineBudget, DeadlineHTTPSHandler, bounded_exchange
 
 REPORT_TIMEOUT = 10
@@ -50,7 +50,6 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 class Transport:
     def __init__(self, api_origin, *, context=None):
         self.origin = canonical_agent_origin(api_origin)
-        self.control_origin = CONTROL_ORIGIN if self.origin == DEFAULT_ORIGIN else self.origin
         self.report_lock = threading.Lock()
         self.opener = urllib.request.build_opener(
             urllib.request.ProxyHandler({}),
@@ -62,6 +61,7 @@ class Transport:
         if path not in (
             "/v1/agent/enroll",
             "/v1/agent/bindings",
+            "/v1/agent/challenge",
             "/v1/agent/reports",
             "/v1/agent/policy",
             "/v1/agent/jobs",
@@ -91,10 +91,9 @@ class Transport:
             headers["Authorization"] = "Bearer " + credential["key_id"] + "." + credential["secret"]
         if session_id is not None:
             headers["X-Agent-Session"] = session_id
-        # Official onboarding stays on the website; reports and command execution
-        # use the machine API. Custom providers retain their exact configured origin.
-        destination = self.control_origin if path in ("/v1/agent/enroll", "/v1/agent/bindings") else self.origin
-        target = destination + path if query is None else destination + path + "?" + query
+        # Every operation uses the one configured origin. The default is the
+        # official API. A custom origin is used only when settings name it.
+        target = self.origin + path if query is None else self.origin + path + "?" + query
         request = urllib.request.Request(target, method=method, data=data, headers=headers)
         try:
             if method == "POST" and path == "/v1/agent/reports":

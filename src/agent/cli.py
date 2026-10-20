@@ -6,13 +6,14 @@ import json
 from .config import Config, ConfigError, local_tag
 from .contracts import ACTIONS
 from .service import Service
-from .transport import QueryBusy, Transport, TransportError
+from .transport import Transport, TransportError
 from . import onboarding
 from .publication_config import PublicationConfigError, local_publication
 from .dns_lookup import PreflightError
 from . import endpoint_check
 from . import prove
 from . import local_query
+from . import name_proof
 from .binding_ports import selected_ports
 
 
@@ -190,66 +191,20 @@ def run(args, *, root=None):
 
 
 def _prove(cfg, tag):
-    """Prompt for the website token, show it on TeamSpeak, and restore the old name."""
-    token = getpass.getpass("Ownership challenge: ").strip()
+    """Place the account's ownership token on TeamSpeak and wait for the site query."""
     tag = local_tag(tag)
     matches = [(key, item) for key, item in cfg.load()["bindings"].items() if item["tag"] == tag]
     if len(matches) != 1:
         raise ConfigError("Bind this exact local server tag before proving its name")
     binding_id, binding = matches[0]
-    if binding["metadata"]["game_id"] != "ts3server":
-        raise ConfigError("Name proof is available for TeamSpeak 3")
     value = cfg.load()
-    if not value["reporting_enabled"] or not value["reporting"]:
-        raise ConfigError("Reporting is disabled; use enable-reporting first")
-    from server.server import Server
-    from utils.query import QueryError, ts3_serverinfo, ts3_set_name
-
-    server = Server(tag)
-    credentials = server.module.get_query_credentials(server)
-    if not credentials:
-        raise ConfigError("TeamSpeak ServerQuery login is not available on this server")
-    query_port = int(server.data.get("queryport") or binding["metadata"]["port"])
-    address = ("127.0.0.1", query_port)
-
-    def read_name():
-        return ts3_serverinfo(address[0], address[1], login=credentials)["name"]
-
-    def write_name(name):
-        ts3_set_name(address[0], address[1], name, login=credentials)
-
-    transport = Transport(value["origin"])
-
-    def request():
-        try:
-            return transport.request(
-                "POST",
-                "/v1/agent/verify",
-                credential=value["reporting"],
-                payload={"binding_id": binding_id},
-                timeout=20,
-            )
-        except QueryBusy as exc:
-            raise prove.QueryBusy(str(exc)) from None
-
-    def poll(job_id):
-        return transport.request(
-            "GET",
-            "/v1/agent/verify/" + job_id,
-            credential=value["reporting"],
-            timeout=20,
-        )
+    token = name_proof.fetch_challenge(Transport, value, binding_id)
+    if token is None:
+        token = getpass.getpass("Ownership challenge: ").strip()
+    from utils.query import QueryError
 
     try:
-        result = prove.prove_name(
-            tag,
-            token,
-            pending_path=cfg.root / "prove-name.json",
-            read_name=read_name,
-            write_name=write_name,
-            request=request,
-            poll=poll,
-        )
+        result = name_proof.prove_binding(cfg, tag, binding_id, binding, token)
     except prove.QueryBusy:
         print("Sector Alpha is still querying this server. The previous TeamSpeak name has been restored. Try again.")
         return 1

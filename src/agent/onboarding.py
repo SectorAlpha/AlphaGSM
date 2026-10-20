@@ -16,9 +16,10 @@ from .inventory import inventory, read_local
 from .network import global_ip, suggest_public_host
 from .publication_config import local_publication
 from .binding_ports import selected_ports
+from .transport import TransportError
 
 
-def enroll(cfg, api_origin, transport):
+def enroll(cfg, api_origin, transport, *, bind_local=True):
     api_origin = canonical_agent_origin(api_origin or DEFAULT_ORIGIN)
     try:
         with warnings.catch_warnings():
@@ -30,7 +31,129 @@ def enroll(cfg, api_origin, transport):
         raise ConfigError("An enrollment code is required")
     response = transport(api_origin).request("POST", "/v1/agent/enroll", payload={"code": code})
     cfg.enroll(api_origin, response)
-    print("Enrolled. Reporting and management remain disabled until you enable each locally.")
+    if not bind_local:
+        print("Enrolled. Reporting and management remain disabled until you enable each locally.")
+        return
+    bind_enrolled(cfg, transport)
+    challenge_enrolled(cfg, transport)
+
+
+def bind_enrolled(cfg, transport):
+    """Register managed servers that already advertise a global public address."""
+    value = cfg.load()
+    if value["reporting"]:
+        cfg.enable(reporting=True)
+        value = cfg.load()
+        print("Enrolled. Reporting is on. Management stays off.")
+    else:
+        print("Enrolled. This code did not include reporting. Management stays off.")
+    try:
+        locals_, failures = inventory()
+    except (OSError, ValueError, RuntimeError):
+        print("Local servers were not read. Enrollment is saved.")
+        return
+    for tag, reason in failures:
+        print("Skipped " + tag + ": " + reason)
+    if not locals_ and not failures:
+        print("No local servers to bind.")
+        return
+    for local in locals_:
+        tag = local["tag"]
+        try:
+            address = next(
+                (global_ip(local[key]) for key in ("publicip", "externalip", "hostip") if global_ip(local[key])),
+                None,
+            )
+            if address is None or local["port"] is None:
+                print("Skipped " + tag + ": alphagsm agent bind " + tag + " --host HOST")
+                continue
+            if len(value["bindings"]) >= 100 and not any(
+                item["tag"] == tag for item in value["bindings"].values()
+            ):
+                print("Skipped " + tag + ": At most 100 local bindings are allowed")
+                continue
+            metadata = {
+                "game_id": local["game_id"],
+                "host": address,
+                "port": local["port"],
+                "name": local["name"],
+                "capacity": local["capacity"],
+            }
+            if local["connect_port"] is not None:
+                metadata["connect_port"] = local["connect_port"]
+            validate_metadata({
+                "binding_id": "pending",
+                "binding_epoch": 1,
+                "publication": False,
+                "allowed_actions": [],
+                "runtime_state": "unknown",
+                **metadata,
+            })
+            if not value["reporting"] and not value["management"]:
+                print("Skipped " + tag + ": Enrollment has no registration credential")
+                continue
+            binding_id, epoch = register(transport, value, tag)
+            cfg.bind(binding_id, tag, epoch, actions=[], publication=False, metadata=metadata)
+            value = cfg.load()
+            print("Bound " + tag + " (" + binding_id + ").")
+        except (TransportError, ConfigError, OSError, ValueError, RuntimeError):
+            print("Failed " + tag + ": alphagsm agent bind " + tag + " --host HOST")
+
+
+def challenge_enrolled(cfg, transport):
+    """Send the first report, then start ownership checks the site query must confirm."""
+    from contextlib import nullcontext
+
+    from . import prove
+    from .name_proof import fetch_challenge, prove_binding
+    from .preflight import preflight_report
+    from .reporting import report_snapshot
+
+    value = cfg.load()
+    if not value["bindings"] or not value["reporting"]:
+        return
+
+    class Quiet:
+        def lock(self, tag):
+            return nullcontext()
+
+        def state(self, tag):
+            return "unknown"
+
+        def metadata(self, tag, approved):
+            return approved
+
+    try:
+        payload = report_snapshot(cfg, Quiet())
+        payload, _failures = preflight_report(payload, cfg.load())
+        transport(value["origin"]).request(
+            "POST",
+            "/v1/agent/reports",
+            credential=value["reporting"],
+            payload=payload,
+        )
+    except (TransportError, ConfigError, OSError, ValueError, RuntimeError):
+        print("The first report did not finish. Keep alphagsm agent run in the foreground, then retry the ownership check.")
+        return
+    value = cfg.load()
+    for binding_id, item in value["bindings"].items():
+        tag = item["tag"]
+        try:
+            token = fetch_challenge(transport, value, binding_id)
+            if token is None:
+                print("Ownership check for " + tag + " did not start. Sector Alpha verifies control by querying the public name.")
+                continue
+            if item["metadata"]["game_id"] == "ts3server":
+                state = prove_binding(cfg, tag, binding_id, item, token, transport)
+                if state.get("verified") is True:
+                    print("Control verified for " + tag + ". Sector Alpha queried the server and the previous name was restored.")
+                else:
+                    print("The name check for " + tag + " did not verify. Sector Alpha queried the server and the previous name was restored.")
+                continue
+            print("Ownership challenge for " + tag + ": " + token)
+            print("Put that text in the public name the status query returns. Sector Alpha verifies it by querying the server.")
+        except (TransportError, ConfigError, OSError, ValueError, RuntimeError, prove.QueryBusy):
+            print("Ownership check for " + tag + " did not finish. Sector Alpha verifies control by querying the public name.")
 
 
 def host(value):
@@ -184,7 +307,7 @@ def guided(cfg, options, transport):
     with state_lock(cfg.path):
         unchanged(cfg, value)
         if value['installation_id'] is None:
-            enroll(cfg, options.origin, transport)
+            enroll(cfg, options.origin, transport, bind_local=False)
             value = cfg.load()
     for item in candidates:
         require_capabilities(value, item['publication'], item['actions'])
