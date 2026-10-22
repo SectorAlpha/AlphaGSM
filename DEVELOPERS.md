@@ -622,7 +622,11 @@ The download subsystem is split between:
 - [src/downloadermodules/url.py](src/downloadermodules/url.py)
   HTTP download and decompression
 - [src/utils/steamcmd.py](src/utils/steamcmd.py)
-  SteamCMD bootstrap and Steam app installation
+  SteamCMD bootstrap and Steam app installation.
+  App and Workshop installs retry only a state 0x202 flake, Missing configuration
+  for that app, or a first-run `Steam Console Client` bootstrap that exits 0
+  without `ERROR!`. Other SteamCMD failures raise on the first attempt.
+  `skip_for_known_steamcmd_issue` is unchanged.
 
 ## Runtime Lifecycle
 

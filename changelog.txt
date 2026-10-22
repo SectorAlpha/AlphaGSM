@@ -7,6 +7,11 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-22
+- SteamCMD: retry only known transient results. Those are state 0x202 flakes,
+  Missing configuration for the requested app, and a first-run bootstrap that
+  exits 0 without an ERROR line. Any other SteamCMD failure stops on that attempt.
+
 2026-10-17
 - SteamCMD: detect the default Steam directory from the host operating
   system. Linux keeps `~/.local/share/Steam` and the `~/.steam` links,

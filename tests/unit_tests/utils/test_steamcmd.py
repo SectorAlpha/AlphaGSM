@@ -619,3 +619,156 @@ def test_linux_steamcmd_installer_rejects_windows_before_files_or_download(tmp_p
     with pytest.raises(RuntimeError, match='Linux.*manager container'):
         steamcmd_module.install_steamcmd()
     assert not (tmp_path / 'steam').exists()
+
+
+def test_should_retry_allows_only_known_transient_results():
+    missing = "ERROR! Failed to install app '232250' (Missing configuration)\n"
+    assert steamcmd_module._steamcmd_should_retry(missing, 232250, 0)
+    assert steamcmd_module._steamcmd_should_retry(
+        "Error! App '294420' state is 0x202 after update job.\n",
+        294420,
+        0,
+    )
+    assert steamcmd_module._steamcmd_should_retry(
+        "Steam Console Client bootstrap\n",
+        232250,
+        0,
+    )
+
+
+def test_should_retry_rejects_other_failures():
+    assert not steamcmd_module._steamcmd_should_retry(
+        "ERROR! Failed to install app '232250' (Disk write failure)\n",
+        232250,
+        1,
+    )
+    assert not steamcmd_module._steamcmd_should_retry("", 232250, 1)
+    assert not steamcmd_module._steamcmd_should_retry(
+        "Steam Console Client bootstrap\nERROR! Failed to install app '232250' (Disk write failure)\n",
+        232250,
+        0,
+    )
+    assert not steamcmd_module._steamcmd_should_retry(
+        "ERROR! Failed to install app '90' (Missing configuration)\n",
+        232250,
+        0,
+    )
+    assert not steamcmd_module._steamcmd_should_retry(
+        "Steam Console Client bootstrap\n",
+        232250,
+        7,
+    )
+
+
+def _patch_steamcmd_download(monkeypatch, outputs):
+    calls = []
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
+    monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.time, "sleep", lambda seconds: calls.append(("sleep", seconds)))
+
+    def run(cmd, stdout, stderr, text, check):
+        calls.append(cmd)
+        return outputs.pop(0)
+
+    monkeypatch.setattr(steamcmd_module.sp, "run", run)
+    return calls
+
+
+def test_download_retries_missing_configuration_once_then_succeeds(monkeypatch):
+    calls = _patch_steamcmd_download(
+        monkeypatch,
+        [
+            sp.CompletedProcess(
+                ["cmd"],
+                0,
+                "ERROR! Failed to install app '232250' (Missing configuration)\n",
+            ),
+            sp.CompletedProcess(["cmd"], 0, "Success! App '232250' fully installed.\n"),
+        ],
+    )
+
+    steamcmd_module.download("/srv/game", 232250, True, validate=False)
+
+    assert calls[1] == ("sleep", steamcmd_module.STEAMCMD_RETRY_DELAY_SECONDS)
+    assert sum(1 for call in calls if isinstance(call, list)) == 2
+
+
+def test_download_does_not_retry_an_unrecognized_error(monkeypatch):
+    calls = _patch_steamcmd_download(
+        monkeypatch,
+        [
+            sp.CompletedProcess(
+                ["cmd"],
+                8,
+                "ERROR! Failed to install app '232250' (Disk write failure)\n",
+            ),
+        ],
+    )
+
+    with pytest.raises(sp.CalledProcessError) as error:
+        steamcmd_module.download("/srv/game", 232250, True, validate=False)
+
+    assert error.value.returncode == 8
+    assert "Disk write failure" in error.value.output
+    assert not any(call[0] == "sleep" for call in calls if isinstance(call, tuple))
+    assert sum(1 for call in calls if isinstance(call, list)) == 1
+
+
+def test_download_beta_branch_does_not_retry_an_unrecognized_error(monkeypatch):
+    calls = _patch_steamcmd_download(
+        monkeypatch,
+        [
+            sp.CompletedProcess(
+                ["cmd"],
+                8,
+                "ERROR! Failed to install app '730' (Disk write failure)\n",
+            ),
+        ],
+    )
+
+    with pytest.raises(sp.CalledProcessError) as error:
+        steamcmd_module.download(
+            "/srv/game",
+            730,
+            True,
+            validate=False,
+            beta_branch="public",
+        )
+
+    assert error.value.returncode == 8
+    assert sum(1 for call in calls if isinstance(call, list)) == 1
+
+
+def test_workshop_unrecognized_error_fails_on_first_attempt(monkeypatch):
+    calls = []
+    monkeypatch.setattr(steamcmd_module, "install_steamcmd", lambda: None)
+    monkeypatch.setattr(steamcmd_module, "STEAMCMD_EXE", "/steam/steamcmd.sh")
+    monkeypatch.setattr(steamcmd_module.os.path, "expanduser", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.os.path, "abspath", lambda path: path)
+    monkeypatch.setattr(steamcmd_module.time, "sleep", lambda seconds: calls.append("sleep"))
+
+    def run(cmd, stdout, stderr, text, check):
+        calls.append(cmd)
+        return sp.CompletedProcess(cmd, 0, "ERROR! Failed to download workshop item\n")
+
+    monkeypatch.setattr(steamcmd_module.sp, "run", run)
+
+    with pytest.raises(sp.CalledProcessError) as error:
+        steamcmd_module.download_workshop_item("/srv/workshop", 440, 12345, True)
+
+    assert "Failed to download workshop item" in error.value.output
+    assert "anonymous" not in error.value.output.lower()
+    assert calls == [[
+        "/steam/steamcmd.sh",
+        "+force_install_dir",
+        "/srv/workshop",
+        "+login",
+        "anonymous",
+        "+workshop_download_item",
+        "440",
+        "12345",
+        "+quit",
+    ]]
+

@@ -193,6 +193,33 @@ def _steamcmd_retry_delay(output, app_id):
     return STEAMCMD_RETRY_DELAY_SECONDS
 
 
+def _steamcmd_should_retry(output, app_id, returncode):
+    """Return whether this SteamCMD result is a known transient failure.
+
+    Permanent errors stop on the attempt that produced them. The allowlist is
+    the state 0x202 flake, Missing configuration for this app, and a first-run
+    bootstrap that exits 0 without an ERROR! line.
+    """
+
+    output = "" if output is None else str(output)
+    if _steamcmd_state_202_flake(output, app_id):
+        return True
+
+    if app_id not in (None, ""):
+        missing_config = "ERROR! Failed to install app '{}' (Missing configuration)".format(app_id)
+        if missing_config in output:
+            return True
+
+    if (
+        returncode == 0
+        and "ERROR!" not in output
+        and "Steam Console Client" in output
+        and not _steamcmd_succeeded(output, app_id)
+    ):
+        return True
+    return False
+
+
 def _get_login_args(steam_anonymous_login_possible):
     """Return the SteamCMD login arguments for anonymous or owned-game installs."""
 
@@ -321,6 +348,8 @@ def download(
             if proc.returncode == 0 and _steamcmd_succeeded(proc.stdout, Steam_AppID):
                 _ensure_steamclient_symlinks()
                 return
+            if not _steamcmd_should_retry(proc.stdout, Steam_AppID, proc.returncode):
+                break
             if attempt + 1 < STEAMCMD_RETRIES:
                 retry_delay = _steamcmd_retry_delay(proc.stdout, Steam_AppID)
                 print(
@@ -344,6 +373,8 @@ def download(
         if proc.returncode == 0 and _steamcmd_succeeded(proc.stdout, Steam_AppID):
             _ensure_steamclient_symlinks()
             return
+        if not _steamcmd_should_retry(proc.stdout, Steam_AppID, proc.returncode):
+            break
         if attempt + 1 < STEAMCMD_RETRIES:
             retry_delay = _steamcmd_retry_delay(proc.stdout, Steam_AppID)
             print(
@@ -446,6 +477,8 @@ def download_workshop_item(path, workshop_app_id, workshop_item_id, steam_anonym
                 "Steam Workshop item is unavailable or this game does not permit anonymous downloads. "
                 "An entitled Steam account may be required.\n" + proc.stdout
             )
+            break
+        if not _steamcmd_should_retry(proc.stdout, workshop_app_id, proc.returncode):
             break
         if attempt + 1 < STEAMCMD_RETRIES:
             retry_delay = _steamcmd_retry_delay(proc.stdout, workshop_app_id)
