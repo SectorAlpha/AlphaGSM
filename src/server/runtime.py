@@ -2165,6 +2165,16 @@ def java_heap_megabytes(memory_limit):
     return max(1, (total * 3) // 4 // (1024 * 1024))
 
 
+def _configured_resource_limit(server, key):
+    """Return a datastore resource limit when the server object has one."""
+
+    data = getattr(server, "data", None)
+    getter = getattr(data, "get", None)
+    if not callable(getter):
+        return None
+    return getter(key)
+
+
 def container_resource_arguments(memory, cpus):
     """Return Docker run flags for optional memory and CPU caps."""
 
@@ -3630,7 +3640,7 @@ class ContainerRuntime(BaseRuntime):
         )
         launch_command = apply_container_java_heap(
             container_launch_command(spec),
-            server.data.get("memory"),
+            _configured_resource_limit(server, "memory"),
             spec.get("runtime_family"),
         )
         _validate_container_identity_contract(module_requirements, spec)
@@ -3669,8 +3679,8 @@ class ContainerRuntime(BaseRuntime):
             command.extend(["--user", _format_effective_host_user(identity)])
         command.extend(["--name", spec["container_name"]])
         command.extend(container_resource_arguments(
-            server.data.get("memory"),
-            server.data.get("cpus"),
+            _configured_resource_limit(server, "memory"),
+            _configured_resource_limit(server, "cpus"),
         ))
         if spec.get("network_mode"):
             command.extend(["--network", spec["network_mode"]])
