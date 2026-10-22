@@ -623,10 +623,11 @@ The download subsystem is split between:
   HTTP download and decompression
 - [src/utils/steamcmd.py](src/utils/steamcmd.py)
   SteamCMD bootstrap and Steam app installation.
-  App and Workshop installs retry only a state 0x202 flake, state 0x2 when the
-  update job leaves that app Update Required, Missing configuration for that
-  app, or a first-run `Steam Console Client` bootstrap that exits 0 without
-  `ERROR!`. Other SteamCMD failures raise on the first attempt.
+  App and Workshop installs retry only a state 0x202 flake (known app ids, or
+  any app after a zero-progress reconfigure), state 0x2 when the update job
+  leaves that app Update Required, Missing configuration for that app, or a
+  first-run `Steam Console Client` bootstrap that exits 0 without `ERROR!`.
+  Other SteamCMD failures raise on the first attempt.
   `skip_for_known_steamcmd_issue` is unchanged.
   `set memory` and `set cpus` are Docker run limits, not game-config keys.
   A Java container with no `-Xmx` receives a heap of 75 percent of `memory`.

@@ -139,6 +139,7 @@ STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS = 5
 _KNOWN_BARE_STATE_202_FLAKE_APP_IDS = frozenset(
     {"232130", "294420", "346680", "418480", "746200"}
 )
+_ZERO_PROGRESS_RECONFIGURE = "Update state (0x3) reconfiguring, progress: 0.00 (0 / 0)"
 # check if steamcmd exists, if not download it and install it via wget https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
 # execute steamcmd/steamcmd.sh
 # <user> = Anonymous by default
@@ -182,7 +183,11 @@ def _steamcmd_state_202_flake(output, app_id):
     if state_202 not in output:
         return False
 
-    return _steamcmd_missing_manifest_flake(output, app_id) or app_id in _KNOWN_BARE_STATE_202_FLAKE_APP_IDS
+    if _steamcmd_missing_manifest_flake(output, app_id) or app_id in _KNOWN_BARE_STATE_202_FLAKE_APP_IDS:
+        return True
+    # A zero-progress reconfigure followed by 0x202 is the same stall for any
+    # app. Bare 0x202 without that stall stays limited to the known app ids.
+    return _ZERO_PROGRESS_RECONFIGURE in output
 
 
 def _steamcmd_state_2_flake(output, app_id):

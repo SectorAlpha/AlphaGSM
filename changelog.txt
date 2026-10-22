@@ -11,10 +11,11 @@ Historical detail lives in git history. Keep this file focused on release-facing
 - CI: TF2 Workshop probes wait until their own console BEGIN line is
   visible. A single logs snapshot was often one probe behind and failed
   the run after the map was already loaded.
-- SteamCMD: retry only known transient results. Those are state 0x202 flakes,
-  state 0x2 when the update job leaves the app Update Required, Missing
-  configuration for the requested app, and a first-run bootstrap that exits 0
-  without an ERROR line. Any other SteamCMD failure stops on that attempt.
+- SteamCMD: retry only known transient results. Those are state 0x202 flakes
+  (known app ids, or any app after a zero-progress reconfigure), state 0x2
+  when the update job leaves the app Update Required, Missing configuration
+  for the requested app, and a first-run bootstrap that exits 0 without an
+  ERROR line. Any other SteamCMD failure stops on that attempt.
 - Frameworks: install pinned Rust Oxide 2.0.7830, Valheim BepInEx 5.4.23.5,
   and CS2 MetaMod 2.0.0-git1483 plus CounterStrikeSharp 1.0.377 with
   `mod add manifest`.

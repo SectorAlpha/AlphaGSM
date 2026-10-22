@@ -186,6 +186,20 @@ def test_steamcmd_state_202_flake_does_not_match_unknown_bare_state_202_app_ids(
     )
 
 
+def test_steamcmd_state_202_flake_matches_zero_progress_reconfigure_for_any_app():
+    output = (
+        "Update state (0x3) reconfiguring, progress: 0.00 (0 / 0)\n"
+        "Update state (0x0) unknown, progress: 0.00 (0 / 0)\n"
+        "Error! App '232370' state is 0x202 after update job.\n"
+    )
+    assert steamcmd_module._steamcmd_state_202_flake(output, 232370)
+    assert steamcmd_module._steamcmd_should_retry(output, 232370, 8)
+    assert (
+        steamcmd_module._steamcmd_retry_delay(output, 232370)
+        == steamcmd_module.STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS
+    )
+
+
 def test_download_retries_bare_state_202_for_sevendaystodie(monkeypatch):
     outputs = [
         sp.CompletedProcess(
