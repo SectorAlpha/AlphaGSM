@@ -32,6 +32,7 @@ MOD_SUPPORT = build_source_addon_mod_support(
     enabled_sources=(),
     curated_registry_loader=load_curated_registry,
     curated_identifier_description="framework name",
+    replace_unowned=True,
 )
 
 steam_app_id = 258550

@@ -19,6 +19,10 @@ Historical detail lives in git history. Keep this file focused on release-facing
   Zomboid now declare soft-wipe and hard-wipe paths.
 - Docker: `set memory` and `set cpus` add container limits. An unset Java
   heap becomes 75 percent of the memory limit.
+- Mod packs: install pinned Oxide for Hurtworld, The Forest, and Reign of
+  Kings, and Windows BepInEx for Risk of Rain 2 and Sons of the Forest.
+  Source servers can install pinned SteamWorks 1.2.3c, which also installs
+  SourceMod. Replaced game files are restored by `mod cleanup`.
 
 2026-10-17
 - SteamCMD: detect the default Steam directory from the host operating

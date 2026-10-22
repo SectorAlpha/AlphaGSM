@@ -1,0 +1,15 @@
+{
+  "families": {
+    "oxide": {
+      "default": "2.0.3836",
+      "releases": {
+        "2.0.3836": {
+          "url": "https://github.com/OxideMod/Oxide.TheForest/releases/download/2.0.3836/Oxide.TheForest.zip",
+          "hosts": ["github.com"],
+          "archive_type": "zip",
+          "destinations": ["TheForestDedicatedServer_Data"]
+        }
+      }
+    }
+  }
+}

@@ -2,6 +2,8 @@
 
 This guide covers the `ror2server` module in AlphaGSM.
 
+Install the pinned Windows BepInEx pack with `mod add manifest bepinex` and `mod apply`. The dedicated server runs under Proton, so this is the Windows x64 pack.
+
 ## Status
 
 `ror2server` is currently `ENABLED (AUTH)`.

@@ -2,6 +2,8 @@
 
 This guide covers the `sonsoftheforestserver` module in AlphaGSM.
 
+Install the pinned Windows BepInEx pack with `mod add manifest bepinex` and `mod apply`. The dedicated server runs under Proton, so this is the Windows x64 pack.
+
 `sonsoftheforestserver` is currently `PASSED` on the documented Ubuntu 24.04
 Linux baseline. The checked-in GitHub validation path for this server is
 Docker-first through the shared `wine-proton` runtime, with A2S `query` /

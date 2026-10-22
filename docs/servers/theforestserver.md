@@ -2,6 +2,8 @@
 
 This guide covers the `theforestserver` module in AlphaGSM.
 
+Install the pinned Oxide/uMod framework with `mod add manifest oxide` and `mod apply`. `mod cleanup` restores the game files Oxide replaced.
+
 `theforestserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. Linux launches use Wine or Proton under Xvfb. AlphaGSM manages the native configuration and save paths for both process and Docker runtimes.
 
 ## Requirements

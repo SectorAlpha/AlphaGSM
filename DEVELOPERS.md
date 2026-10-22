@@ -631,6 +631,8 @@ The download subsystem is split between:
   A Java container with no `-Xmx` receives a heap of 75 percent of `memory`.
   `wipe --mode soft` deletes `get_wipe_paths`. `wipe --mode hard` reinstalls
   through `install` and restores `get_hard_wipe_preserve_paths` plus `.alphagsm`.
+  Framework packs that set `replace_unowned` copy an existing game file to
+  `.alphagsm/mod-originals/` before replacing it. `mod cleanup` restores that copy.
 
 ## Runtime Lifecycle
 
