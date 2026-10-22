@@ -185,10 +185,27 @@ def _steamcmd_state_202_flake(output, app_id):
     return _steamcmd_missing_manifest_flake(output, app_id) or app_id in _KNOWN_BARE_STATE_202_FLAKE_APP_IDS
 
 
+def _steamcmd_state_2_flake(output, app_id):
+    """Return whether SteamCMD left this app in transient state 0x2.
+
+    State 0x2 means the update job finished while the app is still Update
+    Required, often after a zero-progress reconfigure, and the process exits
+    8. A later attempt usually installs the app. The phrase is exact so state
+    0x202 stays on its own classifier.
+    """
+
+    if app_id in (None, ""):
+        return False
+
+    app_id = str(app_id)
+    state_2 = "Error! App '{}' state is 0x2 after update job.".format(app_id)
+    return state_2 in output
+
+
 def _steamcmd_retry_delay(output, app_id):
     """Return the retry delay for known transient SteamCMD states."""
 
-    if _steamcmd_state_202_flake(output, app_id):
+    if _steamcmd_state_202_flake(output, app_id) or _steamcmd_state_2_flake(output, app_id):
         return STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS
     return STEAMCMD_RETRY_DELAY_SECONDS
 
@@ -197,12 +214,13 @@ def _steamcmd_should_retry(output, app_id, returncode):
     """Return whether this SteamCMD result is a known transient failure.
 
     Permanent errors stop on the attempt that produced them. The allowlist is
-    the state 0x202 flake, Missing configuration for this app, and a first-run
-    bootstrap that exits 0 without an ERROR! line.
+    the state 0x202 flake, state 0x2 while the app is still Update Required,
+    Missing configuration for this app, and a first-run bootstrap that exits
+    0 without an ERROR! line.
     """
 
     output = "" if output is None else str(output)
-    if _steamcmd_state_202_flake(output, app_id):
+    if _steamcmd_state_202_flake(output, app_id) or _steamcmd_state_2_flake(output, app_id):
         return True
 
     if app_id not in (None, ""):

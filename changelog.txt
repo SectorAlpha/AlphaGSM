@@ -9,8 +9,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
 
 2026-10-22
 - SteamCMD: retry only known transient results. Those are state 0x202 flakes,
-  Missing configuration for the requested app, and a first-run bootstrap that
-  exits 0 without an ERROR line. Any other SteamCMD failure stops on that attempt.
+  state 0x2 when the update job leaves the app Update Required, Missing
+  configuration for the requested app, and a first-run bootstrap that exits 0
+  without an ERROR line. Any other SteamCMD failure stops on that attempt.
 - Frameworks: install pinned Rust Oxide 2.0.7830, Valheim BepInEx 5.4.23.5,
   and CS2 MetaMod 2.0.0-git1483 plus CounterStrikeSharp 1.0.377 with
   `mod add manifest`.

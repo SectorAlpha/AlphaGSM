@@ -630,10 +630,49 @@ def test_should_retry_allows_only_known_transient_results():
         0,
     )
     assert steamcmd_module._steamcmd_should_retry(
+        "Error! App '361580' state is 0x2 after update job.\n",
+        361580,
+        8,
+    )
+    assert steamcmd_module._steamcmd_should_retry(
         "Steam Console Client bootstrap\n",
         232250,
         0,
     )
+
+
+def test_state_0x2_retry_does_not_match_other_apps_or_state_0x202():
+    state_2 = "Error! App '361580' state is 0x2 after update job.\n"
+    assert steamcmd_module._steamcmd_retry_delay(
+        state_2,
+        361580,
+    ) == steamcmd_module.STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS
+    assert not steamcmd_module._steamcmd_should_retry(state_2, 232250, 8)
+    assert not steamcmd_module._steamcmd_should_retry(
+        "Error! App '317670' state is 0x202 after update job.\n",
+        317670,
+        8,
+    )
+
+
+def test_download_retries_state_0x2_then_succeeds(monkeypatch):
+    calls = _patch_steamcmd_download(
+        monkeypatch,
+        [
+            sp.CompletedProcess(
+                ["cmd"],
+                8,
+                "Update state (0x3) reconfiguring, progress: 0.00 (0 / 0)\n"
+                "Error! App '361580' state is 0x2 after update job.\n",
+            ),
+            sp.CompletedProcess(["cmd"], 0, "Success! App '361580' fully installed.\n"),
+        ],
+    )
+
+    steamcmd_module.download("/srv/game", 361580, True, validate=False)
+
+    assert calls[1] == ("sleep", steamcmd_module.STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS)
+    assert sum(1 for call in calls if isinstance(call, list)) == 2
 
 
 def test_should_retry_rejects_other_failures():
