@@ -8,6 +8,9 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-10-22
+- CI: TF2 Workshop probes wait until their own console BEGIN line is
+  visible. A single logs snapshot was often one probe behind and failed
+  the run after the map was already loaded.
 - SteamCMD: retry only known transient results. Those are state 0x202 flakes,
   state 0x2 when the update job leaves the app Update Required, Missing
   configuration for the requested app, and a first-run bootstrap that exits 0

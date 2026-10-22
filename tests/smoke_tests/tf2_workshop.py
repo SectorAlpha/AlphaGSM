@@ -5,12 +5,25 @@ from pathlib import Path
 import re
 
 
+_ANSI_RE = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
+
+
+def _console_lines(text):
+    """Return stripped console lines with ANSI color codes removed."""
+    text = _ANSI_RE.sub('', text)
+    return [line.strip() for line in text.splitlines()]
+
+
+def probe_began(text, token):
+    """Return whether this probe's own BEGIN delimiter is in the console text."""
+    return f'BEGIN-{token}' in _console_lines(text)
+
+
 def _native_frame(text, item_id, map_name, token):
     """Read the latest complete, explicitly delimited engine response."""
     assert re.fullmatch(r'[1-9][0-9]*', str(item_id)), 'Invalid Workshop item ID'
     assert re.fullmatch(r'[a-zA-Z0-9_-]+', map_name), 'Invalid Workshop map name'
-    text = re.sub(r'\x1b\[[0-?]*[ -/]*[@-~]', '', text)
-    lines = [line.strip() for line in text.splitlines()]
+    lines = _console_lines(text)
     starts = [index for index, line in enumerate(lines) if line == f'BEGIN-{token}']
     assert starts, 'No fresh TF2 native Workshop probe began'
     end = next((index for index in range(starts[-1] + 1, len(lines))
