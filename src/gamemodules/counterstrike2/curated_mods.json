@@ -1,0 +1,27 @@
+{
+  "families": {
+    "metamod": {
+      "default": "2.0.0-git1483",
+      "releases": {
+        "2.0.0-git1483": {
+          "url": "https://mms.alliedmods.net/mmsdrop/2.0/mmsource-2.0.0-git1483-linux.tar.gz",
+          "hosts": ["mms.alliedmods.net"],
+          "archive_type": "tar.gz",
+          "destinations": ["addons"]
+        }
+      }
+    },
+    "counterstrikesharp": {
+      "default": "1.0.377",
+      "releases": {
+        "1.0.377": {
+          "url": "https://github.com/roflmuffin/CounterStrikeSharp/releases/download/v1.0.377/counterstrikesharp-with-runtime-linux-1.0.377.zip",
+          "hosts": ["github.com"],
+          "archive_type": "zip",
+          "destinations": ["addons"],
+          "dependencies": ["metamod"]
+        }
+      }
+    }
+  }
+}

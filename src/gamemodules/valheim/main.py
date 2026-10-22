@@ -1,18 +1,49 @@
 """Valheim dedicated server lifecycle helpers."""
 
 import os
+from pathlib import Path
+import re
 
 import utils.steamcmd as steamcmd
 from utils.backups import backups as backup_utils
 
 import server.runtime as runtime_module
+from server.modsupport.registry import CuratedRegistryLoader
+from server.modsupport.source_addons import build_source_addon_mod_support
 from server.settable_keys import SettingSpec
 from utils.gamemodules import common as gamemodule_common
+
+
+def load_curated_registry():
+    """Load the pinned Valheim framework manifest."""
+
+    override = os.environ.get("ALPHAGSM_VALHEIM_CURATED_MODS_PATH")
+    path = Path(override) if override else Path(__file__).with_name("curated_mods.json")
+    return CuratedRegistryLoader.load(path)
+
+
+MOD_SUPPORT = build_source_addon_mod_support(
+    game_label="Valheim",
+    game_dir=".",
+    cache_namespace="valheim",
+    direct_url_suffixes={},
+    direct_url_filename_description="a supported archive filename",
+    allowed_destinations=(
+        "BepInEx",
+        "doorstop_config.ini",
+        "libdoorstop.so",
+        "run_bepinex.sh",
+        "changelog.txt",
+    ),
+    enabled_sources=(),
+    curated_registry_loader=load_curated_registry,
+    curated_identifier_description="framework name",
+)
 
 steam_app_id = 896660
 steam_anonymous_login_possible = True
 
-commands = ("update", "restart")
+commands = ("update", "restart") + MOD_SUPPORT.commands
 command_args = gamemodule_common.build_setup_update_restart_command_args(
     "The port for the server to listen on",
     "The directory to install Valheim in",
@@ -21,7 +52,9 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Update the Valheim dedicated server to the latest version.",
     "Restart the Valheim dedicated server.",
 )
-command_functions = {}
+command_args.update(MOD_SUPPORT.command_args)
+command_descriptions.update(MOD_SUPPORT.command_descriptions)
+command_functions = dict(MOD_SUPPORT.command_functions)
 setting_schema = {
     "serverpassword": SettingSpec(
         canonical_key="serverpassword",
@@ -69,6 +102,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="valheim_server.x86_
         prompt="Where would you like to install the Valheim server:",
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
+    MOD_SUPPORT.ensure_mod_state(server)
     return gamemodule_common.finalize_configure(server)
 
 
@@ -92,12 +126,51 @@ restart = gamemodule_common.make_restart_hook()
 restart.__doc__ = "Restart the Valheim server."
 
 
+def get_wipe_paths(server):
+    """Return the Valheim world directory created by -savedir."""
+
+    del server
+    return ["worlds"]
+
+
+def get_hard_wipe_preserve_paths(server):
+    """Keep Valheim permission lists across a reinstall."""
+
+    del server
+    return ["adminlist.txt", "bannedlist.txt", "permittedlist.txt"]
+
+
+def _prepare_bepinex_launcher(server, exe_name):
+    """Point an installed BepInEx script at the dedicated-server executable."""
+
+    install_dir = os.path.abspath(server.data["dir"])
+    script = os.path.join(install_dir, "run_bepinex.sh")
+    if not os.path.isfile(script) or os.path.islink(script):
+        return None
+    with open(script, "r", encoding="utf-8") as handle:
+        text = handle.read()
+    updated, count = re.subn(
+        r'(?m)^executable_name=.*$',
+        'executable_name="%s"' % exe_name,
+        text,
+        count=1,
+    )
+    if count and updated != text:
+        with open(script, "w", encoding="utf-8") as handle:
+            handle.write(updated)
+    mode = os.stat(script).st_mode
+    if mode & 0o111 != 0o111:
+        os.chmod(script, mode | 0o111)
+    return script
+
+
 def get_start_command(server):
     """Build the command used to launch a Valheim dedicated server."""
 
     install_dir = os.path.abspath(server.data["dir"])
     exe_path = gamemodule_common.resolve_install_executable(server)
     working_dir = os.path.dirname(exe_path) or install_dir
+    bepinex = _prepare_bepinex_launcher(server, os.path.basename(exe_path))
     if server.data.get("runtime") == "docker":
         savedir = os.path.relpath(os.path.join(install_dir, "worlds"), working_dir)
         savedir = savedir.replace("\\", "/")
@@ -105,9 +178,13 @@ def get_start_command(server):
             savedir = "./" + savedir
     else:
         savedir = os.path.join(install_dir, "worlds")
+    if bepinex and os.path.dirname(bepinex) == working_dir:
+        launch_name = "./run_bepinex.sh"
+    else:
+        launch_name = "./" + os.path.basename(exe_path)
     return (
         [
-            "./" + os.path.basename(exe_path),
+            launch_name,
             "-name",
             server.data["servername"],
             "-port",

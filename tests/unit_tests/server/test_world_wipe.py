@@ -56,6 +56,44 @@ def test_wipe_confirmed_removes_only_previewed_world(world_server, monkeypatch, 
     assert (tmp_path / "plugins" / "example.jar").read_text() == "plugin"
 
 
+def test_hard_wipe_reinstalls_and_restores_configuration(world_server, tmp_path):
+    config = tmp_path / "server.properties"
+    installed = []
+
+    def install(server):
+        installed.append(server)
+        (tmp_path / "binary").write_text("new server")
+
+    world_server.module.install = install
+    world_server.module.get_hard_wipe_preserve_paths = lambda server: ["server.properties"]
+
+    Server.wipe(world_server, yes=True, mode="hard")
+
+    assert installed == [world_server]
+    assert not (tmp_path / "world").exists()
+    assert (tmp_path / "binary").read_text() == "new server"
+    assert config.read_text() == "configuration"
+    assert not (tmp_path / "plugins").exists()
+
+
+def test_hard_wipe_restores_configuration_when_install_fails(world_server, tmp_path):
+    def install(_server):
+        raise RuntimeError("download failed")
+
+    world_server.module.install = install
+    world_server.module.get_hard_wipe_preserve_paths = lambda server: ["server.properties"]
+
+    with pytest.raises(RuntimeError, match="download failed"):
+        Server.wipe(world_server, yes=True, mode="hard")
+
+    assert (tmp_path / "server.properties").read_text() == "configuration"
+
+
+def test_wipe_rejects_unknown_mode(world_server):
+    with pytest.raises(ServerError, match="soft or hard"):
+        Server.wipe(world_server, yes=True, mode="archive")
+
+
 def test_wipe_eof_does_not_delete(world_server, monkeypatch, tmp_path):
     def no_input(_prompt):
         raise EOFError

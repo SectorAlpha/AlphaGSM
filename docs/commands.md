@@ -64,8 +64,11 @@ alphagsm mymc restore backup-filename.zip
 
 Backups use ZIP archives. Check the module's backup support: TF2 currently
 advertises the shared command but has no backup hook.
-Restore stops the server first. `reset-world` / `wipe` delete **world data
-only**, with a confirmation prompt (`-Y` skips it). See
+Restore stops the server first. `reset-world` / `wipe` default to `--mode soft`
+and delete world data, with a confirmation prompt (`-Y` skips it).
+`--mode hard` reinstalls the server files and puts declared configuration back.
+`set memory 2g` and `set cpus 1.5` cap a Docker game container. A Java server
+with no `-Xmx` then uses 75 percent of that memory limit. See
 [World creation and reset](world-management.md).
 
 To copy a server onto another machine, back it up, copy the install tree,

@@ -580,10 +580,14 @@ class Server(object):
         "wipe": CmdSpec(options=(
             OptSpec("Y", ["yes"], "Delete the listed world data without prompting",
                     "yes", None, True),
+            OptSpec("", ["mode"], "soft deletes world data; hard reinstalls server files and keeps configuration",
+                    "mode", "MODE", str),
         )),
         "reset-world": CmdSpec(options=(
             OptSpec("Y", ["yes"], "Delete the listed world data without prompting",
                     "yes", None, True),
+            OptSpec("", ["mode"], "soft deletes world data; hard reinstalls server files and keeps configuration",
+                    "mode", "MODE", str),
         )),
         "query": CmdSpec(),
         "info": CmdSpec(
@@ -635,10 +639,10 @@ class Server(object):
         "With no argument, lists available backups with their index numbers.\n"
         "Pass an index or the exact filename to restore that backup.\n"
         "The server will be stopped first if it is running.",
-        "wipe": "Delete game-world data for supported server types.\n"
-        "The server must be stopped before wiping. "
-        "Lists files before asking for confirmation; -Y skips the prompt.",
-        "reset-world": "Alias for wipe: preview and confirm deletion of game-world data. "
+        "wipe": "Delete game-world data, or reinstall the server and keep configuration.\n"
+        "The default mode is soft. --mode hard reinstalls server files.\n"
+        "The server must be stopped. Lists targets before asking for confirmation; -Y skips the prompt.",
+        "reset-world": "Alias for wipe. --mode soft deletes world data. --mode hard reinstalls server files and keeps configuration. "
         "Stop the server first; -Y skips the confirmation prompt.",
         "query": "Query the game server to check whether it is responding.\n"
         "Uses the Source A2S protocol when a query port is configured, "
@@ -1104,10 +1108,17 @@ class Server(object):
         backup_utils.restore(game_dir, filename)
         print("Restore complete: " + filename)
 
-    def wipe(self, *, yes=False):
-        """Preview and confirm deletion of module-declared world data."""
+    def wipe(self, *, yes=False, mode="soft"):
+        """Delete world data, or reinstall the server and keep configuration."""
 
-        worlds_module.wipe_worlds(self, yes=yes)
+        selected = str(mode or "soft").strip().lower()
+        if selected == "soft":
+            worlds_module.wipe_worlds(self, yes=yes)
+            return
+        if selected == "hard":
+            worlds_module.hard_wipe(self, yes=yes)
+            return
+        raise ServerError("Wipe mode must be soft or hard.")
 
     def query(self, **kwargs):
         """Query the game server to check whether it is responding.

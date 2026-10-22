@@ -627,6 +627,10 @@ The download subsystem is split between:
   for that app, or a first-run `Steam Console Client` bootstrap that exits 0
   without `ERROR!`. Other SteamCMD failures raise on the first attempt.
   `skip_for_known_steamcmd_issue` is unchanged.
+  `set memory` and `set cpus` are Docker run limits, not game-config keys.
+  A Java container with no `-Xmx` receives a heap of 75 percent of `memory`.
+  `wipe --mode soft` deletes `get_wipe_paths`. `wipe --mode hard` reinstalls
+  through `install` and restores `get_hard_wipe_preserve_paths` plus `.alphagsm`.
 
 ## Runtime Lifecycle
 

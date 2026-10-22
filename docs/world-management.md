@@ -58,9 +58,18 @@ For automation, `-Y` skips confirmation while still printing the targets:
 alphagsm myserver reset-world -Y
 ```
 
-The command refuses to run while the server is running. It preserves server
-configuration, plugins, and worlds outside the listed targets. Missing world
-files are a no-op. Make a backup first if you want to keep the old world.
+The command refuses to run while the server is running. Soft mode preserves
+server configuration, plugins, and worlds outside the listed targets. Missing
+world files are a no-op. Make a backup first if you want to keep the old world.
+
+`--mode hard` clears the install directory, runs the module install again, and
+copies declared configuration back. `.alphagsm` manager state inside the
+install directory is kept too. If the install fails, the saved configuration
+is restored and the error is reported.
+
+```bash
+alphagsm myserver wipe --mode hard -Y
+```
 
 | Module | World data removed |
 | --- | --- |
@@ -69,7 +78,10 @@ files are a no-op. Make a backup first if you want to keep the old world.
 | `minecraft.bedrock` | The configured directory under `worlds/` |
 | Terraria and TShock | The configured `.wld` file and its `.bak`/`.bak2` backups under `Worlds/` |
 | `necserver` | The configured compressed or uncompressed save under its explicit `datadir` |
-| `rust` | Procedural `.map`, `.sav`, and numbered save backups matching the configured seed/size in `server/my_server_identity/`; blueprints and other player databases remain |
+| `rust` | Procedural `.map`, `.sav`, and numbered save backups matching the configured seed/size in `server/my_server_identity/`; blueprints and other player databases remain. A hard wipe keeps `server/my_server_identity/cfg` |
+| `palworld` | `Pal/Saved/SaveGames`. A hard wipe keeps `Pal/Saved/Config` |
+| `valheim` | `worlds`. A hard wipe keeps `adminlist.txt`, `bannedlist.txt`, and `permittedlist.txt` |
+| `projectzomboid` | `Zomboid/Saves`. A hard wipe keeps `Zomboid/Server` |
 
 Minecraft reads `level-name` from `server.properties` when present and checks
 that existing targets contain world metadata. Directories without recognizable
