@@ -1,8 +1,10 @@
 """Counter-Strike 2-specific lifecycle, configuration, and update helpers."""
 
 import os
+from pathlib import Path
 
 from server import ServerError
+from server.modsupport.registry import CuratedRegistryLoader
 from server.modsupport.downloads import download_to_cache
 from server.modsupport.providers import (
     resolve_gamebanana_mod,
@@ -33,6 +35,14 @@ CS2_WORKSHOP_APP_ID = 730
 workshop_app_id = CS2_WORKSHOP_APP_ID
 ALLOWED_CS2_MOD_DESTINATIONS = ("addons", "cfg")
 
+
+def load_curated_registry():
+    """Load the pinned CS2 framework manifest."""
+
+    override = os.environ.get("ALPHAGSM_CS2_CURATED_MODS_PATH")
+    path = Path(override) if override else Path(__file__).with_name("curated_mods.json")
+    return CuratedRegistryLoader.load(path)
+
 commands = ("update", "restart", "mod")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
     "The port for the server to listen on",
@@ -41,7 +51,7 @@ command_args = gamemodule_common.build_setup_update_restart_command_args(
 command_args["mod"] = CmdSpec(
     requiredarguments=(ArgSpec("ACTION", "mod action", str),),
     optionalarguments=(
-        ArgSpec("SOURCE", "gamebanana, moddb, workshop, or workshop-collection", str),
+        ArgSpec("SOURCE", "manifest, gamebanana, moddb, workshop, or workshop-collection", str),
         ArgSpec("IDENTIFIER", "provider item id, Workshop URL, or Mod DB page URL", str),
         ArgSpec("EXTRA", "reserved", str),
     ),
@@ -50,7 +60,7 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Updates the game server to the latest version.",
     "Restarts the game server without killing the process.",
 )
-command_descriptions["mod"] = "Manage CS2 server-side mods from external GameBanana, Mod DB, or workshop sources."
+command_descriptions["mod"] = "Manage CS2 server-side mods, including MetaMod and CounterStrikeSharp manifests."
 command_functions = {}
 max_stop_wait = 1
 config_sync_keys = VALVE_SERVER_CONFIG_SYNC_KEYS
@@ -73,6 +83,7 @@ MOD_SUPPORT = build_source_addon_mod_support(
     direct_url_filename_description="a supported archive filename",
     allowed_destinations=ALLOWED_CS2_MOD_DESTINATIONS,
     enabled_sources=("gamebanana", "moddb", "workshop"),
+    curated_registry_loader=load_curated_registry,
     extra_payload_roots=("csgo",),
     download_to_cache_getter=lambda: download_to_cache,
     resolve_gamebanana_mod_getter=lambda: resolve_gamebanana_mod,

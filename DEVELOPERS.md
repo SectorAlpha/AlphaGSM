@@ -622,7 +622,19 @@ The download subsystem is split between:
 - [src/downloadermodules/url.py](src/downloadermodules/url.py)
   HTTP download and decompression
 - [src/utils/steamcmd.py](src/utils/steamcmd.py)
-  SteamCMD bootstrap and Steam app installation
+  SteamCMD bootstrap and Steam app installation.
+  App and Workshop installs retry only a state 0x202 flake (known app ids, or
+  any app after a zero-progress reconfigure), state 0x2 when the update job
+  leaves that app Update Required, Missing configuration for that app, or a
+  first-run `Steam Console Client` bootstrap that exits 0 without `ERROR!`.
+  Other SteamCMD failures raise on the first attempt.
+  `skip_for_known_steamcmd_issue` is unchanged.
+  `set memory` and `set cpus` are Docker run limits, not game-config keys.
+  A Java container with no `-Xmx` receives a heap of 75 percent of `memory`.
+  `wipe --mode soft` deletes `get_wipe_paths`. `wipe --mode hard` reinstalls
+  through `install` and restores `get_hard_wipe_preserve_paths` plus `.alphagsm`.
+  Framework packs that set `replace_unowned` copy an existing game file to
+  `.alphagsm/mod-originals/` before replacing it. `mod cleanup` restores that copy.
 
 ## Runtime Lifecycle
 

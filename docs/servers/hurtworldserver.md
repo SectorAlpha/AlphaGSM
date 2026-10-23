@@ -1,5 +1,7 @@
 # Hurtworld
 
+Install the pinned Oxide/uMod framework with `mod add manifest oxide` and `mod apply`. `mod cleanup` restores the game files Oxide replaced.
+
 This guide covers the `hurtworldserver` module in AlphaGSM.
 
 `hurtworldserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.

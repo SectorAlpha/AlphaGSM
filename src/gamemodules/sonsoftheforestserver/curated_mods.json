@@ -1,0 +1,21 @@
+{
+  "families": {
+    "bepinex": {
+      "default": "5.4.23.5",
+      "releases": {
+        "5.4.23.5": {
+          "url": "https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.5/BepInEx_win_x64_5.4.23.5.zip",
+          "hosts": ["github.com"],
+          "archive_type": "zip",
+          "destinations": [
+            "BepInEx",
+            ".doorstop_version",
+            "changelog.txt",
+            "doorstop_config.ini",
+            "winhttp.dll"
+          ]
+        }
+      }
+    }
+  }
+}

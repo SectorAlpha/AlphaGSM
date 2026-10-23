@@ -16,6 +16,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      actions: write
     strategy:
       fail-fast: false
       matrix:
@@ -67,6 +68,8 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: true
+          cache-from: type=gha,scope=alphagsm-${{ matrix.family }}
+          cache-to: type=gha,mode=min,scope=alphagsm-${{ matrix.family }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           secrets: |

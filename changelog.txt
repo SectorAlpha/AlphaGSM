@@ -7,6 +7,33 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-23
+- CI: runtime and integration image builds reuse GitHub Actions layer
+  cache. Each family has its own cache scope. This does not cover the
+  registry login that pulls a job container before the first step.
+
+2026-10-22
+- CI: TF2 Workshop probes wait until their own console BEGIN line is
+  visible. A single logs snapshot was often one probe behind and failed
+  the run after the map was already loaded.
+- SteamCMD: retry only known transient results. Those are state 0x202 flakes
+  (known app ids, or any app after a zero-progress reconfigure), state 0x2
+  when the update job leaves the app Update Required, Missing configuration
+  for the requested app, and a first-run bootstrap that exits 0 without an
+  ERROR line. Any other SteamCMD failure stops on that attempt.
+- Frameworks: install pinned Rust Oxide 2.0.7830, Valheim BepInEx 5.4.23.5,
+  and CS2 MetaMod 2.0.0-git1483 plus CounterStrikeSharp 1.0.377 with
+  `mod add manifest`.
+- Wipe: `--mode soft` deletes declared world data. `--mode hard` reinstalls
+  server files and restores configuration. Palworld, Valheim, and Project
+  Zomboid now declare soft-wipe and hard-wipe paths.
+- Docker: `set memory` and `set cpus` add container limits. An unset Java
+  heap becomes 75 percent of the memory limit.
+- Mod packs: install pinned Oxide for Hurtworld, The Forest, and Reign of
+  Kings, and Windows BepInEx for Risk of Rain 2 and Sons of the Forest.
+  Source servers can install pinned SteamWorks 1.2.3c, which also installs
+  SourceMod. Replaced game files are restored by `mod cleanup`.
+
 2026-10-17
 - SteamCMD: detect the default Steam directory from the host operating
   system. Linux keeps `~/.local/share/Steam` and the `~/.steam` links,

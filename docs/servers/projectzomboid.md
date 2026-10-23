@@ -156,6 +156,9 @@ alphagsm myprojectz mod apply
 alphagsm myprojectz start
 ```
 
+`wipe` deletes `Zomboid/Saves`. `wipe --mode hard` reinstalls the server and
+keeps `Zomboid/Server`.
+
 `mod cleanup` removes only AlphaGSM-owned activation entries and clears the
 managed Workshop desired list. The game and SteamCMD caches are retained. `mod list` reports configured state;
 a configured file or downloaded payload does not establish that the engine

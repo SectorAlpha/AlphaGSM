@@ -1,0 +1,15 @@
+{
+  "families": {
+    "oxide": {
+      "default": "2.0.3867",
+      "releases": {
+        "2.0.3867": {
+          "url": "https://github.com/OxideMod/Oxide.ReignOfKings/releases/download/2.0.3867/Oxide.ReignOfKings.zip",
+          "hosts": ["github.com"],
+          "archive_type": "zip",
+          "destinations": ["ROK_Data"]
+        }
+      }
+    }
+  }
+}

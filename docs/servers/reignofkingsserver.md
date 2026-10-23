@@ -2,6 +2,8 @@
 
 This guide covers the `reignofkingsserver` module in AlphaGSM.
 
+Install the pinned Oxide/uMod framework with `mod add manifest oxide` and `mod apply`. `mod cleanup` restores the game files Oxide replaced.
+
 ## Status
 
 `reignofkingsserver` is currently `ENABLED (AUTH)`.
