@@ -445,6 +445,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      actions: write
     outputs:
       image: ${{ steps.meta.outputs.image }}
     steps:
@@ -482,6 +483,8 @@ jobs:
           context: .
           file: .github/docker/integration-env/Dockerfile
           push: true
+          cache-from: type=gha,scope=alphagsm-integration-test
+          cache-to: type=gha,mode=min,scope=alphagsm-integration-test
           build-args: |
             WINE_PROTON_IMAGE=${{ needs.build-wine-proton-runtime.outputs.image }}
           tags: |
@@ -494,6 +497,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      actions: write
     outputs:
       image: ${{ steps.meta.outputs.image }}
     steps:
@@ -525,6 +529,8 @@ jobs:
           context: .
           file: docker/steamcmd-linux/Dockerfile
           push: true
+          cache-from: type=gha,scope=alphagsm-steamcmd-linux
+          cache-to: type=gha,mode=min,scope=alphagsm-steamcmd-linux
           tags: |
             ${{ steps.meta.outputs.image }}
             ${{ steps.meta.outputs.latest }}
@@ -535,6 +541,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      actions: write
     outputs:
       image: ${{ steps.meta.outputs.image }}
     steps:
@@ -566,6 +573,8 @@ jobs:
           context: .
           file: docker/simple-tcp/Dockerfile
           push: true
+          cache-from: type=gha,scope=alphagsm-simple-tcp
+          cache-to: type=gha,mode=min,scope=alphagsm-simple-tcp
           tags: |
             ${{ steps.meta.outputs.image }}
             ${{ steps.meta.outputs.latest }}
@@ -576,6 +585,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      actions: write
     outputs:
       image: ${{ steps.meta.outputs.image }}
     steps:
@@ -607,6 +617,8 @@ jobs:
           context: .
           file: docker/quake-linux/Dockerfile
           push: true
+          cache-from: type=gha,scope=alphagsm-quake-linux
+          cache-to: type=gha,mode=min,scope=alphagsm-quake-linux
           tags: |
             ${{ steps.meta.outputs.image }}
             ${{ steps.meta.outputs.latest }}
@@ -617,6 +629,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      actions: write
     outputs:
       image: ${{ steps.meta.outputs.image }}
     steps:
@@ -653,6 +666,8 @@ jobs:
           context: .
           file: docker/java/Dockerfile
           push: true
+          cache-from: type=gha,scope=alphagsm-java
+          cache-to: type=gha,mode=min,scope=alphagsm-java
           tags: |
             ${{ steps.meta.outputs.image }}
             ${{ steps.meta.outputs.latest }}
@@ -663,6 +678,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      actions: write
     outputs:
       image: ${{ steps.meta.outputs.image }}
     steps:
@@ -702,6 +718,8 @@ jobs:
           context: .
           file: docker/wine-proton/Dockerfile
           push: true
+          cache-from: type=gha,scope=alphagsm-wine-proton
+          cache-to: type=gha,mode=min,scope=alphagsm-wine-proton
           tags: |
             ${{ steps.meta.outputs.image }}
             ${{ steps.meta.outputs.latest }}

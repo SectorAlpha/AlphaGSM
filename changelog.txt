@@ -7,6 +7,11 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-23
+- CI: runtime and integration image builds reuse GitHub Actions layer
+  cache. Each family has its own cache scope. This does not cover the
+  registry login that pulls a job container before the first step.
+
 2026-10-22
 - CI: TF2 Workshop probes wait until their own console BEGIN line is
   visible. A single logs snapshot was often one probe behind and failed
