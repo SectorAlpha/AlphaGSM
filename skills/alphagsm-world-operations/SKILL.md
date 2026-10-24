@@ -5,9 +5,12 @@ description: "Use when creating missing game worlds or resetting explicitly requ
 
 # Manage worlds
 
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
+
 Read [world management](../../docs/world-management.md) and the selected module's help/settings. Resolve the configured world and exact existing save paths. `reset-world`/`wipe` take no world-name argument and have no dry-run flag. A request to reset a different named world cannot be fulfilled by blindly deleting the currently configured one.
 
-For first-world creation on Terraria/TShock/Necesse:
+For first-world creation on Terraria/TShock/Necesse, and on
+`terraria.tmodloader` when that module is available:
 
 ```bash
 alphagsm myserver start --autocreate

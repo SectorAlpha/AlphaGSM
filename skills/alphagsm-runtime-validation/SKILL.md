@@ -5,6 +5,8 @@ description: "Use when verifying AlphaGSM runtime families, branch-local images 
 
 # Validate runtimes
 
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
+
 Read [docker-runtime-wiring](../docker-runtime-wiring/SKILL.md), [runtime defaults](../../src/server/runtime.py), [family matrix](../../tests/backend_integration_tests/docker_family_matrix.py), [backend guide](../../tests/backend_integration_tests/README.md) and [Docker lifecycle tests](../../tests/backend_integration_tests/test_backend_docker.py). Inspect collection/selection before starting expensive cases.
 
 Keep three declared representative cases for each java, quake-linux, service-console, simple-tcp, steamcmd-linux and wine-proton family; every active case needs CI coverage. Deferred cases remain explicitly explained, not converted to passes. Choose branch-local images from the matching docker family scaffold and explicit test image overrides rather than relying on stale latest tags.

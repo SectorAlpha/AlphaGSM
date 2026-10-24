@@ -247,6 +247,11 @@ Historical detail lives in git history. Keep this file focused on release-facing
   the validated container while preserving private Wine/Proton prefix selection.
 
 2026-10-14
+- Agent content: detect Workshop download versus native activation capabilities,
+  preserve per-runtime validation limits and ownership, and account for optional
+  tModLoader, Squad RCON and Wreckfest UDP health support.
+- Agent assessments: keep requirements/health inspection from implicitly
+  bootstrapping or recreating the Docker manager or acquiring runtime images.
 - Squad 44 validation: recognize its direct native PAK precacher registration
   and exact successful mod serialization before checking the custom world and A2S.
 - Workshop diagnostics: retain bounded native PAK/plugin rows and escaped
@@ -359,6 +364,16 @@ Historical detail lives in git history. Keep this file focused on release-facing
   preserving engine probes and shutdown commands behind the runtime FIFO.
 - Integration runner: allow cleanup when no matching screen sessions exist,
   keeping prerequisite skips successful while preserving actual test failures.
+
+2026-10-12
+- Agent prerequisites: add per-game/version requirement discovery across manager,
+  installer, runtime, provider/assets, configuration and host resources.
+- Agent installation policy: gate only new software installations; allow
+  AlphaGSM-managed helpers, repository images/builds and supported prerequisites
+  without extra approval. Ask to install an absent game for a vague run request;
+  clarify unspecified actions on existing games, and execute explicit actions.
+- Agent runtime policy: prefer repository Docker deployments and AlphaGSM images
+  from the GitHub repository without a separate first-use Docker consent gate.
 
 2026-10-11
 - Agent workflows: add 26 focused operations and development skills alongside
