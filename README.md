@@ -573,11 +573,13 @@ alphagsm agent enroll
 alphagsm agent bind '*'
 ```
 
-Enrollment, binding registration, accounts and the directory use
-`https://sector-alpha.net`. Stats and outbound remote command delivery/results use
-`https://alphagsm-api.sector-alpha.net`. Updated clients select the correct
-host locally without redirects. Existing IDs, keys and permissions are preserved;
-restart the agent after updating. Custom providers keep their configured origin.
+The agent uses `https://alphagsm-api.sector-alpha.net` for every operation.
+Another provider is used only with `--origin`. `alphagsm agent enroll` turns
+reporting on and leaves management off. On Linux, `alphagsm agent install-service`
+keeps `alphagsm agent run` running after you close the terminal. It does not
+change reporting or management. `alphagsm agent uninstall-service` removes that
+service and leaves the local enrollment in place. Custom providers keep their
+configured origin.
 
 The quoted `'*'` binds all
 eligible local servers, inferring their settings and registering website IDs

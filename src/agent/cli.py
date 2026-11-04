@@ -7,6 +7,7 @@ from .config import Config, ConfigError, local_tag
 from .contracts import ACTIONS
 from .service import Service
 from .transport import Transport, TransportError
+from . import user_service
 from . import onboarding
 from .publication_config import PublicationConfigError, local_publication
 from .dns_lookup import PreflightError
@@ -17,7 +18,7 @@ from . import name_proof
 from .binding_ports import selected_ports
 
 
-def run(args, *, root=None):
+def run(args, *, root=None, executable=None):
     parser = argparse.ArgumentParser(prog="alphagsm agent")
     commands = parser.add_subparsers(dest="command", required=True)
     for command in (
@@ -30,6 +31,8 @@ def run(args, *, root=None):
         "run",
         "report-once",
         "forget",
+        "install-service",
+        "uninstall-service",
     ):
         command_parser = commands.add_parser(command)
         if command == "enroll":
@@ -73,6 +76,8 @@ def run(args, *, root=None):
         options = parser.parse_args(args)
     except SystemExit as exc:
         return exc.code
+    if options.command in ("install-service", "uninstall-service"):
+        return _service_command(options.command, executable)
     try:
         cfg = Config(root)
         if options.command == "enroll":
@@ -188,6 +193,19 @@ def run(args, *, root=None):
         return 1
     except KeyboardInterrupt:
         return 130
+
+
+def _service_command(command, executable):
+    """Install or remove the optional user service without changing consent."""
+    try:
+        if command == "install-service":
+            user_service.install(executable)
+        else:
+            user_service.uninstall()
+    except user_service.ServiceInstallError as exc:
+        print("Agent operation rejected: " + str(exc))
+        return 1
+    return 0
 
 
 def _prove(cfg, tag):

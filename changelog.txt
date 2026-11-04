@@ -7,6 +7,14 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-11-04
+- Sector Alpha: `alphagsm agent install-service` installs a Linux systemd user
+  service that runs `alphagsm agent run`. It does not change reporting or
+  management. `alphagsm agent uninstall-service` removes it and leaves the
+  local enrollment in place. Enrollment, binding, the first-run tour and game
+  setup do not install it.
+- Sector Alpha: outbound HTTPS and the agent WebSocket require TLS 1.2 or newer.
+
 2026-10-23
 - CI: runtime and integration image builds reuse GitHub Actions layer
   cache. Each family has its own cache scope. This does not cover the

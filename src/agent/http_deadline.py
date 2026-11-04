@@ -3,10 +3,11 @@
 import http.client
 import queue
 import socket
-import ssl
 import threading
 import time
 import urllib.request
+
+from .tls import client_context
 
 
 class DeadlineBudget:
@@ -84,7 +85,7 @@ class DeadlineHTTPSConnection(http.client.HTTPSConnection):
 
 class DeadlineHTTPSHandler(urllib.request.HTTPSHandler):
     def __init__(self, budget=None, *, context=None):
-        super().__init__(context=context or ssl.create_default_context())
+        super().__init__(context=context or client_context())
         self.budget = budget
 
     def https_open(self, req):

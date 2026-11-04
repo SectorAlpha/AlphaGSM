@@ -6,11 +6,11 @@ import hashlib
 import json
 import os
 import socket
-import ssl
 import time
 from urllib.parse import urlsplit
 
 from .config import canonical_agent_origin
+from .tls import client_context
 from .transport import AgentLimit, TransportError
 
 _GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
@@ -118,7 +118,7 @@ class SocketChannel:
         if self.connector is not None:
             return self.connector()
         raw = socket.create_connection((host, port), timeout=10)
-        context = self.context or ssl.create_default_context()
+        context = self.context or client_context()
         try:
             return context.wrap_socket(raw, server_hostname=host)
         except Exception:

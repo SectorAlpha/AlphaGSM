@@ -53,8 +53,11 @@ the command shown.
 
 ## Reporting and permissions
 
-The tour never enables remote reporting or management. New installations keep
-both off. Public listings require separate per-server approval, and reporting
+The tour never enables remote reporting or management, and it does not install
+a background service. On Linux, `alphagsm agent install-service` is a separate
+command that keeps `alphagsm agent run` running; it leaves reporting and
+management unchanged. New installations keep both off. Public listings require
+separate per-server approval, and reporting
 still needs an explicit `agent enable-reporting` command. Existing remote
 permissions remain in force when you replay the tour. Choosing local setup,
 viewing commands or skipping does not contact Sector Alpha.

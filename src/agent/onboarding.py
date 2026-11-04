@@ -17,6 +17,7 @@ from .network import global_ip, suggest_public_host
 from .publication_config import local_publication
 from .binding_ports import selected_ports
 from .transport import TransportError
+from . import user_service
 
 
 def enroll(cfg, api_origin, transport, *, bind_local=True):
@@ -36,6 +37,7 @@ def enroll(cfg, api_origin, transport, *, bind_local=True):
         return
     bind_enrolled(cfg, transport)
     challenge_enrolled(cfg, transport)
+    print(user_service.install_hint())
 
 
 def bind_enrolled(cfg, transport):
@@ -313,6 +315,7 @@ def guided(cfg, options, transport):
         require_capabilities(value, item['publication'], item['actions'])
     failed = save_candidates(cfg, value, candidates, transport) or bool(failures)
     next_steps(value)
+    print(user_service.install_hint())
     return 1 if failed else 0
 
 

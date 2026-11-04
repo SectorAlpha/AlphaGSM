@@ -68,7 +68,7 @@ def main(name, args):
 
     if args and args[0].lower() == "agent":
         from agent.cli import run as run_agent
-        return run_agent(args[1:])
+        return run_agent(args[1:], executable=name)
 
     if len(args) == 1 and args[0].lower() in ("-v", "--version", "version"):
         print("AlphaGSM %s" % (get_version(),))
@@ -718,6 +718,9 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                            scripts to list the servers in a script processable
                            way.
           steam-auth login|status|logout : Manage local SteamCMD sessions.
+          agent COMMAND : Optional Sector Alpha connection. install-service
+                           keeps the agent running and does not change
+                           reporting or management.
           self-update [OPTION]... : Check for a newer AlphaGSM release and
                            apply it when supported.
         """).rstrip(),

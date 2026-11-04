@@ -3,13 +3,13 @@
 
 import http.client
 import json
-import ssl
 import time
 import threading
 import urllib.error
 import urllib.request
 from .config import canonical_agent_origin
 from .http_deadline import DeadlineBudget, DeadlineHTTPSHandler, bounded_exchange
+from .tls import client_context
 
 REPORT_TIMEOUT = 10
 
@@ -54,7 +54,7 @@ class Transport:
         self.opener = urllib.request.build_opener(
             urllib.request.ProxyHandler({}),
             NoRedirect(),
-            DeadlineHTTPSHandler(context=context or ssl.create_default_context()),
+            DeadlineHTTPSHandler(context=context or client_context()),
         )
 
     def request(self, method, path, *, credential=None, payload=None, session_id=None, timeout=10, query=None):

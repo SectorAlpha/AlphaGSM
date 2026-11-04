@@ -1234,6 +1234,12 @@ presence and job wakes, and falls back to HTTPS long polling when the socket
 cannot open. It rechecks exact local bindings and policy under the normal CLI
 lock, obtains final online authorization and persists executing before lifecycle
 effects. A socket frame never skips those checks. Results are posted over HTTPS.
+Outbound HTTPS and the agent WebSocket use a verified client context with a
+minimum of TLS 1.2.
+`alphagsm agent install-service` writes a Linux systemd user unit for
+`agent run` using the invoked program. It does not change reporting, management,
+publication or credentials. `alphagsm agent uninstall-service` removes that unit
+and leaves the enrollment in place. The tour and game setup do not install it.
 `Journal` stores durable results until acknowledgement; interrupted execution
 reconciles unknown and never repeats effects. A global foreground-service lock
 prevents competing pollers. No secrets are accepted as CLI arguments.
