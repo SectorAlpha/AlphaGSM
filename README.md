@@ -576,10 +576,11 @@ alphagsm agent bind '*'
 The agent uses `https://alphagsm-api.sector-alpha.net` for every operation.
 Another provider is used only with `--origin`. `alphagsm agent enroll` turns
 reporting on and leaves management off. On Linux, `alphagsm agent install-service`
-keeps `alphagsm agent run` running after you close the terminal. It does not
-change reporting or management. `alphagsm agent uninstall-service` removes that
-service and leaves the local enrollment in place. Custom providers keep their
-configured origin.
+keeps `alphagsm agent run` running after you close the terminal.
+`install-service --system` installs that same command as a system service for
+your account. It does not change reporting or management.
+`alphagsm agent uninstall-service` removes the selected service and leaves the
+local enrollment in place. Custom providers keep their configured origin.
 
 The quoted `'*'` binds all
 eligible local servers, inferring their settings and registering website IDs

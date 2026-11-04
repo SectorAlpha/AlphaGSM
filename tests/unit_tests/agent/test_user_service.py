@@ -9,10 +9,12 @@ from agent.cli import run
 from agent.config import Config
 from agent.tls import client_context
 from agent.user_service import (
+    Account,
     ServiceInstallError,
     UNIT_NAME,
     install,
     install_hint,
+    lookup_account,
     render_unit,
     resolve_executable,
     systemd_quote,
@@ -88,7 +90,8 @@ def test_install_writes_a_user_unit_and_restarts_it(tmp_path, capsys):
     assert calls[3] == ["loginctl", "show-user", "tester", "-p", "Linger"]
     assert not any("enable-linger" in part for call in calls for part in call)
     output = capsys.readouterr().out
-    assert "Installed " + UNIT_NAME + " and started it." in output
+    assert "Installed the user service " + UNIT_NAME + " and started it." in output
+    assert "alphagsm-agent run" not in unit.read_text(encoding="utf-8")
     assert "Reporting and management are unchanged." in output
     assert "loginctl enable-linger" in output
     assert not (tmp_path / "agent" / "config.json").exists()
@@ -156,7 +159,7 @@ def test_uninstall_removes_only_the_unit(tmp_path, capsys):
     assert not (tmp_path / "config" / "systemd" / "user" / UNIT_NAME).exists()
     assert "permissions are unchanged" in capsys.readouterr().out
     uninstall(runner=_runner(calls), env=env, platform="linux", which=_which)
-    assert "No AlphaGSM agent user service is installed." in capsys.readouterr().out
+    assert "No AlphaGSM user service is installed." in capsys.readouterr().out
 
 
 def test_unsafe_program_paths_are_rejected(tmp_path):
@@ -171,7 +174,7 @@ def test_unsafe_program_paths_are_rejected(tmp_path):
 def test_cli_install_does_not_create_agent_state(tmp_path, monkeypatch):
     seen = {}
 
-    def fake(executable):
+    def fake(executable, **_kwargs):
         seen["executable"] = executable
 
     monkeypatch.setattr("agent.user_service.install", fake)
@@ -189,20 +192,140 @@ def test_cli_rejects_a_non_linux_service_install(tmp_path, monkeypatch, capsys):
 
 def test_main_dispatches_the_invoked_program(monkeypatch):
     seen = {}
-    monkeypatch.setattr("agent.user_service.install", lambda executable: seen.update(executable=executable))
+    monkeypatch.setattr(
+        "agent.user_service.install", lambda executable, **_kwargs: seen.update(executable=executable)
+    )
     assert dispatch_main("/opt/AlphaGSM/alphagsm", ["agent", "install-service"]) == 0
     assert seen["executable"] == "/opt/AlphaGSM/alphagsm"
 
 
 def test_hint_points_at_the_command_without_installing(tmp_path, monkeypatch):
+    absent = tmp_path / "no-system"
     assert "foreground" in install_hint(platform="windows")
-    assert "install-service" in install_hint(platform="linux", which=_which, home=tmp_path, env={})
+    assert "install-service --system" in install_hint(
+        platform="linux", which=_which, home=tmp_path, env={}, system_dir=absent
+    )
     unit = tmp_path / ".config" / "systemd" / "user"
     unit.mkdir(parents=True)
     (unit / UNIT_NAME).write_text("[Unit]\n", encoding="utf-8")
     monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
-    assert install_hint(platform="linux", which=_which, home=tmp_path, env={}).startswith("Restart")
+    assert install_hint(
+        platform="linux", which=_which, home=tmp_path, env={}, system_dir=absent
+    ).startswith("Restart the installed")
 
 
 def test_percent_and_quotes_are_escaped():
     assert systemd_quote('/opt/a"b\\c%') == '"/opt/a\\"b\\\\c%%"'
+
+
+def test_system_service_runs_alphagsm_agent_run_as_the_operator(tmp_path, capsys):
+    program = _program(tmp_path / "alphagsm")
+    account = Account("games", "games", str(tmp_path / "home" / "games"))
+    calls = []
+    install(
+        str(program),
+        runner=_runner(calls),
+        home=tmp_path / "home",
+        env={"ALPHAGSM_CONFIG_LOCATION": str(tmp_path / "alphagsm.conf")},
+        platform="linux",
+        which=_which,
+        system=True,
+        account=account,
+        system_dir=tmp_path / "systemd",
+    )
+    text = (tmp_path / "systemd" / UNIT_NAME).read_text(encoding="utf-8")
+    assert "ExecStart=" + systemd_quote(str(program)) + " agent run" in text
+    assert "alphagsm-agent" not in text
+    assert "User=games" in text
+    assert "Group=games" in text
+    assert "Environment=HOME=" + systemd_quote(account.home) in text
+    assert "WantedBy=multi-user.target" in text
+    assert "WantedBy=default.target" not in text
+    assert calls == [
+        ["systemctl", "daemon-reload"],
+        ["systemctl", "enable", UNIT_NAME],
+        ["systemctl", "restart", UNIT_NAME],
+    ]
+    output = capsys.readouterr().out
+    assert "system service" in output
+    assert "runs as games" in output
+    calls.clear()
+    uninstall(
+        runner=_runner(calls),
+        platform="linux",
+        which=_which,
+        system=True,
+        system_dir=tmp_path / "systemd",
+    )
+    assert calls[0] == ["systemctl", "disable", "--now", UNIT_NAME]
+    assert not (tmp_path / "systemd" / UNIT_NAME).exists()
+
+
+def test_system_and_user_services_are_not_installed_together(tmp_path):
+    program = _program(tmp_path / "alphagsm")
+    home = tmp_path / "home"
+    system_dir = tmp_path / "systemd"
+    install(
+        str(program),
+        runner=_runner([]),
+        home=home,
+        env={},
+        platform="linux",
+        user="",
+        which=_which,
+        system_dir=system_dir,
+    )
+    with pytest.raises(ServiceInstallError, match="user service is already installed"):
+        install(
+            str(program),
+            runner=_runner([]),
+            home=home,
+            env={},
+            platform="linux",
+            which=_which,
+            system=True,
+            account=Account("games", "games", str(home / "games")),
+            system_dir=system_dir,
+        )
+    assert not (system_dir / UNIT_NAME).exists()
+
+
+def test_system_install_needs_a_writable_directory_and_refuses_root(tmp_path):
+    program = _program(tmp_path / "alphagsm")
+    system_dir = tmp_path / "systemd"
+    system_dir.mkdir()
+    system_dir.chmod(0o555)
+    try:
+        with pytest.raises(ServiceInstallError, match="needs root"):
+            install(
+                str(program),
+                runner=_runner([]),
+                platform="linux",
+                which=_which,
+                system=True,
+                account=Account("games", "games", "/home/games"),
+                system_dir=system_dir,
+            )
+    finally:
+        system_dir.chmod(0o755)
+    with pytest.raises(ServiceInstallError, match="does not run as root"):
+        lookup_account("root")
+    with pytest.raises(ServiceInstallError, match="Unknown service account"):
+        lookup_account("no-such-alphagsm-user")
+
+
+def test_cli_system_install_uses_the_service_account(tmp_path, monkeypatch):
+    seen = {}
+
+    def fake(executable, system=False, user=None, **_kwargs):
+        seen.update(executable=executable, system=system, user=user)
+
+    monkeypatch.setattr("agent.user_service.install", fake)
+    assert run(
+        ["install-service", "--system", "--service-user", "games"],
+        root=tmp_path / "agent",
+        executable="/opt/alphagsm",
+    ) == 0
+    assert seen == {"executable": "/opt/alphagsm", "system": True, "user": "games"}
+    assert run(["install-service", "--service-user", "games"], root=tmp_path / "agent") == 1
+    assert not (tmp_path / "agent").exists()

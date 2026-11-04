@@ -182,8 +182,9 @@ the enrollment instructions above and run `alphagsm agent enroll` first.
    ```
 
    `run` stays in the foreground. On Linux, `alphagsm agent install-service`
-   can keep that same command running after you close the terminal. It does not
-   change reporting or management. Remove it with `alphagsm agent uninstall-service`.
+   keeps that command running for this user. `alphagsm agent install-service --system`
+   installs it as a system service for your account. Neither changes reporting
+   or management. Remove the selected one with `alphagsm agent uninstall-service`.
    Complete each endpoint's ownership challenge in the website to
    obtain verified public statistics. Reporting does not enable remote management.
 
@@ -254,10 +255,12 @@ alphagsm agent bind BINDING_ID my-minecraft --epoch 1 \
 Use only the actions you want to grant; an empty action list grants no management
 operations. `--publish` is optional and independent of actions. A private server
 can be managed without a directory listing. Run remains a foreground
-command. `alphagsm agent install-service` is the optional Linux user service
-for that command, and `alphagsm agent uninstall-service` removes it. Enrollment,
-binding, the first-run tour and game setup do not install it, and the unit does
-not change reporting or management. Reporting reconciles approved
+command. `alphagsm agent install-service` installs a user service for it, and
+`install-service --system` installs a system service that runs the same
+`alphagsm agent run` command as one operator. There is no separate
+alphagsm-agent program. `uninstall-service` removes the selected unit.
+Enrollment, binding, the first-run tour and game setup do not install it, and
+the unit does not change reporting or management. Reporting reconciles approved
 local name/capacity after successful local changes and every roughly 60 seconds.
 Advertised host, player port and query port remain explicit local choices; local
 port changes never replace them during background metadata refresh. The compatible service

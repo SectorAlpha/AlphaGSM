@@ -719,8 +719,10 @@ def help(name, server, cmd=None, *, file=stderr, full_help=False):
                            way.
           steam-auth login|status|logout : Manage local SteamCMD sessions.
           agent COMMAND : Optional Sector Alpha connection. install-service
-                           keeps the agent running and does not change
-                           reporting or management.
+                           keeps alphagsm agent run running for this user.
+                           install-service --system installs that same command
+                           as a system service. Neither changes reporting
+                           or management.
           self-update [OPTION]... : Check for a newer AlphaGSM release and
                            apply it when supported.
         """).rstrip(),

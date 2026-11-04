@@ -8,11 +8,13 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-11-04
-- Sector Alpha: `alphagsm agent install-service` installs a Linux systemd user
-  service that runs `alphagsm agent run`. It does not change reporting or
-  management. `alphagsm agent uninstall-service` removes it and leaves the
-  local enrollment in place. Enrollment, binding, the first-run tour and game
-  setup do not install it.
+- Sector Alpha: `alphagsm agent install-service` installs a Linux systemd
+  user service that runs `alphagsm agent run`. `install-service --system`
+  installs that same command as a system service for one operator account.
+  There is no separate alphagsm-agent program. Neither command changes
+  reporting or management. `uninstall-service` removes the selected service
+  and leaves the local enrollment in place. Enrollment, binding, the first-run
+  tour and game setup do not install it.
 - Sector Alpha: outbound HTTPS and the agent WebSocket require TLS 1.2 or newer.
 
 2026-10-23

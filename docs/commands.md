@@ -16,7 +16,9 @@ setup, common commands and optional Sector Alpha enrollment/binding, with
 separate confirmations before creation, downloads or remote enrollment.
 It never starts a game or enables reporting/management. Ordinary commands and
 scripts run directly. On Linux, `alphagsm agent install-service` keeps the
-Sector Alpha agent running and does not change reporting or management.
+Sector Alpha agent running for this user. `install-service --system` installs
+that same `alphagsm agent run` command as a system service. Neither changes
+reporting or management.
 See [First-run setup](first-run-setup.md).
 
 ## Lifecycle

@@ -37,6 +37,10 @@ def run(args, *, root=None, executable=None):
         command_parser = commands.add_parser(command)
         if command == "enroll":
             command_parser.add_argument("--origin")
+        if command in ("install-service", "uninstall-service"):
+            command_parser.add_argument("--system", action="store_true")
+        if command == "install-service":
+            command_parser.add_argument("--service-user")
     replacement = commands.add_parser("replace-credential")
     replacement.add_argument("scope", choices=("reporting", "management"))
     for command in ("bind", "setup"):
@@ -77,7 +81,7 @@ def run(args, *, root=None, executable=None):
     except SystemExit as exc:
         return exc.code
     if options.command in ("install-service", "uninstall-service"):
-        return _service_command(options.command, executable)
+        return _service_command(options, executable)
     try:
         cfg = Config(root)
         if options.command == "enroll":
@@ -195,13 +199,15 @@ def run(args, *, root=None, executable=None):
         return 130
 
 
-def _service_command(command, executable):
-    """Install or remove the optional user service without changing consent."""
+def _service_command(options, executable):
+    """Install or remove the optional service without changing consent."""
     try:
-        if command == "install-service":
-            user_service.install(executable)
+        if options.command == "install-service":
+            if options.service_user and not options.system:
+                raise user_service.ServiceInstallError("--service-user is only used with --system")
+            user_service.install(executable, system=options.system, user=options.service_user)
         else:
-            user_service.uninstall()
+            user_service.uninstall(system=options.system)
     except user_service.ServiceInstallError as exc:
         print("Agent operation rejected: " + str(exc))
         return 1
