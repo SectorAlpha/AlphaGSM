@@ -81,6 +81,20 @@ def get_start_command(server):
     _assert_required_mod_content(server.data["dir"])
     return MODULE.get_start_command(server)
 
+
+def get_query_address(server):
+    """Return the A2S address used by query and info."""
+
+    port_key = "queryport" if "queryport" in server.data else "port"
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data[port_key]),
+        "a2s",
+    )
+
+
+get_info_address = get_query_address
+
 get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
         family='steamcmd-linux',
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}),
@@ -92,3 +106,9 @@ get_container_spec = gamemodule_common.make_container_spec_builder(
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}),
         stdin_open=True,
 )
+
+
+def get_asset_requirements(server):
+    """Describe this game's owned files, acquisition routes and staging limits."""
+    from utils.byo_files import load_requirements
+    return load_requirements(server, __file__, 'byo_assets.json')

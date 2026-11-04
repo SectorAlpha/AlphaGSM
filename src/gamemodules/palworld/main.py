@@ -78,6 +78,20 @@ def configure(server, ask, port=None, dir=None, *, exe_name="PalServer.sh", publ
     return gamemodule_common.finalize_configure(server)
 
 
+def get_wipe_paths(server):
+    """Return Palworld save data and leave PalWorld settings in place."""
+
+    del server
+    return ["Pal/Saved/SaveGames"]
+
+
+def get_hard_wipe_preserve_paths(server):
+    """Keep Palworld settings across a reinstall."""
+
+    del server
+    return ["Pal/Saved/Config"]
+
+
 def _settings_paths(server):
     """Return the default and active Palworld settings paths."""
 

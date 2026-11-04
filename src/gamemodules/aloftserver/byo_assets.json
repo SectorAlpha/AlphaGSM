@@ -1,0 +1,27 @@
+{
+  "description": "Aloft complete compatible server tree",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Scripts come from the owned Windows game, not a separate server app. Preserve its full Unity game data and world script. Official instructions require Steam open at runtime; this module/platform path is not validated here.",
+      "live_validated": false,
+      "url": "https://aloft.wiki.gg/wiki/Dedicated_Server_how-to"
+    }
+  ],
+  "defaults": {
+    "exe_name": "AloftServerNoGuiLoad.ps1"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "aloftserver",
+  "guide": "docs/servers/aloftserver.md",
+  "schema_version": 1
+}

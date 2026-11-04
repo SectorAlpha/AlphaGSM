@@ -13,6 +13,7 @@ RESERVED_SERVER_NAMES = frozenset(
         "compose",
         "ps",
         "self-update",
+        "steam-auth",
         "agent",
     )
     + Server.default_commands

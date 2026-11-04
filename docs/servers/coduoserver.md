@@ -23,11 +23,17 @@ Create the server:
 alphagsm mycoduoser create coduoserver
 ```
 
-Run setup:
+For an owned Steam copy, sign in once and let setup acquire the declared files:
 
 ```bash
-alphagsm mycoduoser setup
+alphagsm steam-auth login owned your_steam_username
+alphagsm mycoduoser setup --auth-profile owned
 ```
+
+Enter credentials only at the local SteamCMD prompts. For an existing local
+Steam library, use `setup --steam-dir /path/to/SteamLibrary/steamapps` instead.
+Local process setup with an entitled profile was validated on 2026-10-16.
+Query and info use Quake UDP getstatus on the game port. Docker was not rerun.
 
 Start it:
 
@@ -61,7 +67,7 @@ Setup configures:
 binary for Call of Duty: United Offensive, but the archive still depends on
 owned base Call of Duty multiplayer files that are not bundled.
 
-Before `start`, copy the required files from a legitimate base Call of Duty
+If using setup without an asset source or saved profile, before `start` copy the required files from a legitimate base Call of Duty
 installation into the AlphaGSM server tree:
 
 ```text
@@ -69,10 +75,13 @@ installation into the AlphaGSM server tree:
 <install_dir>/main/default_mp.cfg
 ```
 
-The current blocker is satisfied by the base Call of Duty multiplayer assets,
-not by files copied only into the `uo/` expansion directory.
+A manual tree also needs the expansion PK3s under `uo/`, including the
+multiplayer map `maps/mp/mp_uo_stanjel.bsp`. The default start map
+`mp_brecourt` is stored in the base `main` PK3s. Authenticated setup downloads
+base app 2620 and expansion app 2640, keeps the English multiplayer PK3s, and
+drops client executables and non-English localization PK3s.
 
-Minimal operator flow:
+Manual-copy alternative:
 
 ```bash
 alphagsm mycoduoser create coduoserver
@@ -134,6 +143,7 @@ alphagsm myserver set KEY VALUE
 
 - **Config file**: `<moddir>/server.cfg` (default `uo/server.cfg`)
 - `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
+- Setup stages the upstream gcc 3.2 libraries beside `coduo_lnxded` and starts it with `LD_LIBRARY_PATH=.`, `fs_basepath` `.`, and `fs_homepath` `.` so the dedicated server does not use `~/.callofduty`.
 - **Owned base assets still required**: `main/pak0.pk3`,
   `main/default_mp.cfg`
 - **Copy target before first start**: `<install_dir>/main/`
@@ -165,3 +175,17 @@ alphagsm mycoduoser mod add url https://example.com/custom-content.zip
 alphagsm mycoduoser mod apply
 alphagsm mycoduoser mod cleanup
 ```
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+The preferred Steam-owned path is `alphagsm steam-auth login owned <username>`,
+then `alphagsm <server-name> setup --auth-profile owned`. Setup remembers the
+profile name and fetches missing required files before installing the engine.
+Use `setup --steam-dir /path/to/SteamLibrary/steamapps` to import from an existing
+Steam library instead. Direct file acquisition remains available through
+`assets fetch steam-owned --auth-profile owned`.
+Authenticated downloads remain unverified here.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

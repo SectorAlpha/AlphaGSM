@@ -10,6 +10,7 @@ OPTIONAL_HOOKS = (
     "prestart", "poststart", "postset", "sync_server_config",
     "get_provider_requirements", "get_query_address", "get_info_address",
     "get_platform_requirements", "list_setting_values",
+    "get_asset_requirements",
 )
 
 

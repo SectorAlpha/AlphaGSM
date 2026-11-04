@@ -1,0 +1,27 @@
+{
+  "description": "FOUNDRY complete compatible server tree",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Steam app 2915550 is anonymous and Windows-only. Stage FoundryDedicatedServer.exe and its Unity data, or let setup download that depot. On Linux, AlphaGSM launches the Windows executable with Wine. Do not rename the executable and claim a native Linux build.",
+      "live_validated": false,
+      "url": "https://dedicated.foundry-game.com/"
+    }
+  ],
+  "defaults": {
+    "exe_name": "FoundryDedicatedServer.exe"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "foundryserver",
+  "guide": "docs/servers/foundryserver.md",
+  "schema_version": 1
+}

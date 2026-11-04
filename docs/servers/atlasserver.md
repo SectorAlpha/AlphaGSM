@@ -154,3 +154,12 @@ operator-side blocker, not missing Linux compatibility libraries.
   generate/export `ServerGrid.json`, `ServerGrid.ServerOnly.json`, and the
   `ServerGrid/` folder with the official ATLAS ServerGridEditor and copy them
   into `<install_dir>/ShooterGame/`.
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This helper checks known sentinels only and directs you to stage the complete
+compatible distribution manually; managed import is unavailable for this recipe.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

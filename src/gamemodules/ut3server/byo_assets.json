@@ -1,0 +1,35 @@
+{
+  "description": "Unreal Tournament 3 complete compatible server tree",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    },
+    {
+      "path": "Engine",
+      "kind": "directory"
+    },
+    {
+      "path": "UTGame",
+      "kind": "directory"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Supply the complete compatible Linux dedicated-server distribution with Engine/, UTGame/, libraries and applicable patch/content. Owned Windows Steam files are not the native Linux server; no current immutable Linux archive is verified.",
+      "live_validated": false,
+      "url": "https://icculus.org/news/news.php?id=4104"
+    }
+  ],
+  "defaults": {
+    "exe_name": "Binaries/ut3"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "ut3server",
+  "guide": "docs/servers/ut3server.md",
+  "schema_version": 1
+}

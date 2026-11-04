@@ -67,3 +67,12 @@ create is still the live source of truth.
 - AlphaGSM follows LinuxGSM's launch defaults for `sof2ded`, including `sv_punkbuster 0`, `dedicated 2`, `net_ip`, `net_port`, `+exec base/<server-name>.cfg`, and the default map `mp_shop`.
 - LinuxGSM marks SOF2 as an idTech3-family server with `protocol-quake3`, so AlphaGSM uses the existing Quake UDP query/info path.
 - Automated install is not provided because no authoritative LinuxGSM-backed download path was identified for this legacy server.
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This helper checks known sentinels only and directs you to stage the complete
+compatible distribution manually; managed import is unavailable for this recipe.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

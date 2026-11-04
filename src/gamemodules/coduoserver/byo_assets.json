@@ -1,0 +1,91 @@
+{
+  "description": "Original Call of Duty base assets for United Offensive",
+  "requirements": [
+    {
+      "path": "main/*.pk3",
+      "kind": "archive-member",
+      "member_any_of": [
+        "maps/mp/mp_carentan.bsp"
+      ],
+      "member_case_insensitive": true
+    },
+    {
+      "any_of": [
+        "main/*.pk3",
+        "uo/*.pk3"
+      ],
+      "kind": "archive-member",
+      "member_any_of": [
+        "maps/mp/{startmap}.bsp",
+        "maps/mp/{startmap}.d3dbsp"
+      ],
+      "member_case_insensitive": true
+    },
+    {
+      "path": "uo/*.pk3",
+      "kind": "archive-member",
+      "member_any_of": [
+        "maps/mp/mp_uo_stanjel.bsp"
+      ],
+      "member_case_insensitive": true
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Use the original Call of Duty main/ files (Steam app 2620), alongside the United Offensive uo/ distribution. Expansion app 2640 alone does not supply the original base content.",
+      "live_validated": false,
+      "url": "https://store.steampowered.com/app/2640/"
+    },
+    {
+      "id": "steam-owned",
+      "kind": "steamcmd",
+      "instructions": "Use the original Call of Duty main/ files (Steam app 2620), alongside the United Offensive uo/ distribution from expansion app 2640. App 2640 also carries the shared base Main PK3 depot. SteamCMD access requires the appropriate entitlement. Local process lifecycle was validated with apps 2620 and 2640.",
+      "live_validated": true,
+      "app_id": 2620,
+      "additional_app_ids": [2640],
+      "platform": "windows",
+      "authentication": "required",
+      "url": "https://store.steampowered.com/app/2620/"
+    }
+  ],
+  "defaults": {
+    "startmap": "mp_brecourt"
+  },
+  "managed_import": true,
+  "validation": "declared-files-and-content-sentinels",
+  "manual_reason": "Import requires a complete compatible distribution and manual staging. See assets requirements for this game.",
+  "roots": [
+    ""
+  ],
+  "target": "",
+  "case_insensitive": true,
+  "include": [
+    "main/pak*.pk3",
+    "main/localized_english_*.pk3",
+    "uo/pak*.pk3",
+    "uo/localized_english_*.pk3"
+  ],
+  "required": [
+    "main/*.pk3",
+    "uo/*.pk3"
+  ],
+  "module": "coduoserver",
+  "guide": "docs/servers/coduoserver.md",
+  "schema_version": 1,
+  "multiplayer_maps": [
+    "mp_arnhem", "mp_berlin", "mp_bocage", "mp_brecourt", "mp_carentan",
+    "mp_cassino", "mp_chateau", "mp_dawnville", "mp_depot", "mp_foy",
+    "mp_harbor", "mp_hurtgen", "mp_italy", "mp_kharkov", "mp_kursk",
+    "mp_neuville", "mp_pavlov", "mp_ponyri", "mp_powcamp", "mp_railyard",
+    "mp_rhinevalley", "mp_rocket", "mp_ship", "mp_sicily", "mp_stalingrad",
+    "mp_tigertown", "mp_uo_stanjel"
+  ],
+  "required_any": [
+    [
+      "main/pak0.pk3",
+      "main/default_mp.cfg"
+    ]
+  ]
+}

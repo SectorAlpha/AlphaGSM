@@ -46,6 +46,23 @@ def test_install(tmp_path):
     server.data["download_name"] = "test.zip"
     server.data["version"] = "test"
     mod.install(server)
+    skipped = set(mod.install_archive.call_args.kwargs["skip_relative_files"])
+    assert "iowolfmp.x86_64" in skipped
+    assert "iowolfsp.x86_64" in skipped
+    assert "renderer_mp_opengl1_x86_64.so" in skipped
+    assert "main/cgame.mp.x86_64.so" in skipped
+    assert "main/ui.sp.x86_64.so" in skipped
+    assert "main/vm/cgame.mp.qvm" in skipped
+    assert "iowolfded.x86_64" not in skipped
+    assert "main/qagame.mp.x86_64.so" not in skipped
+    assert "main/vm/qagame.mp.qvm" not in skipped
+    assert "main/mp_bin0.pk3" not in skipped
+
+    server.data["exe_name"] = "iowolfmp.x86_64"
+    mod.install(server)
+    skipped = set(mod.install_archive.call_args.kwargs["skip_relative_files"])
+    assert "iowolfmp.x86_64" not in skipped
+    assert "iowolfsp.x86_64" in skipped
 
 def test_get_start_command(tmp_path):
     server = DummyServer()
@@ -63,6 +80,12 @@ def test_get_start_command(tmp_path):
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
         "./iowolfded.x86_64",
+        "+set",
+        "fs_basepath",
+        ".",
+        "+set",
+        "fs_homepath",
+        ".",
         "+set",
         "fs_game",
         "test",
@@ -133,8 +156,18 @@ def test_get_start_command_requires_original_rtcw_assets(tmp_path):
     server.data["hostname"] = "test"
     server.data["port"] = 27015
     server.data["startmap"] = "test"
-    with pytest.raises(ServerError, match="main/mp_bin.pk3"):
+    with pytest.raises(ServerError, match="main/pak0.pk3"):
         mod.get_start_command(server)
+
+
+def test_recipe_requires_retail_pak0_for_dedicated_startup(tmp_path):
+    server = DummyServer("rtcw")
+    server.data["dir"] = str(tmp_path)
+    recipe = mod.get_asset_requirements(server)
+    assert "pak0.pk3" in mod.RTCW_REQUIRED_MULTIPLAYER_ASSETS
+    assert "main/pak0.pk3" in recipe["include"]
+    assert "main/pak0.pk3" in recipe["required"]
+    assert any(item.get("path") == "main/pak0.pk3" for item in recipe["requirements"])
 
 def test_do_stop():
     server = DummyServer()

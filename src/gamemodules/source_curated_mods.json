@@ -21,6 +21,18 @@
           "destinations": ["addons", "cfg"]
         }
       }
+    },
+    "steamworks": {
+      "default": "1.2.3c",
+      "releases": {
+        "1.2.3c": {
+          "url": "https://github.com/KyleSanderson/SteamWorks/releases/download/1.2.3c/package-lin.tgz",
+          "hosts": ["github.com"],
+          "archive_type": "tar.gz",
+          "destinations": ["addons"],
+          "dependencies": ["sourcemod"]
+        }
+      }
     }
   }
 }

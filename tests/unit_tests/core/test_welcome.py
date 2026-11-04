@@ -139,7 +139,7 @@ def test_existing_server_record_is_not_replaced(isolated, monkeypatch):
 
 
 @pytest.mark.parametrize('tag', ['../world', 'someuser/world', 'world;rm', '.', 'x y', 'all', 'ALL', '1', '02',
-                                 'agent', 'self-update', 'start', 'create', 'version'])
+                                 'agent', 'steam-auth', 'self-update', 'start', 'create', 'version'])
 def test_unsafe_names_never_reach_dispatch(isolated, monkeypatch, tag):
     assert execute_tour(monkeypatch, ['1', 'tf2', tag, ''],
                         lambda *args: pytest.fail('unsafe tag dispatched')) == 0

@@ -12,7 +12,8 @@ into the Docker backend.
 
 - `screen`
 - Python packages from `requirements.txt`
-- Original Return to Castle Wolfenstein multiplayer assets in `main/`
+- Original Return to Castle Wolfenstein assets in `main/`
+  - `pak0.pk3` (the retail pack; the dedicated binary refuses to start without it)
   - `mp_bin.pk3`
   - `mp_pak0.pk3` through `mp_pak5.pk3`
   - `mp_pakmaps0.pk3` through `mp_pakmaps6.pk3`
@@ -25,11 +26,17 @@ Create the server:
 alphagsm myrtcwserv create rtcwserver
 ```
 
-Run setup:
+For an owned Steam copy, sign in once and let setup acquire the declared files:
 
 ```bash
-alphagsm myrtcwserv setup
+alphagsm steam-auth login owned your_steam_username
+alphagsm myrtcwserv setup --auth-profile owned
 ```
+
+Enter credentials only at the local SteamCMD prompts. For an existing local
+Steam library, use `setup --steam-dir /path/to/SteamLibrary/steamapps` instead.
+Authenticated setup and the native process lifecycle were validated locally on
+2026-10-16; Docker was not rerun in that local test.
 
 Start it:
 
@@ -55,11 +62,18 @@ Setup configures:
 
 - the game port (default 27960)
 - the install directory
-- downloads and extracts the server archive
+- downloads the ioRTCW Linux engine archive and installs its dedicated executable and multiplayer game module
+- keeps retail `pak0.pk3` and the multiplayer PK3 set intact
+- omits the known loose client executables, renderers and client-only engine modules
 
-This server is supported in `ENABLED (BYO)` mode. Before `start`, copy the original RTCW multiplayer pk3 set into the install's
-`main/` directory. The public ioRTCW engine release is not enough by itself for
-the dedicated multiplayer server.
+The dedicated server answers Quake UDP `getstatus` on its game port. `query` and `info` use that protocol.
+
+This server is supported in `ENABLED (BYO)` mode. When using setup without an
+asset source or saved profile, copy retail `main/pak0.pk3` and the original
+RTCW multiplayer PK3 set into the install's `main/` directory. The public
+ioRTCW engine release is not enough by itself. Do not merge all of
+`patch-data-141.zip`: an owned 1.41 install already contains the matching
+multiplayer packs, and that archive also includes PunkBuster and client binaries.
 
 ## Useful Commands
 
@@ -140,3 +154,17 @@ alphagsm myserver set KEY VALUE
 - **Mod directory**: `<fs_game>/` (default `main/`)
 - **Mod notes**: AlphaGSM can now track direct `.pk3` and archive `url` entries for RTCW, install approved `.pk3` payloads into the active `fs_game` directory, and clean up only AlphaGSM-managed files from `.alphagsm/mods/rtcwserver/`.
 - **Workshop support**: No
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+The preferred Steam-owned path is `alphagsm steam-auth login owned <username>`,
+then `alphagsm <server-name> setup --auth-profile owned`. Setup remembers the
+profile name and fetches missing required files before installing the engine.
+Use `setup --steam-dir /path/to/SteamLibrary/steamapps` to import from an existing
+Steam library instead. Direct file acquisition remains available through
+`assets fetch steam-owned --auth-profile owned`.
+Authenticated downloads remain unverified here.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

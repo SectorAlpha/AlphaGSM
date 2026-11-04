@@ -1,0 +1,30 @@
+{
+  "description": "Medal of Honor: Allied Assault complete compatible server tree",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    },
+    {
+      "path": "main/*.pk3",
+      "kind": "glob"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Use owned MOHAA main/ game data and a compatible complete Linux dedicated server/runtime tree. OpenMoHAA is a separate engine choice, not an automatic substitute.",
+      "live_validated": false
+    }
+  ],
+  "defaults": {
+    "exe_name": "mohaa_lnxded"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "mohaaserver",
+  "guide": "docs/servers/mohaaserver.md",
+  "schema_version": 1
+}

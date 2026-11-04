@@ -82,6 +82,11 @@ create is still the live source of truth.
 
 <!-- alphagsm-server-variables:end -->
 
+## World reset
+
+`wipe` deletes `Pal/Saved/SaveGames` and leaves `Pal/Saved/Config`.
+`wipe --mode hard` reinstalls the server and keeps that config directory.
+
 ## Developer Notes
 
 ### Run File

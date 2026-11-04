@@ -18,6 +18,7 @@ def test_configure_basic(tmp_path):
     server = DummyServer()
     mod.configure(server, ask=False, port=27910, dir=str(tmp_path))
     assert server.data['port'] == 27910
+    assert server.data['startmap'] == 'dm-deathray'
 
 
 def test_configure_ask_defaults(tmp_path, monkeypatch):
@@ -50,14 +51,36 @@ def test_install(tmp_path):
     mod.install(server)
 
 
-def test_install_without_staged_tree_requires_byo(tmp_path):
+def test_install_without_staged_tree_requires_byo(tmp_path, monkeypatch):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "crx-dedicated"
     server.data["Steam_AppID"] = 629540
     server.data["Steam_anonymous_login_possible"] = True
+    monkeypatch.setattr(mod, "stage_public_dedicated_tree", lambda _server: False)
     with pytest.raises(ServerError, match="ENABLED \\(BYO\\): alienarenaserver"):
         mod.install(server)
+
+
+def test_install_links_distro_dedicated_tree_when_steam_has_no_binary(tmp_path, monkeypatch):
+    binary = tmp_path / "alienarena-ded"
+    binary.write_text("")
+    data_root = tmp_path / "data"
+    (data_root / "data1").mkdir(parents=True)
+    (data_root / "arena").mkdir()
+    monkeypatch.setattr(mod, "DISTRO_BINARY_CANDIDATES", (str(binary),))
+    monkeypatch.setattr(mod, "DISTRO_DATA_ROOT", str(data_root))
+    server = DummyServer()
+    install_dir = tmp_path / "install"
+    server.data["dir"] = str(install_dir) + "/"
+    server.data["exe_name"] = "crx-dedicated"
+    server.data["Steam_AppID"] = 629540
+    server.data["Steam_anonymous_login_possible"] = True
+    mod.install(server)
+    assert os.path.islink(install_dir / "crx-dedicated")
+    assert os.path.samefile(install_dir / "crx-dedicated", binary)
+    assert os.path.isdir(install_dir / "data1")
+    assert os.path.isdir(install_dir / "arena")
 
 
 def test_update_with_restart(tmp_path):
@@ -116,7 +139,13 @@ def test_get_start_command(tmp_path):
         "27015",
         "+set",
         "hostname",
-        "test",
+        '"test"',
+        "+set",
+        "deathmatch",
+        "1",
+        "+set",
+        "maxclients",
+        "8",
         "+map",
         "test",
     ]

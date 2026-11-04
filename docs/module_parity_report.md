@@ -169,6 +169,7 @@ Native declarations remain separate from process launch requirements and the req
 | pixarkserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  | unknown | unknown | unknown |
 | police1013server | - | ENABLED (AUTH) | no | no | status | steamcmd-linux | unknown | unknown | provider-license | unknown | unknown | unknown |
 | primalcarnageextinctionserver | - | PASSED | no | yes | status | wine-proton | unknown | unknown |  | unknown | unknown | unknown |
+| projectreclaimer | - | UNKNOWN | yes | no | - | wine-proton | unknown | unknown |  | linux, windows | x86_64 | linux |
 | projectzomboid | pzserver | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
 | pvkiiserver | - | PASSED | yes | yes | - | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |
 | pvrserver | - | PASSED | no | yes | status | steamcmd-linux | unknown | unknown |  | unknown | unknown | unknown |

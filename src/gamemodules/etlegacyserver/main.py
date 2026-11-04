@@ -4,8 +4,11 @@ import os
 from pathlib import Path
 import re
 import shutil
+import subprocess as sp
+import tempfile
 import urllib.request
 
+import downloader
 import server.runtime as runtime_module
 from server import ServerError
 from server.modsupport.downloads import (
@@ -30,6 +33,17 @@ from utils.gamemodules import common as gamemodule_common
 ETLEGACY_DOWNLOAD_PAGE = "https://www.etlegacy.com/download"
 ETLEGACY_RELEASE_LIST_PAGE = "https://www.etlegacy.com/download/release/list"
 ETLEGACY_MOD_CACHE_DIRNAME = "etlegacyserver"
+# Official freeware full-game archive linked from the Splash Damage Wolf: ET page.
+# The ET: Legacy FAQ points operators at that page because the engine download
+# does not include these packs. pak0.pk3 alone is only the engine sentinel.
+ET_STOCK_ARCHIVE_URL = "https://cdn.splashdamage.com/downloads/games/wet/et260b.x86_full.zip"
+ET_STOCK_ARCHIVE_NAME = "et260b.x86_full.zip"
+ET_STOCK_INSTALLER_NAME = "et260b.x86_keygen_V03.run"
+ET_STOCK_MULTIPLAYER_PAKS = (
+    "pak0.pk3",
+    "pak1.pk3",
+    "pak2.pk3",
+)
 ETLEGACY_ALLOWED_MOD_SUFFIXES = {
     ".7z": "7z",
     ".pk3": "pk3",
@@ -495,6 +509,89 @@ def configure(
     return (), {}
 
 
+def _official_installer_path(downloadpath):
+    """Return the freeware installer extracted from the official archive."""
+
+    root = Path(downloadpath)
+    expected = root / ET_STOCK_INSTALLER_NAME
+    if expected.is_file():
+        return expected
+    candidates = sorted(path for path in root.glob("*.run") if path.is_file())
+    if len(candidates) != 1:
+        raise ServerError("Official Enemy Territory installer payload was not found")
+    return candidates[0]
+
+
+def _extract_official_installer(installer_path, extract_dir):
+    """Extract the freeware installer without running its setup script."""
+
+    completed = sp.run(
+        [
+            "sh",
+            str(installer_path),
+            "--nox11",
+            "--noexec",
+            "--target",
+            extract_dir,
+        ],
+        check=False,
+        stdout=sp.PIPE,
+        stderr=sp.STDOUT,
+        text=True,
+    )
+    if completed.returncode != 0:
+        detail = (completed.stdout or "").strip().splitlines()
+        tail = detail[-1] if detail else "extract failed"
+        raise ServerError(
+            "Unable to extract the official Enemy Territory freeware archive: %s" % (tail,)
+        )
+
+
+def _stock_pak_source(extract_root, filename):
+    """Return the single etmain pack inside an extracted freeware installer."""
+
+    matches = [
+        path
+        for path in Path(extract_root).rglob(filename)
+        if path.is_file() and path.parent.name == "etmain"
+    ]
+    if len(matches) != 1:
+        raise ServerError(
+            "Official Enemy Territory freeware archive did not contain exactly one etmain/%s"
+            % (filename,)
+        )
+    return matches[0]
+
+
+def _stage_stock_multiplayer_paks(server):
+    """Stage pak0.pk3, pak1.pk3, and pak2.pk3 into etmain/ from the official archive."""
+
+    install_dir = server.data["dir"]
+    if not _missing_required_base_assets(install_dir):
+        return
+    downloadpath = downloader.getpath(
+        "url",
+        (ET_STOCK_ARCHIVE_URL, ET_STOCK_ARCHIVE_NAME, "zip"),
+    )
+    installer_path = _official_installer_path(downloadpath)
+    with tempfile.TemporaryDirectory(prefix="alphagsm-etlegacy-etmain-") as extract_dir:
+        _extract_official_installer(installer_path, extract_dir)
+        sources = [
+            _stock_pak_source(extract_dir, filename)
+            for filename in ET_STOCK_MULTIPLAYER_PAKS
+        ]
+        destination = Path(install_dir) / "etmain"
+        destination.mkdir(parents=True, exist_ok=True)
+        for source in sources:
+            shutil.copy2(source, destination / source.name)
+    missing_assets = _missing_required_base_assets(install_dir)
+    if missing_assets:
+        raise ServerError(
+            "Official Enemy Territory freeware archive did not provide %s"
+            % (", ".join(missing_assets),)
+        )
+
+
 def install(server):
     """Download and install the ET: Legacy server archive."""
 
@@ -504,25 +601,39 @@ def install(server):
         server.data["url"] = resolved_url
         server.data.setdefault("download_name", "etlegacy-v%s-x86_64.tar.gz" % (resolved_version,))
     install_archive(server, detect_compression(server.data["download_name"]))
+    _stage_stock_multiplayer_paks(server)
     sync_server_config(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
         apply_configured_mods(server)
 
 
-def _assert_required_base_assets(install_dir):
-    """Raise when the ET: Legacy install lacks the required original ET assets."""
+def _missing_required_base_assets(install_dir):
+    """Return stock Enemy Territory packs still missing from the install."""
 
-    pak0_path = os.path.join(install_dir, "etmain", "pak0.pk3")
-    if os.path.isfile(pak0_path):
+    etmain_dir = os.path.join(install_dir, "etmain")
+    return [
+        "etmain/%s" % (filename,)
+        for filename in ET_STOCK_MULTIPLAYER_PAKS
+        if not os.path.isfile(os.path.join(etmain_dir, filename))
+    ]
+
+
+def _assert_required_base_assets(install_dir):
+    """Raise when the ET: Legacy install lacks the stock multiplayer packs."""
+
+    missing_assets = _missing_required_base_assets(install_dir)
+    if not missing_assets:
         return
     gamemodule_common.raise_byo_requirement(
         "etlegacyserver",
-        "original Wolfenstein: Enemy Territory base assets",
+        "original Wolfenstein: Enemy Territory multiplayer packs",
         actions=(
-            "Copy etmain/pak0.pk3 into <install_dir>/etmain/",
-            "Some mods may also require etmain/pak1.pk3 and etmain/pak2.pk3",
-            "Retry start once the required assets are present",
+            "Copy etmain/pak0.pk3, etmain/pak1.pk3, and etmain/pak2.pk3 into <install_dir>/etmain/: {}".format(
+                ", ".join(missing_assets)
+            ),
+            "pak0.pk3 alone does not satisfy the stock set",
+            "Retry start once those files are present",
         ),
         docs_slug="etlegacyserver",
     )
@@ -677,3 +788,9 @@ def checkvalue(server, key, *value):
         ),
         backup_module=backup_utils,
     )
+
+
+def get_asset_requirements(server):
+    """Describe this game's owned files, acquisition routes and staging limits."""
+    from utils.byo_files import load_requirements
+    return load_requirements(server, __file__, 'byo_assets.json')

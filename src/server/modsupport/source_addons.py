@@ -51,6 +51,15 @@ _ARCHIVE_URL_SUFFIXES = {
 }
 
 
+def merge_framework_commands(mod_support, commands, command_args, command_descriptions, command_functions):
+    """Add a framework manifest command surface to an existing module."""
+
+    command_args.update(mod_support.command_args)
+    command_descriptions.update(mod_support.command_descriptions)
+    command_functions.update(mod_support.command_functions)
+    return commands + mod_support.commands
+
+
 def load_shared_source_curated_registry():
     """Load the shared curated Source-addon registry or an override file."""
 
@@ -89,6 +98,7 @@ def build_source_addon_mod_support(
     allow_bare_addon_root: bool = False,
     bare_addon_marker_files: tuple[str, ...] = (),
     bare_addon_marker_dirs: tuple[str, ...] = (),
+    replace_unowned: bool = False,
 ):
     """Return a command surface for Source-game addon management."""
 
@@ -334,6 +344,37 @@ def build_source_addon_mod_support(
             installed_paths.append(destination)
         return build_owned_manifest(server_root, installed_paths)
 
+    def _original_backup_path(server_root: Path, relative: str) -> Path:
+        return server_root / ".alphagsm" / "mod-originals" / relative
+
+    def _prune_empty_parents(start: Path, stop: Path) -> None:
+        current = start
+        while current != stop and current.exists():
+            try:
+                current.rmdir()
+            except OSError:
+                break
+            current = current.parent
+
+    def _backup_replaced_files(server_root: Path, payload_root: Path, game_root: Path) -> None:
+        """Keep the pre-framework copy of each game file a pack replaces."""
+
+        for source in payload_root.rglob("*"):
+            if not source.is_file():
+                continue
+            payload_relative = source.relative_to(payload_root)
+            if not _allowed_payload_path(payload_relative):
+                continue
+            target = game_root / payload_relative
+            if not target.is_file() or target.is_symlink():
+                continue
+            relative = target.resolve().relative_to(server_root).as_posix()
+            backup = _original_backup_path(server_root, relative)
+            if backup.exists():
+                continue
+            backup.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(target, backup)
+
     def _validate_install_destinations(server, payload_root, destination_root, *, approved_only=False):
         """Reject all unowned/active-owner collisions before copying a payload."""
         server_root = Path(server.data["dir"]).resolve()
@@ -352,7 +393,8 @@ def build_source_addon_mod_support(
             relative = target.relative_to(server_root).as_posix()
             target = safe_server_path(server, relative)
             current_owners = owners.get(relative, set())
-            if current_owners.intersection(desired_ids) or (target.exists() and not current_owners):
+            replaces_existing = replace_unowned and target.is_file() and not current_owners
+            if current_owners.intersection(desired_ids) or (target.exists() and not current_owners and not replaces_existing):
                 raise ModSupportError(f"Addon install collision with an unowned or active file: {relative}")
             if target.exists() and not target.is_file():
                 raise ModSupportError(f"Addon install collision with a directory: {relative}")
@@ -371,6 +413,8 @@ def build_source_addon_mod_support(
         payload_root = _discover_payload_root(stage_root)
         if _payload_has_allowed_content(payload_root):
             _validate_install_destinations(server, payload_root, game_root, approved_only=True)
+            if replace_unowned:
+                _backup_replaced_files(server_root, payload_root, game_root)
             installed_paths = install_staged_tree(
                 staged_root=payload_root,
                 server_root=game_root,
@@ -584,6 +628,14 @@ def build_source_addon_mod_support(
                 targets.append(target)
 
         for target in targets:
+            relative_path = target.relative_to(server_root).as_posix()
+            backup = _original_backup_path(server_root, relative_path)
+            if backup.is_file() and not backup.is_symlink():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(backup, target)
+                backup.unlink()
+                _prune_empty_parents(backup.parent, server_root / ".alphagsm")
+                continue
             if target.exists():
                 target.unlink()
 

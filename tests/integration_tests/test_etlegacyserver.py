@@ -22,7 +22,7 @@ from conftest import (
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skip(
-        reason="ENABLED (BYO): requires original Wolfenstein: Enemy Territory base assets (etmain/pak0.pk3) not available in CI"
+        reason="ENABLED (BYO): local process lifecycle passed on 2026-10-16. This CI lane has not been rerun after setup gained the Splash Damage freeware pack download."
     ),
 ]
 

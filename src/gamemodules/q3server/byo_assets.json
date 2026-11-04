@@ -1,0 +1,63 @@
+{
+  "description": "Quake III Arena base and patch data",
+  "requirements": [
+    {
+      "path": "baseq3/pak0.pk3",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Copy baseq3/pak0.pk3 from an owned Steam, GOG or CD installation. Retain compatible pak1.pk3 through pak8.pk3 patch data from the game/official point release; engine binaries are separate.",
+      "live_validated": false,
+      "url": "https://ioquake3.org/help/players-guide/"
+    },
+    {
+      "id": "steam-owned",
+      "kind": "steamcmd",
+      "instructions": "Copy baseq3/pak0.pk3 from an owned Steam, GOG or CD installation. Retain compatible pak1.pk3 through pak8.pk3 patch data from the game/official point release; engine binaries are separate.",
+      "live_validated": true,
+      "app_id": 2200,
+      "platform": "windows",
+      "authentication": "required",
+      "url": "https://store.steampowered.com/app/2200/"
+    }
+  ],
+  "defaults": {},
+  "managed_import": true,
+  "validation": "declared-files-and-content-sentinels",
+  "manual_reason": "Import requires a complete compatible distribution and manual staging. See assets requirements for this game.",
+  "roots": [
+    ""
+  ],
+  "target": "",
+  "include": [
+    "baseq3/pak0.pk3",
+    "baseq3/pak1.pk3",
+    "baseq3/pak2.pk3",
+    "baseq3/pak3.pk3",
+    "baseq3/pak4.pk3",
+    "baseq3/pak5.pk3",
+    "baseq3/pak6.pk3",
+    "baseq3/pak7.pk3",
+    "baseq3/pak8.pk3"
+  ],
+  "required": [
+    "baseq3/pak0.pk3"
+  ],
+  "case_insensitive": true,
+  "module": "q3server",
+  "guide": "docs/servers/q3server.md",
+  "schema_version": 1,
+  "multiplayer_maps": [
+    "pro-q3dm13", "pro-q3dm6", "pro-q3tourney2", "pro-q3tourney4",
+    "q3ctf1", "q3ctf2", "q3ctf3", "q3ctf4",
+    "q3dm0", "q3dm1", "q3dm2", "q3dm3", "q3dm4", "q3dm5", "q3dm6", "q3dm7",
+    "q3dm8", "q3dm9", "q3dm10", "q3dm11", "q3dm12", "q3dm13", "q3dm14",
+    "q3dm15", "q3dm16", "q3dm17", "q3dm18", "q3dm19",
+    "q3tourney1", "q3tourney2", "q3tourney3", "q3tourney4", "q3tourney5",
+    "q3tourney6", "q3tourney6_ctf", "test_bigbox"
+  ]
+}

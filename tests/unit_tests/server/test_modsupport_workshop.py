@@ -136,6 +136,47 @@ def test_unavailable_or_invalid_item_metadata_rejected(monkeypatch, record):
         provider.resolve_workshop_item("10", 730)
 
 
+def test_missing_workshop_explains_private_or_unlisted(monkeypatch):
+    provider, _ = fake_api(monkeypatch, {"3819008159": detail("3819008159", result=9)})
+    with pytest.raises(ModSupportError, match="3819008159 was not found.*private, unlisted, or removed"):
+        provider.resolve_workshop_item("3819008159", 550)
+
+
+def test_missing_workshop_batch_names_every_id(monkeypatch):
+    provider, _ = fake_api(monkeypatch, {})
+    with pytest.raises(ModSupportError, match="items 10, 11 were not found.*private, unlisted, or removed"):
+        provider.resolve_workshop_items(["10", "11"], 730)
+
+
+@pytest.mark.parametrize("visibility,label", [
+    (0, "public"), (1, "friends-only"), (2, "private"), (3, "unlisted"),
+])
+def test_workshop_visibility_is_reported(monkeypatch, capsys, visibility, label):
+    record = detail(10, app_id=550)
+    record.update(visibility=visibility, title="Survivors Don't Like Lights\n")
+    provider, _ = fake_api(monkeypatch, {"10": record})
+    assert provider.resolve_workshop_item("10", 550)["workshop_id"] == "10"
+    assert capsys.readouterr().out.strip() == f"Steam Workshop item 10 is {label}: Survivors Don't Like Lights"
+
+
+def test_public_collection_and_child_are_reported(monkeypatch, capsys):
+    collection = detail(1, file_type=2)
+    collection.update(visibility=0, title="Map Pack")
+    child = detail(10)
+    child.update(visibility=0, title="Map")
+    provider, _ = fake_api(monkeypatch, {"1": collection, "10": child}, {"1": [10]})
+    assert provider.resolve_workshop_collection("1", 730) == ["10"]
+    output = capsys.readouterr().out
+    assert "Steam Workshop collection 1 is public: Map Pack" in output
+    assert "Steam Workshop item 10 is public: Map" in output
+
+
+def test_resolved_workshop_without_visibility_stays_quiet(monkeypatch, capsys):
+    provider, _ = fake_api(monkeypatch, {"10": detail(10)})
+    provider.resolve_workshop_item("10", 730)
+    assert capsys.readouterr().out == ""
+
+
 def test_nested_collection_preserves_order_and_deduplicates(monkeypatch):
     records = {"1": detail(1, file_type=2), "2": detail(2, file_type=2),
                "10": detail(10), "11": detail(11), "12": detail(12)}
@@ -163,7 +204,7 @@ def test_collection_cycles_rejected(monkeypatch):
 def test_collection_with_unavailable_child_fails_instead_of_partial_import(monkeypatch):
     provider, _ = fake_api(monkeypatch, {"1": detail(1, file_type=2), "10": detail(10)},
                            {"1": [10, 11]})
-    with pytest.raises(ModSupportError, match="unavailable"):
+    with pytest.raises(ModSupportError, match="11 was not found.*private, unlisted, or removed"):
         provider.resolve_workshop_collection("1", 730)
 
 

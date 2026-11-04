@@ -72,3 +72,12 @@ create is still the live source of truth.
 - The start surface follows LinuxGSM's UT3 launch pattern, including `ConfigSubDir=<server-name>`, `-queryport`, `-nohomedir`, and `-unattended`.
 - The active config path defaults to `UTGame/Config/<server-name>/UTGame.ini`.
 - Automated install is not provided because LinuxGSM does not expose a concrete upstream download path for UT3; this module manages user-provided files instead.
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This helper checks known sentinels only and directs you to stage the complete
+compatible distribution manually; managed import is unavailable for this recipe.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

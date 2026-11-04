@@ -12,11 +12,12 @@
 #   make config        — copy alphagsm.conf-template → alphagsm.conf (once)
 #   make lint          — run the pylint quality gate (must score 10.00/10)
 #   make test          — run the unit test suite
+#   make local-test    — run local Steam-auth and BYO unit checks (not CI)
 #   make skills-check  — validate agent skill metadata, links and discovery
 #   make help          — show this message
 # ==============================================================================
 
-.PHONY: all install python deps system-libs wine proton wine-proton config lint test skills-check coverage integration-test smoke-test help
+.PHONY: all install python deps system-libs wine proton wine-proton config lint test local-test skills-check coverage integration-test smoke-test help
 
 
 # Read the pinned Python version from .python-version (e.g. 3.10.13)
@@ -182,6 +183,9 @@ lint: skills-check
 
 test: skills-check
 	PYTHONPATH=.:src $(PYTHON_BIN) -m pytest tests/unit_tests -n auto
+
+local-test:
+	PYTHON_BIN=$(PYTHON_BIN) bash run_local_tests.sh unit
 
 coverage:
 	PYTHONPATH=.:src $(PYTHON_BIN) -m pytest tests/unit_tests \

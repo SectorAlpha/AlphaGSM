@@ -60,22 +60,22 @@
 # maxtries = 238328
 
 [downloader.steamcmd]
-## user - The directory SteamCMD is installed into. Defaults to 
-## "~/.local/steam" if it exists else "~/Steam"
-# steamcmd_path = /home/alphagsm_user/Steam/
+## user - The directory SteamCMD is installed into. When unset, AlphaGSM
+## uses an existing Steam client directory for this operating system.
+## Linux: ~/.local/share/Steam, ~/.steam/root, or ~/.steam/steam, else ~/Steam
+## macOS: ~/Library/Application Support/Steam
+## Windows: the Steam registry path, then Program Files (x86)\Steam or
+## Program Files\Steam, else ~/Steam
+# steamcmd_path = ~/Steam/
 
 ## user - The directory SteamCMD related scripts are written to. Defaults to
 ## "~/.alphagsm/steamcmd_scripts"
 # steamcmd_scripts = ~/.alphagsm/steamcmd_scripts
 
-## user - Steam account username for owned-game dedicated servers that do not support
-## anonymous SteamCMD login.
-# username = your_steam_username
-
-## user - Steam account password for owned-game dedicated servers that do not support
-## anonymous SteamCMD login. Leaving this blank is allowed if SteamCMD can complete
-## login another way for your account setup.
-# password = your_steam_password
+## Owned-game downloads can use an isolated, reusable SteamCMD session:
+## alphagsm steam-auth login PROFILE USERNAME
+## Enter passwords and Steam Guard only in SteamCMD's interactive prompt.
+## Profiles live under ${alphagsm_path}/steam-auth/; do not put passwords here.
 
 [server]
 ## user - the path to store the alphagsm data file in. can use ~ for the users home directory.

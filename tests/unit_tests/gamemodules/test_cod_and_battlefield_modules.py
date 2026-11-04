@@ -48,7 +48,9 @@ def test_cod2server_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = cod2server.get_start_command(server)
 
-    assert cmd[0] == "./cod2_lnxded"
+    assert cmd[0] == "env"
+    assert cmd[1] == "LD_LIBRARY_PATH=."
+    assert cmd[2] == "./cod2_lnxded"
     assert "+map" in cmd
     assert "fs_game" not in cmd
     assert cwd == server.data["dir"]
@@ -56,12 +58,12 @@ def test_cod2server_get_start_command_builds_expected_args(tmp_path):
 
 def test_cod4server_get_start_command_builds_expected_args(tmp_path):
     server = DummyServer("cod4")
-    exe = tmp_path / "cod4_lnxded"
+    exe = tmp_path / "cod4x18_dedrun"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "cod4_lnxded",
+            "exe_name": "cod4x18_dedrun",
             "moddir": "main",
             "hostname": "AlphaGSM cod4",
             "port": 28960,
@@ -71,7 +73,11 @@ def test_cod4server_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = cod4server.get_start_command(server)
 
-    assert cmd[0] == "./cod4_lnxded"
+    assert cmd[0] == "./cod4x18_dedrun"
+    assert "LD_LIBRARY_PATH=." not in cmd
+    assert "libstdc++.so.5" not in cmd
+    assert cmd[cmd.index("dedicated") + 1] == "2"
+    assert cmd[cmd.index("sv_punkbuster") + 1] == "0"
     assert "sv_hostname" in cmd
     assert "fs_game" not in cmd
     assert cwd == server.data["dir"]
@@ -79,12 +85,12 @@ def test_cod4server_get_start_command_builds_expected_args(tmp_path):
 
 def test_cod4server_get_start_command_keeps_fs_game_for_custom_moddir(tmp_path):
     server = DummyServer("cod4mod")
-    exe = tmp_path / "cod4_lnxded"
+    exe = tmp_path / "cod4x18_dedrun"
     exe.write_text("")
     server.data.update(
         {
             "dir": str(tmp_path) + "/",
-            "exe_name": "cod4_lnxded",
+            "exe_name": "cod4x18_dedrun",
             "moddir": "promodlive",
             "hostname": "AlphaGSM cod4mod",
             "port": 28960,
@@ -115,7 +121,9 @@ def test_coduoserver_get_start_command_builds_expected_args(tmp_path):
 
     cmd, cwd = coduoserver.get_start_command(server)
 
-    assert cmd[0] == "./coduo_lnxded"
+    assert cmd[0] == "env"
+    assert cmd[1] == "LD_LIBRARY_PATH=."
+    assert cmd[2] == "./coduo_lnxded"
     assert "+set" in cmd
     assert "fs_game" not in cmd
     assert cwd == server.data["dir"]
@@ -165,5 +173,5 @@ def test_cod_family_query_and_info_use_declared_protocol():
         info_address = module.get_info_address(server)
 
         assert query_address[1] == 28960
-        assert query_address[2] == ("quake" if module is codwawserver else "tcp")
+        assert query_address[2] == "quake"
         assert info_address == query_address

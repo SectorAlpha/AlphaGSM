@@ -45,6 +45,65 @@ def test_install(tmp_path):
     server.data["download_name"] = "test.zip"
     mod.install(server)
 
+
+def test_stage_gcc3_runtime_copies_extracted_cache_directory(tmp_path, monkeypatch):
+    install = tmp_path / "install"
+    install.mkdir()
+    (install / "cod_lnxded").write_bytes(b"elf")
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    (cache / "libstdc++.so.5.0.3").write_bytes(b"realstd")
+    (cache / "libstdc++.so.5").symlink_to("libstdc++.so.5.0.3")
+    (cache / "libgcc_s.so.1").write_bytes(b"gcc")
+    (cache / "cod-gcc3-libs.tar.bz2").write_bytes(b"not-a-tar")
+    calls = []
+    monkeypatch.setattr(mod.downloader, "getpath", lambda *args: calls.append(args) or str(cache))
+
+    def reject_archive(*_args, **_kwargs):
+        raise AssertionError("extracted cache must not be opened as a tarball")
+
+    monkeypatch.setattr(mod.tarfile, "open", reject_archive)
+    server = DummyServer()
+    server.data["dir"] = str(install) + "/"
+    server.data["exe_name"] = "cod_lnxded"
+
+    mod._stage_gcc3_runtime(server)
+
+    assert (install / "libstdc++.so.5").read_bytes() == b"realstd"
+    assert not (install / "libstdc++.so.5").is_symlink()
+    assert (install / "libgcc_s.so.1").read_bytes() == b"gcc"
+    assert calls == [("url", (mod.COD_GCC3_LIBS_URL, mod.COD_GCC3_LIBS_NAME, "tar.bz2"))]
+
+    mod._stage_gcc3_runtime(server)
+    assert len(calls) == 1
+
+
+def test_stage_gcc3_runtime_reads_a_tarball_path(tmp_path, monkeypatch):
+    import io
+    import tarfile
+
+    install = tmp_path / "install"
+    install.mkdir()
+    (install / "cod_lnxded").write_bytes(b"elf")
+    archive_path = tmp_path / "libs.tar.bz2"
+    payload = io.BytesIO()
+    with tarfile.open(fileobj=payload, mode="w") as archive:
+        for name, content in (("libstdc++.so.5", b"std"), ("libgcc_s.so.1", b"gcc")):
+            data = content
+            info = tarfile.TarInfo(name="gcc3/" + name)
+            info.size = len(data)
+            archive.addfile(info, io.BytesIO(data))
+    archive_path.write_bytes(payload.getvalue())
+    monkeypatch.setattr(mod.downloader, "getpath", lambda *_args: str(archive_path))
+    server = DummyServer()
+    server.data["dir"] = str(install) + "/"
+    server.data["exe_name"] = "cod_lnxded"
+
+    mod._stage_gcc3_runtime(server)
+
+    assert (install / "libstdc++.so.5").read_bytes() == b"std"
+    assert (install / "libgcc_s.so.1").read_bytes() == b"gcc"
+
 def test_get_start_command(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "has_start_map", lambda *args: True)
     server = DummyServer()
@@ -57,7 +116,15 @@ def test_get_start_command(tmp_path, monkeypatch):
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
+        "env",
+        "LD_LIBRARY_PATH=.",
         "./cod_lnxded",
+        "+set",
+        "fs_basepath",
+        ".",
+        "+set",
+        "fs_homepath",
+        ".",
         "+set",
         "fs_game",
         "test",
@@ -90,7 +157,8 @@ def test_get_start_command_prefers_resolved_nested_launcher(tmp_path, monkeypatc
 
     cmd, cwd = mod.get_start_command(server)
 
-    assert cmd[0] == "./cod_lnxded"
+    assert cmd[0] == "env"
+    assert cmd[2] == "./cod_lnxded"
     assert cwd == str(nested_dir)
 
 

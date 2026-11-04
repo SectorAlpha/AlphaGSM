@@ -7,6 +7,33 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-10-23
+- CI: runtime and integration image builds reuse GitHub Actions layer
+  cache. Each family has its own cache scope. This does not cover the
+  registry login that pulls a job container before the first step.
+
+2026-10-22
+- CI: TF2 Workshop probes wait until their own console BEGIN line is
+  visible. A single logs snapshot was often one probe behind and failed
+  the run after the map was already loaded.
+- SteamCMD: retry only known transient results. Those are state 0x202 flakes
+  (known app ids, or any app after a zero-progress reconfigure), state 0x2
+  when the update job leaves the app Update Required, Missing configuration
+  for the requested app, and a first-run bootstrap that exits 0 without an
+  ERROR line. Any other SteamCMD failure stops on that attempt.
+- Frameworks: install pinned Rust Oxide 2.0.7830, Valheim BepInEx 5.4.23.5,
+  and CS2 MetaMod 2.0.0-git1483 plus CounterStrikeSharp 1.0.377 with
+  `mod add manifest`.
+- Wipe: `--mode soft` deletes declared world data. `--mode hard` reinstalls
+  server files and restores configuration. Palworld, Valheim, and Project
+  Zomboid now declare soft-wipe and hard-wipe paths.
+- Docker: `set memory` and `set cpus` add container limits. An unset Java
+  heap becomes 75 percent of the memory limit.
+- Mod packs: install pinned Oxide for Hurtworld, The Forest, and Reign of
+  Kings, and Windows BepInEx for Risk of Rain 2 and Sons of the Forest.
+  Source servers can install pinned SteamWorks 1.2.3c, which also installs
+  SourceMod. Replaced game files are restored by `mod cleanup`.
+
 2026-10-20
 - Sector Alpha: the agent uses https://alphagsm-api.sector-alpha.net for
   every operation, including enrollment. It does not ask which host to use.
@@ -59,6 +86,47 @@ Historical detail lives in git history. Keep this file focused on release-facing
 - Deployment: enable website onboarding routes before upgrading clients, then
   restrict the API gateway to stats and execution routes. Restart existing agents.
 
+2026-10-17
+- SteamCMD: detect the default Steam directory from the host operating
+  system. Linux keeps `~/.local/share/Steam` and the `~/.steam` links,
+  macOS uses `~/Library/Application Support/Steam`, and Windows uses the
+  Steam registry path or Program Files. `~/Steam` remains the fallback
+  except on macOS. An explicit `steamcmd_path` still wins. The installer
+  remains the Linux SteamCMD client, using `steamcmd.exe` only as the
+  Windows executable name.
+- Local tests: disposable server files default to the checkout's
+  `.local-tests/` directory. Set `ALPHAGSM_LOCAL_WORK_ROOT` to place that
+  tree on another disk. SteamCMD still uses the configured Steam location.
+- CI: keep shared Valve helpers under the module line limit, refresh the
+  module parity report, build Docker commands when the host has no Wine or
+  Proton, store the FOUNDRY example as app.cfg, and reject backslash names
+  in owned-asset archives on Windows.
+- GRAV lifecycle: anonymous Steam app 332500 mounts no depot. An entitled
+  profile installs the Win32 dedicated server. Linux launches
+  Binaries/Win32/CAGGameServer-Win32-Shipping.exe with Wine. The server
+  name is the last broker option so the A2S hostname is not merged with
+  later settings. Local process query and info answered A2S on UDP 41002
+  (hostname lagrav, map Reborn Update 9.8.1, 0/255). The game port was
+  41000 and the peer port was 41001. The server was stopped. Docker was
+  not rerun.
+- Zombie Master: Reborn lifecycle: anonymous Steam app 244310 on branch
+  previous2021 installs the 32-bit SDK scaffold. The official Linux archive
+  linked from zombiemaster.dev supplies zombie_master_reborn/, including
+  maps/zm_docksofthedead.bsp. prestart aliases bin/*_srv.so and restores
+  the srcds execute bit. This build reports sv_hibernate_when_empty as an
+  unknown command. Local process query and info still answered A2S on UDP
+  42202 (hostname AlphaGSM Zombie Master: Reborn, map zm_docksofthedead,
+  0/16) and stopped. The public local integration passed in 46.64s. Docker
+  was not rerun.
+- SourceForts Classic lifecycle: anonymous Steam app 244310 on branch
+  previous2021 installs the 32-bit SDK scaffold. The official ModDB 1.0 RC7
+  (Fix) tree supplies sfclassic/, including maps/sf_astrodome.bsp. prestart
+  aliases bin/*_srv.so, restores the srcds execute bit, and sets
+  sv_hibernate_when_empty 0. Local process query and info answered A2S on
+  UDP 58844 (A2S hostname Sourceforts Classic 1.0 [BUILD], map
+  sf_astrodome, 0/32) and stopped. The public local integration passed in
+  47.02s. Docker was not rerun.
+
 2026-10-16
 - First run: offer a skippable setup tour on bare interactive launches, with
   --welcome to replay and --skip-welcome for noninteractive opt-out.
@@ -67,6 +135,130 @@ Historical detail lives in git history. Keep this file focused on release-facing
   the tour never starts games or enables reporting/remote management.
 - Tests: add isolated real-terminal CLI integration/smoke coverage for first-run
   skip/replay, local creation and selector/reserved-name overwrite prevention.
+- Nuclear Dawn lifecycle: an entitled profile installs Steam app 111710,
+  including nucleardawn/maps/hydro.bsp. Anonymous install does not. NTFS
+  omitted the execute bit on srcds_linux, and prestart now restores it.
+  After that fix, local process query and info answered A2S on UDP 36736
+  (hostname AlphaGSM Nuclear Dawn, map hydro, 0/32) and stopped. The first
+  scripted lifecycle timed out before the fix. Docker was not rerun.
+- ET: Legacy lifecycle: local process setup staged etmain/pak0.pk3, pak1.pk3,
+  and pak2.pk3 from the Splash Damage freeware archive, answered native Quake
+  getstatus (oasis, 0/24, hostname ET: Legacy Host) on UDP 57831, and stopped.
+  Docker was not rerun. The six stock maps are battery, fueldump, goldrush,
+  oasis, radar, and railgun.
+- Alien Arena lifecycle: anonymous Steam app 629540 mounts no content depots.
+  Setup then links the Debian/Ubuntu alien-arena-server and alien-arena-data
+  packages. Local process query and info answered Quake II status
+  (dm-deathray, 0/8, hostname AlphaGSM laalienarenaserver) on UDP 53777 and
+  stopped. Docker was not rerun.
+- Minecraft Server List Ping info: info --json now also includes name,
+  players, max_players, and map. name comes from the SLP description. map is
+  null when the status payload has no map. The text status print is unchanged.
+- Foundry lifecycle: anonymous Steam app 2915550 installs the Windows
+  dedicated server. Linux launches FoundryDedicatedServer.exe with Wine.
+  Local process query and info answered A2S on UDP 27016 (game port 51535,
+  hostname AlphaGSM lafoundryserver, map Procedural, 0/32) and stopped.
+  Docker was not rerun. The default query port 27015 was already taken, so
+  setup moved the query port to 27016.
+- Starbound lifecycle: setup accepts a port before the install directory.
+  Anonymous Steam app 211820 mounts no depots. An entitled profile installs
+  the Linux dedicated server at linux/starbound_server. Local process query
+  and info answered A2S on UDP 50333 (hostname AlphaGSM lastarbound, map
+  Unknown, 0/8) and stopped. Docker was not rerun. Update keeps the saved
+  profile so a later update does not replace that tree with the empty
+  anonymous install.
+- Jedi Knight II query: query and info use Quake UDP getstatus on the game
+  port. The official dedicated archive still does not include retail PK3s.
+- Minecraft custom and Tekkit query: query and info use Server List Ping on
+  the game port. Custom servers still need an operator jar, and Tekkit still
+  needs an operator archive.
+- Dedicated maps: Quake III, Return to Castle Wolfenstein, Call of Duty,
+  United Offensive, Call of Duty 2, and Call of Duty 4 keep every multiplayer
+  map in the published build. Campaign maps and load screens are not required.
+  Call of Duty 4 Steam app 7940 is imported from main/iw_*.iwd and
+  zone/english/mp_*.ff, including localized_common_mp.ff, without
+  fileSysCheck.cfg. AlphaGSM installs CoD4x 21.2 cod4x18_dedrun for that
+  tree and does not stage the 2008 libstdc++.
+- Robust status info: Space Station 14 publishes `soft_max_players`.
+  `info --json` now also includes that value as `max_players`.
+- Space Station 14 lifecycle: local process setup of the current Wizard's Den
+  linux-x64 build answered Robust status for query and info (0/30) and
+  stopped cleanly. Docker was not rerun. The process runtime needs .NET 10.
+- Call of Duty 4 lifecycle: local authenticated setup of app 7940 with
+  CoD4x 21.2 answered native Quake getstatus for query and info
+  (`mp_crash`, hostname AlphaGSM lacod4server) and stopped cleanly.
+  Docker was not rerun.
+- Call of Duty query: original Call of Duty, United Offensive, Call of Duty 2,
+  and Call of Duty 4 use Quake UDP getstatus on the game port for query and info.
+- Call of Duty import: keep main/maps*.pk3 multiplayer map packs along with
+  pak*.pk3 and the English localization PK3s.
+- Call of Duty install: keep the English multiplayer PK3 set and Linux dedicated
+  binary, stage the upstream gcc 3.2 runtime beside it, and omit Windows client
+  libraries, PunkBuster client libraries, and non-English localization stubs.
+  Startup sets fs_basepath and fs_homepath to the install directory.
+- Call of Duty 2 lifecycle: local authenticated setup of app 2630 answered
+  native Quake getstatus for query and info (`mp_toujane`) and stopped cleanly.
+  Docker was not rerun.
+- United Offensive lifecycle: local authenticated setup answered native Quake
+  getstatus for query and info (`mp_brecourt`) and stopped cleanly. Docker was
+  not rerun.
+- United Offensive acquisition: authenticated setup downloads base app 2620 and
+  expansion app 2640, then keeps the English multiplayer PK3 sets from both.
+  The default start map mp_brecourt lives in the base PK3s. Expansion PK3s are
+  recognized by maps/mp/mp_uo_stanjel.bsp. Install also removes non-English
+  localization PK3s nested under main/ and uo/, including uo/language/.
+- Call of Duty lifecycle: local authenticated setup on UDP 28960 answered
+  native Quake getstatus for query and info (`mp_carentan`, 0/20) and stopped
+  cleanly. Docker was not rerun.
+- Local tests: `./run_local_tests.sh integration --public` runs a module
+  that downloads its own dedicated server, without a Steam profile or an
+  assets directory.
+- Local tests: file-based BYO modules must declare a native query and info
+  protocol. `./run_local_tests.sh unit` checks that contract, and integration
+  runs keep their server files on the SSD test disk.
+- Local tests: `./run_local_tests.sh` in the repository root runs the local
+  Steam-auth and BYO suite. CI does not call it.
+- Docker Steam auth: `./alphagsm-docker steam-auth login` is the only forwarded
+  command that gets a terminal, a non-terminal login is rejected, and a game
+  container cannot mount the private SteamCMD profile.
+- Local tests: add scripts/run_local_auth_tests.sh for Steam-auth and BYO unit
+  and integration runs. CI does not collect local_tests/, and auth material
+  stays gitignored.
+- RTCW install: require retail main/pak0.pk3 for the dedicated binary, keep the
+  multiplayer PK3 set intact, and omit loose client and renderer files from the
+  ioRTCW engine archive.
+- RTCW query: use native Quake UDP getstatus for query and info. Local
+  authenticated setup, profile reuse, lifecycle and shutdown were validated;
+  Docker was not rerun.
+- BYO validation: require native port queries, running/stopped status, server
+  info and verified shutdown per game; record module fixes and retest failures.
+- Quake III install: keep the dedicated engine and complete owned map/content
+  packs while omitting known loose client and renderer components.
+- Quake III BYO: validate authenticated Steam setup, remembered-profile reuse,
+  native Quake UDP lifecycle and complete shutdown locally on SSD storage.
+- BYO setup: acquire missing Steam-owned files with --auth-profile, remember the
+  profile name per server, and support explicit --steam-dir library imports.
+- SteamCMD auth: recognize session caches under the isolated home/Steam directory
+  as well as the legacy runtime config directory, retaining private-profile checks.
+- BYO files: check installed paths with native filename casing, accept equivalent
+  CoD map archive formats, and inspect absolute ETS2/ATS configuration homes
+  while keeping those external homes on the manual-staging path.
+- BYO files: declare game-specific requirements and acquisition guidance for all
+  42 file-based BYO modules; add requirements reports and explicit SteamCMD
+  staging that imports only declared files and removes temporary downloads.
+- SteamCMD auth: add private, isolated Linux session profiles and interactive
+  login/status/logout without storing account passwords in game configs.
+  Live authenticated and CI integration validation are deferred.
+- Owned assets: support required file patterns and explicit alternatives while
+  retaining ownership, rollback and safe wrapped-directory selection.
+- Workshop: name a missing item or collection and say it may be private, unlisted,
+  or removed. A found entry prints its visibility, including public, and its title.
+- Owned assets: add portable folder/ZIP/tar import, checks and ZIP export for
+  module-declared files, with ownership hashes, update conflicts and rollback.
+- Project Reclaimer: add a checksum-pinned dedicated server module using the
+  AlphaGSM Wine runtime, managed settings and real RCON queries. Real owned-MCC
+  lifecycle validation is explicitly deferred; no enabled/pass state is claimed.
+- CI: exercise portable asset and Reclaimer contract tests on Windows and Linux.
 - CI: replay complete native smoke configuration blocks in the unit contract,
   preserving multiline writes and excluding runtime JSON output.
 - CS2 CI: apply empty-server rules after native competitive defaults and require
@@ -1240,17 +1432,31 @@ Historical detail lives in git history. Keep this file focused on release-facing
 - Packaging: exclude `gamemodules.factorio` from PyInstaller collection so standalone binary builds succeed on all three platforms; the module still raises `NotImplementedError` on import as required by its unit test, but is never needed by the binary since factorio support is unimplemented.
 
 2026-04-28
-- Server support: add the TF2 curated mod-support foundation with package-backed module wiring, curated registry metadata for SourceMod and MetaMod, and the first shared desired-state groundwork for server-side mod management.
-- Server support: make TF2 curated mod apply persist mod-state errors and expose broken apply state through `status` so failed reconciliations are operationally visible.
-- Module loading: treat package-backed canonical modules such as `teamfortress2` as first-class catalog and parity entries so one canonical module id still maps to one import surface.
-- Server support: sync readyornotserver queryport and maxplayers into ReadyOrNot/Config/ServerConfig.ini during setup, update, and set.
-- Runtime: sanitize `TMPDIR`, `TMP`, and `TEMP` in the shared Wine/Proton wrapper so Windows-binary server launches do not inherit inaccessible temp paths, and remove the duplicated Medieval Engineers-only workaround in favor of the shared wrapper.
-- Server support: make `readyornotserver` and `rs2server` explicitly prefer Proton on Linux so their process-runtime launches use the runtime the integration tests already require instead of falling back to plain Wine.
-- Server support: make the current Windows-on-Linux Proton-required integration modules (`darkandlightserver`, `empyrionserver`, `heatserver`, `primalcarnageextinctionserver`, `remnantsserver`, `sonsoftheforestserver`, `subsistenceserver`, and `terratechworldsserver`) explicitly prefer Proton on Linux instead of silently falling back to plain Wine.
-- Server support: make `astroneerserver`, `ducksideserver`, `groundbranchserver`, and `reignofkingsserver` explicitly prefer Proton on Linux so the process runtime matches the integration-test contract instead of silently falling back to plain Wine.
-- Server support: make `askaserver`, `fearthenightserver`, `saleblazersserver`, `sniperelite4server`, and `sunkenlandserver` explicitly prefer Proton on Linux so the process runtime matches the integration-test contract instead of silently falling back to plain Wine.
-- Server support: make the remaining Proton-required Windows-on-Linux integration modules explicitly prefer Proton on Linux so the process runtime matches the integration-test contract instead of silently falling back to plain Wine.
-- CI: treat the repeated bare SteamCMD `state is 0x202` setup failures seen for `kf2server` and `rs2server` as the same known transient flake class as the existing missing-configuration `0x202` state, including the longer retry delay and integration skip helper.
+- Server support: add schema-backed Rising Storm 2 config sync so `set servername` rewrites `ServerName` in `ROGame/Config/PCServer-ROGame.ini`.
+- Server support: add schema-backed Quake 2 config sync so `set servername` and `set map` rewrite `<gamedir>/server.cfg`.
+- Server support: add schema-backed RTCW config sync so `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg`.
+- Server support: add schema-backed Quake 3 config sync so `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg`.
+- Server support: add schema-backed `server.cfg` sync for `codserver`, `cod2server`, `cod4server`, `coduoserver`, and `codwawserver` so `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg`.
+- Server support: add schema-backed Quake Live config sync so `set servername` and `set map` rewrite `baseq3/server.cfg`.
+- Server support: add schema-backed Quake 4 config sync so `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg`.
+- Server support: add schema-backed `etl_server.cfg` sync for `etlegacyserver` so `set servername` and `set port` rewrite the native ET: Legacy config.
+- Core: replace alias-wrapper module routing with a canonical module catalog and central alias metadata; alias wrapper files such as `tf2.py`, `cs2server.py`, and namespace `DEFAULT.py` shims are removed.
+- Tools: add a generated canonical module parity report and a CI enforcement step that fails on stale parity artifacts.
+- Server support: add schema-backed `serverDZ.cfg` sync for `dayzserver` so `set servername`, `set serverpassword`, `set adminpassword`, `set maxplayers`, and `set queryport` rewrite the native DayZ config.
+- Server support: expand `sevendaystodie` schema-backed config sync so `set port`, `set servername`, `set maxplayers`, and `set serverpassword` rewrite `serverconfig.xml`.
+- Server support: move `wreckfestserver` port syncing onto schema-backed `SettingSpec` metadata so `set port` rewrites `server_config.cfg` through the shared equals-config helper.
+- Server support: move `stnserver` port syncing onto schema-backed `SettingSpec` metadata so `set port` rewrites `Config/ServerConfig.txt` through the shared config helper.
+- Server support: make `twserver` sync schema-backed `set port` and `set servername` changes into `autoexec.cfg`, and harden space-delimited config rewrites so quoted multi-word values update in place.
+- Module loading: replace game-module alias wrapper files and namespace `DEFAULT.py` shims with a shared canonical catalog in `src/server/module_aliases.json`, and persist canonical module ids in server data even when users create servers through aliases.
+- Release prep: add generated `docs/module_parity_report.md` and `docs/module_parity_report.json` artifacts plus test/script enforcement so canonical module parity gaps and alias coverage stay visible in CI.
+- Tests: add an opt-in backend integration test that exercises AlphaGSM CLI
+	commands (`create`, `set image`, `setup`, `start`, `status`, `info`, `query`, `stop`) against
+	the Docker runtime to validate CLI/runtime integration in CI environments.
+- Dev: normalize `get_start_command(server)` across gamemodules so static
+	validators and container builders can reliably introspect start commands.
+- Tools: add static validators and helper scripts to audit `get_start_command`
+	and `get_container_spec` implementations, plus docs summarising audit
+	results and remediation guidance.
 
 2026-04-26
 - CLI: add a built-in `doctor` command so each server can print its effective runtime decision plus Docker image, container, and local runtime health details.

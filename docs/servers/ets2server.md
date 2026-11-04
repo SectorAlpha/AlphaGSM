@@ -3,10 +3,10 @@
 This guide covers the `ets2server` module in AlphaGSM.
 
 `ets2server` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04
-Linux baseline. The current GitHub integration lane still exercises both
-process and Docker runtime selection around that exported-client prerequisite,
-while local runs remain process-backed by default unless you opt into the
-Docker backend.
+Linux baseline. GitHub integration skips this lifecycle unless
+`ALPHAGSM_ETS2_SERVER_PACKAGES_DIR` supplies nonempty owned client exports.
+Local runs remain process-backed by default unless you opt into the Docker
+backend.
 
 ## Requirements
 
@@ -120,3 +120,16 @@ returning protocol `a2s` instead of waiting for screen-log markers.
 - **Map directory**: Check game documentation
 - **Mod directory**: Check game documentation
 - **Workshop support**: No
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+Generate `server_packages.sii` and `server_packages.dat` in the owned client
+using `export_server_packages`. For a relative `configdir`, the allowlisted
+import places both exports under that directory in the server installation.
+For an absolute `configdir`, stage both files manually in that home;
+`assets requirements` and `assets check` support it, while managed import and
+export explain the manual-staging requirement.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

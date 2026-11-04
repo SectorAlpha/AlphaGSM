@@ -4,6 +4,7 @@ import glob
 import os
 from pathlib import Path
 import shutil
+import tarfile
 
 from server import ServerError
 from server.modsupport.downloads import (
@@ -20,6 +21,7 @@ from server.modsupport.ownership import build_owned_manifest
 from server.modsupport.providers import resolve_direct_url_entry
 from server.modsupport.reconcile import reconcile_mod_state
 from server.settable_keys import SettingSpec, build_launch_arg_values, build_native_config_values
+import downloader
 from utils.archive_install import detect_compression, install_archive
 from utils.backups import backups as backup_utils
 from utils.cmdparse.cmdspec import ArgSpec, CmdSpec
@@ -28,6 +30,15 @@ from utils.simple_kv_config import rewrite_equals_config
 import server.runtime as runtime_module
 from utils.gamemodules import common as gamemodule_common
 
+COD2_GCC3_LIBS_URL = "http://icculus.org/updates/cod/gcc3-libs.tar.bz2"
+COD2_GCC3_LIBS_NAME = "cod-gcc3-libs.tar.bz2"
+COD2_GCC3_RUNTIME_FILES = ("libstdc++.so.5", "libgcc_s.so.1")
+# The 1.3 dedicated tarball ships PunkBuster client libraries beside the
+# server libraries. main/*.iwd stays; the Linux binary needs those archives.
+COD2_NON_MULTIPLAYER_FILES = (
+    "pb/pbcl.so",
+    "pb/pbcls.so",
+)
 COD2_MOD_CACHE_DIRNAME = "cod2server"
 COD2_ALLOWED_MOD_SUFFIXES = {
     ".7z": "7z",
@@ -448,12 +459,99 @@ def install(server):
 
     if "url" not in server.data or not server.data["url"]:
         raise ServerError("A direct download URL is required for this server")
-    install_archive(server, detect_compression(server.data["download_name"]))
+    install_archive(
+        server,
+        detect_compression(server.data["download_name"]),
+        skip_relative_files=COD2_NON_MULTIPLAYER_FILES,
+    )
+    _remove_non_multiplayer_files(server)
     _assert_required_base_assets(server.data["dir"])
+    _stage_gcc3_runtime(server)
     sync_server_config(server)
     ensure_mod_state(server)
     if server.data["mods"]["enabled"] and server.data["mods"]["autoapply"]:
         apply_configured_mods(server)
+
+
+def _remove_non_multiplayer_files(server):
+    """Drop PunkBuster client libraries shipped beside the dedicated server."""
+
+    root = server.data["dir"]
+    for relative in COD2_NON_MULTIPLAYER_FILES:
+        path = os.path.join(root, *relative.split("/"))
+        if os.path.isfile(path) and not os.path.islink(path):
+            os.remove(path)
+
+
+def _runtime_source_in_tree(root, name):
+    """Return a readable gcc 3.2 library inside an extracted download directory."""
+
+    direct = os.path.join(root, name)
+    if os.path.isfile(direct):
+        return direct
+    for dirpath, _dirnames, filenames in os.walk(root):
+        if name in filenames:
+            candidate = os.path.join(dirpath, name)
+            if os.path.isfile(candidate):
+                return candidate
+    return None
+
+
+def _copy_runtime_file(source, destination):
+    """Write one runtime library as a regular file, following cache symlinks."""
+
+    with open(source, "rb") as handle, open(destination, "wb") as output:
+        shutil.copyfileobj(handle, output)
+
+
+def _stage_gcc3_runtime_from_archive(archive_path, install_dir):
+    """Copy the gcc 3.2 SONAME libraries out of a tarball."""
+
+    with tarfile.open(archive_path, "r:*") as archive:
+        members = {member.name.rsplit("/", 1)[-1]: member for member in archive.getmembers()}
+        for name in COD2_GCC3_RUNTIME_FILES:
+            member = members.get(name)
+            if member is None:
+                raise ServerError("Call of Duty 2 gcc3 runtime archive is missing " + name)
+            source = archive.extractfile(member)
+            if source is None:
+                raise ServerError("Call of Duty 2 gcc3 runtime archive is missing " + name)
+            destination = os.path.join(install_dir, name)
+            with source, open(destination, "wb") as output:
+                shutil.copyfileobj(source, output)
+
+
+def _stage_gcc3_runtime(server):
+    """Place the upstream gcc 3.2 libraries beside cod2_lnxded when they are absent."""
+
+    install_dir = server.data["dir"]
+    if all(os.path.isfile(os.path.join(install_dir, name)) for name in COD2_GCC3_RUNTIME_FILES):
+        return
+    exe_path = os.path.join(install_dir, server.data.get("exe_name", "cod2_lnxded"))
+    if not os.path.isfile(exe_path):
+        return
+    download_path = downloader.getpath(
+        "url", (COD2_GCC3_LIBS_URL, COD2_GCC3_LIBS_NAME, "tar.bz2")
+    )
+    if os.path.isdir(download_path):
+        sources = {
+            name: _runtime_source_in_tree(download_path, name)
+            for name in COD2_GCC3_RUNTIME_FILES
+        }
+        if all(sources.values()):
+            for name, source in sources.items():
+                _copy_runtime_file(source, os.path.join(install_dir, name))
+            return
+        archive_path = os.path.join(download_path, COD2_GCC3_LIBS_NAME)
+        if os.path.isfile(archive_path):
+            _stage_gcc3_runtime_from_archive(archive_path, install_dir)
+            return
+        missing = next(name for name, source in sources.items() if source is None)
+        raise ServerError("Call of Duty 2 gcc3 runtime archive is missing " + missing)
+    if os.path.isfile(download_path):
+        _stage_gcc3_runtime_from_archive(download_path, install_dir)
+        return
+    raise ServerError("Call of Duty 2 gcc3 runtime download is missing")
 
 
 def _assert_required_base_assets(install_dir):
@@ -462,6 +560,8 @@ def _assert_required_base_assets(install_dir):
     localized_archives = glob.glob(os.path.join(install_dir, "main", "localized_*.iwd"))
     localized_config = os.path.isfile(os.path.join(install_dir, "main", "default_localize_mp.cfg"))
     if localized_archives or localized_config:
+        from utils.byo_files import require_module_multiplayer_maps
+        require_module_multiplayer_maps(install_dir, __file__)
         return
     gamemodule_common.raise_byo_requirement(
         "cod2server",
@@ -503,9 +603,7 @@ def sync_server_config(server):
 def get_start_command(server):
     """Build the command used to launch a Call of Duty 2 dedicated server."""
 
-    exe_path = os.path.join(server.data["dir"], server.data["exe_name"])
-    if not os.path.isfile(exe_path):
-        raise ServerError("Executable file not found")
+    _exe_path, launcher, working_dir = gamemodule_common.resolve_install_launcher(server)
     launch_args = build_launch_arg_values(
         server.data,
         setting_schema,
@@ -514,20 +612,33 @@ def get_start_command(server):
     )
     if gamemodule_common.should_omit_base_game_launch_arg(server.data.get("moddir"), "main"):
         launch_args = gamemodule_common.remove_launch_arg_value(launch_args, ("+set", "fs_game"))
+    # cod2_lnxded defaults fs_homepath to ~/.callofduty2. Keep reads and
+    # generated files in the install directory, and load the staged gcc 3.2 libs.
     return (
-        ["./" + server.data["exe_name"], *launch_args],
-        server.data["dir"],
+        [
+            "env",
+            "LD_LIBRARY_PATH=.",
+            launcher,
+            "+set",
+            "fs_basepath",
+            ".",
+            "+set",
+            "fs_homepath",
+            ".",
+            *launch_args,
+        ],
+        working_dir,
     )
 
 
 def get_query_address(server):
-    """Return the TCP endpoint used by the Call of Duty 2 query command."""
+    """Return the Quake UDP getstatus endpoint on the Call of Duty 2 game port."""
 
-    return (runtime_module.resolve_query_host(server), int(server.data.get("queryport", server.data["port"])), "tcp")
+    return (runtime_module.resolve_query_host(server), int(server.data["port"]), "quake")
 
 
 def get_info_address(server):
-    """Return the TCP endpoint used by the Call of Duty 2 info command."""
+    """Return the Quake UDP status endpoint used by the Call of Duty 2 info command."""
 
     return get_query_address(server)
 
@@ -585,3 +696,9 @@ get_container_spec = gamemodule_common.make_container_spec_builder(
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
         stdin_open=True,
 )
+
+
+def get_asset_requirements(server):
+    """Describe this game's owned files, acquisition routes and staging limits."""
+    from utils.byo_files import load_requirements
+    return load_requirements(server, __file__, 'byo_assets.json')

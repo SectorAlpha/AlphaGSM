@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# ENABLED (BYO): supply a direct Linux x64 Space Station 14 server archive
-# while the official Wizard's Den build feed publishes no server builds.
+# ENABLED (BYO): setup uses the Wizard's Den linux-x64 build.
+# Set ALPHAGSM_SS14_SERVER_URL when that build is unavailable.
 
 set -Eeuo pipefail
 set -x

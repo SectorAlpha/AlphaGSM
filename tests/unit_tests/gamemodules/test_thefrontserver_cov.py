@@ -206,7 +206,7 @@ def test_runtime_start_reuses_one_manager_mount_snapshot(tmp_path, monkeypatch):
                 },
                 {
                     "source": "/host/steam",
-                    "destination": "/home/cosmosquark/Steam",
+                    "destination": "/srv/Steam",
                 },
             ]
         return []

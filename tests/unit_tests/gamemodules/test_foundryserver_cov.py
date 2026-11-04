@@ -20,6 +20,69 @@ def test_configure_basic(tmp_path):
     assert server.data['port'] == 37200
 
 
+def test_configure_sets_documented_query_port(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "_port_is_bindable", lambda port: True)
+    server = DummyServer()
+    mod.configure(server, ask=False, port=37200, dir=str(tmp_path))
+    assert int(server.data["queryport"]) == 27015
+
+
+def test_configure_moves_query_port_when_default_is_busy(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "_port_is_bindable", lambda port: int(port) != 27015)
+    server = DummyServer()
+    mod.configure(server, ask=False, port=37200, dir=str(tmp_path))
+    assert int(server.data["queryport"]) == 27016
+    assert int(server.data["queryport"]) != int(server.data["port"])
+
+
+def test_sync_server_config_enables_public_a2s_query(tmp_path):
+    server = DummyServer("foundry")
+    server.data.update({
+        "dir": str(tmp_path) + "/",
+        "port": 37200,
+        "queryport": 27015,
+        "servername": "AlphaGSM foundry",
+        "worldname": "foundry",
+    })
+    (tmp_path / "app.cfg").write_text(
+        "# keep me\nserver_password=only_friends\nserver_is_public=false\n",
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    text = (tmp_path / "app.cfg").read_text(encoding="utf-8")
+    assert text.startswith("# keep me\n")
+    values = {}
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key] = value
+    assert values["server_is_public"] == "true"
+    assert values["server_query_port"] == "27015"
+    assert values["server_port"] == "37200"
+    assert values["server_name"] == "AlphaGSM foundry"
+    assert values["server_world_name"] == "foundry"
+    assert values["server_password"] == "only_friends"
+    assert "queryport" in mod.config_sync_keys
+
+
+def test_prestart_writes_public_query_config(tmp_path):
+    server = DummyServer("foundry")
+    server.data.update({
+        "dir": str(tmp_path) + "/",
+        "port": 3724,
+        "queryport": 27016,
+        "servername": "AlphaGSM foundry",
+        "worldname": "world",
+    })
+    mod.prestart(server)
+    text = (tmp_path / "app.cfg").read_text(encoding="utf-8")
+    assert "server_is_public=true" in text
+    assert "server_query_port=27016" in text
+
+
 def test_configure_ask_defaults(tmp_path, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda prompt: "")
     server = DummyServer()
@@ -95,6 +158,15 @@ def test_restart():
     assert server._started
 
 
+def test_get_query_address_uses_query_port_not_game_port(monkeypatch):
+    server = DummyServer()
+    server.data["port"] = 37200
+    server.data["queryport"] = 27015
+    monkeypatch.setattr(mod.runtime_module, "resolve_query_host", lambda current: "10.0.0.8")
+    assert mod.get_query_address(server) == ("10.0.0.8", 27015, "a2s")
+    assert mod.get_info_address(server) == ("10.0.0.8", 27015, "a2s")
+
+
 def test_get_start_command(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -105,6 +177,31 @@ def test_get_start_command(tmp_path):
     server.data["worldname"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert isinstance(cmd, list)
+
+
+def test_linux_windows_exe_starts_under_wine(tmp_path, monkeypatch):
+    if not mod.IS_LINUX:
+        pytest.skip("Wine wrap is Linux-only")
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "FoundryDedicatedServer.exe"
+    server.data["wineprefix"] = str(tmp_path / "wineprefix")
+    server.data["port"] = 37200
+    server.data["servername"] = "AlphaGSM foundry"
+    server.data["worldname"] = "foundry"
+    (tmp_path / "FoundryDedicatedServer.exe").write_text("")
+    monkeypatch.setattr(
+        mod.proton,
+        "wrap_xvfb_command",
+        lambda command, wineprefix=None, prefer_proton=False: ["xvfb-run", *command],
+    )
+    cmd, cwd = mod.get_start_command(server)
+    assert cmd[0] == "env"
+    assert "SteamAppId=983870" in cmd
+    assert "xvfb-run" in cmd
+    assert "./FoundryDedicatedServer.exe" in cmd
+    assert "--port" in cmd
+    assert cwd == server.data["dir"]
 
 
 def test_get_start_command_missing_exe(tmp_path):

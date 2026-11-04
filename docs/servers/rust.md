@@ -58,7 +58,15 @@ Setup configures:
 
 Stop the server, then run `alphagsm myrust reset-world` (or `wipe`). AlphaGSM
 lists the world data to delete and asks for confirmation. Add `-Y` to skip the
-prompt. Run `start` afterwards to generate a fresh world.
+prompt. `wipe --mode hard` reinstalls the server and keeps
+`server/my_server_identity/cfg`. Run `start` afterwards to generate a fresh world.
+
+Install the pinned Oxide/uMod framework with:
+
+```bash
+alphagsm myrust mod add manifest oxide
+alphagsm myrust mod apply
+```
 
 See [world creation and reset](../world-management.md) for exactly which files
 are removed and the supported layouts.

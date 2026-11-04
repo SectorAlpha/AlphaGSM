@@ -143,6 +143,16 @@ def get_diagnostic_report(server):
         except Exception as exc:  # pylint: disable=broad-exception-caught
             checks.append({'id': 'provider_inspection', 'category': 'provider',
                            'status': 'failed', 'message': str(exc)})
+        asset_hook = getattr(server.module, 'get_asset_requirements', None)
+        if callable(asset_hook):
+            try:
+                from utils.asset_import import check_assets
+                assets = check_assets(server.data.get('dir', ''), asset_hook(server))
+                checks.append({'id': 'owned_assets', 'category': 'assets',
+                               'status': 'ok' if assets['ready'] else 'failed',
+                               'message': 'Assets ready' if assets['ready'] else 'Missing assets: ' + ', '.join(assets['missing'])})
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                checks.append({'id': 'owned_assets', 'category': 'assets', 'status': 'failed', 'message': str(exc)})
     install_dir = server.data.get('dir')
     if install_dir and not Path(install_dir).is_dir():
         checks.append({'id': 'install_directory', 'category': 'installation', 'status': 'failed',

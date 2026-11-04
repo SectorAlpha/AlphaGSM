@@ -63,6 +63,9 @@ jobs:
             tests/unit_tests/screen/test_windows_job.py tests/unit_tests/core/test_binary_update.py \
             tests/unit_tests/core/test_frozen_dispatch.py \
             tests/unit_tests/server/test_platform_support.py tests/unit_tests/server/test_container_platform.py \
+            tests/unit_tests/utils/test_asset_import.py tests/unit_tests/server/test_assets.py \
+            tests/unit_tests/utils/test_reclaimer.py tests/unit_tests/gamemodules/test_projectreclaimer.py \
+            tests/unit_tests/test_reclaimer_lifecycle.py \
             tests/unit_tests/downloader/test_database_paths.py tests/unit_tests/server/test_process_logs.py \
             tests/unit_tests/screen/test_managed_legacy.py \
             tests/unit_tests/screen/test_supervisor_cleanup.py \

@@ -46,7 +46,7 @@ def test_install(tmp_path):
     server.data["url"] = "https://example.com/test.zip"
     server.data["download_name"] = "test.zip"
 
-    def fake_install_archive(_server, _compression):
+    def fake_install_archive(_server, _compression, **_kwargs):
         main_dir = tmp_path / "main"
         main_dir.mkdir()
         (main_dir / "pak0.pk3").write_text("", encoding="utf-8")
@@ -63,7 +63,7 @@ def test_install_normalizes_extensionless_download_name(tmp_path):
     server.data["url"] = mod.CODUO_SERVER_URL
     server.data["download_name"] = "call-of-duty-united-offensive-dedicated-linux-server-files-v151b"
 
-    def fake_install_archive(_server, _compression):
+    def fake_install_archive(_server, _compression, **_kwargs):
         main_dir = tmp_path / "main"
         main_dir.mkdir()
         (main_dir / "pak0.pk3").write_text("", encoding="utf-8")
@@ -83,7 +83,7 @@ def test_install_rejects_missing_base_cod_assets(tmp_path):
     server.data["url"] = mod.CODUO_SERVER_URL
     server.data["download_name"] = mod.CODUO_SERVER_NAME
 
-    def fake_install_archive(_server, _compression):
+    def fake_install_archive(_server, _compression, **_kwargs):
         uo_dir = tmp_path / "uo"
         uo_dir.mkdir()
         (uo_dir / "pakuo00.pk3").write_text("", encoding="utf-8")
@@ -101,7 +101,7 @@ def test_install_flattens_nested_payload_before_missing_assets_gate(tmp_path):
     server.data["url"] = mod.CODUO_SERVER_URL
     server.data["download_name"] = mod.CODUO_SERVER_NAME
 
-    def fake_install_archive(_server, _compression):
+    def fake_install_archive(_server, _compression, **_kwargs):
         payload_dir = tmp_path / "coduo-lnxded-1.51-large"
         payload_dir.mkdir()
         (payload_dir / "coduo_lnxded").write_text("", encoding="utf-8")
@@ -138,7 +138,15 @@ def test_get_start_command(tmp_path):
     server.data["startmap"] = "test"
     cmd, cwd = mod.get_start_command(server)
     assert cmd == [
+        "env",
+        "LD_LIBRARY_PATH=.",
         "./coduo_lnxded",
+        "+set",
+        "fs_basepath",
+        ".",
+        "+set",
+        "fs_homepath",
+        ".",
         "+set",
         "fs_game",
         "test",
@@ -152,6 +160,112 @@ def test_get_start_command(tmp_path):
         "test",
     ]
     assert cwd == server.data["dir"]
+    assert mod.get_query_address(server)[2] == "quake"
+
+
+def test_install_drops_client_files_and_keeps_multiplayer_archives(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "coduo_lnxded"
+    server.data["url"] = mod.CODUO_SERVER_URL
+    server.data["download_name"] = mod.CODUO_SERVER_NAME
+
+    def fake_install_archive(_server, _compression, **_kwargs):
+        (tmp_path / "main").mkdir()
+        (tmp_path / "uo").mkdir()
+        (tmp_path / "pb").mkdir()
+        (tmp_path / "main" / "pak0.pk3").write_bytes(b"mp")
+        (tmp_path / "main" / "localized_english_pak0.pk3").write_bytes(b"en")
+        (tmp_path / "main" / "localized_french_pak2.pk3").write_bytes(b"fr")
+        (tmp_path / "main" / "cgame_mp_x86.dll").write_bytes(b"dll")
+        (tmp_path / "uo" / "pakuo00.pk3").write_bytes(b"uo")
+        (tmp_path / "uo" / "localized_english_pakuo00.pk3").write_bytes(b"en")
+        (tmp_path / "uo" / "localized_german_pakuo00.pk3").write_bytes(b"de")
+        (tmp_path / "uo" / "language").mkdir()
+        (tmp_path / "uo" / "language" / "localized_french_pakuo01.pk3").write_bytes(b"fr")
+        (tmp_path / "uo" / "language" / "localized_english_pakuo01.pk3").write_bytes(b"en")
+        (tmp_path / "uo" / "game.mp.uo.i386.so").write_bytes(b"so")
+        (tmp_path / "uo" / "uo_cgame_mp_x86.dll").write_bytes(b"dll")
+        (tmp_path / "pb" / "pbcl.so").write_bytes(b"cl")
+        (tmp_path / "pb" / "pbcls.so").write_bytes(b"cls")
+        (tmp_path / "pb" / "pbsv.so").write_bytes(b"sv")
+
+    mod.install_archive.side_effect = fake_install_archive
+    mod.install(server)
+    mod.install_archive.side_effect = None
+
+    assert (tmp_path / "main" / "pak0.pk3").read_bytes() == b"mp"
+    assert (tmp_path / "main" / "localized_english_pak0.pk3").is_file()
+    assert (tmp_path / "uo" / "pakuo00.pk3").is_file()
+    assert (tmp_path / "uo" / "localized_english_pakuo00.pk3").is_file()
+    assert (tmp_path / "uo" / "game.mp.uo.i386.so").is_file()
+    assert (tmp_path / "pb" / "pbsv.so").is_file()
+    assert not (tmp_path / "main" / "localized_french_pak2.pk3").exists()
+    assert not (tmp_path / "main" / "cgame_mp_x86.dll").exists()
+    assert not (tmp_path / "uo" / "localized_german_pakuo00.pk3").exists()
+    assert not (tmp_path / "uo" / "language" / "localized_french_pakuo01.pk3").exists()
+    assert (tmp_path / "uo" / "language" / "localized_english_pakuo01.pk3").is_file()
+    assert not (tmp_path / "uo" / "uo_cgame_mp_x86.dll").exists()
+    assert not (tmp_path / "pb" / "pbcl.so").exists()
+    assert not (tmp_path / "pb" / "pbcls.so").exists()
+
+
+def test_stage_gcc3_runtime_copies_extracted_cache_directory(tmp_path, monkeypatch):
+    install = tmp_path / "install"
+    install.mkdir()
+    (install / "coduo_lnxded").write_bytes(b"elf")
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    (cache / "libstdc++.so.5.0.3").write_bytes(b"realstd")
+    (cache / "libstdc++.so.5").symlink_to("libstdc++.so.5.0.3")
+    (cache / "libgcc_s.so.1").write_bytes(b"gcc")
+    (cache / "cod-gcc3-libs.tar.bz2").write_bytes(b"not-a-tar")
+    calls = []
+    monkeypatch.setattr(mod.downloader, "getpath", lambda *args: calls.append(args) or str(cache))
+
+    def reject_archive(*_args, **_kwargs):
+        raise AssertionError("extracted cache must not be opened as a tarball")
+
+    monkeypatch.setattr(mod.tarfile, "open", reject_archive)
+    server = DummyServer()
+    server.data["dir"] = str(install) + "/"
+    server.data["exe_name"] = "coduo_lnxded"
+
+    mod._stage_gcc3_runtime(server)
+
+    assert (install / "libstdc++.so.5").read_bytes() == b"realstd"
+    assert not (install / "libstdc++.so.5").is_symlink()
+    assert (install / "libgcc_s.so.1").read_bytes() == b"gcc"
+    assert calls == [("url", (mod.CODUO_GCC3_LIBS_URL, mod.CODUO_GCC3_LIBS_NAME, "tar.bz2"))]
+
+    mod._stage_gcc3_runtime(server)
+    assert len(calls) == 1
+
+
+def test_stage_gcc3_runtime_reads_a_tarball_path(tmp_path, monkeypatch):
+    import io
+    import tarfile
+
+    install = tmp_path / "install"
+    install.mkdir()
+    (install / "coduo_lnxded").write_bytes(b"elf")
+    archive_path = tmp_path / "libs.tar.bz2"
+    payload = io.BytesIO()
+    with tarfile.open(fileobj=payload, mode="w") as archive:
+        for name, content in (("libstdc++.so.5", b"std"), ("libgcc_s.so.1", b"gcc")):
+            info = tarfile.TarInfo(name="gcc3/" + name)
+            info.size = len(content)
+            archive.addfile(info, io.BytesIO(content))
+    archive_path.write_bytes(payload.getvalue())
+    monkeypatch.setattr(mod.downloader, "getpath", lambda *_args: str(archive_path))
+    server = DummyServer()
+    server.data["dir"] = str(install) + "/"
+    server.data["exe_name"] = "coduo_lnxded"
+
+    mod._stage_gcc3_runtime(server)
+
+    assert (install / "libstdc++.so.5").read_bytes() == b"std"
+    assert (install / "libgcc_s.so.1").read_bytes() == b"gcc"
 
 
 def test_setting_schema_exposes_coduo_launch_tokens():

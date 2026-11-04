@@ -758,9 +758,19 @@ ensure_manager() {
 }
 
 exec_alphagsm() {
+    local exec_flags="-T"
+
+    if [[ $# -ge 2 && "$1" == "steam-auth" && "$2" == "login" ]]; then
+        if [[ ! -t 0 ]]; then
+            echo "SteamCMD login requires an interactive terminal for password and Steam Guard" >&2
+            exit 1
+        fi
+        exec_flags="-it"
+    fi
+
     ensure_manager "$(current_manager_mode)"
     echo "Running AlphaGSM command in manager container..."
-    manager_compose "$(current_manager_mode)" exec -T alphagsm python alphagsm "$@"
+    manager_compose "$(current_manager_mode)" exec "$exec_flags" alphagsm python alphagsm "$@"
     if [[ $# -ge 2 && ( "$2" == "status" || "$2" == "start" ) ]]; then
         show_host_connection_details "$1"
     fi

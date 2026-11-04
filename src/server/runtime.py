@@ -10,6 +10,7 @@ but Docker is only selected when configuration opts into it.
 
 from __future__ import annotations
 
+import builtins
 from collections import deque
 import copy
 import contextvars
@@ -32,6 +33,7 @@ import screen
 from utils.settings import settings
 from utils.gamemodules import common as gamemodule_common
 from utils import proton
+from utils import steam_auth
 from utils import steamcmd as steamcmd_module
 from utils.platform_info import PLATFORM
 
@@ -1249,6 +1251,74 @@ def validate_mount_path_identity(mounts, *, _mount_snapshot=None):
     )
 
 
+def _path_forms(path):
+    """Return lexical and symlink-resolved forms of *path* without reading files."""
+
+    absolute = os.path.abspath(path)
+    forms = [absolute]
+    try:
+        resolved = os.path.realpath(path)
+    except OSError:
+        return forms
+    if os.path.abspath(resolved) != absolute:
+        forms.append(resolved)
+    return forms
+
+
+def _path_is_same_or_nested(parent, child):
+    """Return whether *child* is *parent* or a path inside it."""
+
+    parent = os.path.abspath(parent)
+    child = os.path.abspath(child)
+    try:
+        return os.path.commonpath([parent, child]) == parent
+    except ValueError:
+        return False
+
+
+def _paths_overlap(left, right):
+    """Return whether either path is the same as or inside the other."""
+
+    return _path_is_same_or_nested(left, right) or _path_is_same_or_nested(right, left)
+
+
+def reject_steam_auth_profile_mounts(mounts):
+    """Refuse Docker mounts that would publish the private SteamCMD profile.
+
+    The check compares paths only. It does not open, copy, or read session files.
+    """
+
+    roots = [str(steam_auth._state_root() / "steam-auth")]  # pylint: disable=protected-access
+    translated_root = _translate_manager_container_path_to_host(roots[0])
+    if translated_root and os.path.abspath(translated_root) != os.path.abspath(roots[0]):
+        roots.append(translated_root)
+    root_forms = []
+    for root in roots:
+        for form in _path_forms(root):
+            if form not in root_forms:
+                root_forms.append(form)
+    for mount in mounts or ():
+        source = _mount_source(mount)
+        if not source:
+            continue
+        candidates = [str(source)]
+        visible = _host_visible_mount_source(source)
+        if visible and os.path.abspath(str(visible)) != os.path.abspath(str(source)):
+            candidates.append(str(visible))
+        candidate_forms = []
+        for candidate in candidates:
+            for form in _path_forms(candidate):
+                if form not in candidate_forms:
+                    candidate_forms.append(form)
+        for candidate in candidate_forms:
+            for root in root_forms:
+                if _paths_overlap(candidate, root):
+                    raise RuntimeError(
+                        "Docker mount exposes the private SteamCMD auth profile: "
+                        + str(source)
+                    )
+
+
 def _host_visible_mount_source(source):
     """Return the Docker-daemon-visible version of *source*."""
 
@@ -1341,7 +1411,7 @@ def build_container_spec(
         list(requirements.get("mounts") or []),
         _mount_snapshot=mount_snapshot,
     )
-    command, cwd = get_start_command(server)
+    command, cwd = _start_command_for_container_spec(server, get_start_command)
     command, mapped_cwd, resolved_mounts = resolve_container_launch_context(
         server,
         mounts=requirements.get("mounts"),
@@ -1449,6 +1519,21 @@ def _map_container_path_to_host(mounts, container_path):
             return source_abs
         return os.path.join(source_abs, relative_path)
     return None
+
+
+def _start_command_for_container_spec(server, get_start_command):
+    """Build a container command when the host has no Wine or Proton.
+
+    This module's ``RuntimeError`` is the container-spec error, not the
+    missing-runtime error raised by ``utils.proton``.
+    """
+
+    try:
+        return get_start_command(server)
+    except builtins.RuntimeError as exc:
+        if "Neither Wine nor Proton-GE is available" not in str(exc):
+            raise
+    return proton.host_independent_start_command(server, get_start_command)
 
 
 def resolve_container_launch_context(
@@ -2033,6 +2118,106 @@ def read_container_http_json(server, port, path):
     return payload
 
 
+_MEMORY_LIMIT_RE = re.compile(r"^(\d+)([kmg])?$")
+_CPU_LIMIT_RE = re.compile(r"^\d+(?:\.\d+)?$")
+
+
+def parse_memory_limit_bytes(value):
+    """Return the byte size of a Docker-style memory limit."""
+
+    text = str(value).strip().lower()
+    match = _MEMORY_LIMIT_RE.fullmatch(text)
+    if match is None:
+        raise RuntimeError("memory must look like 512m, 2g, or a byte count")
+    number = int(match.group(1))
+    unit = match.group(2) or ""
+    multiplier = {"": 1, "k": 1024, "m": 1024 ** 2, "g": 1024 ** 3}[unit]
+    total = number * multiplier
+    if total < 64 * 1024 * 1024:
+        raise RuntimeError("memory must be at least 64m")
+    return total
+
+
+def normalize_memory_limit(value):
+    """Validate a container memory limit and return its canonical form."""
+
+    text = str(value).strip().lower()
+    parse_memory_limit_bytes(text)
+    return text
+
+
+def normalize_cpu_limit(value):
+    """Validate a container CPU limit and return its canonical form."""
+
+    text = str(value).strip()
+    if _CPU_LIMIT_RE.fullmatch(text) is None:
+        raise RuntimeError("cpus must be a positive number such as 1 or 1.5")
+    number = float(text)
+    if number <= 0 or number > 256:
+        raise RuntimeError("cpus must be greater than zero and at most 256")
+    return text
+
+
+def java_heap_megabytes(memory_limit):
+    """Return 75 percent of a container memory limit, in megabytes."""
+
+    total = parse_memory_limit_bytes(memory_limit)
+    return max(1, (total * 3) // 4 // (1024 * 1024))
+
+
+def _configured_resource_limit(server, key):
+    """Return a datastore resource limit when the server object has one."""
+
+    data = getattr(server, "data", None)
+    getter = getattr(data, "get", None)
+    if not callable(getter):
+        return None
+    return getter(key)
+
+
+def container_resource_arguments(memory, cpus):
+    """Return Docker run flags for optional memory and CPU caps."""
+
+    arguments = []
+    if memory:
+        arguments.extend(["--memory", normalize_memory_limit(memory)])
+    if cpus:
+        arguments.extend(["--cpus", normalize_cpu_limit(cpus)])
+    return arguments
+
+
+def apply_container_java_heap(command, memory, family):
+    """Insert an unset Java heap sized from the container memory limit."""
+
+    command = list(command or [])
+    if family != "java" or not memory or not command:
+        return command
+    if any(isinstance(part, str) and part.startswith("-Xmx") for part in command):
+        return command
+    heap = "-Xmx%dm" % java_heap_megabytes(memory)
+    updated = []
+    inserted = False
+    for part in command:
+        updated.append(part)
+        if not inserted and isinstance(part, str) and (part == "java" or part.endswith("/java")):
+            updated.append(heap)
+            inserted = True
+    if inserted:
+        return updated
+    result = []
+    for part in command:
+        if (
+            not inserted
+            and isinstance(part, str)
+            and "exec java" in part
+            and "-Xmx" not in part
+        ):
+            part = part.replace("exec java", "exec java " + heap, 1)
+            inserted = True
+        result.append(part)
+    return result
+
+
 def handles_set_key(key):
     """Return whether *key* should be validated by the runtime layer."""
 
@@ -2047,6 +2232,8 @@ def handles_set_key(key):
         "container_name",
         "network_mode",
         "stop_mode",
+        "memory",
+        "cpus",
     } or (top_level == "env" and len(key) > 1)
 
 
@@ -2118,6 +2305,16 @@ def validate_set_value(server, key, *value):
             raise RuntimeError("Only one value supported for runtime env entries")
         return str(value[0])
 
+    if top_level == "memory":
+        if len(value) != 1:
+            raise RuntimeError("Only one value supported for 'memory'")
+        return normalize_memory_limit(value[0])
+
+    if top_level == "cpus":
+        if len(value) != 1:
+            raise RuntimeError("Only one value supported for 'cpus'")
+        return normalize_cpu_limit(value[0])
+
     raise RuntimeError("Unsupported runtime key: " + ".".join(key))
 
 
@@ -2152,6 +2349,12 @@ def get_container_spec(
     merged.setdefault("env", {})
     merged.setdefault("mounts", [])
     merged.setdefault("ports", [])
+    if "stop_signal" in merged and merged["stop_signal"] not in ("SIGINT", "SIGTERM"):
+        raise RuntimeError("Container stop_signal must be SIGINT or SIGTERM")
+    if "stop_timeout" in merged and (not isinstance(merged["stop_timeout"], int)
+                                    or isinstance(merged["stop_timeout"], bool)
+                                    or not 1 <= merged["stop_timeout"] <= 300):
+        raise RuntimeError("Container stop_timeout must be an integer from 1 to 300")
     if "init" in merged and not isinstance(merged["init"], bool):
         raise RuntimeError("Container init must be a boolean")
     if merged.get("runtime_family") == "java":
@@ -3435,13 +3638,18 @@ class ContainerRuntime(BaseRuntime):
             _mount_snapshot=mount_snapshot,
             **kwargs,
         )
-        launch_command = container_launch_command(spec)
+        launch_command = apply_container_java_heap(
+            container_launch_command(spec),
+            _configured_resource_limit(server, "memory"),
+            spec.get("runtime_family"),
+        )
         _validate_container_identity_contract(module_requirements, spec)
         home_plan = None
         if module_requirements.get("run_as_host_user", False):
             home_plan = _validate_host_user_container_home(server, spec, identity)
         snapshot_token = _ACTIVE_MOUNT_TRANSLATION_SNAPSHOT.set(mount_snapshot)
         try:
+            reject_steam_auth_profile_mounts(spec.get("mounts"))
             self._validate_mount_path_identity(spec)
         finally:
             _ACTIVE_MOUNT_TRANSLATION_SNAPSHOT.reset(snapshot_token)
@@ -3457,6 +3665,10 @@ class ContainerRuntime(BaseRuntime):
         if home_plan is not None:
             _create_host_user_container_home(home_plan, identity)
         command = ["docker", "run", "-d"]
+        if spec.get("stop_signal"):
+            command.extend(["--stop-signal", spec["stop_signal"]])
+        if spec.get("stop_timeout"):
+            command.extend(["--stop-timeout", str(spec["stop_timeout"])])
         if spec.get("init", False):
             command.append("--init")
         if spec.get("stdin_open", False):
@@ -3466,6 +3678,10 @@ class ContainerRuntime(BaseRuntime):
         if identity is not None:
             command.extend(["--user", _format_effective_host_user(identity)])
         command.extend(["--name", spec["container_name"]])
+        command.extend(container_resource_arguments(
+            _configured_resource_limit(server, "memory"),
+            _configured_resource_limit(server, "cpus"),
+        ))
         if spec.get("network_mode"):
             command.extend(["--network", spec["network_mode"]])
         if spec.get("working_dir"):
@@ -3491,9 +3707,10 @@ class ContainerRuntime(BaseRuntime):
         return self._container_running_state(name) is True
 
     def kill(self, server):
-        name = resolve_runtime_metadata(server).get("container_name", "alphagsm-" + server.name)
+        spec = resolve_runtime_metadata(server)
+        name = spec.get("container_name", "alphagsm-" + server.name)
         try:
-            self._run_check_output(["docker", "stop", "--time", "10", name], text=True)
+            self._run_check_output(["docker", "stop", "--time", str(spec.get("stop_timeout", 10)), name], text=True)
         except RuntimeError:
             pass
         self._run_check_output(["docker", "rm", "-f", name], text=True)

@@ -507,16 +507,22 @@ def deop(server, *users):
 command_functions["deop"] = deop
 
 
-def get_info_address(server):
-    """Return the SLP address for the ``info`` command.
+def get_query_address(server):
+    """Return the Server List Ping address used by query and info.
 
-    Minecraft uses the Server List Ping (SLP) protocol on its main TCP port,
-    which reports player count, max players, server description, and version.
+    Java Edition status is SLP on the game port, not a generic TCP probe.
     """
+
     return (runtime_module.resolve_query_host(server), server.data["port"], "slp")
 
 
-def get_query_address(server):
-    """Return the TCP endpoint used by the ``query`` command."""
+def get_info_address(server):
+    """Return the SLP address for the ``info`` command."""
 
-    return (runtime_module.resolve_query_host(server), server.data["port"], "tcp")
+    return get_query_address(server)
+
+
+def get_asset_requirements(server):
+    """Describe this game's owned files, acquisition routes and staging limits."""
+    from utils.byo_files import load_requirements
+    return load_requirements(server, __file__, 'custom_byo_assets.json')

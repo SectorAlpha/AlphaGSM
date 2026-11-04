@@ -88,3 +88,58 @@ def test_install_archive_repairs_execute_bit_for_cached_install(tmp_path, monkey
     archive_install.install_archive(server, "zip")
 
     assert exe_path.stat().st_mode & 0o111
+
+
+@pytest.mark.parametrize("use_archive_installer", [False, True])
+def test_exact_relative_file_exclusions_preserve_other_content(
+    tmp_path, monkeypatch, use_archive_installer
+):
+    source = tmp_path / "source"
+    payload = {
+        "Robust.Server": "dedicated engine",
+        "client.bin": "client",
+        "base/client.bin": "nested client",
+        "other/client.bin": "keep same basename elsewhere",
+        "base/server.bin": "server game code",
+        "base/maps/one.bsp": "first map",
+        "base/maps/two.bsp": "second map",
+    }
+    for relative_path, content in payload.items():
+        path = source / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+    install_dir = tmp_path / "install"
+    install_dir.mkdir()
+    (install_dir / "operator.cfg").write_text("operator settings")
+    (install_dir / "client.bin").write_text("existing operator file")
+    exclusions = ("client.bin", "base/client.bin", "base")
+
+    if use_archive_installer:
+        server = DummyServer(install_dir)
+        monkeypatch.setattr(
+            archive_install.downloader, "getpath", lambda module, args: str(source)
+        )
+        archive_install.install_archive(server, "zip", skip_relative_files=exclusions)
+    else:
+        archive_install.sync_tree(source, install_dir, skip_relative_files=exclusions)
+
+    assert (install_dir / "client.bin").read_text() == "existing operator file"
+    assert not (install_dir / "base/client.bin").exists()
+    assert (install_dir / "operator.cfg").read_text() == "operator settings"
+    for relative_path, content in payload.items():
+        assert (source / relative_path).read_text() == content
+        if relative_path not in exclusions:
+            assert (install_dir / relative_path).read_text() == content
+
+
+def test_sync_tree_copies_complete_payload_by_default(tmp_path):
+    source = tmp_path / "source"
+    (source / "base").mkdir(parents=True)
+    (source / "client.bin").write_text("client")
+    (source / "base/client.bin").write_text("nested client")
+    install_dir = tmp_path / "install"
+
+    archive_install.sync_tree(source, install_dir)
+
+    assert (install_dir / "client.bin").read_text() == "client"
+    assert (install_dir / "base/client.bin").read_text() == "nested client"

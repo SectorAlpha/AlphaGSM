@@ -1,0 +1,31 @@
+{
+  "description": "Stormworks complete compatible server tree",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    },
+    {
+      "path": "data",
+      "kind": "directory"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "The developer included the dedicated exe in the owned base game and discontinued the separate tool. Obtain base game app 573090 Windows with full server data. Keep provider authentication requirements; old tool 1247090 is not the current source.",
+      "live_validated": false,
+      "url": "https://store.steampowered.com/news/posts/?appids=573090&enddate=1705078813&feed=steam_community_announcements"
+    }
+  ],
+  "defaults": {
+    "exe_name": "server64.exe"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "stormworksserver",
+  "guide": "docs/servers/stormworksserver.md",
+  "schema_version": 1
+}

@@ -1,0 +1,27 @@
+{
+  "description": "MX Bikes complete compatible server tree",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Official instructions use the Windows mxbikes.exe -dedicated flow, dedicated.ini and full compatible package/content. The existing module native executable expectation is unverified; do not fabricate a Linux archive.",
+      "live_validated": false,
+      "url": "https://forum.mx-bikes.com/index.php?topic=197.0"
+    }
+  ],
+  "defaults": {
+    "exe_name": "mxbikes_dedicated"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "mxbikesserver",
+  "guide": "docs/servers/mxbikesserver.md",
+  "schema_version": 1
+}

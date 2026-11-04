@@ -45,6 +45,13 @@ def test_configure_resolves_download(tmp_path):
     assert server.data['url'] == 'https://example.com/etl.tar.gz'
     assert server.data['version'] == '2.83'
 
+def _seed_stock_paks(tmp_path):
+    etmain_dir = tmp_path / "etmain"
+    etmain_dir.mkdir(exist_ok=True)
+    for pak_name in ("pak0.pk3", "pak1.pk3", "pak2.pk3"):
+        (etmain_dir / pak_name).write_bytes(b"already-present")
+
+
 def test_install(tmp_path):
     server = DummyServer()
     server.data["dir"] = str(tmp_path) + "/"
@@ -54,6 +61,7 @@ def test_install(tmp_path):
     server.data["version"] = "test"
     server.data["configfile"] = "etl_server.cfg"
     (tmp_path / "etl_server.cfg").write_text('set sv_hostname "Old Name"\n', encoding="utf-8")
+    _seed_stock_paks(tmp_path)
     mod.install(server)
 
 def test_install_resolves_download(tmp_path):
@@ -61,6 +69,7 @@ def test_install_resolves_download(tmp_path):
     server.data["dir"] = str(tmp_path) + "/"
     server.data["exe_name"] = "etlded.x86_64"
     server.data["download_name"] = "test.tar.gz"
+    _seed_stock_paks(tmp_path)
     with patch.object(mod._main, 'resolve_download', return_value=('2.83', 'https://example.com/etl.tar.gz')):
         mod.install(server)
     assert server.data['url'] == 'https://example.com/etl.tar.gz'
@@ -72,7 +81,8 @@ def test_get_start_command(tmp_path):
     (tmp_path / "etlded.x86_64").write_text("")
     etmain_dir = tmp_path / "etmain"
     etmain_dir.mkdir()
-    (etmain_dir / "pak0.pk3").write_text("")
+    for pak_name in ("pak0.pk3", "pak1.pk3", "pak2.pk3"):
+        (etmain_dir / pak_name).write_text("")
     server.data["configfile"] = "test"
     server.data["fs_game"] = "test"
     server.data["hostname"] = "test"

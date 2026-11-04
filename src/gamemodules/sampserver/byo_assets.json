@@ -1,0 +1,30 @@
+{
+  "description": "SA-MP complete compatible server tree",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    },
+    {
+      "path": "gamemodes/*.amx",
+      "kind": "glob"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Supply a compatible original SA-MP Linux server distribution with gamemodes, scriptfiles and supporting runtime. Legacy download availability is unverified; open.mp is a separate replacement.",
+      "live_validated": false
+    }
+  ],
+  "defaults": {
+    "exe_name": "samp03svr"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "sampserver",
+  "guide": "docs/servers/sampserver.md",
+  "schema_version": 1
+}

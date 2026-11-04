@@ -1,0 +1,15 @@
+{
+  "families": {
+    "oxide": {
+      "default": "2.0.7830",
+      "releases": {
+        "2.0.7830": {
+          "url": "https://github.com/OxideMod/Oxide.Rust/releases/download/2.0.7830/Oxide.Rust-linux.zip",
+          "hosts": ["github.com"],
+          "archive_type": "zip",
+          "destinations": ["oxide", "RustDedicated_Data"]
+        }
+      }
+    }
+  }
+}

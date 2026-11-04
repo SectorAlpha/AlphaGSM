@@ -6,8 +6,10 @@ This guide covers the `codserver` module in AlphaGSM.
 baseline. The public dedicated archive supplies the legacy server binary and
 base PK3 files but not multiplayer map data, so start requires an owned PK3
 containing `maps/mp/<map>.bsp` (or the equivalent map format) staged under the
-configured `moddir`. The Docker contract remains available through the shared
-`steamcmd-linux` runtime, which supplies the legacy `libstdc++.so.5` library.
+configured `moddir`. A local process run on 2026-10-16 answered Quake UDP
+`getstatus` after setup staged the upstream gcc 3.2 libraries beside
+`cod_lnxded`. The Docker contract remains available through the shared
+`steamcmd-linux` runtime and was not rerun in that local campaign.
 
 ## Requirements
 
@@ -15,7 +17,7 @@ configured `moddir`. The Docker contract remains available through the shared
 - an owned multiplayer map PK3 staged under `<install_dir>/main/`
 - Python packages from `requirements.txt`
 
-Process mode can still work on a host install, but the tested path uses the shared `steamcmd-linux` Docker runtime image because the legacy Call of Duty dedicated binary still expects `libstdc++.so.5`.
+Process mode stages `libstdc++.so.5` and `libgcc_s.so.1` beside `cod_lnxded` and was locally validated. The shared `steamcmd-linux` image also provides `libstdc++.so.5` for container runs.
 
 ## Quick Start
 
@@ -25,11 +27,16 @@ Create the server:
 alphagsm mycodserve create codserver
 ```
 
-Run setup:
+For an owned Steam copy, sign in once and let setup acquire the declared files:
 
 ```bash
-alphagsm mycodserve setup
+alphagsm steam-auth login owned your_steam_username
+alphagsm mycodserve setup --auth-profile owned
 ```
+
+Enter credentials only at the local SteamCMD prompts. For an existing local
+Steam library, use `setup --steam-dir /path/to/SteamLibrary/steamapps` instead.
+The authenticated download path still needs local validation.
 
 Start it:
 
@@ -112,7 +119,9 @@ alphagsm myserver set KEY VALUE
 - **Config file**: `<moddir>/server.cfg` (default `main/server.cfg`)
 - `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
 - **Template**: See [server-templates/codserver/](../server-templates/codserver/) if available
-- `query` and `info` currently validate TCP reachability on the configured game port; `info --json` reports protocol `tcp`.
+- `query` and `info` use Quake UDP `getstatus` on the game port. `info --json` reports protocol `quake`.
+- Setup stages the upstream gcc 3.2 libraries `libstdc++.so.5` and `libgcc_s.so.1` beside `cod_lnxded` and starts it with `LD_LIBRARY_PATH=.`.
+- Startup sets `fs_basepath` and `fs_homepath` to the install directory so the dedicated server does not use `~/.callofduty`.
 
 ### Maps and Mods
 
@@ -140,3 +149,20 @@ alphagsm mycodserve mod add url https://example.com/custom-content.zip
 alphagsm mycodserve mod apply
 alphagsm mycodserve mod cleanup
 ```
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+The preferred Steam-owned path is `alphagsm steam-auth login owned <username>`,
+then `alphagsm <server-name> setup --auth-profile owned`. Setup remembers the
+profile name and fetches missing required files before installing the engine.
+Use `setup --steam-dir /path/to/SteamLibrary/steamapps` to import from an existing
+Steam library instead. Direct file acquisition remains available through
+`assets fetch steam-owned --auth-profile owned`.
+Authenticated downloads remain unverified here.
+The base-file helper checks PK3 archives for the configured multiplayer map in
+`.bsp` or `.d3dbsp` format. Archive member names may vary in case or use either
+slash style; installed filesystem paths must match the native server layout.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

@@ -85,6 +85,20 @@ def configure(server, ask, port=None, dir=None, *, exe_name="start-server.sh"):
     return gamemodule_common.finalize_configure(server)
 
 
+def get_wipe_paths(server):
+    """Return Project Zomboid save data and leave server ini files in place."""
+
+    del server
+    return ["Zomboid/Saves"]
+
+
+def get_hard_wipe_preserve_paths(server):
+    """Keep Project Zomboid server configuration across a reinstall."""
+
+    del server
+    return ["Zomboid/Server"]
+
+
 def autoapply_configured_mods(server):
     """Reconcile native activation only when automatic application is enabled."""
     if MOD_SUPPORT.ensure_mod_state(server)["autoapply"]:

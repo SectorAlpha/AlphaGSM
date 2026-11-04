@@ -90,7 +90,10 @@ L4D2, Garry's Mod, Unturned, Project Zomboid, CS2 and TF2 accept `workshop` item
 collections using either numeric IDs or Steam Community Workshop URLs.
 AlphaGSM checks Steam's game AppID for the item or collection
 and every nested child before saving anything. Unavailable, private, wrong-game,
-empty, and cyclic collections are rejected. A same-game check does not prove
+empty, and cyclic collections are rejected. When Steam does not return an id,
+the command says it was not found and that it may be private, unlisted, or
+removed. A found item or collection prints its visibility, including public,
+and its title when Steam provides one. A same-game check does not prove
 that an addon works on a dedicated server; the module also checks its payload.
 
 ```bash

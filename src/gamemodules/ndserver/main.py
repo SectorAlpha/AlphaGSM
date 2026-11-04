@@ -27,6 +27,7 @@ MODULE = define_valve_server_module(
     app_id_mod=None,
     config_subdir='cfg',
     config_default='server.cfg',
+    default_server_config={'sv_hibernate_when_empty': '0'},
 )
 MOD_SUPPORT = build_source_addon_mod_support(
         game_label='Nuclear Dawn',
@@ -69,17 +70,34 @@ def _assert_required_mod_content(install_dir):
         )
 
 
+def _ensure_linux_executables(server):
+        """NTFS installs can omit the execute bit SteamCMD set on Linux files."""
+
+        install_dir = server.data["dir"]
+        for relative in ("srcds_run", "srcds_linux"):
+                path = os.path.join(install_dir, relative)
+                if os.path.isfile(path):
+                        os.chmod(path, os.stat(path).st_mode | 0o755)
+
+
 def install(server):
         """Install the dedicated scaffold, then require staged Nuclear Dawn content."""
 
         MODULE.install(server)
+        _ensure_linux_executables(server)
         _assert_required_mod_content(server.data["dir"])
 
 
 doinstall = MODULE.doinstall
-prestart = MODULE.prestart
 update = MODULE.update
 restart = MODULE.restart
+
+
+def prestart(server, *args, **kwargs):
+        """Restore launcher execute bits, then run the shared Valve prestart."""
+
+        _ensure_linux_executables(server)
+        return MODULE.prestart(server, *args, **kwargs)
 
 
 def get_start_command(server):
@@ -106,3 +124,9 @@ get_container_spec = gamemodule_common.make_container_spec_builder(
         port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}, {'key': 'clientport', 'protocol': 'udp'}, {'key': 'sourcetvport', 'protocol': 'udp'}),
         stdin_open=True,
 )
+
+
+def get_asset_requirements(server):
+    """Describe this game's owned files, acquisition routes and staging limits."""
+    from utils.byo_files import load_requirements
+    return load_requirements(server, __file__, 'byo_assets.json')

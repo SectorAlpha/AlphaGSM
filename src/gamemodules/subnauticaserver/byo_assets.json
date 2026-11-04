@@ -1,0 +1,31 @@
+{
+  "description": "Nitrox-compatible owned Subnautica installation",
+  "requirements": [
+    {
+      "path": "Subnautica_Data/Managed/Assembly-CSharp.dll",
+      "kind": "file"
+    },
+    {
+      "path": "Subnautica_Data",
+      "kind": "directory"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Install the owned original Subnautica version required by the selected official Nitrox release and set SUBNAUTICA_INSTALLATION_PATH. Use a complete installation, not Below Zero or DLLs from arbitrary download sites. Current Nitrox supports newer game builds; do not universally force a legacy branch.",
+      "live_validated": false,
+      "url": "https://github.com/SubnauticaNitrox/Nitrox/releases"
+    }
+  ],
+  "defaults": {},
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "root_env": "SUBNAUTICA_INSTALLATION_PATH",
+  "root_setting": "subnautica_installation_path",
+  "module": "subnauticaserver",
+  "guide": "docs/servers/subnauticaserver.md",
+  "schema_version": 1
+}

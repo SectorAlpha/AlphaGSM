@@ -98,12 +98,12 @@ def test_install_missing_owned_files_raises_byo(tmp_path):
         mod.install(server)
 
 
-def test_query_and_info_addresses_use_udp():
+def test_query_and_info_addresses_use_quake():
     server = DummyServer("mohaa")
     server.data["port"] = 12203
     with patch.object(mod.runtime_module, "resolve_query_host", return_value="127.0.0.1"):
-        assert mod.get_query_address(server) == ("127.0.0.1", 12203, "udp")
-        assert mod.get_info_address(server) == ("127.0.0.1", 12203, "udp")
+        assert mod.get_query_address(server) == ("127.0.0.1", 12203, "quake")
+        assert mod.get_info_address(server) == ("127.0.0.1", 12203, "quake")
 
 
 def test_runtime_requirements_family():

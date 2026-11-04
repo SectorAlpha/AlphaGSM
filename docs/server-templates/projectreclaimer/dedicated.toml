@@ -1,0 +1,20 @@
+# Reference only: AlphaGSM writes instance-specific names, ports and passwords.
+game = "game"
+content = "content"
+auto_update = false
+
+[master]
+enabled = false
+
+[rcon]
+address = "127.0.0.1"
+password = "replace-with-an-instance-password"
+
+[[server]]
+name = "AlphaGSM Halo"
+port = 49176
+rcon_port = 49177
+rcon_password = "replace-with-an-instance-password"
+max_players = 16
+map = "Guardian"
+game = "Slayer"
