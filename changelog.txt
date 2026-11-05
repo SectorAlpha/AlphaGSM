@@ -8,6 +8,8 @@ Historical detail lives in git history. Keep this file focused on release-facing
  high-level milestones.
 
 2026-11-05
+- ET: Legacy: setup finds the Linux x86_64 tar.gz on the current etlegacy.com
+  download page. Release numbers are read from the version label.
 - Sector Alpha: `alphagsm agent run` runs the agent in the foreground.
   `alphagsm agent install-service` enables and starts a user service for that
   command. `install-service --system` enables and starts a system service for

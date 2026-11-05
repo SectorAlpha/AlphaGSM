@@ -38,6 +38,55 @@ def test_configure_ask_custom(tmp_path, monkeypatch):
     server.data["download_name"] = "test.zip"
     mod.configure(server, ask=True)
 
+CURRENT_DOWNLOAD_PAGE = """
+<h2>ET: Legacy stable release 2.86.2 - Taking Fire!!!</h2>
+<a href="#" data-href="https://www.etlegacy.com/download/file/784"
+   title="etlegacy-v2.86.2-x86_64.sh">Installer</a>
+<a href="#" data-href="https://www.etlegacy.com/download/file/785"
+   title="etlegacy-v2.86.2-x86_64.tar.gz">Archive</a>
+"""
+
+LEGACY_DOWNLOAD_PAGE = """
+<h2>stable release 2.83.1</h2>
+Linux <a data-href="https://www.etlegacy.com/download/file/100">x86_64 archive</a>
+"""
+
+RELEASE_LIST = """
+<a href="https://www.etlegacy.com/download/release/2862">
+  <span class="dl-release-version luck">2.86.2</span>
+</a>
+<a href="https://www.etlegacy.com/download/release/2831">2.83.1</a>
+"""
+
+
+def test_parse_release_page_reads_the_current_linux_archive_title():
+    version, url = mod._main._parse_release_page(CURRENT_DOWNLOAD_PAGE)
+    assert version == "2.86.2"
+    assert url == "https://www.etlegacy.com/download/file/785"
+
+
+def test_parse_release_page_keeps_the_older_archive_label():
+    version, url = mod._main._parse_release_page(LEGACY_DOWNLOAD_PAGE)
+    assert version == "2.83.1"
+    assert url == "https://www.etlegacy.com/download/file/100"
+
+
+def test_parse_release_page_rejects_a_page_without_the_linux_archive():
+    with pytest.raises(ServerError, match="Linux download"):
+        mod._main._parse_release_page("<h2>stable release 2.86.2</h2>")
+
+
+def test_resolve_download_follows_the_version_label(monkeypatch):
+    pages = {
+        "https://www.etlegacy.com/download/release/list": RELEASE_LIST,
+        "https://www.etlegacy.com/download/release/2862": CURRENT_DOWNLOAD_PAGE,
+    }
+    monkeypatch.setattr(mod._main, "_read_page", lambda url: pages[url])
+    version, url = mod._main.resolve_download("2.86.2")
+    assert version == "2.86.2"
+    assert url == "https://www.etlegacy.com/download/file/785"
+
+
 def test_configure_resolves_download(tmp_path):
     server = DummyServer()
     with patch.object(mod._main, 'resolve_download', return_value=('2.83', 'https://example.com/etl.tar.gz')):
