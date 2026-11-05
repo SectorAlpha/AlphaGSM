@@ -10,6 +10,10 @@ from utils.state_io import atomic_write_text, state_lock
 from .contracts import ACTIONS, identifier, integer, validate_metadata, exact
 
 DEFAULT_ORIGIN = "https://alphagsm-api.sector-alpha.net"
+TEAMSPEAK_DIRECTORY = (
+    "TeamSpeak directory listing is a website choice after the name check. "
+    "The API queries the TeamSpeak server and does not use this local switch."
+)
 
 
 class ConfigError(ValueError):
@@ -162,8 +166,6 @@ class Config:
         from .publication_config import local_publication
 
         if publication is True and metadata.get("game_id") == "ts3server":
-            from .choices import TEAMSPEAK_DIRECTORY
-
             raise ConfigError(TEAMSPEAK_DIRECTORY)
         if publication is True and metadata.get("game_id") not in PROFILES:
             raise ConfigError("This game has no supported public query profile")
@@ -242,8 +244,6 @@ class Config:
                 raise ConfigError("Unknown local binding")
             game_id = value["bindings"][binding_id]["metadata"]["game_id"]
             if enabled and game_id == "ts3server":
-                from .choices import TEAMSPEAK_DIRECTORY
-
                 raise ConfigError(TEAMSPEAK_DIRECTORY)
             if enabled and game_id not in PROFILES:
                 raise ConfigError("This game has no supported public query profile")

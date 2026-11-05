@@ -7,6 +7,13 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-11-05
+- Sector Alpha: `alphagsm agent run` runs the agent in the foreground.
+  `alphagsm agent install-service` enables and starts a user service for that
+  command. `install-service --system` enables and starts a system service for
+  one operator account, not as root. Ordinary Windows commands do not import
+  the Linux account modules.
+
 2026-11-04
 - Sector Alpha: `alphagsm agent install-service` installs a Linux systemd
   user service that runs `alphagsm agent run`. `install-service --system`

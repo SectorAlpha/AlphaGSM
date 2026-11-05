@@ -181,10 +181,15 @@ the enrollment instructions above and run `alphagsm agent enroll` first.
    alphagsm agent run
    ```
 
-   `run` stays in the foreground. On Linux, `alphagsm agent install-service`
-   keeps that command running for this user. `alphagsm agent install-service --system`
-   installs it as a system service for your account. Neither changes reporting
-   or management. Remove the selected one with `alphagsm agent uninstall-service`.
+   `alphagsm agent run` starts the agent in that terminal. It keeps running
+   until you stop it or close the terminal. On Linux, `alphagsm agent install-service`
+   writes a user unit for that same command, enables it, and starts it, so it
+   continues after the terminal closes and comes back at login.
+   `alphagsm agent install-service --system` does the same as a system service
+   for your account and enables it for boot. It does not run as root. Neither
+   command changes reporting or management. A second `agent run` stops while
+   that service is already running. Remove the selected unit with
+   `alphagsm agent uninstall-service`.
    Complete each endpoint's ownership challenge in the website to
    obtain verified public statistics. Reporting does not enable remote management.
 
@@ -254,13 +259,14 @@ alphagsm agent bind BINDING_ID my-minecraft --epoch 1 \
 
 Use only the actions you want to grant; an empty action list grants no management
 operations. `--publish` is optional and independent of actions. A private server
-can be managed without a directory listing. Run remains a foreground
-command. `alphagsm agent install-service` installs a user service for it, and
-`install-service --system` installs a system service that runs the same
-`alphagsm agent run` command as one operator. There is no separate
-alphagsm-agent program. `uninstall-service` removes the selected unit.
-Enrollment, binding, the first-run tour and game setup do not install it, and
-the unit does not change reporting or management. Reporting reconciles approved
+can be managed without a directory listing. `alphagsm agent run` is enough
+to run the agent in the foreground. `alphagsm agent install-service` enables
+and starts a user service for that command. `install-service --system` enables
+and starts a system service that runs the same `alphagsm agent run` command as
+one operator, not as root. There is no separate alphagsm-agent program.
+`uninstall-service` disables and removes the selected unit. Enrollment,
+binding, the first-run tour and game setup do not install it, and the unit
+does not change reporting or management. Reporting reconciles approved
 local name/capacity after successful local changes and every roughly 60 seconds.
 Advertised host, player port and query port remain explicit local choices; local
 port changes never replace them during background metadata refresh. The compatible service

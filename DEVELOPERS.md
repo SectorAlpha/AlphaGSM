@@ -1236,13 +1236,17 @@ lock, obtains final online authorization and persists executing before lifecycle
 effects. A socket frame never skips those checks. Results are posted over HTTPS.
 Outbound HTTPS and the agent WebSocket use a verified client context with a
 minimum of TLS 1.2.
-`alphagsm agent install-service` writes `alphagsm.service` for the current
-user. `install-service --system` writes the same unit under
-`/etc/systemd/system` and runs it as one operator account, never as root.
-Both execute the invoked program with `agent run`. There is no separate
-alphagsm-agent program. Neither command changes reporting, management,
-publication or credentials. `uninstall-service` removes the selected unit
-and leaves the enrollment in place. The tour and game setup do not install it.
+`alphagsm agent run` starts the foreground agent and does not install a
+service. `alphagsm agent install-service` writes `alphagsm.service` for the
+current user, enables it, and starts it. `install-service --system` writes
+the same unit under `/etc/systemd/system`, enables it for boot, and starts
+it as one operator account, never as root. Both execute the invoked program
+with `agent run`. There is no separate alphagsm-agent program. The Linux
+account lookup is imported only for a system install, so Windows commands do
+not load `grp` or `pwd`. Neither command changes reporting, management,
+publication or credentials. `uninstall-service` disables, stops and removes
+the selected unit and leaves the enrollment in place. The tour and game
+setup do not install it.
 `Journal` stores durable results until acknowledgement; interrupted execution
 reconciles unknown and never repeats effects. A global foreground-service lock
 prevents competing pollers. No secrets are accepted as CLI arguments.

@@ -1,7 +1,10 @@
 """The optional agent service installs only the foreground run command."""
 
+import os
 import ssl
 import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 
@@ -160,6 +163,26 @@ def test_uninstall_removes_only_the_unit(tmp_path, capsys):
     assert "permissions are unchanged" in capsys.readouterr().out
     uninstall(runner=_runner(calls), env=env, platform="linux", which=_which)
     assert "No AlphaGSM user service is installed." in capsys.readouterr().out
+
+
+def test_ordinary_import_does_not_load_linux_account_modules():
+    env = os.environ.copy()
+    root = Path(__file__).resolve().parents[3]
+    env["PYTHONPATH"] = os.pathsep.join([str(root / "src"), env.get("PYTHONPATH", "")])
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys\n"
+            "import agent.user_service\n"
+            "raise SystemExit('grp' in sys.modules or 'pwd' in sys.modules)\n",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert completed.returncode == 0, completed.stderr
 
 
 def test_unsafe_program_paths_are_rejected(tmp_path):

@@ -15,10 +15,11 @@ and works without a terminal. Press Enter to skip. The tour offers local server
 setup, common commands and optional Sector Alpha enrollment/binding, with
 separate confirmations before creation, downloads or remote enrollment.
 It never starts a game or enables reporting/management. Ordinary commands and
-scripts run directly. On Linux, `alphagsm agent install-service` keeps the
-Sector Alpha agent running for this user. `install-service --system` installs
-that same `alphagsm agent run` command as a system service. Neither changes
-reporting or management.
+scripts run directly. `alphagsm agent run` runs the Sector Alpha agent in
+the foreground. On Linux, `alphagsm agent install-service` enables and starts
+a user service for that command. `install-service --system` enables and starts
+it as a system service for your account. Neither changes reporting or
+management.
 See [First-run setup](first-run-setup.md).
 
 ## Lifecycle

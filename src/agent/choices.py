@@ -1,13 +1,8 @@
 """Capability-aware permission prompts for exact local binding previews."""
 
 from server.public_query import PROFILES
-from .config import ConfigError
+from .config import TEAMSPEAK_DIRECTORY, ConfigError
 from .contracts import ACTIONS
-
-TEAMSPEAK_DIRECTORY = (
-    "TeamSpeak directory listing is a website choice after the name check. "
-    "The API queries the TeamSpeak server and does not use this local switch."
-)
 
 
 def publication_choice(game, approved, explicit):

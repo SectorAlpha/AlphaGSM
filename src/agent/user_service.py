@@ -6,9 +6,7 @@ AlphaGSM runs the agent. There is no separate alphagsm-agent program.
 for one operator account. Enrollment, reporting and management stay unchanged.
 """
 
-import grp
 import os
-import pwd
 import shutil
 import subprocess
 from collections import namedtuple
@@ -130,6 +128,9 @@ def uninstall(*, runner=None, home=None, env=None, platform=None, which=None, sy
 
 def lookup_account(user):
     """Operator account for a system service. The service does not run as root."""
+    import grp
+    import pwd
+
     name = user or os.environ.get("SUDO_USER") or os.environ.get("USER") or ""
     if name == "root":
         raise ServiceInstallError(

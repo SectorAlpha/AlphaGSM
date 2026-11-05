@@ -15,12 +15,19 @@ def observe_local(server, game_id, *, timeout=5.0):
     if protocol == "ts3":
         info = ts3_serverinfo(host, port, timeout=timeout)
         players, capacity = info["clients_online"], info["max_clients"]
-        if type(players) is not int or type(capacity) is not int or players < 0 or capacity < 0:
+        if not _player_count(players) or not _player_count(capacity):
             raise QueryError("TeamSpeak returned invalid player counts")
-        if capacity < players:
-            capacity = players
-        return {"name": info["name"], "players": players, "capacity": capacity, "version": info["version"]}
+        return {
+            "name": info["name"],
+            "players": players,
+            "capacity": max(capacity, players),
+            "version": info["version"],
+        }
     return query_public(game_id, host, port, timeout=timeout)
+
+
+def _player_count(value):
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 
 def query_tag(cfg, tag, *, timeout=5.0, open_server=None):

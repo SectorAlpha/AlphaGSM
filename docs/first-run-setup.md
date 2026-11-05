@@ -54,10 +54,11 @@ the command shown.
 ## Reporting and permissions
 
 The tour never enables remote reporting or management, and it does not install
-a background service. On Linux, `alphagsm agent install-service` keeps
-`alphagsm agent run` running for this user, and `install-service --system`
-installs that same command as a system service. Neither changes reporting or
-management. New installations keep both off. Public listings require
+a background service. `alphagsm agent run` runs the agent in the foreground.
+On Linux, `alphagsm agent install-service` enables and starts a user service
+for that command, and `install-service --system` enables and starts a system
+service for your account. Neither changes reporting or management. New
+installations keep both off. Public listings require
 separate per-server approval, and reporting
 still needs an explicit `agent enable-reporting` command. Existing remote
 permissions remain in force when you replay the tour. Choosing local setup,

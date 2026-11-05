@@ -3,7 +3,7 @@
 import argparse
 import getpass
 import json
-from .config import Config, ConfigError, local_tag
+from .config import TEAMSPEAK_DIRECTORY, Config, ConfigError, local_tag
 from .contracts import ACTIONS
 from .service import Service
 from .transport import Transport, TransportError
@@ -100,8 +100,6 @@ def run(args, *, root=None, executable=None):
             ):
                 raise ConfigError("Legacy bind requires exact game, host, port and name")
             if options.publish is True and options.game == "ts3server":
-                from .choices import TEAMSPEAK_DIRECTORY
-
                 raise ConfigError(TEAMSPEAK_DIRECTORY)
             if options.publish is True and options.game not in onboarding.PROFILES:
                 raise ConfigError("This game has no supported public query profile")

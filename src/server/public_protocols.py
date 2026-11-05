@@ -8,7 +8,7 @@ import ast
 STRUCTURED = frozenset({"a2s", "slp", "quake", "quake2", "quakeworld", "bedrock", "ts3"})
 IPV4_ONLY = frozenset({"a2s", "quake", "quake2", "quakeworld", "bedrock"})
 _HOOKS = ("get_info_address", "get_query_address")
-_CACHE = None
+_CACHE = {}
 
 
 def protocol_for(game_id):
@@ -44,10 +44,11 @@ def game_supported(game_id):
 
 
 def _catalogue():
-    global _CACHE
-    if _CACHE is None:
-        _CACHE = _build()
-    return _CACHE
+    cached = _CACHE.get("value")
+    if cached is None:
+        cached = _build()
+        _CACHE["value"] = cached
+    return cached
 
 
 def _build():
@@ -101,7 +102,12 @@ def _select(classified):
 
 
 def _literal_port(node):
-    if isinstance(node, ast.Constant) and type(node.value) is int and 1 <= node.value <= 65535:
+    if (
+        isinstance(node, ast.Constant)
+        and isinstance(node.value, int)
+        and not isinstance(node.value, bool)
+        and 1 <= node.value <= 65535
+    ):
         return node.value
     if isinstance(node, ast.Constant) and isinstance(node.value, str) and node.value.isdigit():
         value = int(node.value)
