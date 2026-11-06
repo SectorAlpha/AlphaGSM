@@ -1,10 +1,16 @@
 """Risk of Rain 2 dedicated server lifecycle helpers."""
 
 import os
+from pathlib import Path
 
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.modsupport.registry import CuratedRegistryLoader
+from server.modsupport.source_addons import (
+    build_source_addon_mod_support,
+    merge_framework_commands,
+)
 
 from utils.platform_info import IS_LINUX
 
@@ -14,6 +20,33 @@ from utils.gamemodules import common as gamemodule_common
 
 steam_app_id = 1180760
 steam_anonymous_login_possible = False
+
+def load_curated_registry():
+    """Load the pinned Risk of Rain 2 framework manifest."""
+
+    override = os.environ.get("ALPHAGSM_ROR2_CURATED_MODS_PATH")
+    path = Path(override) if override else Path(__file__).with_name("curated_mods.json")
+    return CuratedRegistryLoader.load(path)
+
+
+MOD_SUPPORT = build_source_addon_mod_support(
+    game_label="Risk of Rain 2",
+    game_dir=".",
+    cache_namespace="ror2server",
+    direct_url_suffixes={},
+    direct_url_filename_description="a supported archive filename",
+    allowed_destinations=(
+        "BepInEx",
+        ".doorstop_version",
+        "changelog.txt",
+        "doorstop_config.ini",
+        "winhttp.dll",
+    ),
+    enabled_sources=(),
+    curated_registry_loader=load_curated_registry,
+    curated_identifier_description="framework name",
+    replace_unowned=True,
+)
 
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
@@ -25,6 +58,9 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Restart the Risk of Rain 2 dedicated server.",
 )
 command_functions = {}
+commands = merge_framework_commands(
+    MOD_SUPPORT, commands, command_args, command_descriptions, command_functions
+)
 max_stop_wait = 1
 
 
@@ -56,6 +92,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="Risk of Rain 2.exe"
         prompt="Where would you like to install the Risk of Rain 2 server:",
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
+    MOD_SUPPORT.ensure_mod_state(server)
     return gamemodule_common.finalize_configure(server)
 
 

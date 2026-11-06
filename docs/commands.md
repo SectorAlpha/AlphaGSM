@@ -7,6 +7,21 @@ boot, and discovery.
 Every server also has `alphagsm <name> --help` for the exact flags of that
 game.
 
+## Optional setup tour
+
+Run `alphagsm` with no command in a terminal for the first-run offer.
+`alphagsm --welcome` replays the tour; `alphagsm --skip-welcome` remembers a skip
+and works without a terminal. Press Enter to skip. The tour offers local server
+setup, common commands and optional Sector Alpha enrollment/binding, with
+separate confirmations before creation, downloads or remote enrollment.
+It never starts a game or enables reporting/management. Ordinary commands and
+scripts run directly. `alphagsm agent run` runs the Sector Alpha agent in
+the foreground. On Linux, `alphagsm agent install-service` enables and starts
+a user service for that command. `install-service --system` enables and starts
+it as a system service for your account. Neither changes reporting or
+management.
+See [First-run setup](first-run-setup.md).
+
 ## Lifecycle
 
 | Command | What it does |
@@ -64,8 +79,11 @@ alphagsm mymc restore backup-filename.zip
 
 Backups use ZIP archives. Check the module's backup support: TF2 currently
 advertises the shared command but has no backup hook.
-Restore stops the server first. `reset-world` / `wipe` delete **world data
-only**, with a confirmation prompt (`-Y` skips it). See
+Restore stops the server first. `reset-world` / `wipe` default to `--mode soft`
+and delete world data, with a confirmation prompt (`-Y` skips it).
+`--mode hard` reinstalls the server files and puts declared configuration back.
+`set memory 2g` and `set cpus 1.5` cap a Docker game container. A Java server
+with no `-Xmx` then uses 75 percent of that memory limit. See
 [World creation and reset](world-management.md).
 
 To copy a server onto another machine, back it up, copy the install tree,

@@ -75,7 +75,7 @@ def test_binary_command_covers_all_packages_and_only_excludes_placeholder():
     args = build_binary.pyinstaller_arguments()
     packages = [args[index + 1] for index, arg in enumerate(args)
                 if arg == "--collect-submodules"]
-    assert set(packages) == {"core", "downloader", "downloadermodules", "gamemodules",
+    assert set(packages) == {"dns", "agent", "core", "downloader", "downloadermodules", "gamemodules",
                              "screen", "server", "utils"}
     excluded = [args[index + 1] for index, arg in enumerate(args)
                 if arg == "--exclude-module"]
@@ -122,3 +122,9 @@ def test_integration_source_default_is_preserved(monkeypatch, tmp_path):
     env = helpers.alphagsm_env(tmp_path / "alphagsm.conf")
     assert env["PYTHONPATH"] == str(helpers.REPO_ROOT / "src")
     assert helpers.alphagsm_command(env) == [sys.executable, str(helpers.ALPHAGSM_SCRIPT)]
+
+
+def test_binary_collects_dns_record_types_for_hostname_publication():
+    args = build_binary.pyinstaller_arguments()
+    packages = [args[index + 1] for index, arg in enumerate(args) if arg == '--collect-submodules']
+    assert 'dns' in packages

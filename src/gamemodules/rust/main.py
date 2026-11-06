@@ -6,15 +6,39 @@ import re
 
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.modsupport.source_addons import build_source_addon_mod_support
+from server.modsupport.registry import CuratedRegistryLoader
 
 import server.runtime as runtime_module
 from utils.backups import backups as backup_utils
 from utils.gamemodules import common as gamemodule_common
 
+
+def load_curated_registry():
+    """Load the pinned Rust framework manifest."""
+
+    override = os.environ.get("ALPHAGSM_RUST_CURATED_MODS_PATH")
+    path = Path(override) if override else Path(__file__).with_name("curated_mods.json")
+    return CuratedRegistryLoader.load(path)
+
+
+MOD_SUPPORT = build_source_addon_mod_support(
+    game_label="Rust",
+    game_dir=".",
+    cache_namespace="rust",
+    direct_url_suffixes={},
+    direct_url_filename_description="a supported archive filename",
+    allowed_destinations=("oxide", "RustDedicated_Data"),
+    enabled_sources=(),
+    curated_registry_loader=load_curated_registry,
+    curated_identifier_description="framework name",
+    replace_unowned=True,
+)
+
 steam_app_id = 258550
 steam_anonymous_login_possible = True
 
-commands = ("update", "restart")
+commands = ("update", "restart") + MOD_SUPPORT.commands
 command_args = gamemodule_common.build_setup_update_restart_command_args(
     "The game port to use for the Rust server",
     "The directory to install Rust in",
@@ -23,7 +47,9 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Update the Rust dedicated server to the latest version.",
     "Restart the Rust dedicated server.",
 )
-command_functions = {}
+command_args.update(MOD_SUPPORT.command_args)
+command_descriptions.update(MOD_SUPPORT.command_descriptions)
+command_functions = dict(MOD_SUPPORT.command_functions)
 max_stop_wait = 1
 port_claim_definitions = (
     {"key": "port", "protocol": "udp"},
@@ -71,6 +97,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="RustDedicated"):
         prompt="Where would you like to install the Rust server:",
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
+    MOD_SUPPORT.ensure_mod_state(server)
     return gamemodule_common.finalize_configure(server)
 
 
@@ -140,6 +167,13 @@ def get_start_command(server):
         ],
         server.data["dir"],
     )
+
+
+def get_hard_wipe_preserve_paths(server):
+    """Keep the Rust identity configuration across a reinstall."""
+
+    del server
+    return ["server/my_server_identity/cfg"]
 
 
 def get_wipe_paths(server):

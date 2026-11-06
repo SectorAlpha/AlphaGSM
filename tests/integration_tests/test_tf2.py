@@ -6,7 +6,7 @@ import subprocess
 import time
 import uuid
 
-from tests.smoke_tests.tf2_workshop import assert_native_map, assert_native_ready
+from tests.smoke_tests.tf2_workshop import assert_native_map, assert_native_ready, probe_began
 
 import pytest
 
@@ -243,6 +243,22 @@ def test_tf2_native_workshop_loads(tmp_path, runtime_backend):
     test_tf2_download_install_and_start(tmp_path, source, identifier, runtime_backend)
 
 
+def _read_workshop_probe(env, server_name, token, attempts=8):
+    """Return console text once this probe's BEGIN line is visible.
+
+    One ``logs`` snapshot is often taken before Source prints the echo. The
+    following read then contains the previous token, and the fresh probe is
+    reported as missing for the whole deadline.
+    """
+    output = ''
+    for _ in range(attempts):
+        time.sleep(1)
+        output = run_and_assert_ok(env, server_name, 'logs', '-n', '20000').stdout
+        if probe_began(output, token):
+            return output
+    return output
+
+
 def _verify_native_workshop_map(env, server_name, item_ids, port):
     """Require the ready native ID, actual current canonical map, and exact A2S."""
     item = os.environ.get('ALPHAGSM_TF2_WORKSHOP_LOAD_ITEM', item_ids[0])
@@ -261,8 +277,7 @@ def _verify_native_workshop_map(env, server_name, item_ids, port):
                 token = 'AlphaGSM-TF2-' + uuid.uuid4().hex
                 run_and_assert_ok(env, server_name, 'send',
                                   f'echo BEGIN-{token}; tf_workshop_map_status; status; echo END-{token}')
-                time.sleep(1)
-                output = run_and_assert_ok(env, server_name, 'logs', '-n', '20000').stdout
+                output = _read_workshop_probe(env, server_name, token)
                 assert_native_ready(output, item, expected_map, token)
                 run_and_assert_ok(env, server_name, 'send', f'changelevel workshop/{item}')
                 change_requested = True
@@ -283,8 +298,7 @@ def _verify_native_workshop_map(env, server_name, item_ids, port):
                 token = 'AlphaGSM-TF2-' + uuid.uuid4().hex
                 run_and_assert_ok(env, server_name, 'send',
                                   f'echo BEGIN-{token}; tf_workshop_map_status; status; echo END-{token}')
-                time.sleep(1)
-                output = run_and_assert_ok(env, server_name, 'logs', '-n', '20000').stdout
+                output = _read_workshop_probe(env, server_name, token)
                 assert_native_map(output, item, expected_map, token)
                 print(f'ENGINE_WORKSHOP_MAP_LOADED {name} app=440 item={item} native_map={canonical}')
                 return name

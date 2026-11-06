@@ -216,3 +216,44 @@ def test_workshop_lifecycle_requires_execution_instead_of_pending_a2s_map(
             assert len(set(all_probes)) == len(all_probes)
         else:
             assert probes == [('echo BEGIN-AlphaGSM-TF2-fresh; tf_workshop_map_status; status; echo END-AlphaGSM-TF2-fresh',)] * (pending_map_frames + 1)
+
+
+def test_workshop_probe_reads_again_until_its_begin_line_exists(monkeypatch):
+    from tests.integration_tests import conftest as helpers
+    from tests.smoke_tests.tf2_workshop import probe_began
+    monkeypatch.setitem(sys.modules, 'conftest', helpers)
+    path = Path(__file__).resolve().parents[2] / 'integration_tests/test_tf2.py'
+    spec = importlib.util.spec_from_file_location('_tf2_probe_wait', path)
+    lifecycle = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(lifecycle)
+    monkeypatch.setenv('ALPHAGSM_TF2_WORKSHOP_LOAD_ITEM', '454299390')
+    monkeypatch.setenv('ALPHAGSM_TF2_WORKSHOP_MAP', 'cp_orange_x3')
+    monkeypatch.setattr(lifecycle.time, 'sleep', lambda _seconds: None)
+    monkeypatch.setattr(lifecycle.time, 'monotonic', lambda: 0)
+    monkeypatch.setattr(lifecycle.uuid, 'uuid4', lambda: SimpleNamespace(hex='fresh'))
+    frame = (
+        'BEGIN-AlphaGSM-TF2-fresh\n'
+        '454299390 workshop/cp_orange_x3.ugc454299390 ready\n'
+        'map : workshop/cp_orange_x3.ugc454299390 at: 0 x, 0 y, 0 z\n'
+        'END-AlphaGSM-TF2-fresh\n'
+    )
+    echo_only = 'echo BEGIN-AlphaGSM-TF2-fresh; tf_workshop_map_status; status; echo END-AlphaGSM-TF2-fresh\n'
+    assert not probe_began(echo_only, 'AlphaGSM-TF2-fresh')
+    outputs = [echo_only, frame, frame]
+    commands = []
+
+    def command(_env, _server, action, *args):
+        commands.append((action, args))
+        if action == 'logs':
+            return SimpleNamespace(returncode=0, stdout=outputs.pop(0), stderr='')
+        return SimpleNamespace(returncode=0, stdout='', stderr='')
+
+    def info(*_args, **_kwargs):
+        return SimpleNamespace(returncode=0, stderr='', stdout=json.dumps(
+            {'protocol': 'a2s', 'port': 27015, 'map': 'cp_orange_x3'}))
+
+    monkeypatch.setattr(lifecycle, 'run_and_assert_ok', command)
+    monkeypatch.setattr(lifecycle, 'run_alphagsm', info)
+
+    assert lifecycle._verify_native_workshop_map({}, 'tf2', ['454299390'], 27015) == 'cp_orange_x3'
+    assert sum(action == 'logs' for action, _args in commands) == 3

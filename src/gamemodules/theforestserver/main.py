@@ -1,10 +1,16 @@
 """The Forest dedicated server lifecycle helpers."""
 
 import os
+from pathlib import Path
 
 import utils.proton as proton
 import utils.steamcmd as steamcmd
 from server import ServerError
+from server.modsupport.registry import CuratedRegistryLoader
+from server.modsupport.source_addons import (
+    build_source_addon_mod_support,
+    merge_framework_commands,
+)
 
 from utils.platform_info import IS_LINUX
 
@@ -41,6 +47,27 @@ def _container_runtime_env(_server):
         "WINEDLLOVERRIDES": "",
     }
 
+def load_curated_registry():
+    """Load the pinned Forest framework manifest."""
+
+    override = os.environ.get("ALPHAGSM_THEFOREST_CURATED_MODS_PATH")
+    path = Path(override) if override else Path(__file__).with_name("curated_mods.json")
+    return CuratedRegistryLoader.load(path)
+
+
+MOD_SUPPORT = build_source_addon_mod_support(
+    game_label="The Forest",
+    game_dir=".",
+    cache_namespace="theforestserver",
+    direct_url_suffixes={},
+    direct_url_filename_description="a supported archive filename",
+    allowed_destinations=("TheForestDedicatedServer_Data",),
+    enabled_sources=(),
+    curated_registry_loader=load_curated_registry,
+    curated_identifier_description="framework name",
+    replace_unowned=True,
+)
+
 commands = ("update", "restart")
 command_args = gamemodule_common.build_setup_update_restart_command_args(
     "The game port to use for The Forest server",
@@ -51,6 +78,9 @@ command_descriptions = gamemodule_common.build_update_restart_command_descriptio
     "Restart The Forest dedicated server.",
 )
 command_functions = {}
+commands = merge_framework_commands(
+    MOD_SUPPORT, commands, command_args, command_descriptions, command_functions
+)
 max_stop_wait = 1
 config_sync_keys = (
     "port",
@@ -97,6 +127,7 @@ def configure(server, ask, port=None, dir=None, *, exe_name="TheForestDedicatedS
         prompt="Where would you like to install The Forest server:",
     )
     gamemodule_common.configure_executable(server, exe_name=exe_name)
+    MOD_SUPPORT.ensure_mod_state(server)
     return gamemodule_common.finalize_configure(server)
 
 

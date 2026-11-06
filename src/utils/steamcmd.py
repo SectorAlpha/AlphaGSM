@@ -139,6 +139,7 @@ STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS = 5
 _KNOWN_BARE_STATE_202_FLAKE_APP_IDS = frozenset(
     {"232130", "294420", "346680", "418480", "746200"}
 )
+_ZERO_PROGRESS_RECONFIGURE = "Update state (0x3) reconfiguring, progress: 0.00 (0 / 0)"
 # check if steamcmd exists, if not download it and install it via wget https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
 # execute steamcmd/steamcmd.sh
 # <user> = Anonymous by default
@@ -182,15 +183,64 @@ def _steamcmd_state_202_flake(output, app_id):
     if state_202 not in output:
         return False
 
-    return _steamcmd_missing_manifest_flake(output, app_id) or app_id in _KNOWN_BARE_STATE_202_FLAKE_APP_IDS
+    if _steamcmd_missing_manifest_flake(output, app_id) or app_id in _KNOWN_BARE_STATE_202_FLAKE_APP_IDS:
+        return True
+    # A zero-progress reconfigure followed by 0x202 is the same stall for any
+    # app. Bare 0x202 without that stall stays limited to the known app ids.
+    return _ZERO_PROGRESS_RECONFIGURE in output
+
+
+def _steamcmd_state_2_flake(output, app_id):
+    """Return whether SteamCMD left this app in transient state 0x2.
+
+    State 0x2 means the update job finished while the app is still Update
+    Required, often after a zero-progress reconfigure, and the process exits
+    8. A later attempt usually installs the app. The phrase is exact so state
+    0x202 stays on its own classifier.
+    """
+
+    if app_id in (None, ""):
+        return False
+
+    app_id = str(app_id)
+    state_2 = "Error! App '{}' state is 0x2 after update job.".format(app_id)
+    return state_2 in output
 
 
 def _steamcmd_retry_delay(output, app_id):
     """Return the retry delay for known transient SteamCMD states."""
 
-    if _steamcmd_state_202_flake(output, app_id):
+    if _steamcmd_state_202_flake(output, app_id) or _steamcmd_state_2_flake(output, app_id):
         return STEAMCMD_RETRY_DELAY_RECONFIG_SECONDS
     return STEAMCMD_RETRY_DELAY_SECONDS
+
+
+def _steamcmd_should_retry(output, app_id, returncode):
+    """Return whether this SteamCMD result is a known transient failure.
+
+    Permanent errors stop on the attempt that produced them. The allowlist is
+    the state 0x202 flake, state 0x2 while the app is still Update Required,
+    Missing configuration for this app, and a first-run bootstrap that exits
+    0 without an ERROR! line.
+    """
+
+    output = "" if output is None else str(output)
+    if _steamcmd_state_202_flake(output, app_id) or _steamcmd_state_2_flake(output, app_id):
+        return True
+
+    if app_id not in (None, ""):
+        missing_config = "ERROR! Failed to install app '{}' (Missing configuration)".format(app_id)
+        if missing_config in output:
+            return True
+
+    if (
+        returncode == 0
+        and "ERROR!" not in output
+        and "Steam Console Client" in output
+        and not _steamcmd_succeeded(output, app_id)
+    ):
+        return True
+    return False
 
 
 def _get_login_args(steam_anonymous_login_possible):
@@ -321,6 +371,8 @@ def download(
             if proc.returncode == 0 and _steamcmd_succeeded(proc.stdout, Steam_AppID):
                 _ensure_steamclient_symlinks()
                 return
+            if not _steamcmd_should_retry(proc.stdout, Steam_AppID, proc.returncode):
+                break
             if attempt + 1 < STEAMCMD_RETRIES:
                 retry_delay = _steamcmd_retry_delay(proc.stdout, Steam_AppID)
                 print(
@@ -344,6 +396,8 @@ def download(
         if proc.returncode == 0 and _steamcmd_succeeded(proc.stdout, Steam_AppID):
             _ensure_steamclient_symlinks()
             return
+        if not _steamcmd_should_retry(proc.stdout, Steam_AppID, proc.returncode):
+            break
         if attempt + 1 < STEAMCMD_RETRIES:
             retry_delay = _steamcmd_retry_delay(proc.stdout, Steam_AppID)
             print(
@@ -446,6 +500,8 @@ def download_workshop_item(path, workshop_app_id, workshop_item_id, steam_anonym
                 "Steam Workshop item is unavailable or this game does not permit anonymous downloads. "
                 "An entitled Steam account may be required.\n" + proc.stdout
             )
+            break
+        if not _steamcmd_should_retry(proc.stdout, workshop_app_id, proc.returncode):
             break
         if attempt + 1 < STEAMCMD_RETRIES:
             retry_delay = _steamcmd_retry_delay(proc.stdout, workshop_app_id)

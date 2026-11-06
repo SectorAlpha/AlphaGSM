@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      actions: write
     steps:
       - name: Checkout AlphaGSM code
         uses: actions/checkout@v4
@@ -68,6 +69,8 @@ jobs:
           context: .
           file: docker/wine-proton/Dockerfile
           push: true
+          cache-from: type=gha,scope=alphagsm-wine-proton
+          cache-to: type=gha,mode=min,scope=alphagsm-wine-proton
           tags: |
             ${{ steps.meta.outputs.wine_image }}
             ${{ steps.meta.outputs.wine_latest }}
@@ -80,6 +83,8 @@ jobs:
           context: .
           file: .github/docker/integration-env/Dockerfile
           push: true
+          cache-from: type=gha,scope=alphagsm-integration-test
+          cache-to: type=gha,mode=min,scope=alphagsm-integration-test
           build-args: |
             WINE_PROTON_IMAGE=${{ steps.meta.outputs.wine_image }}
           tags: |

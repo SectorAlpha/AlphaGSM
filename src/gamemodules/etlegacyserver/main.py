@@ -411,17 +411,46 @@ def _read_page(url):
         return response.read().decode("utf-8", "replace")
 
 
+def _linux_archive_url(page_html):
+    """Return the official Linux x86_64 tar.gz on a current or older release page."""
+
+    patterns = (
+        r'data-href="(https://www\.etlegacy\.com/download/file/\d+)"'
+        r'[^>]*title="[^"]*-x86_64\.tar\.gz"',
+        r'title="[^"]*-x86_64\.tar\.gz"[^>]*'
+        r'data-href="(https://www\.etlegacy\.com/download/file/\d+)"',
+        r'data-href="(https://www\.etlegacy\.com/download/file/\d+)">\s*x86_64 archive',
+    )
+    for pattern in patterns:
+        match = re.search(pattern, page_html, re.IGNORECASE | re.DOTALL)
+        if match is not None:
+            return match.group(1)
+    return None
+
+
 def _parse_release_page(page_html):
     version_match = re.search(r"stable release ([0-9.]+)", page_html, re.IGNORECASE)
-    download_match = re.search(
-        r"Linux.*?data-href=\"(https://www\.etlegacy\.com/download/file/\d+)\">x86_64 archive",
+    download_url = _linux_archive_url(page_html)
+    if version_match is None or download_url is None:
+        raise ServerError("Unable to locate a suitable ET: Legacy Linux download")
+    return version_match.group(1), download_url
+
+
+def _release_id(page_html, version):
+    """Return the release id whose visible version text is exactly `version`."""
+
+    wanted = str(version)
+    for match in re.finditer(
+        r'href="https://www\.etlegacy\.com/download/release/(\d+)"[^>]*>(.*?)</a>',
         page_html,
         re.IGNORECASE | re.DOTALL,
-    )
-    if version_match is None or download_match is None:
-        raise ServerError("Unable to locate a suitable ET: Legacy Linux download")
-    version = version_match.group(1)
-    return version, download_match.group(1)
+    ):
+        body = match.group(2)
+        span = re.search(r'dl-release-version[^>]*>\s*([^<]+)', body, re.IGNORECASE)
+        token = span.group(1).strip() if span else re.sub(r"<[^>]+>", " ", body).strip()
+        if token == wanted:
+            return match.group(1)
+    return None
 
 
 def resolve_download(version=None):
@@ -431,17 +460,11 @@ def resolve_download(version=None):
         return _parse_release_page(_read_page(ETLEGACY_DOWNLOAD_PAGE))
 
     release_list = _read_page(ETLEGACY_RELEASE_LIST_PAGE)
-    release_match = re.search(
-        r'href="https://www\.etlegacy\.com/download/release/(\d+)">%s\b'
-        % re.escape(str(version)),
-        release_list,
-        re.IGNORECASE,
-    )
-    if release_match is None:
+    release_id = _release_id(release_list, version)
+    if release_id is None:
         raise ServerError("Unable to locate the requested ET: Legacy release")
-    release_url = "https://www.etlegacy.com/download/release/%s" % (release_match.group(1),)
-    resolved_version, resolved_url = _parse_release_page(_read_page(release_url))
-    return resolved_version, resolved_url
+    release_url = "https://www.etlegacy.com/download/release/%s" % (release_id,)
+    return _parse_release_page(_read_page(release_url))
 
 
 def configure(

@@ -10,7 +10,8 @@ import pytest
 
 INTEGRATION_TEST_DIR = Path("tests/integration_tests")
 DISABLED_SERVERS_PATH = Path("disabled_servers.conf")
-SPECIAL_CASES = {"test_archive_backed_installs.py"}
+# Integration checks that do not exercise a game-server runtime.
+SPECIAL_CASES = {"test_archive_backed_installs.py", "test_first_run_tour.py"}
 SS14_INTEGRATION_TEST = INTEGRATION_TEST_DIR / "test_ss14server.py"
 RUNTIME_AWARE_PROTOCOL_TESTS = {
     "test_arksurvivalascended.py": "source_rcon",

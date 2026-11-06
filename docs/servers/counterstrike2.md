@@ -115,8 +115,16 @@ depending on Source 1 startup log strings. Replacement CI validation is pending.
 
 ## Mod Sources
 
-CS2 currently supports external provider-id mod sources rather than an
-AlphaGSM-owned manifest.
+CS2 supports pinned framework manifests plus external provider-id mod sources.
+
+```bash
+alphagsm mycs2 mod add manifest metamod
+alphagsm mycs2 mod add manifest counterstrikesharp
+alphagsm mycs2 mod apply
+```
+
+`counterstrikesharp` installs MetaMod first. The pins are MetaMod
+2.0.0-git1483 and CounterStrikeSharp 1.0.377 with its runtime.
 
 - `gamebanana` means you provide a numeric GameBanana item id and AlphaGSM
 	resolves the current downloadable archive from GameBanana.

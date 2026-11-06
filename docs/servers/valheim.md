@@ -92,6 +92,19 @@ alphagsm myserver set KEY VALUE
 
 <!-- alphagsm-server-variables:end -->
 
+## Framework and world reset
+
+Install the pinned BepInEx pack, then start the server. AlphaGSM points
+`run_bepinex.sh` at `valheim_server.x86_64`.
+
+```bash
+alphagsm myvalheim mod add manifest bepinex
+alphagsm myvalheim mod apply
+```
+
+`wipe` deletes `worlds`. `wipe --mode hard` reinstalls the server and keeps
+`adminlist.txt`, `bannedlist.txt`, and `permittedlist.txt`.
+
 ## Developer Notes
 
 ### Run File

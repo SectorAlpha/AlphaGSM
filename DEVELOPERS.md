@@ -64,6 +64,42 @@ AlphaGSM is a Python CLI that normalises game-server lifecycle management across
 - a runtime layer that can launch either local screen-backed processes or Docker containers
 - dedicated test layers for unit, integration, and streamed smoke coverage
 
+## First-run guidance
+
+`core.main` routes only bare invocation, `--welcome` and `--skip-welcome` to
+`core.welcome`. Automatic prompting requires both stdin and stdout to be TTYs
+and no acknowledgement marker. All named server/agent commands, internal workers,
+help and version follow their usual paths. Keep this boundary so automation
+never blocks on first-run questions.
+
+The tour passes argv arrays back through ordinary dispatch after previews and
+explicit approvals. It resolves game aliases through `MODULE_CATALOG`, restricts
+local names, and rejects `core.server_names.RESERVED_SERVER_NAMES`, numeric selectors
+and `all` before dispatch. Never let wildcard/count interpretation bypass the
+existing-record check. Creation checks `lexists` before the preview and again
+under the ordinary per-record state lock, refusing existing files or links.
+Setup has separate approval; games never start from the tour. Optional agent
+setup has a separate network confirmation and keeps its own enrollment/binding
+permissions; the tour does not call capability-enable commands.
+
+`core.welcome_state` owns the non-secret, versioned `welcome-v1.done` marker under
+configured `core.alphagsm_path`. Creation is exclusive, mode 0600, with no-follow
+where available, ownership checks and no overwrite of existing markers. It
+preserves existing directory permissions and keeps acknowledgement separate from
+server/agent configuration and all consent. EOF/Ctrl+C stops further commands;
+completed approved actions are not rolled back.
+
+Run the isolated first-run smoke checks with:
+
+```sh
+PYTHON_BIN=python3 bash tests/smoke_tests/run_first_run_tour.sh
+```
+
+This covers unit boundaries plus actual CLI subprocesses and POSIX PTYs against
+disposable config/home paths, including the `all` overwrite regression. PTY cases
+require POSIX and skip on platforms without PTYs. It neither downloads game
+assets nor starts servers, and does not establish game lifecycle support.
+
 ## Documentation Split
 
 Keep repository docs split by audience and preferred operator path:
@@ -639,7 +675,19 @@ The download subsystem is split between:
 - [src/downloadermodules/url.py](src/downloadermodules/url.py)
   HTTP download and decompression
 - [src/utils/steamcmd.py](src/utils/steamcmd.py)
-  SteamCMD bootstrap and Steam app installation
+  SteamCMD bootstrap and Steam app installation.
+  App and Workshop installs retry only a state 0x202 flake (known app ids, or
+  any app after a zero-progress reconfigure), state 0x2 when the update job
+  leaves that app Update Required, Missing configuration for that app, or a
+  first-run `Steam Console Client` bootstrap that exits 0 without `ERROR!`.
+  Other SteamCMD failures raise on the first attempt.
+  `skip_for_known_steamcmd_issue` is unchanged.
+  `set memory` and `set cpus` are Docker run limits, not game-config keys.
+  A Java container with no `-Xmx` receives a heap of 75 percent of `memory`.
+  `wipe --mode soft` deletes `get_wipe_paths`. `wipe --mode hard` reinstalls
+  through `install` and restores `get_hard_wipe_preserve_paths` plus `.alphagsm`.
+  Framework packs that set `replace_unowned` copy an existing game file to
+  `.alphagsm/mod-originals/` before replacing it. `mod cleanup` restores that copy.
 
 ## Runtime Lifecycle
 
@@ -1188,6 +1236,144 @@ When upgrading an existing source environment that installed the obsolete
 AlphaGSM uses the `python-crontab` distribution's `CronTab` API. A fresh binary or
 fresh environment does not need this cleanup.
 
+## Sector Alpha outbound agent and shared public queries
+
+`agent.contracts` is the dependency-free closed version-one wire schema.
+`server.public_query` contains the immutable public A2S_INFO/Java SLP registry,
+uses bounded parsers in `utils.query`, and never constructs Server or falls back
+to console/RCON/HTTP/TCP health. Central consumers must pin a reviewed commit
+and exclude their own infrastructure before numeric connect.
+
+The optional `agent` package keeps scoped credentials and consent under a
+private POSIX directory outside game datastores. Policy and report credentials
+are independent. The foreground manager opens one outbound WebSocket for
+presence and job wakes, and falls back to HTTPS long polling when the socket
+cannot open. It rechecks exact local bindings and policy under the normal CLI
+lock, obtains final online authorization and persists executing before lifecycle
+effects. A socket frame never skips those checks. Results are posted over HTTPS.
+Outbound HTTPS and the agent WebSocket use a verified client context with a
+minimum of TLS 1.2.
+`alphagsm agent run` starts the foreground agent and does not install a
+service. `alphagsm agent install-service` writes `alphagsm.service` for the
+current user, enables it, and starts it. `install-service --system` writes
+the same unit under `/etc/systemd/system`, enables it for boot, and starts
+it as one operator account, never as root. Both execute the invoked program
+with `agent run`. There is no separate alphagsm-agent program. The Linux
+account lookup is imported only for a system install, so Windows commands do
+not load `grp` or `pwd`. Neither command changes reporting, management,
+publication or credentials. `uninstall-service` disables, stops and removes
+the selected unit and leaves the enrollment in place. The tour and game
+setup do not install it.
+`Journal` stores durable results until acknowledgement; interrupted execution
+reconciles unknown and never repeats effects. A global foreground-service lock
+prevents competing pollers. No secrets are accepted as CLI arguments.
+
+The official provider is `https://alphagsm-api.sector-alpha.net` for every
+agent operation: enrollment redemption, binding registration, ownership-challenge
+minting, POST stats, and the outbound execution protocol (policy acknowledgement,
+the agent session socket, command polling, final authorization and results).
+The agent does not ask which host to use. Sector Alpha verifies a challenge by
+querying the server. Owners queue commands and view data on the website.
+`Transport` sends every approved route to the one configured origin. It retains
+one canonical API provider origin in local configuration, without redirects or
+endpoint discovery. No new persisted secret/origin fields are introduced.
+
+`canonical_agent_origin()` still maps exact official HTTPS website/API authorities
+(default/443 port, case and root-slash variants) to the canonical API provider
+origin. `Config.load()` and the next ordinary write retain this normalization,
+preserving IDs, keys, bindings and permissions. Explicit custom origins, lookalikes
+and non-default ports keep the exact configured single origin for every agent path.
+Restart foreground/user services after upgrading. The website still accepts
+enrollment and binding registration from older clients.
+The generic origin syntax validator still requires HTTPS roots and normalizes an
+optional trailing slash. `agent.inventory` reads
+only owned current-user JSON datastores without constructing Server (which can
+migrate secrets or save runtime metadata). It exports an allowlist of module,
+query port, primary player port, name, capacity and networking hints. `agent.network` accepts only globally
+routable numerical suggestions, uses bounded TLS for its fixed address lookup,
+and sends no agent credentials. Explicit `--host` bypasses discovery.
+
+`agent bind TAG`, `agent bind '*'` and `agent setup` preview and confirm exact
+bindings before registration or config writes. The portal's authenticated
+`POST /v1/agent/bindings` accepts only a selected enrolled scope and SHA256 of the
+local tag; it derives installation ownership from that scoped credential and
+returns an idempotent binding ID/epoch. Registration sends only the tag reference;
+later reports contain approved display metadata, whose name may match the tag.
+Datastore secrets stay local. Registration grants no actions or publication. Existing
+bindings retain their approved values on repeat runs; capabilities require
+separate local enablement. Games outside the public query registry remain private.
+
+Version-one report metadata has optional `connect_port`: a strict integer from
+1 through 65535 or null. Existing required `port` remains the query port; unknown
+metadata fields still fail validation. Missing `connect_port` remains valid for
+legacy reports/configurations. Omission preserves the receiver's existing player
+port; explicit null clears it.
+Both presence and value participate in the final publication approval check.
+Inventory infers it from the primary local `port`, independently of `queryport`;
+guided and explicit binding approve it for every
+canonical game. `--connect-port` overrides the advertised player port, while a
+Minecraft `--port` override sets both unless the player override is explicit.
+The final guided preview shows host/IP and both ports before saving. Existing
+bindings acquire the field only through rebinding; runtime metadata refresh
+never infers or changes either approved port. Registration remains scope/ref
+only, and endpoint metadata uses the opted-in report channel. This does not add
+public query profiles, client launch schemes or Steam client IDs.
+Deploy the receiver's updated shared contract before clients create/rebind
+servers with this field; old closed-schema receivers reject it. Existing saved
+bindings keep omitting it until a confirmed rebind, preserving their wire format.
+
+Hostnames are scoped to bindings, not installations or numerical machine IPs.
+Different game tags may advertise different subdomains that resolve to the same
+IP; each retains its own game profile, player port, query port, expected-IP policy,
+publication consent and central ownership challenge. Single-server rebinding
+does not mutate siblings, and wildcard endpoint prompts preserve per-server
+hostnames on repeat runs. The agent neither provisions DNS nor routes traffic
+between processes; a hostname alone cannot multiplex a shared numerical port.
+
+`agent.preflight` applies hostname checks to copied public report items immediately
+before transport. Optional per-binding `expected_public_ips` is local policy only;
+it never enters metadata, registration or wire schemas. Automatic expectations
+read allowlisted local network hints and use one route/IP lookup per batch. Fresh
+complete A/AAAA answers must all be global and match expected machine addresses.
+`agent.dns_lookup` uses pinned dnspython async resolution with absolute lifetimes,
+an eight-worker bound and a 30-second batch ceiling. Timeout or mismatch changes
+only the outgoing publication flag; later repair can restore publication without
+rewriting consent. Numeric/private reports keep their existing behavior.
+
+After DNS, the service rechecks current publication, endpoint, expected IPs and
+provider relationship under the config lock, then sends with the current reporting
+key before releasing the lock. Report POSTs have a hard ten-second HTTPS budget,
+including DNS, TLS, headers and body. Expiry closes active sockets; a stalled system
+resolver cannot later connect or accumulate additional workers. A service instance
+retains its initial origin/installation relationship and must restart after local
+re-enrollment before sending any new relationship's credentials.
+
+The explicit `check-endpoint` diagnostic additionally probes only pinned matched
+addresses through the immutable native registry, retaining the original SLP
+virtual host and sharing a five-second protocol budget. It does not run as a
+publication renewal hook, avoiding NAT-loopback failures turning into publication
+flapping. Neither local check grants central endpoint verification. Standalone
+builds collect `dns` dynamic protocol modules as well as the agent package.
+
+Trusted local runtime helpers run in separate process groups with bounded
+state/operation deadlines. `held_descriptor`/`inherited_state_lock` hand the
+existing datastore sidecar lock to the child after an inode check. The helper
+marks the descriptor non-inheritable for further command children and never
+unlocks the shared open-file description; the parent retains exclusion until
+it receives a result or kills the timed-out helper group. Unknown may reflect
+an effect already applied by an independent game/Docker daemon.
+
+Run `tests/smoke_tests/run_sector_alpha_agent.sh`, the agent/public-query unit
+sets, and `ALPHAGSM_VALIDATE_AGENT=1` with Minecraft integration for each runtime.
+Windows credential storage deliberately fails closed pending an ACL adapter.
+Binary package collection, lint and coverage include agent. The service lives
+in the separate alpha-platform-lite repository; it supplies PostgreSQL roles,
+TLS transport round trips and worker isolation validation.
+
+Credential generation is the management dispatch fence. Reporting authentication
+uses its independent active key, so management key rotation cannot interrupt
+reports. Local key replacement requires the previously enrolled capability and
+never changes bindings/opt-ins; management generations must strictly advance.
 
 ## Game-specific BYO file contracts
 
