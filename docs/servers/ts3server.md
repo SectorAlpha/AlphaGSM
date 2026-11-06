@@ -85,6 +85,18 @@ create is still the live source of truth.
 - **Location**: `<install_dir>/ts3server`
 - **Engine**: Custom
 
+The default database is the SQLite file `ts3server.sqlitedb` in the install directory. Set `db_mode` to `mariadb` to use MariaDB instead. With `db_host` left empty, a Docker runtime server starts a private `mariadb:11.5` container on a network that is not published to the host. TeamSpeak reaches it as `database`. An existing MariaDB data directory can be placed at `<install>/.alphagsm/mariadb-data` before the first start; AlphaGSM initializes a new database only when that directory has no `mysql` folder. Set `db_host` to a hostname when MariaDB is already running somewhere else. `db_password` is written to `ts3db_mariadb.ini` and is not placed on the server command line.
+
+```bash
+alphagsm myts3 set db_mode mariadb
+alphagsm myts3 set db_name ts3
+alphagsm myts3 set db_user ts3
+alphagsm myts3 set db_password "the database password"
+alphagsm myts3 set runtime docker
+```
+
+TeamSpeak loads `libmariadb.so.2` from the extracted `redist` directory. MariaDB mode adds that directory to `LD_LIBRARY_PATH` inside the container. The service-console image also installs `libmariadb3`. A previously published runtime image does not gain that package until it is rebuilt.
+
 Smoke and integration validation require an authenticated ServerQuery response:
 `alphagsm info --json` must report protocol `ts3`.
 

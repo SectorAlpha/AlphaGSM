@@ -7,6 +7,25 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-11-05
+- ET: Legacy: setup finds the Linux x86_64 tar.gz on the current etlegacy.com
+  download page. Release numbers are read from the version label.
+- Sector Alpha: `alphagsm agent run` runs the agent in the foreground.
+  `alphagsm agent install-service` enables and starts a user service for that
+  command. `install-service --system` enables and starts a system service for
+  one operator account, not as root. Ordinary Windows commands do not import
+  the Linux account modules.
+
+2026-11-04
+- Sector Alpha: `alphagsm agent install-service` installs a Linux systemd
+  user service that runs `alphagsm agent run`. `install-service --system`
+  installs that same command as a system service for one operator account.
+  There is no separate alphagsm-agent program. Neither command changes
+  reporting or management. `uninstall-service` removes the selected service
+  and leaves the local enrollment in place. Enrollment, binding, the first-run
+  tour and game setup do not install it.
+- Sector Alpha: outbound HTTPS and the agent WebSocket require TLS 1.2 or newer.
+
 2026-10-23
 - CI: runtime and integration image builds reuse GitHub Actions layer
   cache. Each family has its own cache scope. This does not cover the
@@ -33,6 +52,58 @@ Historical detail lives in git history. Keep this file focused on release-facing
   Kings, and Windows BepInEx for Risk of Rain 2 and Sons of the Forest.
   Source servers can install pinned SteamWorks 1.2.3c, which also installs
   SourceMod. Replaced game files are restored by `mod cleanup`.
+
+2026-10-20
+- Sector Alpha: the agent uses https://alphagsm-api.sector-alpha.net for
+  every operation, including enrollment. It does not ask which host to use.
+  Another provider is used only when `--origin` or the saved origin names one.
+  `alphagsm agent enroll` redeems the code there, turns reporting on, and
+  registers each managed server that already has a global public address.
+  Management stays off. A server
+  without that address is left unbound. After the first report, TeamSpeak 3
+  receives an ownership check in the virtual server name. Sector Alpha
+  verifies it by querying the server, and the previous name is restored.
+  Other games print the SA- challenge for the public name. `alphagsm agent
+  setup` and the first-run tour still ask before saving a binding and still
+  leave reporting off.
+
+2026-10-19
+- Sector Alpha: the agent keeps one outbound WebSocket to alphagsm-api for
+  presence and job wakes, with heartbeats about every 30 seconds. If the socket
+  cannot open, it uses the existing HTTPS job poll. Authorize and result posts
+  stay on HTTPS. An account can have ten live agents. Remote management stays
+  off until it is enabled.
+- TeamSpeak 3: client and player counts exclude ServerQuery connections,
+  including the connection opened by the status check. An empty server reports 0.
+- Sector Alpha: the website and `alphagsm agent query TAG` read any game that
+  answers an anonymous status protocol (A2S, Minecraft server-list ping, Quake
+  status, Bedrock ping, TeamSpeak ServerQuery). The local command does not
+  upload the result. Agent publication remains Minecraft Java, Minecraft Paper,
+  and Team Fortress 2. Other games are listed from the website after the name
+  check. TCP, UDP, and RCON checks are not status queries.
+- Sector Alpha: `alphagsm agent prove TAG` places a website SA- challenge in the
+  live TeamSpeak 3 server name, asks alphagsm-api to query it, and restores the
+  previous name. The token is prompted, not taken as a shell argument. An
+  in-progress player-count query is waited out with the same challenge.
+  This does not list the server.
+- Sector Alpha: TeamSpeak directory listing is a website choice after the name
+  check. alphagsm-api queries the TeamSpeak server and does not treat the local
+  publication switch, or a running agent, as proof the server is online.
+
+2026-10-18
+- TeamSpeak 3: add MariaDB mode for Docker. An empty db_host starts a private
+  MariaDB 11.5 container and keeps the password in ts3db_mariadb.ini. The
+  container finds TeamSpeak's bundled MariaDB library through LD_LIBRARY_PATH.
+  SQLite remains the default. The service-console image installs libmariadb3.
+- Sector Alpha: use https://alphagsm-api.sector-alpha.net for stats and outbound
+  remote execution. Enrollment and binding stay on https://sector-alpha.net.
+  The unreleased gameserver-api.sector-alpha.net name is not an official alias.
+- Sector Alpha: send enrollment and binding registration to sector-alpha.net;
+  reserve gameserver-api.sector-alpha.net for stats and outbound remote execution.
+  Select the two official hosts locally without redirects, re-enrollment, credential
+  changes or additional consent. Explicit custom providers keep their exact origin.
+- Deployment: enable website onboarding routes before upgrading clients, then
+  restrict the API gateway to stats and execution routes. Restart existing agents.
 
 2026-10-17
 - SteamCMD: detect the default Steam directory from the host operating
@@ -76,6 +147,13 @@ Historical detail lives in git history. Keep this file focused on release-facing
   47.02s. Docker was not rerun.
 
 2026-10-16
+- First run: offer a skippable setup tour on bare interactive launches, with
+  --welcome to replay and --skip-welcome for noninteractive opt-out.
+- Guided setup: preview local creation, preserve existing server records, and
+  confirm downloads separately. Sector Alpha enrollment/binding remains optional;
+  the tour never starts games or enables reporting/remote management.
+- Tests: add isolated real-terminal CLI integration/smoke coverage for first-run
+  skip/replay, local creation and selector/reserved-name overwrite prevention.
 - Nuclear Dawn lifecycle: an entitled profile installs Steam app 111710,
   including nucleardawn/maps/hydro.bsp. Anonymous install does not. NTFS
   omitted the execute bit on srcds_linux, and prestart now restores it.
@@ -207,6 +285,41 @@ Historical detail lives in git history. Keep this file focused on release-facing
   Smoke and integration still require the selected map and zero players/bots.
 
 2026-10-15
+- Sector Alpha: never infer a player port from Trackmania XML-RPC, Enshrouded
+  query-only settings or Arma headless client roles. Use --connect-port only
+  after confirming an actual public player listener. Existing approvals remain.
+- Sector Alpha: approve player connection ports separately from query ports in
+  binding previews. Infer the primary game port and add --connect-port for NAT;
+  Minecraft --port follows both ports unless --connect-port overrides it.
+- Agent metadata: accept optional strict connect_port for every game, preserving
+  old reports and consent. Existing bindings gain it only after rebinding; endpoint
+  metadata reaches the API through reports after reporting is enabled. Update the
+  receiver before new bindings/rebinding, since old closed schemas reject the field.
+- Sector Alpha: use https://gameserver-api.sector-alpha.net as the single origin
+  for enrollment, binding registration, reports and management. Public accounts
+  and the directory remain on https://sector-alpha.net.
+- Agent upgrades: normalize the old official website origin locally without
+  re-enrollment or changing IDs, credentials or consent. Restart the agent after
+  upgrading; explicitly configured custom providers keep their origins.
+- Documentation: add a step-by-step same-machine subdomain setup with DNS records,
+  individual and bulk binding, public-IP overrides, endpoint checks and reporting.
+- Sector Alpha: document and verify separate per-game subdomains on one machine,
+  including wildcard endpoint prompts, preserved bindings and independent DNS
+  publication checks for games sharing a public IP.
+- Sector Alpha: validate existing server hostnames against this machine's public
+  IPs before public report renewals. Withhold mismatched/unavailable names without
+  changing local consent. Add repeatable --public-ip overrides and an explicit
+  check-endpoint command for bounded native game-protocol diagnostics.
+- DNS validation: use pinned dnspython with complete A/AAAA checks, hard lifetimes
+  and bounded concurrent work; include its dynamic protocol modules in binaries.
+- Sector Alpha: default enrollment to https://gameserver-api.sector-alpha.net, register bindings
+  automatically, and support guided single-server binding and `agent bind '*'`
+  for all eligible local servers. Infer each server's game, port, name and capacity;
+  suggest its public IP with explicit host/port overrides and operator confirmation.
+- Existing games without a public query profile can use private bindings. Bulk
+  binding preserves existing permissions and never enables capabilities itself.
+- Sector Alpha: retry reporting after temporary configuration-lock contention
+  during long lifecycle operations, keeping the reporting thread alive.
 - CoDWaW: expose explicit LAN/Internet dedicated modes while preserving legacy
   launch arguments. Disposable CI uses LAN mode with native map/status and
   shutdown checks, avoiding external DemonWare DNS/authentication dependencies.
@@ -315,6 +428,21 @@ Historical detail lives in git history. Keep this file focused on release-facing
   scheduled coverage and normal PR routing; keep regression validation on CI.
 
 2026-10-13
+- Sector Alpha: add an optional outbound HTTPS agent with separate reporting and
+  management opt-ins, exact local server bindings, private scoped credentials,
+  and durable results that prevent replay of lifecycle effects after a crash.
+- Remote actions are limited to status/start/stop/restart. Normal stop can fall
+  back to forceful termination; restart requires a running server. Both
+  capabilities remain disabled until explicitly enabled by the operator.
+- Public query interface: reviewed A2S_INFO and Minecraft Java SLP profiles with
+  pinned numerical destinations, total deadlines, bounded fragments/decompression
+  and JSON framing, and scalar observations without player names or credentials.
+- Credential rotation: independently replace reporting or management keys through
+  hidden local prompts, retaining existing bindings and capability opt-ins.
+- Lifecycle: POSIX port checks ignore closed TCP connections in TIME_WAIT while
+  continuing to reject active listeners; Windows keeps exclusive port probes.
+- Packaging/lint/coverage include the new agent package. Agent credential storage
+  currently supports POSIX; Windows enrollment fails closed pending an ACL adapter.
 - tModLoader: add public-release dedicated-server installation, contained world
   configuration and native Workshop package activation, with Census command
   execution verified through process and Docker lifecycle tests.
@@ -1323,17 +1451,31 @@ Historical detail lives in git history. Keep this file focused on release-facing
 - Packaging: exclude `gamemodules.factorio` from PyInstaller collection so standalone binary builds succeed on all three platforms; the module still raises `NotImplementedError` on import as required by its unit test, but is never needed by the binary since factorio support is unimplemented.
 
 2026-04-28
-- Server support: add the TF2 curated mod-support foundation with package-backed module wiring, curated registry metadata for SourceMod and MetaMod, and the first shared desired-state groundwork for server-side mod management.
-- Server support: make TF2 curated mod apply persist mod-state errors and expose broken apply state through `status` so failed reconciliations are operationally visible.
-- Module loading: treat package-backed canonical modules such as `teamfortress2` as first-class catalog and parity entries so one canonical module id still maps to one import surface.
-- Server support: sync readyornotserver queryport and maxplayers into ReadyOrNot/Config/ServerConfig.ini during setup, update, and set.
-- Runtime: sanitize `TMPDIR`, `TMP`, and `TEMP` in the shared Wine/Proton wrapper so Windows-binary server launches do not inherit inaccessible temp paths, and remove the duplicated Medieval Engineers-only workaround in favor of the shared wrapper.
-- Server support: make `readyornotserver` and `rs2server` explicitly prefer Proton on Linux so their process-runtime launches use the runtime the integration tests already require instead of falling back to plain Wine.
-- Server support: make the current Windows-on-Linux Proton-required integration modules (`darkandlightserver`, `empyrionserver`, `heatserver`, `primalcarnageextinctionserver`, `remnantsserver`, `sonsoftheforestserver`, `subsistenceserver`, and `terratechworldsserver`) explicitly prefer Proton on Linux instead of silently falling back to plain Wine.
-- Server support: make `astroneerserver`, `ducksideserver`, `groundbranchserver`, and `reignofkingsserver` explicitly prefer Proton on Linux so the process runtime matches the integration-test contract instead of silently falling back to plain Wine.
-- Server support: make `askaserver`, `fearthenightserver`, `saleblazersserver`, `sniperelite4server`, and `sunkenlandserver` explicitly prefer Proton on Linux so the process runtime matches the integration-test contract instead of silently falling back to plain Wine.
-- Server support: make the remaining Proton-required Windows-on-Linux integration modules explicitly prefer Proton on Linux so the process runtime matches the integration-test contract instead of silently falling back to plain Wine.
-- CI: treat the repeated bare SteamCMD `state is 0x202` setup failures seen for `kf2server` and `rs2server` as the same known transient flake class as the existing missing-configuration `0x202` state, including the longer retry delay and integration skip helper.
+- Server support: add schema-backed Rising Storm 2 config sync so `set servername` rewrites `ServerName` in `ROGame/Config/PCServer-ROGame.ini`.
+- Server support: add schema-backed Quake 2 config sync so `set servername` and `set map` rewrite `<gamedir>/server.cfg`.
+- Server support: add schema-backed RTCW config sync so `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg`.
+- Server support: add schema-backed Quake 3 config sync so `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg`.
+- Server support: add schema-backed `server.cfg` sync for `codserver`, `cod2server`, `cod4server`, `coduoserver`, and `codwawserver` so `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg`.
+- Server support: add schema-backed Quake Live config sync so `set servername` and `set map` rewrite `baseq3/server.cfg`.
+- Server support: add schema-backed Quake 4 config sync so `set servername`, `set fs_game`, and `set map` rewrite `<fs_game>/server.cfg`.
+- Server support: add schema-backed `etl_server.cfg` sync for `etlegacyserver` so `set servername` and `set port` rewrite the native ET: Legacy config.
+- Core: replace alias-wrapper module routing with a canonical module catalog and central alias metadata; alias wrapper files such as `tf2.py`, `cs2server.py`, and namespace `DEFAULT.py` shims are removed.
+- Tools: add a generated canonical module parity report and a CI enforcement step that fails on stale parity artifacts.
+- Server support: add schema-backed `serverDZ.cfg` sync for `dayzserver` so `set servername`, `set serverpassword`, `set adminpassword`, `set maxplayers`, and `set queryport` rewrite the native DayZ config.
+- Server support: expand `sevendaystodie` schema-backed config sync so `set port`, `set servername`, `set maxplayers`, and `set serverpassword` rewrite `serverconfig.xml`.
+- Server support: move `wreckfestserver` port syncing onto schema-backed `SettingSpec` metadata so `set port` rewrites `server_config.cfg` through the shared equals-config helper.
+- Server support: move `stnserver` port syncing onto schema-backed `SettingSpec` metadata so `set port` rewrites `Config/ServerConfig.txt` through the shared config helper.
+- Server support: make `twserver` sync schema-backed `set port` and `set servername` changes into `autoexec.cfg`, and harden space-delimited config rewrites so quoted multi-word values update in place.
+- Module loading: replace game-module alias wrapper files and namespace `DEFAULT.py` shims with a shared canonical catalog in `src/server/module_aliases.json`, and persist canonical module ids in server data even when users create servers through aliases.
+- Release prep: add generated `docs/module_parity_report.md` and `docs/module_parity_report.json` artifacts plus test/script enforcement so canonical module parity gaps and alias coverage stay visible in CI.
+- Tests: add an opt-in backend integration test that exercises AlphaGSM CLI
+	commands (`create`, `set image`, `setup`, `start`, `status`, `info`, `query`, `stop`) against
+	the Docker runtime to validate CLI/runtime integration in CI environments.
+- Dev: normalize `get_start_command(server)` across gamemodules so static
+	validators and container builders can reliably introspect start commands.
+- Tools: add static validators and helper scripts to audit `get_start_command`
+	and `get_container_spec` implementations, plus docs summarising audit
+	results and remediation guidance.
 
 2026-04-26
 - CLI: add a built-in `doctor` command so each server can print its effective runtime decision plus Docker image, container, and local runtime health details.

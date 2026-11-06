@@ -13,7 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DIST_DIR = REPO_ROOT / "dist-binary"
 BUILD_DIR = REPO_ROOT / "build" / "pyinstaller"
 BUILD_VERSION_FILE = REPO_ROOT / "src" / "core" / "_build_version.py"
-PACKAGES = ("core", "downloader", "downloadermodules", "gamemodules", "screen", "server", "utils")
+PACKAGES = ("agent", "core", "downloader", "downloadermodules", "gamemodules", "screen", "server", "utils")
 
 
 def collect_runtime_data():
@@ -53,7 +53,7 @@ def pyinstaller_arguments():
         "--workpath", str(BUILD_DIR), "--specpath", str(BUILD_DIR),
         "--paths", str(REPO_ROOT / "src"),
     ]
-    for package in PACKAGES:
+    for package in (*PACKAGES, "dns"):
         args.extend(["--collect-submodules", package])
     for source, destination in collect_runtime_data():
         args.extend(["--add-data", f"{source}{os.pathsep}{destination}"])

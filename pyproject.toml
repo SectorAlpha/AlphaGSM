@@ -77,7 +77,7 @@ disable = [
 
 [tool.coverage.run]
 branch = true
-source = ["core", "downloader", "downloadermodules", "gamemodules", "screen", "server", "utils"]
+source = ["agent", "core", "downloader", "downloadermodules", "gamemodules", "screen", "server", "utils"]
 omit = ["*/__init__.py", "tests/*"]
 
 [tool.coverage.report]

@@ -399,7 +399,7 @@ session to the TS3 ServerQuery port (default 10011), sends `serverinfo` and
 | Key | Type | Meaning |
 |---|---|---|
 | `name` | str | Virtual server name |
-| `clients_online` | int | Connected client count |
+| `clients_online` | int | Voice clients, excluding ServerQuery connections |
 | `max_clients` | int | Maximum client capacity |
 | `uptime` | int | Server uptime in seconds |
 | `platform` | str | Host OS platform string |
