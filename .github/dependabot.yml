@@ -1,11 +1,41 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
+# Weekly version updates for the manifests this repository actually ships.
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
 version: 2
 updates:
-  - package-ecosystem: "" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "pip"
+    directory: "/"
     schedule:
       interval: "weekly"
+    exclude-paths:
+      - "pyproject.toml"
+    groups:
+      python:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "docker"
+    directories:
+      - "/docker/java"
+      - "/docker/manager"
+      - "/docker/quake-linux"
+      - "/docker/service-console"
+      - "/docker/simple-tcp"
+      - "/docker/steamcmd-linux"
+      - "/docker/wine-proton"
+    schedule:
+      interval: "weekly"
+    groups:
+      images:
+        patterns:
+          - "*"
+        group-by: "dependency-name"

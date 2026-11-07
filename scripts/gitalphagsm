@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+INSTALL_ROOT="${INSTALL_ROOT:-/usr/local/lib/alphagsm}"
+
+if [[ ! -d "$INSTALL_ROOT/.git" ]]; then
+  echo "No git repository found at $INSTALL_ROOT" >&2
+  exit 1
+fi
+
+git -C "$INSTALL_ROOT" "$@"

@@ -165,6 +165,19 @@ Linux, macOS, or Windows host when that guidance is known, and recommend using
 the Docker runtime instead when you would rather avoid host-side dependency
 setup.
 
+## Install AlphaGSM on Linux
+
+Two scripts copy this repository into place and link the `alphagsm` command.
+They do not install Python packages. Install `requirements-runtime.txt` first.
+Both scripts are Linux only.
+
+- One account: [Local User Install](docs/install/local-user.md)
+- A shared machine: [System-Wide Install](docs/install/system-wide.md)
+
+A system-wide install shares the program and the download cache. Each
+person's servers stay in that person's home. The Fast Start below is the same
+setup when you run `./alphagsm` from a checkout instead of an installed copy.
+
 ## Fast Start
 
 If you want the quickest first run, start with the Docker-manager path above.
@@ -510,9 +523,14 @@ These scripts are useful because they show a full real flow:
 4. check it
 5. stop it cleanly
 
+`bash ./system_install_tests/run_system_install_in_container.sh` checks the
+shared Linux install inside a container. It does not change the host.
+
 ## Step-By-Step Server Guides
 
 - [Documentation Index](docs/README.md)
+- [Local User Install](docs/install/local-user.md)
+- [System-Wide Install](docs/install/system-wide.md)
 - [Everyday Commands](docs/commands.md)
 - [Installing Mods](docs/installing-mods.md)
 - [Updating Servers And AlphaGSM](docs/updating.md)
