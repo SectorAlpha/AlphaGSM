@@ -7,6 +7,8 @@ description: "Use when asked to implement, fix or maintain AlphaGSM through a ve
 
 Read [AGENTS.md](../../AGENTS.md), inspect the checkout/diff, and identify the requested deliverable. Preserve unrelated work. For a new PR on latest mainline, determine the actual remote default branch and use an isolated branch/worktree; do not assume it is named main.
 
+Follow the [installation policy](../alphagsm-server-requirements/references/approval-gates.md): AlphaGSM code, helpers, project-local pinned dependencies and repository image builds are available within the requested task without additional approval. Ask before installing genuinely new external software such as a missing host Docker engine or compiler. For game lifecycle work, use [server-requirements](../alphagsm-server-requirements/SKILL.md) and clarify vague existing-server requests.
+
 ## Select the change workflow
 
 | Change | Specialist |

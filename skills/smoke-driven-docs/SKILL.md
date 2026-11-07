@@ -5,6 +5,8 @@ description: "Use when updating server guides or command examples from verified 
 
 # Smoke-Driven Docs
 
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
+
 | Field | Value |
 | --- | --- |
 | Purpose | Keep user-facing docs aligned with the real working command flow. |

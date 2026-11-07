@@ -5,6 +5,8 @@ description: "Use when adding a new dedicated-server game module with lifecycle 
 
 # Add a game module
 
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
+
 Read [AGENTS.md](../../AGENTS.md), [adding a game](../../docs/adding-a-game-server.md), [server-lifecycle](../server-lifecycle/SKILL.md), and a similar module with passing integration. Establish upstream dedicated-server distribution, platform, license/auth/assets, start/config/stop protocol and multiplayer suitability before coding. Use authoritative upstream research for unknown requirements.
 
 Create `src/gamemodules/<name>/__init__.py` as the stable canonical import and `main.py` for implementation; keep local manifests/assets beside it. Internal family helpers may remain flat. Use the shared factories only when the game fits their behavior. Define command metadata and full lifecycle hooks, correct query/info addresses and graceful runtime-aware input.

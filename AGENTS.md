@@ -2,6 +2,32 @@
 
 This file is for coding agents and automation working inside this repository.
 
+## Operational Requirements And Installation Policy
+
+Use [server-requirements](skills/alphagsm-server-requirements/SKILL.md) to inspect
+the selected game's actual module/version, installation helpers, runtime and
+AUTH/BYO inputs. Apply the following to every canonical game type and its aliases:
+
+- A vague request to run a game with no installation: ask to install it.
+- An existing matching installation and unspecified action: clarify whether to
+  start it, change it or create another. Clarify the target when several match.
+- An explicit action on an identified existing server: proceed through AlphaGSM.
+- An explicit or already-approved install: perform its managed steps without
+  repeated approval questions.
+
+**Hard approval gates are only for installing new software.** AlphaGSM code,
+helpers, repository manager/runtime images and their build dependencies,
+project-local pinned requirements and supported content installation mechanisms
+are fair game within the requested task. Do not require separate approval for
+Docker first use, image pulls/builds, setup/start/update or these managed steps.
+Always ask before genuinely new external host software, including missing
+Docker/Compose, host runtimes or system packages outside the approved scope.
+
+Prefer repository Docker deployments and use only AlphaGSM images published by
+or built from SectorAlpha/AlphaGSM. The manager uses the host socket and sibling
+containers; describe that accurately. Follow the
+[installation and request policy](skills/alphagsm-server-requirements/references/approval-gates.md).
+
 ## Main Rule
 
 
@@ -339,6 +365,8 @@ Skills preserve the user's authorized scope and do not implicitly create
 background monitors, reset worlds, publish releases or modify unrelated servers.
 
 See:
+
+- `skills/alphagsm-server-requirements/SKILL.md` — game prerequisites and new-software installation policy
 
 - `SKILLS.md`
 - `skills/disabled-server-gate/SKILL.md`

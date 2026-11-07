@@ -17,6 +17,17 @@ release, or mutate the owning development branch.
 | Operations: manage a named server | Explicit tag/config and desired state | Resolves context, loads only relevant specialists, finishes with evidence |
 | Development: fix a query failure and open PR | Checkout and failing diagnostics | Isolates work, uses lifecycle proof, includes release/docs closure |
 | Preflight: can this host run the selected game? | Platform/runtime/storage findings | Distinguishes host readiness from provisioning and exact missing inputs |
+| Assessment: Docker wrapper with missing/stale manager | Wrapper source, config and manager state | Uses existing-manager or static inspection; no manager recreation, image acquisition or unsolicited install |
+| Requirements: Minecraft with no Java; TF2 with no SteamCMD | Exact versions, configured paths, module hooks and helper source | Separates installer/game dependencies; approved managed bootstrap proceeds |
+| Docker: installed or missing host engine | Host/config, wrapper/Compose and image overrides | Uses existing Docker without consent gate; asks before installing missing external host software |
+| Docker image: default absent, cached unknown or third-party override | Runtime/manager specs, Dockerfiles and publishing workflow | Uses repository images and automatic builds without extra approval |
+| Dependencies: urgent test fix, empty venv, opaque setup helper | Requirements includes, Make targets and helper scripts | Distinguishes managed project requirements from new external host software |
+| New installation: vague absent game, pending/declined or approved plan | Inventory, actual install files and user replies | Asks to install if absent; approved managed recipe proceeds without repeated questions |
+| Existing game: vague request, explicit start, or several matches | Canonical aliases, selected config and installed tags | Clarifies only missing intent/target; explicit actions proceed |
+| Managed work: image build, pinned venv requirements, SourceMod plus MetaMod | Repository recipes and current content capabilities | No extra approval for supported code/components; asks for unrelated new software |
+| Incoming Workshop support: old checkout versus capable checkout | Module help, anonymous metadata, item/collection identity and per-runtime matrix | Feature detection; shared download is separate from native activation; pending load stays pending |
+| Native content: TF2 map or tModLoader mod, then cleanup | Actual adapter, payload/config ownership and fresh engine evidence | Correct numeric map ID/package compatibility; preserves edits/caches and proves activation/deactivation |
+| Protocol change: Squad RCON or Wreckfest Linux UDP | Current hooks, local secret config and startup/runtime evidence | No invented provider login, A2S metadata, application response or RTT |
 | Provision: fresh then repeated Minecraft | Disposable tag/config/install | Correct AlphaGSM lifecycle, no duplicate create or blind overwrite |
 | Settings: change map and claimed port | Installed content and colliding owner | Uses schema, validates map, preserves conflicting owner's state |
 | Runtime: use Docker for this tag | Doctor output and host mount layout | Effective engine/image checked; global changes do not silently affect fleet |

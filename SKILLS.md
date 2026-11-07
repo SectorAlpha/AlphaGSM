@@ -19,6 +19,7 @@ and the [agent operations guide](docs/agent-operations.md) for setup and example
 
 | Skill | Use when |
 | --- | --- |
+| [alphagsm-server-requirements](skills/alphagsm-server-requirements/SKILL.md) | assessing requirements for any game/version/host or encountering a possible dependency install. |
 | [alphagsm-backup-restore](skills/alphagsm-backup-restore/SKILL.md) | making or restoring an AlphaGSM backup with an explicit server and recovery target. |
 | [alphagsm-boot-activation](skills/alphagsm-boot-activation/SKILL.md) | enabling or disabling AlphaGSM server startup on boot using the existing user scheduler. |
 | [alphagsm-console-admin](skills/alphagsm-console-admin/SKILL.md) | reading AlphaGSM server logs, sending game-console input or broadcasting player messages. |
@@ -68,3 +69,6 @@ and the [agent operations guide](docs/agent-operations.md) for setup and example
 Read [AGENTS.md](AGENTS.md) for lifecycle, module layout, port ownership,
 config sync, runtime, provider, support-state and release-note requirements.
 Skills guide execution within the user’s task and existing authorization.
+The [installation/request policy](skills/alphagsm-server-requirements/references/approval-gates.md)
+asks to install an absent game, clarifies vague existing-game requests, and gates
+only genuinely new software. AlphaGSM-managed steps have no additional approval.

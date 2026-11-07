@@ -5,6 +5,8 @@ description: "Use when operating an explicitly selected group of AlphaGSM server
 
 # Operate a fleet
 
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
+
 Inputs: owner/host/config, enumerated tags, requested operation, maintenance order and failure policy. Resolve [execution context](../alphagsm-agent-operations/references/execution-context.md) and inspect `alphagsm '*' list`. There is no top-level `alphagsm list` command. Expand any authorized wildcard into a concrete inventory before mutation. A named pair never becomes every server or every user.
 
 For inspection, a quoted wildcard is acceptable when all current-user servers were requested:

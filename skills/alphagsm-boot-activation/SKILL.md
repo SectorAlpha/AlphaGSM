@@ -5,6 +5,8 @@ description: "Use when enabling or disabling AlphaGSM server startup on boot usi
 
 # Configure boot activation
 
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
+
 Inputs: selected tag/owner, enable/disable intent, and whether to start/stop now. Read [everyday commands](../../docs/commands.md). On Unix this is a user crontab workflow; verify the selected account's crontab and executable/config paths without changing unrelated jobs. Standalone Windows does not install a boot scheduler through this command.
 
 ```bash

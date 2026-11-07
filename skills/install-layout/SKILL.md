@@ -5,6 +5,8 @@ description: "Use when changing game install paths, archive extraction, executab
 
 # Install Layout
 
+Follow the [installation and request policy](../alphagsm-server-requirements/references/approval-gates.md). AlphaGSM-managed code, helpers, repository image builds and supported prerequisites proceed within the requested task without extra approval. Ask only for new software outside that managed scope, and clarify an unspecified action/target on an existing server.
+
 | Field | Value |
 | --- | --- |
 | Purpose | Keep per-server install directories predictable so setup, docs, tests, and updates all agree about where files live. |
