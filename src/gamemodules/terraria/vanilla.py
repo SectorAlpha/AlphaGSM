@@ -1,0 +1,98 @@
+"""Terraria vanilla server module."""
+
+import server.runtime as runtime_module
+
+from .common import (
+    backup,
+    checkvalue,
+    command_args,
+    command_descriptions,
+    command_functions,
+    commands,
+    configure_base,
+    do_stop,
+    get_vanilla_start_command,
+    get_wipe_paths,
+    install_archive,
+    message,
+    resolve_terraria_download,
+    setting_schema,
+    status,
+)
+from utils.gamemodules import common as gamemodule_common
+
+
+def configure(
+    server,
+    ask,
+    port=None,
+    dir=None,
+    *,
+    version=None,
+    url=None,
+    exe_name="Linux/TerrariaServer.bin.x86_64",
+    download_name="terraria-server.zip"
+):
+    """Collect and store configuration values for a Terraria vanilla server."""
+
+    if url is None:
+        version, url = resolve_terraria_download(version=version)
+    return configure_base(
+        server,
+        ask,
+        port,
+        dir,
+        exe_name=exe_name,
+        version=version,
+        url=url,
+        download_name=download_name,
+        max_players=8,
+        world_name=server.name,
+        world_size=2,
+        backupfiles=("Worlds", "serverconfig.txt", "banlist.txt"),
+    )
+
+
+def install(server):
+    """Download and install the Terraria vanilla server files."""
+
+    install_archive(server)
+
+
+def get_start_command(server, *, autocreate=False):
+    """Build the start command for Terraria vanilla."""
+
+    return get_vanilla_start_command(server, autocreate=autocreate)
+
+
+def get_query_address(server):
+    """Return the native Terraria handshake endpoint."""
+
+    return (
+        runtime_module.resolve_query_host(server),
+        int(server.data["port"]),
+        "terraria",
+    )
+
+
+def get_info_address(server):
+    """Return the same native endpoint used by the query command."""
+
+    return get_query_address(server)
+
+
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
+        family='steamcmd-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+)
+
+def get_container_spec(server, *, autocreate=False):
+    """Build the Docker command with the same explicit creation option."""
+
+    return runtime_module.build_container_spec(
+        server,
+        family='steamcmd-linux',
+        get_start_command=lambda current: get_start_command(current, autocreate=autocreate),
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        stdin_open=True,
+    )

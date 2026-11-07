@@ -1,0 +1,151 @@
+# Natural Selection
+
+This guide covers the `nsserver` module in AlphaGSM.
+
+`nsserver` is currently `ENABLED (BYO)` on the documented Ubuntu 24.04 Linux
+baseline. The current GitHub integration lane still exercises both process and
+Docker runtime selection around that owned-mod-content prerequisite, while
+local runs remain process-backed by default unless you opt into the Docker
+backend.
+
+`query` and `info` use A2S.
+
+## Requirements
+
+- `screen`
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Python packages from `requirements.txt`
+
+## Quick Start
+
+Create the server:
+
+```bash
+alphagsm mynsserver create nsserver
+```
+
+Run setup:
+
+```bash
+alphagsm mynsserver setup
+```
+
+`nsserver` is supported in `ENABLED (BYO)` mode. AlphaGSM can install the base
+HLDS runtime through SteamCMD, but Steam app `90` does not provide the Natural
+Selection mod payload. Before `start`, copy a complete owned Natural Selection
+content tree into `<install_dir>/ns/` so
+`<install_dir>/ns/maps/ns_hera.bsp` exists.
+
+Start it:
+
+```bash
+alphagsm mynsserver start
+```
+
+Check it:
+
+```bash
+alphagsm mynsserver status
+```
+
+Stop it:
+
+```bash
+alphagsm mynsserver stop
+```
+
+## Setup Details
+
+Setup configures:
+
+- the game port (default 27015)
+- the install directory
+- the executable name
+- SteamCMD downloads the server files
+- default configuration and backup settings
+
+Suggested flow:
+
+```bash
+alphagsm mynsserver create nsserver
+alphagsm mynsserver setup -n 27015 /path/to/nsserver
+# copy the full Natural Selection mod tree into /path/to/nsserver/ns/
+alphagsm mynsserver start
+```
+
+## Useful Commands
+
+```bash
+alphagsm mynsserver update
+alphagsm mynsserver backup
+```
+
+## Notes
+
+- Module name: `nsserver`
+- Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create nsserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `map` | gamemap, startmap, level, worldname | string | The currently selected map or level. Example: `ns_hera`. |
+| `maxplayers` | users | integer | Maximum number of player slots. Example: `16`. |
+| `port` | gameport | integer | The primary game port. Example: `27015`. |
+| `rconpassword` | rconpass, querypassword, query_administrator_password | string | Remote console password for administrative access. Stored as a secret. |
+| `servername` | hostname, name | string | The server's public name shown to players. Example: `AlphaGSM Natural Selection`. |
+| `serverpassword` | sv_password, password | string | Password required for players to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `hlds_run`
+- **Location**: `<install_dir>/hlds_run`
+- **Engine**: GoldSrc (HLDS)
+- **SteamCMD App ID**: `90`
+- **Mod App ID**: `cstrike`
+
+### Server Configuration
+
+- **Config file**: `ns/server.cfg`
+- **Key settings**:
+  - `hostname` — Server name
+  - `sv_maxrate` — Max network rate
+  - `rcon_password` — Remote console password
+- **Default port**: `27015`
+- **Default map**: `ns_hera`
+- **Max players**: `16`
+- **Ports**:
+  - Game port: `27015` (UDP)
+  - Client port: `27005` (UDP)
+- **Template**: See [server-templates/nsserver/](../server-templates/nsserver/)
+
+### Maps and Mods
+
+- **Map directory**: `ns/maps/`
+- **Mod directory**: `ns/dlls/`
+- **Workshop support**: No
+- **Map install**: Copy `.bsp` files into `ns/maps/` and add to `ns/mapcycle.txt`.
+- **Mod install**: Use Metamod in `ns/dlls/` or AMX Mod X in `ns/addons/amxmodx/`.
+
+## BYO file helper
+
+Inspect this game's required files, source instructions and destinations with
+`alphagsm <server-name> assets requirements`; check the declared files with
+`alphagsm <server-name> assets check`. File checks do not establish game readiness.
+This helper checks known sentinels only and directs you to stage the complete
+compatible distribution manually; managed import is unavailable for this recipe.
+See [BYO files and private SteamCMD acquisition](../byo-files.md).

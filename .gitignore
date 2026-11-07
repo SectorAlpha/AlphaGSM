@@ -2,6 +2,33 @@
 __pycache__
 *.bak
 alphagsm.conf
+*.secrets.json
+.alphagsm-docker
+.worktrees/
+~/
 env
 .coverage
 coverage.xml
+nohup.out
+docs/superpowers/
+docs/improvement-roadmap.md
+build/
+dist-binary/
+/run_details.txt
+/smoke_test_output.log
+/smoke_test_results.txt
+/test_output.log
+/test_trace.log
+/log_slow_*.txt
+
+# Private SteamCMD session material and disposable local game validation.
+# local_tests/ source is tracked. Never commit profiles, passwords, or tokens.
+steam-auth/
+.local-tests/
+.alphagsm-private/
+ssfn*
+local_tests/work/
+local_tests/state/
+local_tests/results/
+local_tests/**/profile.json
+local_tests/**/*.vdf

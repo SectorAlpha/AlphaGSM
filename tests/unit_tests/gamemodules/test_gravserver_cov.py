@@ -1,0 +1,263 @@
+"""Full coverage tests for gravserver."""
+
+import os
+import sys
+from unittest.mock import patch, MagicMock
+
+import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
+sys.modules.pop('gamemodules.gravserver', None)
+with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
+    import gamemodules.gravserver as mod
+    from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
+
+
+def test_configure_basic(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+    assert server.data['port'] == 7777
+
+
+def test_configure_ask_defaults(tmp_path, monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda prompt: "")
+    server = DummyServer()
+    server.data["port"] = 7777
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["adminpassword"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["peerport"] = 27015
+    server.data["queryport"] = 27015
+    server.data["servername"] = "test"
+    mod.configure(server, ask=True)
+
+
+def test_configure_ask_custom(tmp_path, monkeypatch):
+    inputs = iter(["7778", str(tmp_path / 'custom')])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+    server = DummyServer()
+    mod.configure(server, ask=True)
+
+
+def test_get_start_command(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod.proton, "find_wine", lambda: "wine")
+    monkeypatch.setattr(mod.proton, "find_proton", lambda: None)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "CAGGameServer-Win32-Shipping"
+    (tmp_path / "CAGGameServer-Win32-Shipping").write_text("")
+    server.data["adminpassword"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["peerport"] = 27015
+    server.data["port"] = 27015
+    server.data["queryport"] = 27015
+    server.data["servername"] = "test"
+    cmd, cwd = mod.get_start_command(server)
+    assert isinstance(cmd, list)
+
+
+def test_get_start_command_missing_exe(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "nonexistent"
+    server.data["adminpassword"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["peerport"] = 27015
+    server.data["port"] = 27015
+    server.data["queryport"] = 27015
+    server.data["servername"] = "test"
+    with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+
+def test_install_missing_owned_files_raises_byo(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "CAGGameServer-Win32-Shipping"
+    download = MagicMock()
+    monkeypatch.setattr(mod.steamcmd, "download", download)
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\)"):
+        mod.install(server)
+    download.assert_called_once()
+    assert "auth_profile" not in download.call_args.kwargs
+
+
+def test_linux_start_uses_wine_xvfb_not_proton(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    seen = {}
+
+    def fake_wrap(command, wineprefix=None, prefer_proton=False):
+        seen["command"] = list(command)
+        seen["wineprefix"] = wineprefix
+        seen["prefer_proton"] = prefer_proton
+        return ["xvfb-run", "-a", *command]
+
+    monkeypatch.setattr(mod.proton, "wrap_xvfb_command", fake_wrap)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "CAGGameServer-Win32-Shipping"
+    server.data["wineprefix"] = str(tmp_path / "wineprefix")
+    server.data["adminpassword"] = ""
+    server.data["maxplayers"] = 32
+    server.data["peerport"] = 7778
+    server.data["port"] = 7777
+    server.data["queryport"] = 27111
+    server.data["servername"] = "GravServer"
+    (tmp_path / "CAGGameServer-Win32-Shipping").write_text("")
+    cmd, cwd = mod.get_start_command(server)
+    assert seen["prefer_proton"] is False
+    assert seen["wineprefix"] == str(tmp_path / "wineprefix")
+    assert seen["command"][0] == "./CAGGameServer-Win32-Shipping"
+    assert any("QueryPort=27111" in part for part in seen["command"])
+    assert "SteamAppId=332500" in cmd
+    assert "xvfb-run" in cmd
+    assert cwd == server.data["dir"]
+
+
+def test_linux_binaries_worker_cwd_uses_wine_xvfb(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    seen = {}
+
+    def fake_wrap(command, wineprefix=None, prefer_proton=False):
+        seen["command"] = list(command)
+        seen["prefer_proton"] = prefer_proton
+        return ["xvfb-run", "-a", *command]
+
+    monkeypatch.setattr(mod.proton, "wrap_xvfb_command", fake_wrap)
+    exe_dir = tmp_path / "Binaries" / "Win32"
+    exe_dir.mkdir(parents=True)
+    (exe_dir / "CAGGameServer-Win32-Shipping.exe").write_text("")
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "CAGGameServer-Win32-Shipping"
+    server.data["adminpassword"] = ""
+    server.data["maxplayers"] = 32
+    server.data["peerport"] = 7778
+    server.data["port"] = 7777
+    server.data["queryport"] = 27111
+    server.data["servername"] = "GravServer"
+    cmd, cwd = mod.get_start_command(server)
+    assert seen["prefer_proton"] is False
+    assert seen["command"][0] == "./Win32/CAGGameServer-Win32-Shipping.exe"
+    assert cwd == os.path.join(str(tmp_path), "Binaries", "")
+    assert "xvfb-run" in cmd
+
+
+def test_install_passes_saved_auth_profile_only_when_set(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    calls = []
+
+    def fake_download(*args, **kwargs):
+        calls.append((args, kwargs))
+
+    monkeypatch.setattr(mod.steamcmd, "download", fake_download)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "CAGGameServer-Win32-Shipping"
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\)"):
+        mod.install(server)
+    assert calls[0][0][:3] == (str(tmp_path) + "/", 332500, True)
+    assert "auth_profile" not in calls[0][1]
+    assert calls[0][1].get("force_windows") is True
+
+    server.data["steam_auth_profile"] = "owned"
+    with pytest.raises(ServerError, match="ENABLED \\(BYO\\)"):
+        mod.install(server)
+    assert calls[1][1].get("auth_profile") == "owned"
+    assert calls[1][1].get("force_windows") is True
+
+
+def test_do_stop():
+    server = DummyServer()
+    mod.do_stop(server, 0)
+    mod.runtime_module.send_to_server.assert_called()
+
+
+def test_status():
+    server = DummyServer()
+    mod.status(server, verbose=True)
+
+
+def test_message():
+    server = DummyServer()
+    mod.message(server, "hello")
+
+
+def test_backup():
+    server = DummyServer()
+    server.data["dir"] = "/tmp/test/"
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.backup(server)
+
+
+def test_checkvalue_empty_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ())
+
+
+def test_checkvalue_unsupported_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("totally_invalid_key_xyz",), "val")
+
+
+def test_checkvalue_no_value():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("port",))
+
+
+def test_checkvalue_port():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("port",), "12345")
+    assert result == 12345
+
+
+def test_checkvalue_peerport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("peerport",), "12345")
+    assert result == 12345
+
+
+def test_checkvalue_queryport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("queryport",), "12345")
+    assert result == 12345
+
+
+def test_checkvalue_maxplayers():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("maxplayers",), "12345")
+    assert result == 12345
+
+
+def test_checkvalue_exe_name():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("exe_name",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_dir():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("dir",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_servername():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("servername",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_adminpassword():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("adminpassword",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_backup():
+    server = DummyServer()
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")

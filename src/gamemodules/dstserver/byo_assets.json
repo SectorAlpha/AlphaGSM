@@ -1,0 +1,37 @@
+{
+  "description": "Don't Starve Together cluster configuration",
+  "requirements": [
+    {
+      "path": "{confdir}/{cluster}/cluster_token.txt",
+      "kind": "file"
+    },
+    {
+      "path": "{confdir}/{cluster}/cluster.ini",
+      "kind": "file"
+    },
+    {
+      "path": "{confdir}/{cluster}/{shard}/server.ini",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "provider-config",
+      "instructions": "Generate the cluster token through Klei and create/export the matching cluster configuration. Place cluster.ini and cluster_token.txt in the configured cluster, and server.ini under the configured shard. Keep token contents private; SteamCMD cannot generate the token.",
+      "live_validated": false,
+      "url": "https://support.klei.com/hc/en-us/articles/360029556192-Dedicated-Server-Command-Line-Options-Guide"
+    }
+  ],
+  "defaults": {
+    "confdir": "DoNotStarveTogether",
+    "cluster": "{server_name}",
+    "shard": "Master"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "dstserver",
+  "guide": "docs/servers/dstserver.md",
+  "schema_version": 1
+}

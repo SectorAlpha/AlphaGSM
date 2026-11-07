@@ -1,0 +1,134 @@
+# Warfork
+
+This guide covers the `wfserver` module in AlphaGSM.
+
+`wfserver` is currently `PASSED` in the checked-in support tracker on the
+documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane
+validates both process and Docker runtimes for this module, while local runs
+remain process-backed by default unless you opt into the Docker backend.
+
+## Requirements
+
+- `screen`
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Python packages from `requirements.txt`
+
+## Quick Start
+
+Create the server:
+
+```bash
+alphagsm mywfserver create wfserver
+```
+
+Run setup:
+
+```bash
+alphagsm mywfserver setup
+```
+
+Start it:
+
+```bash
+alphagsm mywfserver start
+```
+
+Check it:
+
+```bash
+alphagsm mywfserver status
+```
+
+Stop it:
+
+```bash
+alphagsm mywfserver stop
+```
+
+## Setup Details
+
+Setup configures:
+
+- the game port (default 44400)
+- the install directory
+- SteamCMD downloads the server files
+
+## Useful Commands
+
+```bash
+alphagsm mywfserver update
+alphagsm mywfserver backup
+```
+
+## Notes
+
+Docker launches include the shared SteamCMD SDK mounts required to load
+`steamclient.so`.
+
+- Module name: `wfserver`
+- Default port: 44400
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create wfserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `bindaddress` | — | string | The hosted IP address to bind for launch. Example: `0.0.0.0`. |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `fs_game` | — | string | The active game/mod directory. Example: `baseq3`. |
+| `hostname` | servername, name | string | The advertised server name. Example: `AlphaGSM Arena`. |
+| `port` | gameport | integer | The game port for the server. Example: `27960`. |
+| `startmap` | map, gamemap, level, world | string | The startup map. Example: `q3dm17`. |
+
+<!-- alphagsm-server-variables:end -->
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `wf_server.x86_64`
+- **Location**: `<install_dir>/wf_server.x86_64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `1136510`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/wfserver/](../server-templates/wfserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: `<install_dir>/<fs_game>/`
+- **Mod directory**: `<install_dir>/<fs_game>/`
+- **Workshop support**: No
+
+## Mod Sources
+
+Warfork supports AlphaGSM-managed direct `url` mod sources for content-only `.pk3` payloads.
+
+Supported payload shapes:
+
+- a direct `.pk3` URL
+- an archive containing bare `.pk3` files at the archive root
+- an archive containing `<fs_game>/<name>.pk3`
+
+AlphaGSM installs approved `.pk3` content into the active `fs_game` directory, tracks only the files it owns, and adds that active content directory to the managed backup targets.
+
+Examples:
+
+```bash
+alphagsm mywfserver mod add url https://example.com/mappack.pk3
+alphagsm mywfserver mod add url https://example.com/custom-content.zip
+alphagsm mywfserver mod apply
+alphagsm mywfserver mod cleanup
+```

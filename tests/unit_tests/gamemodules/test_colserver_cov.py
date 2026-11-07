@@ -1,0 +1,228 @@
+"""Full coverage tests for colserver."""
+
+import json
+import os
+import sys
+from unittest.mock import patch, MagicMock
+
+import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
+sys.modules.pop('gamemodules.colserver', None)
+with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
+    import gamemodules.colserver as mod
+    from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
+
+
+def test_configure_basic(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27004, dir=str(tmp_path))
+    assert server.data['port'] == 27004
+    assert server.data["queryport"] == "27003"
+
+
+def test_configure_ask_defaults(tmp_path, monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda prompt: "")
+    server = DummyServer()
+    server.data["port"] = 27004
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = "test"
+    server.data["Steam_anonymous_login_possible"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["world"] = "test"
+    mod.configure(server, ask=True)
+
+
+def test_configure_ask_custom(tmp_path, monkeypatch):
+    inputs = iter(["27005", str(tmp_path / 'custom')])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+    server = DummyServer()
+    mod.configure(server, ask=True)
+
+
+def test_install(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "colonyserver.x86_64"
+    server.data["Steam_AppID"] = 748090
+    server.data["Steam_anonymous_login_possible"] = True
+    mod.install(server)
+
+
+def test_update_with_restart(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = 748090
+    server.data["Steam_anonymous_login_possible"] = True
+    mod.update(server, validate=True, restart=True)
+    assert server._stopped
+    assert server._started
+
+
+def test_update_no_restart(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = 748090
+    server.data["Steam_anonymous_login_possible"] = True
+    mod.update(server, validate=False, restart=False)
+    assert server._stopped
+    assert not server._started
+
+
+def test_update_stop_exception(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = 748090
+    server.data["Steam_anonymous_login_possible"] = True
+    server.stop = MagicMock(side_effect=Exception('already stopped'))
+    mod.update(server, validate=False, restart=False)
+
+
+def test_restart():
+    server = DummyServer()
+    mod.restart(server)
+    assert server._stopped
+    assert server._started
+
+
+def test_get_start_command(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "colonyserver.x86_64"
+    (tmp_path / "colonyserver.x86_64").write_text("")
+    server.data["maxplayers"] = 27015
+    server.data["port"] = 27015
+    server.data["queryport"] = 27014
+    server.data["world"] = "test"
+    server.data["servername"] = "AlphaGSM Test"
+    cmd, cwd = mod.get_start_command(server)
+    assert cwd == server.data["dir"]
+    assert cmd == [
+        "./colonyserver.x86_64",
+        "-batchmode",
+        "-nographics",
+        "+server.config",
+        "server.config.json",
+    ]
+
+
+def test_get_start_command_missing_exe(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "nonexistent"
+    server.data["maxplayers"] = 27015
+    server.data["port"] = 27015
+    server.data["world"] = "test"
+    with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+
+def test_do_stop():
+    server = DummyServer()
+    mod.do_stop(server, 0)
+    mod.runtime_module.send_to_server.assert_called()
+
+
+def test_status():
+    server = DummyServer()
+    mod.status(server, verbose=True)
+
+
+def test_message():
+    server = DummyServer()
+    mod.message(server, "hello")
+
+
+def test_backup():
+    server = DummyServer()
+    server.data["dir"] = "/tmp/test/"
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.backup(server)
+
+
+def test_checkvalue_empty_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ())
+
+
+def test_checkvalue_unsupported_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("totally_invalid_key_xyz",), "val")
+
+
+def test_checkvalue_no_value():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("port",))
+
+
+def test_checkvalue_port():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("port",), "12345")
+    assert result == 12345
+
+
+def test_checkvalue_maxplayers():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("maxplayers",), "12345")
+    assert result == 12345
+
+
+def test_checkvalue_queryport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("queryport",), "12346")
+    assert result == 12346
+
+
+def test_checkvalue_world():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("world",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_exe_name():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("exe_name",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_dir():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("dir",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_backup():
+    server = DummyServer()
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
+
+
+def test_sync_server_config_without_dir_is_noop():
+    server = DummyServer()
+    mod.sync_server_config(server)
+
+
+def test_sync_server_config_writes_server_config_json(tmp_path):
+    server = DummyServer("colony")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["port"] = 27005
+    server.data["queryport"] = 27004
+    server.data["world"] = "colonyworld"
+    server.data["maxplayers"] = "24"
+    server.data["servername"] = "AlphaGSM Colony"
+
+    mod.sync_server_config(server)
+
+    with open(tmp_path / "server.config.json", "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+
+    assert payload["NewOptions"]["WorldName"] == "colonyworld"
+    assert payload["ServerSettings"]["ServerName"] == "AlphaGSM Colony"
+    assert payload["ServerSettings"]["ServerGamePort"] == 27005
+    assert payload["ServerSettings"]["ServerQueryPort"] == 27004
+    assert payload["ServerSettings"]["MaxPlayerCount"] == 24
+    assert payload["ServerSettings"]["NetworkType"] == "SteamOnline"

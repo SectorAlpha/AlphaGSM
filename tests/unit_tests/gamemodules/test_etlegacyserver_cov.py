@@ -1,0 +1,296 @@
+"""Full coverage tests for etlegacyserver."""
+
+import os
+import sys
+from unittest.mock import patch, MagicMock
+
+import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
+sys.modules.pop('gamemodules.etlegacyserver', None)
+with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
+    import gamemodules.etlegacyserver as mod
+    from server import ServerError
+
+def test_configure_basic(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27960, dir=str(tmp_path), url="https://example.com/test.zip", download_name="test.zip", version="1.0")
+    assert server.data['port'] == 27960
+
+def test_configure_ask_defaults(tmp_path, monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda prompt: "")
+    server = DummyServer()
+    server.data["port"] = 27960
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["url"] = "https://example.com/test.zip"
+    server.data["download_name"] = "test.zip"
+    server.data["configfile"] = "test"
+    server.data["fs_game"] = "test"
+    server.data["hostname"] = "test"
+    server.data["version"] = "test"
+    mod.configure(server, ask=True)
+
+def test_configure_ask_custom(tmp_path, monkeypatch):
+    inputs = iter(["27961", str(tmp_path / 'custom'), "https://example.com/new.tar.gz"])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+    server = DummyServer()
+    server.data["url"] = "https://example.com/test.zip"
+    server.data["download_name"] = "test.zip"
+    mod.configure(server, ask=True)
+
+CURRENT_DOWNLOAD_PAGE = """
+<h2>ET: Legacy stable release 2.86.2 - Taking Fire!!!</h2>
+<a href="#" data-href="https://www.etlegacy.com/download/file/784"
+   title="etlegacy-v2.86.2-x86_64.sh">Installer</a>
+<a href="#" data-href="https://www.etlegacy.com/download/file/785"
+   title="etlegacy-v2.86.2-x86_64.tar.gz">Archive</a>
+"""
+
+LEGACY_DOWNLOAD_PAGE = """
+<h2>stable release 2.83.1</h2>
+Linux <a data-href="https://www.etlegacy.com/download/file/100">x86_64 archive</a>
+"""
+
+RELEASE_LIST = """
+<a href="https://www.etlegacy.com/download/release/2862">
+  <span class="dl-release-version luck">2.86.2</span>
+</a>
+<a href="https://www.etlegacy.com/download/release/2831">2.83.1</a>
+"""
+
+
+def test_parse_release_page_reads_the_current_linux_archive_title():
+    version, url = mod._main._parse_release_page(CURRENT_DOWNLOAD_PAGE)
+    assert version == "2.86.2"
+    assert url == "https://www.etlegacy.com/download/file/785"
+
+
+def test_parse_release_page_keeps_the_older_archive_label():
+    version, url = mod._main._parse_release_page(LEGACY_DOWNLOAD_PAGE)
+    assert version == "2.83.1"
+    assert url == "https://www.etlegacy.com/download/file/100"
+
+
+def test_parse_release_page_rejects_a_page_without_the_linux_archive():
+    with pytest.raises(ServerError, match="Linux download"):
+        mod._main._parse_release_page("<h2>stable release 2.86.2</h2>")
+
+
+def test_resolve_download_follows_the_version_label(monkeypatch):
+    pages = {
+        "https://www.etlegacy.com/download/release/list": RELEASE_LIST,
+        "https://www.etlegacy.com/download/release/2862": CURRENT_DOWNLOAD_PAGE,
+    }
+    monkeypatch.setattr(mod._main, "_read_page", lambda url: pages[url])
+    version, url = mod._main.resolve_download("2.86.2")
+    assert version == "2.86.2"
+    assert url == "https://www.etlegacy.com/download/file/785"
+
+
+def test_configure_resolves_download(tmp_path):
+    server = DummyServer()
+    with patch.object(mod._main, 'resolve_download', return_value=('2.83', 'https://example.com/etl.tar.gz')):
+        mod.configure(server, ask=False, port=27960, dir=str(tmp_path))
+    assert server.data['url'] == 'https://example.com/etl.tar.gz'
+    assert server.data['version'] == '2.83'
+
+def _seed_stock_paks(tmp_path):
+    etmain_dir = tmp_path / "etmain"
+    etmain_dir.mkdir(exist_ok=True)
+    for pak_name in ("pak0.pk3", "pak1.pk3", "pak2.pk3"):
+        (etmain_dir / pak_name).write_bytes(b"already-present")
+
+
+def test_install(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "etlded.x86_64"
+    server.data["url"] = "https://example.com/test.zip"
+    server.data["download_name"] = "test.zip"
+    server.data["version"] = "test"
+    server.data["configfile"] = "etl_server.cfg"
+    (tmp_path / "etl_server.cfg").write_text('set sv_hostname "Old Name"\n', encoding="utf-8")
+    _seed_stock_paks(tmp_path)
+    mod.install(server)
+
+def test_install_resolves_download(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "etlded.x86_64"
+    server.data["download_name"] = "test.tar.gz"
+    _seed_stock_paks(tmp_path)
+    with patch.object(mod._main, 'resolve_download', return_value=('2.83', 'https://example.com/etl.tar.gz')):
+        mod.install(server)
+    assert server.data['url'] == 'https://example.com/etl.tar.gz'
+
+def test_get_start_command(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "etlded.x86_64"
+    (tmp_path / "etlded.x86_64").write_text("")
+    etmain_dir = tmp_path / "etmain"
+    etmain_dir.mkdir()
+    for pak_name in ("pak0.pk3", "pak1.pk3", "pak2.pk3"):
+        (etmain_dir / pak_name).write_text("")
+    server.data["configfile"] = "test"
+    server.data["fs_game"] = "test"
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    cmd, cwd = mod.get_start_command(server)
+    assert cmd == [
+        "./etlded.x86_64",
+        "+set",
+        "fs_game",
+        "test",
+        "+set",
+        "net_port",
+        "27015",
+        "+set",
+        "sv_hostname",
+        "test",
+        "+exec",
+        "test",
+        "+set",
+        "dedicated",
+        "2",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_sync_server_config_updates_etlegacy_cfg_values(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["configfile"] = "etl_server.cfg"
+    server.data["hostname"] = "AlphaGSM ET Test"
+    server.data["port"] = 27961
+    config_path = tmp_path / "etl_server.cfg"
+    config_path.write_text(
+        'set sv_hostname "Old Name"\n'
+        'set net_port 27960\n'
+        'set sv_maxclients 16\n',
+        encoding="utf-8",
+    )
+
+    mod.sync_server_config(server)
+
+    assert config_path.read_text(encoding="utf-8").splitlines() == [
+        'set sv_hostname "AlphaGSM ET Test"',
+        'set net_port 27961',
+        'set sv_maxclients 16',
+    ]
+
+
+def test_setting_schema_exposes_etlegacy_launch_tokens():
+    assert mod.setting_schema["fs_game"].launch_arg_tokens == ("+set", "fs_game")
+    assert mod.setting_schema["port"].launch_arg_tokens == ("+set", "net_port")
+    assert mod.setting_schema["hostname"].launch_arg_tokens == ("+set", "sv_hostname")
+    assert mod.setting_schema["configfile"].launch_arg_tokens == ("+exec",)
+
+def test_get_start_command_missing_exe(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "nonexistent"
+    server.data["configfile"] = "test"
+    server.data["fs_game"] = "test"
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+
+def test_get_start_command_requires_original_et_assets(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "etlded.x86_64"
+    (tmp_path / "etlded.x86_64").write_text("")
+    server.data["configfile"] = "test"
+    server.data["fs_game"] = "test"
+    server.data["hostname"] = "test"
+    server.data["port"] = 27015
+    with pytest.raises(ServerError, match="etmain/pak0.pk3"):
+        mod.get_start_command(server)
+
+def test_do_stop():
+    server = DummyServer()
+    mod.runtime_module.send_to_server = MagicMock()
+    mod.do_stop(server, 0)
+    mod.runtime_module.send_to_server.assert_called_once_with(server, "\nquit\n")
+
+def test_status():
+    server = DummyServer()
+    mod.status(server, verbose=True)
+
+def test_message():
+    server = DummyServer()
+    mod.message(server, "hello")
+
+def test_backup():
+    server = DummyServer()
+    server.data["dir"] = "/tmp/test/"
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.backup(server)
+
+def test_checkvalue_empty_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ())
+
+def test_checkvalue_unsupported_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("totally_invalid_key_xyz",), "val")
+
+def test_checkvalue_no_value():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("port",))
+
+def test_checkvalue_port():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("port",), "12345")
+    assert result == 12345
+
+def test_checkvalue_url():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("url",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_download_name():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("download_name",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_exe_name():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("exe_name",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_dir():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("dir",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_fs_game():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("fs_game",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_configfile():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("configfile",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_hostname():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("hostname",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_version():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("version",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_backup():
+    server = DummyServer()
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")

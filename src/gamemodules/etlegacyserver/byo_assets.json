@@ -1,0 +1,47 @@
+{
+  "description": "Original Wolfenstein: Enemy Territory multiplayer packs",
+  "requirements": [
+    {
+      "path": "etmain/pak0.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "etmain/pak1.pk3",
+      "kind": "file"
+    },
+    {
+      "path": "etmain/pak2.pk3",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "setup stages etmain/pak0.pk3, etmain/pak1.pk3, and etmain/pak2.pk3 from the official Splash Damage freeware full-game archive. Copying those same three files manually is also accepted. pak0.pk3 alone is not enough. There is no Steam login path. These packs are separate from the ET: Legacy engine download.",
+      "live_validated": false,
+      "url": "https://github.com/etlegacy/etlegacy/wiki/FAQ"
+    }
+  ],
+  "defaults": {},
+  "managed_import": true,
+  "validation": "declared-files-and-content-sentinels",
+  "manual_reason": "Import requires a complete compatible distribution and manual staging. See assets requirements for this game.",
+  "roots": [
+    ""
+  ],
+  "target": "",
+  "include": [
+    "etmain/pak0.pk3",
+    "etmain/pak1.pk3",
+    "etmain/pak2.pk3"
+  ],
+  "required": [
+    "etmain/pak0.pk3",
+    "etmain/pak1.pk3",
+    "etmain/pak2.pk3"
+  ],
+  "module": "etlegacyserver",
+  "guide": "docs/servers/etlegacyserver.md",
+  "schema_version": 1
+}

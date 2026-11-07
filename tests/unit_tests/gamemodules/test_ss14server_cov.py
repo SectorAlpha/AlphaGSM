@@ -1,0 +1,231 @@
+"""Full coverage tests for ss14server."""
+
+import sys
+from urllib.error import HTTPError
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
+sys.modules.pop('gamemodules.ss14server', None)
+with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.github_releases': MagicMock()}):
+    import gamemodules.ss14server as mod
+    from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
+
+def test_configure_basic(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=1212, dir=str(tmp_path), url="https://example.com/test.zip", download_name="test.zip", version="1.0")
+    assert server.data['port'] == 1212
+
+def test_configure_ask_defaults(tmp_path, monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda prompt: "")
+    server = DummyServer()
+    server.data["port"] = 1212
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["url"] = "https://example.com/test.zip"
+    server.data["download_name"] = "test.zip"
+    server.data["version"] = "test"
+    mod.configure(server, ask=True)
+
+def test_configure_ask_custom(tmp_path, monkeypatch):
+    inputs = iter(["1213", str(tmp_path / 'custom'), "https://example.com/new.tar.gz"])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+    server = DummyServer()
+    server.data["url"] = "https://example.com/test.zip"
+    server.data["download_name"] = "test.zip"
+    mod.configure(server, ask=True)
+
+def test_configure_resolves_download(tmp_path):
+    server = DummyServer()
+    with patch.object(mod, 'resolve_download', return_value=('42', 'https://example.com/ss14.zip')):
+        mod.configure(server, ask=False, port=1212, dir=str(tmp_path))
+    assert server.data['url'] == 'https://example.com/ss14.zip'
+    assert server.data['version'] == '42'
+
+def test_resolve_download_uses_latest_manifest_entry():
+    manifest = {
+        "builds": {
+            "old": {
+                "time": "2025-01-01T00:00:00Z",
+                "server": {"linux-x64": {"url": "https://example.com/old.zip"}},
+            },
+            "new": {
+                "time": "2026-01-01T00:00:00Z",
+                "server": {"linux-x64": {"url": "https://example.com/new.zip"}},
+            },
+        }
+    }
+
+    mod.read_json.return_value = manifest
+
+    version, url = mod.resolve_download()
+
+    assert version == "new"
+    assert url == "https://example.com/new.zip"
+
+def test_resolve_download_uses_requested_manifest_version():
+    mod.read_json.return_value = {
+        "builds": {
+            "wanted": {
+                "time": "2026-01-01T00:00:00Z",
+                "server": {"linux-x64": {"url": "https://example.com/wanted.zip"}},
+            }
+        }
+    }
+
+    version, url = mod.resolve_download(version="wanted")
+
+    assert version == "wanted"
+    assert url == "https://example.com/wanted.zip"
+
+
+def test_resolve_download_requires_byo_archive_when_manifest_is_unavailable():
+    error = HTTPError(mod.SS14_MANIFEST_URL, 404, "Not Found", None, None)
+    with patch.object(mod, "read_json", side_effect=error):
+        with pytest.raises(
+            ServerError,
+            match=r"ENABLED \(BYO\):.*direct Linux x64 Space Station 14 server archive",
+        ):
+            mod.resolve_download()
+
+
+def test_resolve_download_preserves_transient_network_errors():
+    with patch.object(mod, "read_json", side_effect=OSError("network unreachable")):
+        with pytest.raises(OSError, match="network unreachable"):
+            mod.resolve_download()
+
+
+def test_resolve_download_requires_byo_archive_when_manifest_has_no_builds():
+    with patch.object(mod, "read_json", return_value={"builds": {}}):
+        with pytest.raises(
+            ServerError,
+            match=r"ENABLED \(BYO\):.*direct Linux x64 Space Station 14 server archive",
+        ):
+            mod.resolve_download()
+
+
+def test_resolve_download_requires_byo_archive_when_manifest_is_malformed():
+    with patch.object(mod, "read_json", return_value=None):
+        with pytest.raises(
+            ServerError,
+            match=r"ENABLED \(BYO\):.*direct Linux x64 Space Station 14 server archive",
+        ):
+            mod.resolve_download()
+
+
+def test_resolve_download_rejects_missing_linux_x64_build():
+    mod.read_json.return_value = {
+        "builds": {
+            "wanted": {
+                "time": "2026-01-01T00:00:00Z",
+                "server": {"win-x64": {"url": "https://example.com/wanted.zip"}},
+            }
+        }
+    }
+
+    with pytest.raises(ServerError):
+        mod.resolve_download(version="wanted")
+
+def test_install(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "Robust.Server"
+    server.data["url"] = "https://example.com/test.zip"
+    server.data["download_name"] = "test.zip"
+    server.data["version"] = "test"
+    mod.install(server)
+
+def test_install_resolves_download(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "Robust.Server"
+    server.data["download_name"] = "test.zip"
+    with patch.object(mod, 'resolve_download', return_value=('42', 'https://example.com/ss14.zip')):
+        mod.install(server)
+    assert server.data['url'] == 'https://example.com/ss14.zip'
+
+def test_get_start_command(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "Robust.Server"
+    (tmp_path / "Robust.Server").write_text("")
+    cmd, cwd = mod.get_start_command(server)
+    assert isinstance(cmd, list)
+
+def test_get_start_command_missing_exe(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "nonexistent"
+    with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+def test_do_stop():
+    server = DummyServer()
+    mod.do_stop(server, 0)
+    mod.runtime_module.send_to_server.assert_called()
+
+def test_status():
+    server = DummyServer()
+    mod.status(server, verbose=True)
+
+def test_message():
+    server = DummyServer()
+    mod.message(server, "hello")
+
+def test_backup():
+    server = DummyServer()
+    server.data["dir"] = "/tmp/test/"
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.backup(server)
+
+def test_checkvalue_empty_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ())
+
+def test_checkvalue_unsupported_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("totally_invalid_key_xyz",), "val")
+
+def test_checkvalue_no_value():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("port",))
+
+def test_checkvalue_port():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("port",), "12345")
+    assert result == 12345
+
+def test_checkvalue_url():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("url",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_download_name():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("download_name",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_exe_name():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("exe_name",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_dir():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("dir",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_version():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("version",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_backup():
+    server = DummyServer()
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")

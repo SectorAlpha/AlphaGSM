@@ -1,0 +1,316 @@
+# Running AlphaGSM In Docker
+
+This is the recommended quickest-first-run deployment mode.
+
+For agent-operated setup, the [installation policy](../skills/alphagsm-server-requirements/references/approval-gates.md)
+requires approval only for new software outside the requested managed workflow,
+such as missing host Docker/Compose. Using Docker, repository images and wrapper
+pull/build fallback has no separate consent gate. The deployment below uses the
+host socket; it does not implement a nested Docker-in-Docker daemon.
+
+AlphaGSM can still run directly on the host exactly as before. This guide is
+only for the case where you want AlphaGSM itself to run in a Docker container
+while still launching game-server containers through the host Docker daemon.
+
+Ubuntu 24.04 is this repository's validated full-runtime baseline for the
+Docker-manager workflow. Newer and other Linux distributions may work, but
+their broader lifecycle coverage remains future validation, as does broader
+macOS and Windows runtime coverage.
+
+## How This Works
+
+Use Docker-outside-of-Docker:
+
+- run one AlphaGSM "manager" container
+- run the manager process as the invoking host user's numeric UID and primary
+  GID instead of as root
+- mount the host Docker socket into it
+- add the Docker socket's numeric GID as the manager's supplementary group
+- let AlphaGSM call the host Docker daemon through the normal `docker` CLI
+- keep server data on a host path that is mounted into the manager container at
+  the same absolute path
+- let the manager container authenticate to GHCR and pre-pull the AlphaGSM
+  runtime-family images
+- keep enough local tooling in the manager container for setup flows that still
+  do preparatory work before the runtime container starts, such as Java-based
+  Minecraft jar bootstrap
+
+The last point matters because AlphaGSM stores server install paths and later
+passes them back into `docker run -v ...` when starting Docker-backed game
+servers. If AlphaGSM stores `/srv/alphagsm/servers/mymc`, the host Docker
+daemon must also be able to see that exact path.
+
+## What Stays The Same
+
+- direct host installs still work
+- the host-process runtime remains a supported fallback path when you
+  intentionally run AlphaGSM outside the Docker-manager flow
+- this manager-container setup is separate from the runtime-family images under
+  `docker/java/`, `docker/steamcmd-linux/`, and the other family directories
+
+## Files In This Repository
+
+- `docker/manager/Dockerfile`
+- `docker/manager/compose.yml`
+- `docker/manager/alphagsm.conf.example`
+- `alphagsm-docker`
+
+## Quick Start Wrapper
+
+From the repository root you can use the wrapper script instead of typing the
+full Compose command each time:
+
+```bash
+./alphagsm-docker up
+./alphagsm-docker start
+./alphagsm-docker stop
+./alphagsm-docker ps
+./alphagsm-docker mymc create minecraft.vanilla
+./alphagsm-docker mymc setup -n 25565 "$PWD/.alphagsm-docker/servers/mymc"
+./alphagsm-docker mymc start
+./alphagsm-docker mymc connect
+```
+
+`start` is an alias for `up`, and `stop` is an alias for `down`.
+
+The script will:
+
+- create a Docker-manager state directory if it does not exist
+- write `alphagsm.conf` there from the manager example config
+- default to release mode, which tries to pull `ghcr.io/sectoralpha/alphagsm:latest` and falls back to a local build if that pull fails
+- support `./alphagsm-docker up --develop` or `./alphagsm-docker start --develop`, which switches the state dir into developer mode and always rebuilds the manager image locally
+- reuse an existing running manager only when its configured UID, primary GID,
+  Docker socket supplementary GID, and inspected socket mount source exactly
+  match the current host values
+- recreate an old root manager or any manager with stale identity, group, or
+  socket metadata through the currently selected release/develop mode
+- recreate a stopped manager container from the active mode without forcing the other mode's image path
+- build bundled AlphaGSM runtime-family images locally on demand when their default GHCR tag is missing, so quick-start still works without registry auth
+- provide wrapper-native `./alphagsm-docker ps` and `./alphagsm-docker <server> connect` commands that read local server metadata instead of forwarding through manager `exec`
+- forward any other arguments to `python alphagsm ...` inside the manager container
+
+The wrapper obtains its UID from Bash's read-only effective-process identity,
+obtains its primary GID through a trusted absolute system `id` executable, and
+obtains the supplementary group from the selected Docker socket. It does not
+trust a caller-controlled `PATH` for identity discovery and deliberately
+overwrites caller-supplied `ALPHAGSM_HOST_UID`,
+`ALPHAGSM_HOST_GID`, and `ALPHAGSM_DOCKER_GID` values. Running the wrapper as
+UID `0` is rejected before wrapper state or manager containers are created or
+changed. This also makes upgrades self-correcting: the first manager-targeting
+wrapper command after upgrading, including `./alphagsm-docker compose ...`,
+validates and recreates a running manager left behind with root or stale group
+configuration, or with a different Docker socket source, while an exact
+identity and socket-mount match is reused. Before any recreation, the wrapper
+checks the existing state tree without following symlinks. If the invoking
+non-root UID/GID cannot safely write and traverse that tree, AlphaGSM preserves
+it and stops with the exact path plus an explicit administrator `chown`
+command; it never changes legacy ownership automatically. Direct
+`docker compose` commands bypass the wrapper and therefore cannot discover or
+repair stale manager identity or socket selection.
+
+Because `./alphagsm-docker ps` reads local JSON server config, it still
+requires a working host `python3`. For Docker-backed servers, wrapper
+`connect` also uses that host metadata when it is available; otherwise the
+wrapper falls back to AlphaGSM's normal forwarded `connect` command.
+
+When a game module prompts for an install directory and you accept the default
+inside manager-container mode, AlphaGSM now prefers `ALPHAGSM_HOME/servers/<name>`
+instead of `/root/<name>`.
+
+The wrapper defaults `ALPHAGSM_PULL_RUNTIME_IMAGES=0` so quick-start users do
+not need GHCR credentials just to bring the manager container up. If you do
+want eager runtime image pulls at startup, run:
+
+```bash
+ALPHAGSM_PULL_RUNTIME_IMAGES=1 ./alphagsm-docker up
+```
+
+If you are actively developing this repository and want manager restarts to
+always use the local checkout, use:
+
+```bash
+./alphagsm-docker start --develop
+```
+
+That mode is stored in the wrapper state directory, so later `./alphagsm-docker`
+commands keep using local manager rebuilds until you switch back with a plain
+`./alphagsm-docker start` or `./alphagsm-docker up`.
+
+By default it uses a repo-local state path:
+
+```bash
+$PWD/.alphagsm-docker
+```
+
+Override that with `ALPHAGSM_HOME` if you want a different shared path:
+
+```bash
+ALPHAGSM_HOME=/srv/alphagsm ./alphagsm-docker up
+```
+
+Keep Docker-backed server install paths under that same `ALPHAGSM_HOME` path so
+the host Docker daemon and the manager container see the same absolute path.
+
+## Trigger a SteamCMD login
+
+Owned-file setup can use a private SteamCMD profile. From a terminal:
+
+```bash
+./alphagsm-docker steam-auth login owned your_steam_username
+./alphagsm-docker myserver setup --auth-profile owned
+./alphagsm-docker steam-auth status owned
+```
+
+`steam-auth login` is the only forwarded command that receives a terminal.
+Without one, the wrapper rejects the login before it reaches the container.
+Other commands, including `status` and `setup --auth-profile`, stay
+non-interactive.
+
+SteamCMD asks for the password and Steam Guard in that terminal. AlphaGSM stores
+the profile name, not the password. The profile is created under
+`[core] alphagsm_path` on the bind-mounted state directory. Use a Linux
+filesystem that stores Unix ownership. Put server installs under
+`ALPHAGSM_HOME/servers`, not inside `steam-auth/`. A game-container mount that
+would expose that profile is rejected before `docker run`. See
+[SteamCMD session profiles](steamcmd-auth.md).
+
+## Host Preparation
+
+Create the shared host directory:
+
+```bash
+sudo mkdir -p /srv/alphagsm
+sudo chown "$USER":"$USER" /srv/alphagsm
+cp docker/manager/alphagsm.conf.example /srv/alphagsm/alphagsm.conf
+```
+
+The example config keeps all AlphaGSM state under `/srv/alphagsm` and selects:
+
+- `[runtime] backend = docker`
+- `[process] backend = subprocess`
+
+That is intentional. Inside the manager container, Docker-backed servers are the
+main use case.
+
+## Start The Manager Container
+
+The wrapper is the recommended path because it derives these values for you.
+If you invoke Compose directly, export the numeric identity explicitly:
+
+```bash
+export ALPHAGSM_HOST_UID="$(id -u)"
+export ALPHAGSM_HOST_GID="$(id -g)"
+export ALPHAGSM_DOCKER_GID="$(stat -c '%g' /var/run/docker.sock)"
+```
+
+Then, from the repository root:
+
+```bash
+docker compose -f docker/manager/compose.yml up -d
+```
+
+If your host still uses the standalone Compose binary, use:
+
+```bash
+docker-compose -f docker/manager/compose.yml up -d
+```
+
+This mounts:
+
+- `/var/run/docker.sock` so AlphaGSM can launch sibling containers
+- `${ALPHAGSM_HOME:-/srv/alphagsm}:${ALPHAGSM_HOME:-/srv/alphagsm}` so stored
+  server paths are valid both inside the manager container and on the host
+  daemon
+- `${HOME}/.docker:/home/alphagsm/.docker:ro` so existing Docker registry
+  credentials can be reused inside the non-root manager container
+
+The direct Compose variables remain operator-controlled. Their checked-in
+defaults are intentionally non-root (`1000:1000`) and use the fail-closed
+supplementary GID `65534`; they are safe defaults, not portable guesses about
+your host. Export the real values above whenever the host uses different IDs.
+Unlike `alphagsm-docker`, direct Compose cannot discover or recreate stale
+manager identity automatically.
+
+The manager image also includes Java and the Docker CLI. That is intentional:
+some Docker-backed modules still perform local setup-time work, then hand off
+the actual long-running server process to a sibling runtime container.
+
+The checked-in Compose file now defaults to `ghcr.io/sectoralpha/alphagsm:latest`
+and will pull that image if it is missing locally. If you explicitly want a
+local rebuild with direct Compose instead of the wrapper, add `--build`.
+
+On startup, the manager container will try to pull the runtime-family images
+referenced by `src/server/runtime.py`.
+
+If your host Docker config already has GHCR credentials, the read-only
+`${HOME}/.docker` mount is enough.
+
+If you prefer explicit environment variables, start Compose like this:
+
+```bash
+export GHCR_USERNAME=your-github-username
+export GHCR_TOKEN=your-ghcr-token
+docker compose -f docker/manager/compose.yml up -d --build
+```
+
+Set `ALPHAGSM_PULL_RUNTIME_IMAGES=0` if you want to skip the eager pull and let
+AlphaGSM pull images lazily when a server starts.
+
+## Run AlphaGSM Inside The Manager Container
+
+Create a server:
+
+```bash
+docker compose -f docker/manager/compose.yml exec alphagsm \
+  python alphagsm mymc create minecraft.vanilla
+```
+
+Set it up under the shared host path:
+
+```bash
+docker compose -f docker/manager/compose.yml exec alphagsm \
+  python alphagsm mymc setup -n -l 25565 /srv/alphagsm/servers/mymc
+```
+
+Start it:
+
+```bash
+docker compose -f docker/manager/compose.yml exec alphagsm \
+  python alphagsm mymc start
+```
+
+Replace `docker compose` with `docker-compose` on hosts that do not have the
+Compose plugin installed.
+
+If you use `./alphagsm-docker`, it will do the same `exec` flow for you.
+
+The game server container will be created by the host Docker daemon, not by a
+nested daemon inside the manager container.
+
+## Important Rules
+
+1. Keep all Docker-managed server install paths under `ALPHAGSM_HOME` or another
+  host directory mounted into the manager container at the exact same absolute
+  path.
+2. Do not use container-only paths like `/tmp/server` for Docker-backed servers.
+3. If you try to start a Docker-backed server from a container-only path such as
+  `/root/scp`, AlphaGSM now hard-fails before `docker run` with a path-identity
+  error instead of launching a broken child container.
+4. If you want to pull private GHCR images, log Docker into the registry on the
+  manager side so the mounted Docker socket can reuse those credentials. The
+  sample manager setup supports either mounting `${HOME}/.docker` or passing
+  `GHCR_USERNAME` and `GHCR_TOKEN`.
+
+## Security Note
+
+Mounting `/var/run/docker.sock` gives the manager container broad control over
+the host Docker daemon. Treat this as a trusted-admin deployment pattern. The
+manager process is non-root and receives only the invoking primary identity
+plus the socket's supplementary GID, but socket access itself remains highly
+privileged.
+
+## Outside Docker Still Works
+
+Nothing in this setup replaces the normal host workflow. If you want to keep
+running AlphaGSM directly on the host, continue using the normal install and
+config flow from `README.md`.

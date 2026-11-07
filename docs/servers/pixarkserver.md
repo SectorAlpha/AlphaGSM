@@ -1,0 +1,108 @@
+# PixARK
+
+This guide covers the `pixarkserver` module in AlphaGSM.
+
+`pixarkserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. GitHub validation uses the supported Docker Wine/Proton runtime.
+
+## Requirements
+
+- Docker with the shared Wine/Proton runtime
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Python packages from `requirements.txt`
+
+## Quick Start
+
+Create the server:
+
+```bash
+alphagsm mypixarkse create pixarkserver
+```
+
+Run setup:
+
+```bash
+alphagsm mypixarkse setup
+```
+
+Start it:
+
+```bash
+alphagsm mypixarkse start
+```
+
+Check it:
+
+```bash
+alphagsm mypixarkse status
+```
+
+Stop it:
+
+```bash
+alphagsm mypixarkse stop
+```
+
+## Setup Details
+
+Setup configures:
+
+- the game port (default 27015)
+- the install directory
+- SteamCMD downloads the server files
+
+## Useful Commands
+
+```bash
+alphagsm mypixarkse update
+alphagsm mypixarkse backup
+```
+
+## Notes
+
+- Module name: `pixarkserver`
+- Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create pixarkserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `map` | gamemap, startmap, level, worldname | string | The startup map. |
+| `maxplayers` | users | integer | The maximum number of players. |
+| `port` | gameport | integer | The game port for the server. |
+| `queryport` | — | integer | The query port for the server. |
+| `servername` | hostname, name | string | The advertised server name. |
+
+<!-- alphagsm-server-variables:end -->
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `ShooterGame/Binaries/Win64/PixARKServer.exe`
+- **Location**: `<install_dir>/ShooterGame/Binaries/Win64/PixARKServer.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `824360`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `70`
+- **Template**: See [server-templates/pixarkserver/](../server-templates/pixarkserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

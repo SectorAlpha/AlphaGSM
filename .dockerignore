@@ -1,0 +1,9 @@
+.alphagsm-docker
+.git
+.idea
+.pytest_cache
+.ruff_cache
+.venv
+__pycache__
+*.pyc
+coverage.xml

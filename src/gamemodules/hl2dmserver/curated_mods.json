@@ -1,0 +1,26 @@
+{
+  "families": {
+    "metamod": {
+      "default": "stable",
+      "releases": {
+        "stable": {
+          "url": "https://www.metamodsource.net/latest.php?version=1.12&os=linux",
+          "hosts": ["www.metamodsource.net", "metamodsource.net"],
+          "archive_type": "tar.gz",
+          "destinations": ["addons", "cfg"]
+        }
+      }
+    },
+    "sourcemod": {
+      "default": "stable",
+      "releases": {
+        "stable": {
+          "url": "https://www.sourcemod.net/latest.php?version=1.12&os=linux",
+          "hosts": ["www.sourcemod.net", "sourcemod.net"],
+          "archive_type": "tar.gz",
+          "destinations": ["addons", "cfg"]
+        }
+      }
+    }
+  }
+}

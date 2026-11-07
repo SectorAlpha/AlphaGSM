@@ -1,0 +1,102 @@
+# Namespaced Arma 3 Desolation Redux
+
+This guide covers the `arma3.desolationredux` module in AlphaGSM.
+
+## Status
+
+`arma3.desolationredux` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Arma 3 dedicated server app `233780`.
+
+## Requirements
+
+- `screen`
+- Python packages from `requirements.txt`
+
+## Quick Start
+
+Create the server:
+
+```bash
+alphagsm mydesolati create arma3.desolationredux
+```
+
+Run setup:
+
+```bash
+alphagsm mydesolati setup
+```
+
+Start it:
+
+```bash
+alphagsm mydesolati start
+```
+
+Check it:
+
+```bash
+alphagsm mydesolati status
+```
+
+Stop it:
+
+```bash
+alphagsm mydesolati stop
+```
+
+## Setup Details
+
+Setup configures:
+
+- the game port (default 27015)
+- the install directory
+
+## Useful Commands
+
+```bash
+alphagsm mydesolati update
+alphagsm mydesolati backup
+```
+
+## Notes
+
+- Module name: `arma3.desolationredux`
+- Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create arma3.desolationredux`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `servername` | hostname, name | string | The public hostname written to server.cfg. Example: `AlphaGSM Server`. |
+
+<!-- alphagsm-server-variables:end -->
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: See game module source
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/arma3-desolationredux/](../server-templates/arma3-desolationredux/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

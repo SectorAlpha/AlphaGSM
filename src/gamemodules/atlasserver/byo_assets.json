@@ -1,0 +1,33 @@
+{
+  "description": "ATLAS grid editor exports",
+  "requirements": [
+    {
+      "path": "ShooterGame/ServerGrid.json",
+      "kind": "file"
+    },
+    {
+      "path": "ShooterGame/ServerGrid.ServerOnly.json",
+      "kind": "file"
+    },
+    {
+      "path": "ShooterGame/ServerGrid",
+      "kind": "directory"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "client-export",
+      "instructions": "Generate/export the grid with the official ServerGridEditor and stage both JSON files plus the populated ServerGrid/ folder under ShooterGame/. Preserve the ServerOnly file as secret-bearing configuration; downloading the server does not generate this grid.",
+      "live_validated": false,
+      "url": "https://github.com/GrapeshotGames/ServerGridEditor"
+    }
+  ],
+  "defaults": {},
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "atlasserver",
+  "guide": "docs/servers/atlasserver.md",
+  "schema_version": 1
+}

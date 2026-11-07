@@ -1,0 +1,15 @@
+{
+  "families": {
+    "oxide": {
+      "default": "2.0.4112",
+      "releases": {
+        "2.0.4112": {
+          "url": "https://github.com/OxideMod/Oxide.Hurtworld/releases/download/2.0.4112/Oxide.Hurtworld-linux.zip",
+          "hosts": ["github.com"],
+          "archive_type": "zip",
+          "destinations": ["Hurtworld_Data"]
+        }
+      }
+    }
+  }
+}

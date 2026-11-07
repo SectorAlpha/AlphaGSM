@@ -1,0 +1,4 @@
+-r requirements-runtime.txt
+pyinstaller==6.16.0
+pyinstaller-hooks-contrib==2026.7
+setuptools==84.0.0

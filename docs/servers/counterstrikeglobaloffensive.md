@@ -1,0 +1,115 @@
+# Legacy CS:GO
+
+This guide covers the legacy `counterstrikeglobaloffensive` module in AlphaGSM.
+
+`counterstrikeglobaloffensive` is currently `DISABLED` in the checked-in
+support tracker. On the documented Ubuntu 24.04 Linux baseline, SteamCMD app
+`740` installs legacy CS:GO build `1575`; the server reaches Steam, receives
+`MasterRequestRestart`, and shuts itself down while hibernating. Use
+[`counterstrike2`](counterstrike2.md) for the supported CS2 dedicated-server
+flow on app `730`.
+
+## Requirements
+
+- `screen`
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Python packages from `requirements.txt`
+
+## Quick Start
+
+Create the server:
+
+```bash
+alphagsm mycounters create counterstrikeglobaloffensive
+```
+
+Run setup:
+
+```bash
+alphagsm mycounters setup
+```
+
+Start it:
+
+```bash
+alphagsm mycounters start
+```
+
+Check it:
+
+```bash
+alphagsm mycounters status
+```
+
+Stop it:
+
+```bash
+alphagsm mycounters stop
+```
+
+## Setup Details
+
+Setup configures:
+
+- the game port (default 27015)
+- the install directory
+- SteamCMD downloads the server files
+
+## Useful Commands
+
+```bash
+alphagsm mycounters update
+alphagsm mycounters backup
+```
+
+## Notes
+
+- Module name: `counterstrikeglobaloffensive`
+- Default port: 27015
+- Current status: disabled in automated testing. SteamCMD app `740` installs a legacy CS:GO dedicated-server build that now receives `MasterRequestRestart` and shuts itself down while hibernating.
+- Valve's current CS2 dedicated-server flow uses app `730` and is exposed separately through [`counterstrike2`](counterstrike2.md).
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create counterstrikeglobaloffensive`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `map` | gamemap, startmap, level, worldname | string | The currently selected map or level. Example: `de_dust2`. |
+| `maxplayers` | users | integer | Maximum number of player slots. Example: `16`. |
+| `port` | gameport | integer | The primary game port. Example: `27015`. |
+| `rconpassword` | rconpass, querypassword, query_administrator_password | string | Remote console password for administrative access. Stored as a secret. |
+| `servername` | hostname, name | string | The server's public name shown to players. Example: `AlphaGSM CS:GO Server`. |
+| `serverpassword` | sv_password, password | string | Password required for players to join the server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `srcds_run`
+- **Location**: `<install_dir>/srcds_run`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `740`
+
+### Server Configuration
+
+- **Config files**: `server.cfg`
+- **Template**: See [server-templates/counterstrikeglobaloffensive/](../server-templates/counterstrikeglobaloffensive/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -36,7 +36,6 @@ disable = [
   "no-else-return",
   "no-member",
   "no-name-in-module",
-  "no-value-for-parameter",
   "not-an-iterable",
   "pointless-exception-statement",
   "bare-except",
@@ -53,15 +52,14 @@ disable = [
   "too-few-public-methods",
   "too-many-arguments",
   "too-many-branches",
+  "too-many-public-methods",
   "too-many-locals",
   "too-many-nested-blocks",
   "too-many-positional-arguments",
   "too-many-return-statements",
   "too-many-statements",
   "trailing-whitespace",
-  "unexpected-keyword-arg",
   "undefined-loop-variable",
-  "undefined-variable",
   "ungrouped-imports",
   "unnecessary-lambda-assignment",
   "unnecessary-pass",
@@ -71,7 +69,6 @@ disable = [
   "unused-variable",
   "unused-wildcard-import",
   "unpacking-non-sequence",
-  "used-before-assignment",
   "use-implicit-booleaness-not-comparison",
   "useless-object-inheritance",
   "wildcard-import",
@@ -80,8 +77,8 @@ disable = [
 
 [tool.coverage.run]
 branch = true
-source = ["core", "downloader", "downloadermodules", "gamemodules", "screen", "server", "utils"]
-omit = ["*/__init__.py", "tests/*", "downloadermodules/steamcmd.py"]
+source = ["agent", "core", "downloader", "downloadermodules", "gamemodules", "screen", "server", "utils"]
+omit = ["*/__init__.py", "tests/*"]
 
 [tool.coverage.report]
 show_missing = true

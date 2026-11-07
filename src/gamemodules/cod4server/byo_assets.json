@@ -1,0 +1,102 @@
+{
+  "description": "Owned original Call of Duty 4 content",
+  "requirements": [
+    {
+      "path": "main/*.iwd",
+      "kind": "glob"
+    },
+    {
+      "any_of": [
+        "zone/*.ff",
+        "zone/*/*.ff",
+        "zone/*/*/*.ff"
+      ],
+      "kind": "glob"
+    },
+    {
+      "any_of": [
+        "main/localized_*.iwd",
+        "zone/localized_common_mp.ff",
+        "zone/*/localized_common_mp.ff",
+        "zone/*/*/localized_common_mp.ff"
+      ],
+      "kind": "glob"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Obtain the original 2007 Call of Duty 4, not the remaster. Copy main/*.iwd and every multiplayer fastfile under zone/. A legacy tree uses fileSysCheck.cfg plus main/localized_*.iwd. A current Steam tree uses zone/english/localized_common_mp.ff instead. Do not replace existing server.cfg. Campaign fastfiles and client binaries are not part of the dedicated install.",
+      "live_validated": false,
+      "url": "https://github.com/callofduty4x/CoD4x_Server"
+    },
+    {
+      "id": "steam-owned",
+      "kind": "steamcmd",
+      "instructions": "Obtain the original 2007 Call of Duty 4, not the remaster. Steam app 7940 supplies main/iw_*.iwd and zone/english multiplayer fastfiles, including localized_common_mp.ff. It does not ship fileSysCheck.cfg or localized_*.iwd. Managed import keeps every mp_*.ff map and the shared multiplayer fastfiles, and omits campaign fastfiles, movies, and client binaries. A legacy tree may still provide fileSysCheck.cfg and main/localized_*.iwd.",
+      "live_validated": false,
+      "app_id": 7940,
+      "platform": "windows",
+      "authentication": "required",
+      "url": "https://store.steampowered.com/app/7940/"
+    }
+  ],
+  "defaults": {},
+  "managed_import": true,
+  "validation": "declared-files-and-content-sentinels",
+  "manual_reason": "Import requires a complete compatible distribution and manual staging. See assets requirements for this game.",
+  "roots": [
+    ""
+  ],
+  "target": "",
+  "case_insensitive": true,
+  "include": [
+    "fileSysCheck.cfg",
+    "main/*.iwd",
+    "zone/mp_*.ff",
+    "zone/*/mp_*.ff",
+    "zone/*/*/mp_*.ff",
+    "zone/code_post_gfx_mp.ff",
+    "zone/*/code_post_gfx_mp.ff",
+    "zone/*/*/code_post_gfx_mp.ff",
+    "zone/common_mp.ff",
+    "zone/*/common_mp.ff",
+    "zone/*/*/common_mp.ff",
+    "zone/localized_*_mp.ff",
+    "zone/*/localized_*_mp.ff",
+    "zone/*/*/localized_*_mp.ff",
+    "zone/ui_mp.ff",
+    "zone/*/ui_mp.ff",
+    "zone/*/*/ui_mp.ff"
+  ],
+  "required": [
+    "main/*.iwd"
+  ],
+  "module": "cod4server",
+  "guide": "docs/servers/cod4server.md",
+  "schema_version": 1,
+  "multiplayer_maps": [
+    "mp_backlot", "mp_bloc", "mp_bog", "mp_broadcast", "mp_carentan",
+    "mp_cargoship", "mp_citystreets", "mp_convoy", "mp_countdown", "mp_crash",
+    "mp_crash_snow", "mp_creek", "mp_crossfire", "mp_farm", "mp_killhouse",
+    "mp_overgrown", "mp_pipeline", "mp_shipment", "mp_showdown", "mp_strike",
+    "mp_vacant"
+  ],
+  "required_any": [
+    [
+      "zone/*.ff",
+      "zone/*/*.ff",
+      "zone/*/*/*.ff"
+    ],
+    [
+      "main/localized_*.iwd",
+      "zone/localized_common_mp.ff",
+      "zone/*/localized_common_mp.ff",
+      "zone/*/*/localized_common_mp.ff"
+    ]
+  ],
+  "destination_names": {
+    "filesyscheck.cfg": "fileSysCheck.cfg"
+  }
+}

@@ -1,0 +1,110 @@
+# Motor Town: Behind The Wheel
+
+This guide covers the `motortownserver` module in AlphaGSM.
+
+## Status
+
+`motortownserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Motor Town dedicated server app `2223650`.
+
+## Requirements
+
+- `screen`
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Python packages from `requirements.txt`
+
+## Quick Start
+
+Create the server:
+
+```bash
+alphagsm mymotortow create motortownserver
+```
+
+Run setup:
+
+```bash
+alphagsm mymotortow setup
+```
+
+Start it:
+
+```bash
+alphagsm mymotortow start
+```
+
+Check it:
+
+```bash
+alphagsm mymotortow status
+```
+
+Stop it:
+
+```bash
+alphagsm mymotortow stop
+```
+
+## Setup Details
+
+Setup configures:
+
+- the game port (default 27015)
+- the install directory
+- SteamCMD downloads the server files
+
+## Useful Commands
+
+```bash
+alphagsm mymotortow update
+alphagsm mymotortow backup
+```
+
+## Notes
+
+- Module name: `motortownserver`
+- Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create motortownserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dir` | — | string | Install directory for the server. |
+| `exe_name` | — | string | Server executable filename. |
+| `port` | gameport | integer | The game port for the server. |
+| `queryport` | — | integer | The query port for the server. |
+| `startmap` | map, gamemap, level, world | string | The startup map. |
+
+<!-- alphagsm-server-variables:end -->
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `MotorTown/Binaries/Win64/MotorTownServer-Win64-Shipping.exe`
+- **Location**: `<install_dir>/MotorTown/Binaries/Win64/MotorTownServer-Win64-Shipping.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `2223650`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/motortownserver/](../server-templates/motortownserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

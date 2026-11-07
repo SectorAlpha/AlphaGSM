@@ -1,0 +1,55 @@
+name: Native Windows unit coverage
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-native-unit:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      PYTHONPATH: .;src
+    steps:
+      - name: Checkout AlphaGSM code
+        uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Run native Windows unit cases
+        run: >-
+          python -m pytest
+          tests/unit_tests/core/test_binary_update.py
+          tests/unit_tests/screen/test_supervisor_cleanup.py
+          tests/unit_tests/screen/test_managed_subprocess.py
+          -m native_windows --strict-markers --timeout=60
+          --junitxml=windows-native-unit-results.xml -v
+      - name: Require all four native Windows passes
+        run: >-
+          python -c "import sys, xml.etree.ElementTree as ET;
+          assert sys.platform == 'win32', sys.platform;
+          cases = ET.parse('windows-native-unit-results.xml').getroot().findall('.//testcase');
+          expected = {'test_wait_for_real_windows_process_exit',
+          'test_native_windows_endpoint_reader_can_finish_during_cleanup',
+          'test_windows_job_cleans_descendant_after_parent_exits',
+          'test_windows_console_break_reaches_server'};
+          assert len(cases) == 4, len(cases);
+          assert {case.attrib['name'] for case in cases} == expected;
+          assert not any(case.find(kind) is not None for case in cases for kind in ('skipped', 'failure', 'error'));
+          print('All four native Windows cases passed without skips.')"
+      - name: Upload native Windows evidence
+        if: always()
+        uses: ./.github/actions/upload-test-artifact
+        with:
+          name: windows-native-unit-results-windows
+          path: windows-native-unit-results.xml

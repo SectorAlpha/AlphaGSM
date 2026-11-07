@@ -1,0 +1,120 @@
+import gamemodules.groundbranchserver as groundbranchserver
+import gamemodules.pathoftitansserver as pathoftitansserver
+import gamemodules.warbandserver as warbandserver
+
+
+class DummyData(dict):
+    def __init__(self):
+        super().__init__()
+        self.saved = 0
+
+    def save(self):
+        self.saved += 1
+
+
+class DummyServer:
+    def __init__(self, name="alpha"):
+        self.name = name
+        self.data = DummyData()
+        self.stop_calls = 0
+        self.start_calls = 0
+
+    def stop(self):
+        self.stop_calls += 1
+
+    def start(self):
+        self.start_calls += 1
+
+
+def test_pathoftitans_get_start_command_builds_expected_args(tmp_path):
+    server = DummyServer("pot")
+    exe = tmp_path / "PathOfTitansServer.sh"
+    exe.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "PathOfTitansServer.sh",
+            "port": 7777,
+            "server_name": "AlphaGSM_pot",
+            "maxplayers": "100",
+            "server_guid": "test-guid-1234",
+        }
+    )
+
+    cmd, cwd = pathoftitansserver.get_start_command(server)
+
+    assert cmd[0] == "./PathOfTitansServer.sh"
+    assert "-port=7777" in cmd
+    assert cwd == server.data["dir"]
+
+
+def test_groundbranch_get_start_command_builds_expected_args(tmp_path, monkeypatch):
+    wrap_calls = []
+
+    def fake_wrap_command(cmd, wineprefix=None, prefer_proton=False):
+        wrap_calls.append(prefer_proton)
+        return list(cmd)
+
+    monkeypatch.setattr(groundbranchserver.proton, "wrap_command", fake_wrap_command)
+    monkeypatch.setattr(groundbranchserver.shutil, "which", lambda _name: None)
+    server = DummyServer("gb")
+    exe = tmp_path / "GroundBranchServer-Win64-Shipping.exe"
+    exe.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "GroundBranchServer-Win64-Shipping.exe",
+            "port": 7777,
+            "queryport": 27015,
+            "maxplayers": 16,
+        }
+    )
+
+    cmd, cwd = groundbranchserver.get_start_command(server)
+
+    assert cmd[0] == "GroundBranchServer-Win64-Shipping.exe"
+    assert "QueryPort=27015" in cmd
+    assert cwd == server.data["dir"]
+    assert wrap_calls == [True]
+
+
+def test_warband_get_start_command_builds_expected_args(tmp_path):
+    server = DummyServer("warband")
+    exe = tmp_path / "Mount&Blade Warband Dedicated" / "mb_warband_dedicated.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("")
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "exe_name": "Mount&Blade Warband Dedicated/mb_warband_dedicated.exe",
+            "port": 7240,
+            "maxplayers": 64,
+        }
+    )
+
+    original_wrap_command = getattr(warbandserver, "_wrap_linux_command", None)
+    warbandserver._wrap_linux_command = lambda cmd, **_kwargs: list(cmd)
+    try:
+        cmd, cwd = warbandserver.get_start_command(server)
+    finally:
+        warbandserver._wrap_linux_command = original_wrap_command
+
+    assert cmd == ["mb_warband_dedicated.exe", "-r", "Sample_Battle.txt", "-m", "Native"]
+    assert cwd == str(tmp_path / "Mount&Blade Warband Dedicated")
+
+
+def test_groundbranch_update_downloads_and_optionally_restart(monkeypatch):
+    server = DummyServer("gb")
+    server.data["dir"] = "/srv/groundbranch/"
+    calls = []
+
+    monkeypatch.setattr(
+        groundbranchserver.steamcmd,
+        "download",
+        lambda path, app_id, anon, validate=True, force_windows=False: calls.append((path, app_id, anon, validate)),
+    )
+
+    groundbranchserver.update(server, validate=True, restart=True)
+
+    assert ("/srv/groundbranch/", 476400, True, True) in calls
+    assert server.start_calls == 1

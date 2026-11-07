@@ -1,0 +1,300 @@
+"""Full coverage tests for outpostzeroserver."""
+
+import sys
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
+sys.modules.pop('gamemodules.outpostzeroserver', None)
+_proton_mock = MagicMock()
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
+with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
+    import gamemodules.outpostzeroserver as mod
+    from server import ServerError
+
+
+def test_configure_basic(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+    assert server.data['port'] == 7777
+
+
+def test_configure_ask_defaults(tmp_path, monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda prompt: "")
+    server = DummyServer()
+    server.data["port"] = 7777
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = "test"
+    server.data["Steam_anonymous_login_possible"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["queryport"] = 27015
+    server.data["servername"] = "test"
+    mod.configure(server, ask=True)
+
+
+def test_configure_ask_custom(tmp_path, monkeypatch):
+    inputs = iter(["7778", str(tmp_path / 'custom')])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+    server = DummyServer()
+    mod.configure(server, ask=True)
+
+
+def test_install(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "OutpostZeroServer.exe"
+    server.data["Steam_AppID"] = 762880
+    server.data["Steam_anonymous_login_possible"] = True
+    mod.install(server)
+
+
+def test_update_with_restart(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = 762880
+    server.data["Steam_anonymous_login_possible"] = True
+    mod.update(server, validate=True, restart=True)
+    assert server._stopped
+    assert server._started
+
+
+def test_update_no_restart(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = 762880
+    server.data["Steam_anonymous_login_possible"] = True
+    mod.update(server, validate=False, restart=False)
+    assert server._stopped
+    assert not server._started
+
+
+def test_update_stop_exception(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = 762880
+    server.data["Steam_anonymous_login_possible"] = True
+    server.stop = MagicMock(side_effect=Exception('already stopped'))
+    mod.update(server, validate=False, restart=False)
+
+
+def test_restart():
+    server = DummyServer()
+    mod.restart(server)
+    assert server._stopped
+    assert server._started
+
+
+def test_get_start_command(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "OutpostZeroServer.exe"
+    (tmp_path / "OutpostZeroServer.exe").write_text("")
+    server.data["startmap"] = "RedPlanet"
+    server.data["maxplayers"] = 27015
+    server.data["port"] = 27015
+    server.data["queryport"] = 27015
+    server.data["servername"] = "test"
+    cmd, cwd = mod.get_start_command(server)
+    assert cmd == [
+        "OutpostZeroServer.exe",
+        "RedPlanet",
+        "-Port=27015",
+        "-QueryPort=27015",
+        "-MaxPlayers=27015",
+        "-ServerName=test",
+        "-log",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_setting_schema_exposes_outpostzero_launch_formats():
+    assert mod.setting_schema["startmap"].launch_arg_format == "{value}"
+    assert mod.setting_schema["port"].launch_arg_format == "-Port={value}"
+    assert mod.setting_schema["queryport"].launch_arg_format == "-QueryPort={value}"
+    assert mod.setting_schema["maxplayers"].launch_arg_format == "-MaxPlayers={value}"
+    assert mod.setting_schema["servername"].launch_arg_format == "-ServerName={value}"
+
+
+def test_get_start_command_missing_exe(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "nonexistent"
+    server.data["startmap"] = "RedPlanet"
+    server.data["maxplayers"] = 27015
+    server.data["port"] = 27015
+    server.data["queryport"] = 27015
+    server.data["servername"] = "test"
+    with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+
+def test_sync_server_config_writes_game_ini_and_steam_appid(tmp_path):
+    server = DummyServer("opz")
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["servername"] = "AlphaGSM opz"
+    server.data["maxplayers"] = 16
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
+    server.data["startmap"] = "RedPlanet"
+    steam_appid_src = (
+        tmp_path
+        / "WindowsServer"
+        / "steam_appid.txt"
+    )
+    steam_appid_src.parent.mkdir(parents=True)
+    steam_appid_src.write_text("677480\n", encoding="ascii")
+
+    mod.sync_server_config(server)
+
+    game_ini = (
+        tmp_path
+        / "WindowsServer"
+        / "SurvivalGame"
+        / "Saved"
+        / "Config"
+        / "WindowsServer"
+        / "Game.ini"
+    )
+    appid_dst = (
+        tmp_path
+        / "WindowsServer"
+        / "SurvivalGame"
+        / "Binaries"
+        / "Win64"
+        / "steam_appid.txt"
+    )
+    assert game_ini.read_text(encoding="utf-8")
+    assert "ServerName = AlphaGSM opz" in game_ini.read_text(encoding="utf-8")
+    assert "MaxNumberPlayers = 16" in game_ini.read_text(encoding="utf-8")
+    assert appid_dst.read_text(encoding="ascii") == "677480\n"
+
+
+def test_do_stop():
+    server = DummyServer()
+    mod.runtime_module.send_to_server = MagicMock()
+    mod.do_stop(server, 0)
+    mod.runtime_module.send_to_server.assert_called_once_with(server, "\003")
+
+
+def test_query_and_info_address_use_adjacent_udp_discovery_port_on_linux(monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        MagicMock(return_value="127.0.0.1"),
+    )
+    server = DummyServer()
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 7778, "udp")
+    assert mod.get_info_address(server) == ("127.0.0.1", 7778, "udp")
+
+
+def test_runtime_contract_claims_adjacent_udp_discovery_port():
+    server = DummyServer()
+    server.data["dir"] = "/tmp/outpostzero/"
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
+
+    requirements = mod.get_runtime_requirements(server)
+
+    assert {
+        (entry["host"], entry["protocol"])
+        for entry in requirements["ports"]
+    } >= {(7777, "udp"), (7778, "udp"), (27015, "udp")}
+
+
+def test_query_and_info_address_use_queryport_a2s_off_linux(monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    monkeypatch.setattr(
+        mod.runtime_module,
+        "resolve_query_host",
+        MagicMock(return_value="127.0.0.1"),
+    )
+    server = DummyServer()
+    server.data["port"] = 7777
+    server.data["queryport"] = 27015
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 27015, "a2s")
+    assert mod.get_info_address(server) == ("127.0.0.1", 27015, "a2s")
+
+
+def test_status():
+    server = DummyServer()
+    mod.status(server, verbose=True)
+
+
+def test_message():
+    server = DummyServer()
+    mod.message(server, "hello")
+
+
+def test_backup():
+    server = DummyServer()
+    server.data["dir"] = "/tmp/test/"
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.backup(server)
+
+
+def test_checkvalue_empty_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ())
+
+
+def test_checkvalue_unsupported_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("totally_invalid_key_xyz",), "val")
+
+
+def test_checkvalue_no_value():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("port",))
+
+
+def test_checkvalue_port():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("port",), "12345")
+    assert result == 12345
+
+
+def test_checkvalue_queryport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("queryport",), "12345")
+    assert result == 12345
+
+
+def test_checkvalue_maxplayers():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("maxplayers",), "12345")
+    assert result == 12345
+
+
+def test_checkvalue_servername():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("servername",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_exe_name():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("exe_name",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_dir():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("dir",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_backup():
+    server = DummyServer()
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")

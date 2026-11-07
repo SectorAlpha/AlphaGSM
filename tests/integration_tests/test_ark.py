@@ -1,0 +1,114 @@
+"""ARK native mod descriptor and asset loading through AlphaGSM."""
+
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import time
+
+import pytest
+from ark_workshop_helpers import wait_for_loaded_world
+
+from conftest import (
+    workshop_runtime_backends,
+    alphagsm_env, assert_alphagsm_result_ok, capture_alphagsm_stop,
+    default_runtime_backend, effective_runtime_backend, require_command,
+    pick_free_tcp_port_group, pick_free_udp_port, require_integration_opt_in,
+    require_steamcmd_opt_in, resolve_steamcmd_linux_runtime_image, run_and_assert_ok,
+    run_setup_with_port_retry, wait_for_info_protocol,
+    wait_for_udp_closed, write_config,
+)
+
+pytestmark = pytest.mark.integration
+SETUP_TIMEOUT = 3600
+START_TIMEOUT = 1800
+STOP_TIMEOUT = 90
+WORKSHOP_PROBE = Path(__file__).resolve().parents[1] / "smoke_tests/ark_workshop.py"
+
+
+def _workshop_probe(env, server_name, action):
+    """Share strict native custom-world proof with the standalone smoke runner."""
+    result = subprocess.run([sys.executable, str(WORKSHOP_PROBE), action, server_name],
+                            env=env, text=True, capture_output=True, timeout=180, check=False)
+    assert_alphagsm_result_ok(result)
+    print(result.stdout)
+
+
+@pytest.mark.timeout(SETUP_TIMEOUT + START_TIMEOUT + 600)
+def test_ark_lifecycle(tmp_path):
+    """Run the stock baseline once using the selected CI runtime."""
+    runtime_backend = os.environ.get("ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend())
+    _run_ark_lifecycle(tmp_path, runtime_backend=runtime_backend)
+
+
+def _run_ark_lifecycle(tmp_path, *, runtime_backend, workshop=False):
+    """Require a native loaded world, real A2S health and full shutdown."""
+    require_integration_opt_in()
+    require_steamcmd_opt_in()
+    effective_backend = effective_runtime_backend(runtime_backend, module_name="ark")
+    if effective_backend == "docker":
+        require_command("docker")
+    home_dir = tmp_path / "home"
+    home_dir.mkdir()
+    install_dir = Path(os.environ.get("ALPHAGSM_ARK_INSTALL_DIR", tmp_path / "server"))
+    config_path = tmp_path / "alphagsm.conf"
+    server_name = ("itark" + tmp_path.name[-7:])[:15]
+    write_config(config_path, home_dir, backend="subprocess", runtime_backend=runtime_backend,
+                 module_name="ark")
+    env = alphagsm_env(config_path)
+    port = pick_free_tcp_port_group(2)
+    query_port = pick_free_udp_port()
+    while query_port in (port, port + 1):
+        query_port = pick_free_udp_port()
+    run_and_assert_ok(env, server_name, "create", "ark")
+    if effective_backend == "docker":
+        run_and_assert_ok(env, server_name, "set", "image", resolve_steamcmd_linux_runtime_image())
+    run_and_assert_ok(env, server_name, "set", "queryport", str(query_port))
+    result, port = run_setup_with_port_retry(
+        env, server_name, port, install_dir, timeout=SETUP_TIMEOUT)
+    assert_alphagsm_result_ok(result)
+    if workshop:
+        run_and_assert_ok(env, server_name, "mod", "add", "workshop",
+                          "https://steamcommunity.com/sharedfiles/filedetails/?id=2041231763")
+        run_and_assert_ok(env, server_name, "mod", "apply")
+        _workshop_probe(env, server_name, "prepare")
+    log_dir = install_dir / "ShooterGame/Saved/Logs"
+    if log_dir.exists():
+        for path in log_dir.glob("*.log"):
+            path.rename(path.with_suffix(".previous"))
+    try:
+        run_and_assert_ok(env, server_name, "start")
+        readiness_started = time.monotonic()
+        wait_for_info_protocol(env, server_name, "a2s", START_TIMEOUT, expected_port=query_port)
+        wait_for_loaded_world(
+            lambda remaining: wait_for_info_protocol(
+                env, server_name, "a2s", remaining, expected_port=query_port),
+            START_TIMEOUT - (time.monotonic() - readiness_started))
+        if workshop:
+            _workshop_probe(env, server_name, "check")
+        run_and_assert_ok(env, server_name, "status")
+        query_result = run_and_assert_ok(env, server_name, "query")
+        assert "Server is responding" in query_result.stdout
+        info_result = run_and_assert_ok(env, server_name, "info")
+        assert "Players     : 0/" in info_result.stdout
+        info_json = run_and_assert_ok(env, server_name, "info", "--json")
+        info = json.loads(info_json.stdout.strip())
+        assert info["protocol"] == "a2s" and info["port"] == query_port
+    finally:
+        stop = capture_alphagsm_stop(env, server_name, sys.exc_info()[1], timeout=STOP_TIMEOUT)
+        if workshop and stop is not None and stop.returncode == 0:
+            run_and_assert_ok(env, server_name, "mod", "cleanup")
+    assert_alphagsm_result_ok(stop)
+    wait_for_udp_closed("127.0.0.1", query_port, STOP_TIMEOUT)
+    if workshop:
+        assert not (install_dir / "ShooterGame/Content/Mods/2041231763.mod").exists()
+
+
+@pytest.mark.timeout(SETUP_TIMEOUT + 2 * START_TIMEOUT + 600)
+@pytest.mark.parametrize("runtime_backend", workshop_runtime_backends())
+def test_ark_native_workshop(tmp_path, runtime_backend):
+    """Require staged Linux map metadata, a constructed custom world and exact A2S."""
+    if os.environ.get("ALPHAGSM_RUN_ARK_WORKSHOP") != "1":
+        pytest.skip("Set ALPHAGSM_RUN_ARK_WORKSHOP=1 for native public Workshop map checks")
+    _run_ark_lifecycle(tmp_path, runtime_backend=runtime_backend, workshop=True)

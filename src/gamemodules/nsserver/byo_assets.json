@@ -1,0 +1,25 @@
+{
+  "description": "Natural Selection complete multiplayer content",
+  "requirements": [
+    {
+      "path": "ns/maps/ns_hera.bsp",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Obtain a matching NS1 full install and native Linux server library. A server-only patch is not the complete content tree; do not substitute NS2. Stage the complete ns/ tree with maps, native libraries, models, sounds and supporting resources. Known sentinels do not prove completeness.",
+      "live_validated": false,
+      "url": "https://github.com/ENSL/NS/releases"
+    }
+  ],
+  "defaults": {},
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "nsserver",
+  "guide": "docs/servers/nsserver.md",
+  "schema_version": 1
+}

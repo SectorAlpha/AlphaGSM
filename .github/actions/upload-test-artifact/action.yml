@@ -1,0 +1,31 @@
+name: Upload test artifact
+description: Retry one transient artifact service failure while keeping missing evidence fatal.
+inputs:
+  name:
+    description: Unique artifact name for this job.
+    required: true
+  path:
+    description: Files to upload.
+    required: true
+  if-no-files-found:
+    description: Behavior when no files match.
+    default: error
+runs:
+  using: composite
+  steps:
+    - name: Upload artifact
+      id: first
+      continue-on-error: true
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        if-no-files-found: ${{ inputs.if-no-files-found }}
+    - name: Retry artifact upload
+      if: ${{ always() && steps.first.outcome == 'failure' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        if-no-files-found: ${{ inputs.if-no-files-found }}
+        overwrite: true

@@ -1,0 +1,106 @@
+# Ballistic Overkill
+
+This guide covers the `boserver` module in AlphaGSM.
+
+## Status
+
+`boserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Blackwake: Overgrowth dedicated server app `416881`.
+
+## Requirements
+
+- `screen`
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Python packages from `requirements.txt`
+
+## Quick Start
+
+Create the server:
+
+```bash
+alphagsm myboserver create boserver
+```
+
+Run setup:
+
+```bash
+alphagsm myboserver setup
+```
+
+Start it:
+
+```bash
+alphagsm myboserver start
+```
+
+Check it:
+
+```bash
+alphagsm myboserver status
+```
+
+Stop it:
+
+```bash
+alphagsm myboserver stop
+```
+
+## Setup Details
+
+Setup configures:
+
+- the game port (default 27015)
+- the install directory
+- SteamCMD downloads the server files
+
+## Useful Commands
+
+```bash
+alphagsm myboserver update
+alphagsm myboserver backup
+```
+
+## Notes
+
+- Module name: `boserver`
+- Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create boserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `BODS.x86_64`
+- **Location**: `<install_dir>/BODS.x86_64`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `416881`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Max players**: `16`
+- **Template**: See [server-templates/boserver/](../server-templates/boserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

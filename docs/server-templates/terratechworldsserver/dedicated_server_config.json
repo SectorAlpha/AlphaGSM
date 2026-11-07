@@ -1,0 +1,6 @@
+{
+  "serverName": "AlphaGSM <server name>",
+  "port": 7777,
+  "queryPort": 27015,
+  "maxPlayers": 8
+}

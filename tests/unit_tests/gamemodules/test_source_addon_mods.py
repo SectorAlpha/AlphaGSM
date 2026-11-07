@@ -1,0 +1,1000 @@
+"""Tests for shared Source-game addon mod support."""
+
+import importlib
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess as sp
+import struct
+import zlib
+import tarfile
+import zipfile
+
+from gamemodules import gmodserver, hl2dmserver, insserver, l4d2server
+from server.modsupport import source_addons
+import pytest
+
+
+THIN_SOURCE_MODULES = [
+    "ahl2server",
+    "bb2server",
+    "bmdmserver",
+    "bsserver",
+    "ccserver",
+    "cssserver",
+    "dabserver",
+    "doiserver",
+    "dodsserver",
+    "dysserver",
+    "emserver",
+    "fofserver",
+    "hldmsserver",
+    "iosserver",
+    "l4dserver",
+    "ndserver",
+    "nmrihserver",
+    "pvkiiserver",
+    "sfcserver",
+    "zmrserver",
+]
+
+
+class DummyData(dict):
+    def __init__(self):
+        super().__init__()
+        self.saved = 0
+
+    def save(self):
+        self.saved += 1
+
+
+class DummyServer:
+    def __init__(self, name):
+        self.name = name
+        self.data = DummyData()
+
+
+def test_sfcserver_install_requests_sfclassic_mod_payload(tmp_path, monkeypatch):
+    monkeypatch.delenv("ALPHAGSM_RUN_INTEGRATION", raising=False)
+    server = DummyServer("sfcmods")
+    module = importlib.import_module("gamemodules.sfcserver")
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    calls = []
+
+    def fake_download(
+        path,
+        app_id,
+        anonymous,
+        validate=True,
+        mod=None,
+        force_windows=False,
+        force_platform=None,
+        beta_branch=None,
+    ):
+        calls.append(
+            {
+                "path": path,
+                "app_id": app_id,
+                "anonymous": anonymous,
+                "validate": validate,
+                "mod": mod,
+                "force_windows": force_windows,
+                "force_platform": force_platform,
+                "beta_branch": beta_branch,
+            }
+        )
+        (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+        required_map = tmp_path / "sfclassic" / "maps" / "sf_astrodome.bsp"
+        required_map.parent.mkdir(parents=True, exist_ok=True)
+        required_map.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr("utils.valve_server.steamcmd.download", fake_download)
+
+    module.install(server)
+
+    cfg_text = (tmp_path / "sfclassic" / "cfg" / "server.cfg").read_text(encoding="utf-8")
+    assert "sv_hibernate_when_empty 0" in cfg_text
+    assert calls == [
+        {
+            "path": server.data["dir"],
+            "app_id": module.steam_app_id,
+            "anonymous": True,
+            "validate": False,
+            "mod": "sfclassic",
+            "force_windows": False,
+            "force_platform": None,
+            "beta_branch": "previous2021",
+        }
+    ]
+
+
+def test_sfcserver_prestart_aliases_dedicated_libraries_and_marks_launchers(tmp_path, monkeypatch):
+    monkeypatch.delenv("ALPHAGSM_RUN_INTEGRATION", raising=False)
+    server = DummyServer("sfcmods")
+    module = importlib.import_module("gamemodules.sfcserver")
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    monkeypatch.setattr(module.MODULE, "prestart", lambda *args, **kwargs: None)
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    engine_srv = bin_dir / "engine_srv.so"
+    engine = bin_dir / "engine.so"
+    dedicated_srv = bin_dir / "dedicated_srv.so"
+    engine_srv.write_bytes(b"beta-library")
+    engine.write_bytes(b"stale")
+    dedicated_srv.write_bytes(b"dedicated")
+    os.utime(engine_srv, (2_000_000_000, 2_000_000_000))
+    os.utime(engine, (1_000_000_000, 1_000_000_000))
+    launcher = tmp_path / "srcds_linux"
+    script = tmp_path / "srcds_run"
+    launcher.write_text("", encoding="utf-8")
+    script.write_text("", encoding="utf-8")
+    launcher.chmod(0o644)
+    script.chmod(0o644)
+
+    module.prestart(server)
+
+    cfg_text = (tmp_path / "sfclassic" / "cfg" / "server.cfg").read_text(encoding="utf-8")
+    assert "sv_hibernate_when_empty 0" in cfg_text
+    assert engine.read_bytes() == b"beta-library"
+    assert (bin_dir / "dedicated.so").read_bytes() == b"dedicated"
+    assert launcher.stat().st_mode & 0o111
+    assert script.stat().st_mode & 0o111
+
+    engine.write_bytes(b"beta-library")
+    os.utime(engine, (2_100_000_000, 2_100_000_000))
+    os.utime(engine_srv, (2_000_000_000, 2_000_000_000))
+
+    module.prestart(server)
+
+    assert engine.stat().st_mtime == 2_100_000_000
+
+
+def test_sfcserver_start_command_accepts_staged_mod_content(tmp_path):
+    server = DummyServer("sfcmods")
+    module = importlib.import_module("gamemodules.sfcserver")
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+    required_map = tmp_path / "sfclassic" / "maps" / "sf_astrodome.bsp"
+    required_map.parent.mkdir(parents=True)
+    required_map.write_text("", encoding="utf-8")
+
+    cmd, cwd = module.get_start_command(server)
+
+    assert cmd[0] == "./srcds_run"
+    assert cwd == server.data["dir"]
+
+
+def test_zmrserver_install_requires_staged_mod_content(tmp_path):
+    server = DummyServer("zmrmods")
+    module = importlib.import_module("gamemodules.zmrserver")
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+
+    with pytest.raises(Exception, match="ENABLED \\(BYO\\): zmrserver"):
+        module.install(server)
+
+
+def test_zmrserver_install_requests_previous2021_and_keeps_server_awake(tmp_path, monkeypatch):
+    monkeypatch.delenv("ALPHAGSM_RUN_INTEGRATION", raising=False)
+    server = DummyServer("zmrmods")
+    module = importlib.import_module("gamemodules.zmrserver")
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    calls = []
+
+    def fake_download(
+        path,
+        app_id,
+        anonymous,
+        validate=True,
+        mod=None,
+        force_windows=False,
+        force_platform=None,
+        beta_branch=None,
+    ):
+        calls.append(
+            {
+                "path": path,
+                "app_id": app_id,
+                "anonymous": anonymous,
+                "validate": validate,
+                "mod": mod,
+                "force_windows": force_windows,
+                "force_platform": force_platform,
+                "beta_branch": beta_branch,
+            }
+        )
+        (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+        required_map = tmp_path / "zombie_master_reborn" / "maps" / "zm_docksofthedead.bsp"
+        required_map.parent.mkdir(parents=True, exist_ok=True)
+        required_map.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr("utils.valve_server.steamcmd.download", fake_download)
+
+    module.install(server)
+
+    cfg_text = (tmp_path / "zombie_master_reborn" / "cfg" / "server.cfg").read_text(encoding="utf-8")
+    assert "sv_hibernate_when_empty 0" in cfg_text
+    assert calls == [
+        {
+            "path": server.data["dir"],
+            "app_id": module.steam_app_id,
+            "anonymous": True,
+            "validate": False,
+            "mod": None,
+            "force_windows": False,
+            "force_platform": None,
+            "beta_branch": "previous2021",
+        }
+    ]
+
+
+def test_zmrserver_prestart_aliases_dedicated_libraries_and_marks_launchers(tmp_path, monkeypatch):
+    monkeypatch.delenv("ALPHAGSM_RUN_INTEGRATION", raising=False)
+    server = DummyServer("zmrmods")
+    module = importlib.import_module("gamemodules.zmrserver")
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    monkeypatch.setattr(module.MODULE, "prestart", lambda *args, **kwargs: None)
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    engine_srv = bin_dir / "engine_srv.so"
+    engine = bin_dir / "engine.so"
+    dedicated_srv = bin_dir / "dedicated_srv.so"
+    engine_srv.write_bytes(b"beta-library")
+    engine.write_bytes(b"stale")
+    dedicated_srv.write_bytes(b"dedicated")
+    os.utime(engine_srv, (2_000_000_000, 2_000_000_000))
+    os.utime(engine, (1_000_000_000, 1_000_000_000))
+    launcher = tmp_path / "srcds_linux"
+    script = tmp_path / "srcds_run"
+    launcher.write_text("", encoding="utf-8")
+    script.write_text("", encoding="utf-8")
+    launcher.chmod(0o644)
+    script.chmod(0o644)
+
+    module.prestart(server)
+
+    cfg_text = (tmp_path / "zombie_master_reborn" / "cfg" / "server.cfg").read_text(encoding="utf-8")
+    assert "sv_hibernate_when_empty 0" in cfg_text
+    assert engine.read_bytes() == b"beta-library"
+    assert (bin_dir / "dedicated.so").read_bytes() == b"dedicated"
+    assert launcher.stat().st_mode & 0o111
+    assert script.stat().st_mode & 0o111
+
+    engine.write_bytes(b"beta-library")
+    os.utime(engine, (2_100_000_000, 2_100_000_000))
+    os.utime(engine_srv, (2_000_000_000, 2_000_000_000))
+
+    module.prestart(server)
+
+    assert engine.stat().st_mtime == 2_100_000_000
+
+
+def test_zmrserver_start_command_accepts_staged_mod_content(tmp_path):
+    server = DummyServer("zmrmods")
+    module = importlib.import_module("gamemodules.zmrserver")
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+    required_map = tmp_path / "zombie_master_reborn" / "maps" / "zm_docksofthedead.bsp"
+    required_map.parent.mkdir(parents=True)
+    required_map.write_text("", encoding="utf-8")
+
+    cmd, cwd = module.get_start_command(server)
+
+    assert cmd[0] == "./srcds_run"
+    assert cwd == server.data["dir"]
+
+
+def test_ndserver_recipe_declares_one_authenticated_steamcmd_source():
+    module = importlib.import_module("gamemodules.ndserver")
+    recipe = module.get_asset_requirements(DummyServer("ndmods"))
+    steam_sources = [source for source in recipe["sources"] if source["kind"] == "steamcmd"]
+
+    assert recipe["managed_import"] is True
+    assert len(steam_sources) == 1
+    assert steam_sources[0]["app_id"] == 111710
+    assert steam_sources[0]["authentication"] == "required"
+    assert steam_sources[0]["platform"] == "linux"
+    assert "nucleardawn/maps/hydro.bsp" in recipe["required"]
+    assert "nucleardawn/maps/*.bsp" in recipe["include"]
+
+
+def test_ndserver_install_keeps_server_awake_when_content_is_staged(tmp_path):
+    server = DummyServer("ndmods")
+    module = importlib.import_module("gamemodules.ndserver")
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    required_map = tmp_path / "nucleardawn" / "maps" / "hydro.bsp"
+    required_map.parent.mkdir(parents=True)
+    required_map.write_text("map", encoding="utf-8")
+
+    module.install(server)
+
+    cfg_text = (tmp_path / "nucleardawn" / "cfg" / "server.cfg").read_text(encoding="utf-8")
+    assert "sv_hibernate_when_empty 0" in cfg_text
+
+
+def test_ndserver_prestart_marks_linux_launcher_executable(tmp_path):
+    server = DummyServer("ndmods")
+    module = importlib.import_module("gamemodules.ndserver")
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    launcher = tmp_path / "srcds_linux"
+    script = tmp_path / "srcds_run"
+    launcher.write_text("", encoding="utf-8")
+    script.write_text("", encoding="utf-8")
+    launcher.chmod(0o644)
+    script.chmod(0o644)
+
+    module.prestart(server)
+
+    assert launcher.stat().st_mode & 0o111
+    assert script.stat().st_mode & 0o111
+
+
+def test_ndserver_install_requires_staged_mod_content(tmp_path):
+    server = DummyServer("ndmods")
+    module = importlib.import_module("gamemodules.ndserver")
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+
+    with pytest.raises(Exception, match="ENABLED \\(BYO\\): ndserver"):
+        module.install(server)
+
+
+def test_ndserver_start_command_accepts_staged_mod_content(tmp_path):
+    server = DummyServer("ndmods")
+    module = importlib.import_module("gamemodules.ndserver")
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+    required_map = tmp_path / "nucleardawn" / "maps" / "hydro.bsp"
+    required_map.parent.mkdir(parents=True)
+    required_map.write_text("", encoding="utf-8")
+
+    cmd, cwd = module.get_start_command(server)
+
+    assert cmd[0] == "./srcds_run"
+    assert cwd == server.data["dir"]
+
+
+def test_l4d2server_install_requests_windows_then_linux_payloads(tmp_path, monkeypatch):
+    server = DummyServer("l4d2mods")
+    module = importlib.import_module("gamemodules.l4d2server")
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    calls = []
+
+    def fake_download(path, app_id, anonymous, validate=True, mod=None, force_windows=False, force_platform=None):
+        calls.append(
+            {
+                "path": path,
+                "app_id": app_id,
+                "anonymous": anonymous,
+                "validate": validate,
+                "mod": mod,
+                "force_windows": force_windows,
+                "force_platform": force_platform,
+            }
+        )
+        (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+        required_map = tmp_path / "left4dead2" / "maps" / "c5m1_waterfront.bsp"
+        required_map.parent.mkdir(parents=True, exist_ok=True)
+        required_map.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr("utils.valve_server.steamcmd.download", fake_download)
+
+    module.install(server)
+
+    assert calls == [
+        {
+            "path": server.data["dir"],
+            "app_id": module.steam_app_id,
+            "anonymous": True,
+            "validate": False,
+            "mod": None,
+            "force_windows": False,
+            "force_platform": "windows",
+        },
+        {
+            "path": server.data["dir"],
+            "app_id": module.steam_app_id,
+            "anonymous": True,
+            "validate": False,
+            "mod": None,
+            "force_windows": False,
+            "force_platform": "linux",
+        },
+    ]
+
+
+def test_l4d2server_install_propagates_download_failures(tmp_path, monkeypatch):
+    server = DummyServer("l4d2mods")
+    module = importlib.import_module("gamemodules.l4d2server")
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+
+    def fake_download(path, app_id, anonymous, validate=True, mod=None, force_windows=False, force_platform=None):
+        raise sp.CalledProcessError(
+            8,
+            ["steamcmd.sh"],
+            output="ERROR! Failed to install app '222860' (Invalid platform)\n",
+        )
+
+    monkeypatch.setattr("utils.steamcmd.download", fake_download)
+
+    with pytest.raises(sp.CalledProcessError) as excinfo:
+        module.install(server)
+    assert "Invalid platform" in excinfo.value.output
+
+
+def test_l4d2server_start_command_accepts_staged_server_tree(tmp_path):
+    server = DummyServer("l4d2mods")
+    module = importlib.import_module("gamemodules.l4d2server")
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    (tmp_path / "srcds_run").write_text("", encoding="utf-8")
+    required_map = tmp_path / "left4dead2" / "maps" / "c5m1_waterfront.bsp"
+    required_map.parent.mkdir(parents=True)
+    required_map.write_text("", encoding="utf-8")
+
+    cmd, cwd = module.get_start_command(server)
+
+    assert cmd[0] == "./srcds_run"
+    assert cwd == server.data["dir"]
+
+
+def test_l4d2_configure_seeds_mod_state_defaults(tmp_path):
+    server = DummyServer("l4d2mods")
+
+    l4d2server.configure(server, ask=False, port=27015, dir=str(tmp_path))
+
+    assert server.data["mods"]["desired"]["curated"] == []
+    assert server.data["mods"]["desired"]["url"] == []
+    assert server.data["mods"]["desired"]["gamebanana"] == []
+    assert server.data["mods"]["desired"]["moddb"] == []
+    assert server.data["mods"]["desired"]["workshop"] == []
+
+
+@pytest.mark.parametrize("autoapply", [True, False])
+def test_l4d2_prestart_respects_mod_autoapply(tmp_path, monkeypatch, autoapply):
+    server = DummyServer("l4d2mods")
+    l4d2server.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    server.data["mods"]["autoapply"] = autoapply
+    calls = []
+    monkeypatch.setattr(l4d2server.MODULE, "prestart", lambda *a, **kw: calls.append("runtime"))
+    monkeypatch.setattr(l4d2server.MOD_SUPPORT, "apply_configured_mods", lambda *a: calls.append("mods"))
+    l4d2server.prestart(server)
+    assert calls == (["runtime", "mods"] if autoapply else ["runtime"])
+
+
+def test_l4d2_mod_add_manifest_persists_resolved_entry(tmp_path, monkeypatch):
+    registry_path = tmp_path / "curated_mods.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "families": {
+                    "metamod": {
+                        "default": "stable",
+                        "releases": {
+                            "stable": {
+                                "url": "http://127.0.0.1/metamod.tar.gz",
+                                "hosts": ["127.0.0.1"],
+                                "archive_type": "tar.gz",
+                                "destinations": ["addons", "cfg"],
+                            }
+                        },
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ALPHAGSM_L4D2_CURATED_MODS_PATH", str(registry_path))
+    server = DummyServer("l4d2mods")
+    l4d2server.configure(server, ask=False, port=27015, dir=str(tmp_path))
+
+    l4d2server.command_functions["mod"](server, "add", "manifest", "metamod")
+
+    assert server.data["mods"]["desired"]["curated"][0]["resolved_id"] == "metamod.stable"
+
+
+def test_l4d2_mod_add_url_accepts_vpk(tmp_path):
+    server = DummyServer("l4d2mods")
+    l4d2server.configure(server, ask=False, port=27015, dir=str(tmp_path))
+
+    l4d2server.command_functions["mod"](
+        server,
+        "add",
+        "url",
+        "https://mods.example.invalid/custom-campaign.vpk",
+    )
+
+    entry = server.data["mods"]["desired"]["url"][0]
+    assert entry["filename"] == "custom-campaign.vpk"
+    assert entry["archive_type"] == "single"
+
+
+def test_l4d2_mod_apply_installs_gamebanana_archive(tmp_path, monkeypatch):
+    server = DummyServer("l4d2mods")
+    l4d2server.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
+    archive_root = tmp_path / "archive-root"
+    addon_dir = archive_root / "left4dead2" / "addons"
+    addon_dir.mkdir(parents=True)
+    (addon_dir / "campaign.vpk").write_text("vpk-data", encoding="utf-8")
+    archive_path = tmp_path / "l4d2-addon.zip"
+    with zipfile.ZipFile(archive_path, "w") as zf:
+        zf.write(addon_dir / "campaign.vpk", "left4dead2/addons/campaign.vpk")
+
+    monkeypatch.setattr(
+        source_addons,
+        "resolve_gamebanana_mod",
+        lambda item_id: {
+            "source_type": "gamebanana",
+            "requested_id": item_id,
+            "resolved_id": f"gamebanana.{item_id}.777",
+            "download_url": "https://gamebanana.com/dl/777",
+            "archive_type": "zip",
+            "filename": "l4d2-addon.zip",
+        },
+    )
+    monkeypatch.setattr(
+        source_addons,
+        "download_to_cache",
+        lambda url, *, allowed_hosts, target_path, checksum=None: shutil.copy2(
+            archive_path, target_path
+        ),
+    )
+
+    l4d2server.command_functions["mod"](server, "add", "gamebanana", "12345")
+    l4d2server.command_functions["mod"](server, "apply")
+
+    installed_file = Path(server.data["dir"]) / "left4dead2" / "addons" / "campaign.vpk"
+    assert installed_file.exists()
+    assert server.data["mods"]["installed"][0]["resolved_id"] == "gamebanana.12345.777"
+
+
+def test_l4d2_mod_apply_installs_curated_archive(tmp_path, monkeypatch):
+    registry_path = tmp_path / "curated_mods.json"
+    archive_root = tmp_path / "archive-root"
+    addon_dir = archive_root / "addons" / "sourcemod" / "plugins"
+    addon_dir.mkdir(parents=True)
+    (addon_dir / "base.smx").write_text("plugin", encoding="utf-8")
+    archive_path = tmp_path / "sourcemod.tar.gz"
+    with tarfile.open(archive_path, "w:gz") as archive:
+        archive.add(archive_root / "addons", arcname="addons")
+    registry_path.write_text(
+        json.dumps(
+            {
+                "families": {
+                    "sourcemod": {
+                        "default": "stable",
+                        "releases": {
+                            "stable": {
+                                "url": "http://127.0.0.1/sourcemod.tar.gz",
+                                "hosts": ["127.0.0.1"],
+                                "archive_type": "tar.gz",
+                                "destinations": ["addons", "cfg"],
+                            }
+                        },
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ALPHAGSM_L4D2_CURATED_MODS_PATH", str(registry_path))
+    monkeypatch.setattr(
+        source_addons,
+        "download_to_cache",
+        lambda url, *, allowed_hosts, target_path, checksum=None: shutil.copy2(
+            archive_path, target_path
+        ),
+    )
+
+    server = DummyServer("l4d2mods")
+    l4d2server.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
+    l4d2server.command_functions["mod"](server, "add", "curated", "sourcemod")
+    l4d2server.command_functions["mod"](server, "apply")
+
+    installed_file = (
+        Path(server.data["dir"]) / "left4dead2" / "addons" / "sourcemod" / "plugins" / "base.smx"
+    )
+    assert installed_file.exists()
+    assert server.data["mods"]["installed"][0]["resolved_id"] == "sourcemod.stable"
+
+
+def test_gmod_mod_add_moddb_persists_entry(tmp_path, monkeypatch):
+    server = DummyServer("gmodmods")
+    gmodserver.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    monkeypatch.setattr(
+        source_addons,
+        "resolve_moddb_entry",
+        lambda page_url: {
+            "source_type": "moddb",
+            "requested_id": page_url,
+            "resolved_id": "moddb.downloads.308604",
+            "download_url": "https://www.moddb.com/downloads/start/308604",
+            "archive_type": "zip",
+            "filename": "gmod-addon.zip",
+        },
+    )
+
+    gmodserver.command_functions["mod"](
+        server,
+        "add",
+        "moddb",
+        "https://www.moddb.com/mods/gmod-addon-pack/downloads/gmod-addon-pack",
+    )
+
+    assert server.data["mods"]["desired"]["moddb"][0]["resolved_id"] == "moddb.downloads.308604"
+
+
+def _gmod_gma_payload(content):
+    payload = content.encode()
+    header = b"GMAD\x03" + b"\0" * 16 + b"\0fixture\0{}\0author\0" + struct.pack("<I", 1)
+    table = (struct.pack("<I", 1) + b"lua/autorun/fixture.lua\0"
+             + struct.pack("<qI", len(payload), zlib.crc32(payload)) + b"\0" * 4)
+    body = header + table + payload
+    return body + struct.pack("<I", zlib.crc32(body))
+
+
+def test_gmod_mod_apply_installs_direct_gma_url(tmp_path, monkeypatch):
+    server = DummyServer("gmodmods")
+    gmodserver.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
+    gma_path = tmp_path / "example-addon.gma"
+    gma_path.write_bytes(_gmod_gma_payload("gma-data"))
+
+    monkeypatch.setattr(
+        source_addons,
+        "download_to_cache",
+        lambda url, *, allowed_hosts, target_path, checksum=None: shutil.copy2(
+            gma_path, target_path
+        ),
+    )
+
+    gmodserver.command_functions["mod"](
+        server,
+        "add",
+        "url",
+        "https://addons.example.invalid/example-addon.gma",
+    )
+    gmodserver.command_functions["mod"](server, "apply")
+
+    installed_file = Path(server.data["dir"]) / "garrysmod" / "addons" / "example-addon" / "lua" / "autorun" / "fixture.lua"
+    assert installed_file.read_text(encoding="utf-8") == "gma-data"
+
+
+def test_gmod_mod_apply_installs_direct_archive_with_bare_addon_root(tmp_path, monkeypatch):
+    server = DummyServer("gmodmods")
+    gmodserver.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
+    archive_root = tmp_path / "archive-root"
+    archive_root.mkdir()
+    (archive_root / "addon.json").write_text('{"title": "ULX"}', encoding="utf-8")
+    bare_lua_dir = archive_root / "lua" / "ulx"
+    bare_lua_dir.mkdir(parents=True)
+    (bare_lua_dir / "init.lua").write_text("print('ulx')", encoding="utf-8")
+    archive_path = tmp_path / "ulx.zip"
+    with zipfile.ZipFile(archive_path, "w") as zf:
+        zf.write(archive_root / "addon.json", "addon.json")
+        zf.write(bare_lua_dir / "init.lua", "lua/ulx/init.lua")
+
+    monkeypatch.setattr(
+        source_addons,
+        "download_to_cache",
+        lambda url, *, allowed_hosts, target_path, checksum=None: shutil.copy2(
+            archive_path, target_path
+        ),
+    )
+
+    gmodserver.command_functions["mod"](
+        server,
+        "add",
+        "url",
+        "https://addons.example.invalid/ulx.zip",
+    )
+    gmodserver.command_functions["mod"](server, "apply")
+
+    installed_file = (
+        Path(server.data["dir"]) / "garrysmod" / "addons" / "ulx" / "lua" / "ulx" / "init.lua"
+    )
+    assert installed_file.read_text(encoding="utf-8") == "print('ulx')"
+
+
+def test_gmod_mod_cleanup_removes_only_tracked_files(tmp_path):
+    server = DummyServer("gmodmods")
+    gmodserver.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
+
+    tracked_file = Path(server.data["dir"]) / "garrysmod" / "addons" / "tracked.gma"
+    manual_file = Path(server.data["dir"]) / "garrysmod" / "addons" / "manual.gma"
+    tracked_file.parent.mkdir(parents=True)
+    tracked_file.write_text("tracked", encoding="utf-8")
+    manual_file.write_text("manual", encoding="utf-8")
+
+    server.data["mods"]["installed"] = [
+        {
+            "source_type": "url",
+            "resolved_id": "url.example-addon.gma",
+            "installed_files": ["garrysmod/addons/tracked.gma"],
+        }
+    ]
+
+    gmodserver.command_functions["mod"](server, "cleanup")
+
+    assert not tracked_file.exists()
+    assert manual_file.exists()
+    assert server.data["mods"]["desired"] == {"curated": [], "url": [], "gamebanana": [], "moddb": [], "workshop": []}
+
+
+def test_gmod_mod_add_curated_resolves_from_override_registry(tmp_path, monkeypatch):
+    registry_path = tmp_path / "curated_mods.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "families": {
+                    "sourcemod": {
+                        "default": "stable",
+                        "releases": {
+                            "stable": {
+                                "url": "http://127.0.0.1/sourcemod.tar.gz",
+                                "hosts": ["127.0.0.1"],
+                                "archive_type": "tar.gz",
+                                "destinations": ["addons", "cfg"],
+                            }
+                        },
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ALPHAGSM_GMOD_CURATED_MODS_PATH", str(registry_path))
+    server = DummyServer("gmodmods")
+    gmodserver.configure(server, ask=False, port=27015, dir=str(tmp_path))
+
+    gmodserver.command_functions["mod"](server, "add", "curated", "sourcemod")
+
+    assert server.data["mods"]["desired"]["curated"][0]["resolved_id"] == "sourcemod.stable"
+
+
+def test_gmod_mod_apply_installs_curated_dependency_chain_from_override_registry(tmp_path, monkeypatch):
+    registry_path = tmp_path / "curated_mods.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "families": {
+                    "ulib": {
+                        "default": "stable",
+                        "releases": {
+                            "stable": {
+                                "url": "http://127.0.0.1/ulib.zip",
+                                "hosts": ["127.0.0.1"],
+                                "archive_type": "zip",
+                                "destinations": ["addons"],
+                            }
+                        },
+                    },
+                    "ulx": {
+                        "default": "stable",
+                        "releases": {
+                            "stable": {
+                                "url": "http://127.0.0.1/ulx.zip",
+                                "hosts": ["127.0.0.1"],
+                                "archive_type": "zip",
+                                "destinations": ["addons"],
+                                "dependencies": ["ulib"],
+                            }
+                        },
+                    },
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    ulib_root = tmp_path / "ulib-root"
+    ulib_root.mkdir()
+    (ulib_root / "addon.json").write_text('{"title": "ULib"}', encoding="utf-8")
+    (ulib_root / "lua" / "ulib").mkdir(parents=True)
+    (ulib_root / "lua" / "ulib" / "init.lua").write_text("ulib", encoding="utf-8")
+    ulib_archive = tmp_path / "ulib.zip"
+    with zipfile.ZipFile(ulib_archive, "w") as zf:
+        zf.write(ulib_root / "addon.json", "addon.json")
+        zf.write(ulib_root / "lua" / "ulib" / "init.lua", "lua/ulib/init.lua")
+
+    ulx_root = tmp_path / "ulx-root"
+    ulx_root.mkdir()
+    (ulx_root / "addon.json").write_text('{"title": "ULX"}', encoding="utf-8")
+    (ulx_root / "lua" / "ulx").mkdir(parents=True)
+    (ulx_root / "lua" / "ulx" / "init.lua").write_text("ulx", encoding="utf-8")
+    ulx_archive = tmp_path / "ulx.zip"
+    with zipfile.ZipFile(ulx_archive, "w") as zf:
+        zf.write(ulx_root / "addon.json", "addon.json")
+        zf.write(ulx_root / "lua" / "ulx" / "init.lua", "lua/ulx/init.lua")
+
+    monkeypatch.setenv("ALPHAGSM_GMOD_CURATED_MODS_PATH", str(registry_path))
+    server = DummyServer("gmodmods")
+    gmodserver.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
+
+    def _copy_curated_archive(url, *, allowed_hosts, target_path, checksum=None):
+        del allowed_hosts, checksum
+        if url.endswith("ulib.zip"):
+            return shutil.copy2(ulib_archive, target_path)
+        return shutil.copy2(ulx_archive, target_path)
+
+    monkeypatch.setattr(source_addons, "download_to_cache", _copy_curated_archive)
+
+    gmodserver.command_functions["mod"](server, "add", "curated", "ulx")
+    gmodserver.command_functions["mod"](server, "apply")
+
+    assert (Path(server.data["dir"]) / "garrysmod" / "addons" / "ulib" / "lua" / "ulib" / "init.lua").exists()
+    assert (Path(server.data["dir"]) / "garrysmod" / "addons" / "ulx" / "lua" / "ulx" / "init.lua").exists()
+    assert [entry["resolved_id"] for entry in server.data["mods"]["installed"]] == [
+        "ulib.stable",
+        "ulx.stable",
+    ]
+
+
+def test_gmod_mod_apply_installs_curated_single_file_entry_from_override_registry(tmp_path, monkeypatch):
+    registry_path = tmp_path / "curated_mods.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "families": {
+                    "advdupe2": {
+                        "default": "stable",
+                        "releases": {
+                            "stable": {
+                                "url": "https://github.com/example/advdupe2.gma",
+                                "hosts": ["github.com"],
+                                "archive_type": "single",
+                                "destinations": ["addons"],
+                            }
+                        },
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ALPHAGSM_GMOD_CURATED_MODS_PATH", str(registry_path))
+    server = DummyServer("gmodmods")
+    gmodserver.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
+    gma_path = tmp_path / "advdupe2.gma"
+    gma_path.write_bytes(_gmod_gma_payload("advdupe2-data"))
+
+    monkeypatch.setattr(
+        source_addons,
+        "download_to_cache",
+        lambda url, *, allowed_hosts, target_path, checksum=None: shutil.copy2(
+            gma_path, target_path
+        ),
+    )
+
+    gmodserver.command_functions["mod"](server, "add", "curated", "advdupe2")
+    gmodserver.command_functions["mod"](server, "apply")
+
+    installed_file = Path(server.data["dir"]) / "garrysmod" / "addons" / "advdupe2" / "lua" / "autorun" / "fixture.lua"
+    assert installed_file.read_text(encoding="utf-8") == "advdupe2-data"
+    assert [entry["resolved_id"] for entry in server.data["mods"]["installed"]] == [
+        "advdupe2.stable"
+    ]
+
+
+@pytest.mark.parametrize(
+    ("family", "expected_resolved_ids"),
+    [
+        ("ulib", ["ulib.2.71"]),
+        ("ulx", ["ulib.2.71", "ulx.3.81"]),
+        ("advdupe2", ["advdupe2.v20201205"]),
+    ],
+)
+def test_gmod_checked_in_manifest_resolves_verified_addon_family(family, expected_resolved_ids):
+    resolved = gmodserver.load_curated_registry().resolve_with_dependencies(family)
+
+    assert [entry.resolved_id for entry in resolved] == expected_resolved_ids
+
+
+def test_insserver_configure_seeds_mod_state_defaults(tmp_path):
+    server = DummyServer("insmods")
+
+    insserver.configure(server, ask=False, port=27015, dir=str(tmp_path))
+
+    assert server.data["mods"]["desired"] == {"curated": [], "url": [], "gamebanana": [], "moddb": [], "workshop": []}
+
+
+def test_insserver_mod_apply_installs_direct_archive_url(tmp_path, monkeypatch):
+    server = DummyServer("insmods")
+    insserver.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
+    archive_root = tmp_path / "archive-root"
+    addon_dir = archive_root / "insurgency" / "addons" / "sourcemod"
+    addon_dir.mkdir(parents=True)
+    (addon_dir / "plugin.vdf").write_text("plugin", encoding="utf-8")
+    archive_path = tmp_path / "ins-addon.zip"
+    with zipfile.ZipFile(archive_path, "w") as zf:
+        zf.write(addon_dir / "plugin.vdf", "insurgency/addons/sourcemod/plugin.vdf")
+
+    monkeypatch.setattr(
+        source_addons,
+        "download_to_cache",
+        lambda url, *, allowed_hosts, target_path, checksum=None: shutil.copy2(
+            archive_path, target_path
+        ),
+    )
+
+    insserver.command_functions["mod"](
+        server,
+        "add",
+        "url",
+        "https://mods.example.invalid/ins-addon.zip",
+    )
+    insserver.command_functions["mod"](server, "apply")
+
+    installed_file = Path(server.data["dir"]) / "insurgency" / "addons" / "sourcemod" / "plugin.vdf"
+    assert installed_file.exists()
+    assert server.data["mods"]["installed"][0]["source_type"] == "url"
+
+
+def test_hl2dm_mod_add_gamebanana_persists_entry(tmp_path, monkeypatch):
+    server = DummyServer("hl2dmmods")
+    hl2dmserver.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    monkeypatch.setattr(
+        source_addons,
+        "resolve_gamebanana_mod",
+        lambda item_id: {
+            "source_type": "gamebanana",
+            "requested_id": item_id,
+            "resolved_id": f"gamebanana.{item_id}.777",
+            "download_url": "https://gamebanana.com/dl/777",
+            "archive_type": "zip",
+            "filename": "hl2dm-addon.zip",
+        },
+    )
+
+    hl2dmserver.command_functions["mod"](server, "add", "gamebanana", "12345")
+
+    assert server.data["mods"]["desired"]["gamebanana"][0]["resolved_id"] == "gamebanana.12345.777"
+
+
+def test_hl2dm_mod_cleanup_removes_only_tracked_files(tmp_path):
+    server = DummyServer("hl2dmmods")
+    hl2dmserver.configure(server, ask=False, port=27015, dir=str(tmp_path / "server-root"))
+
+    tracked_file = Path(server.data["dir"]) / "hl2mp" / "addons" / "tracked.vdf"
+    manual_file = Path(server.data["dir"]) / "hl2mp" / "addons" / "manual.vdf"
+    tracked_file.parent.mkdir(parents=True)
+    tracked_file.write_text("tracked", encoding="utf-8")
+    manual_file.write_text("manual", encoding="utf-8")
+    server.data["mods"]["installed"] = [
+        {
+            "source_type": "gamebanana",
+            "resolved_id": "gamebanana.12345.777",
+            "installed_files": ["hl2mp/addons/tracked.vdf"],
+        }
+    ]
+
+    hl2dmserver.command_functions["mod"](server, "cleanup")
+
+    assert not tracked_file.exists()
+    assert manual_file.exists()
+    assert server.data["mods"]["desired"] == {"curated": [], "url": [], "gamebanana": [], "moddb": []}
+
+
+@pytest.mark.parametrize("module_name", THIN_SOURCE_MODULES)
+def test_thin_source_wrappers_seed_shared_mod_state(tmp_path, module_name):
+    module = importlib.import_module(f"gamemodules.{module_name}")
+    server = DummyServer(module_name)
+
+    module.configure(server, ask=False, port=27015, dir=str(tmp_path / module_name))
+
+    assert "mod" in module.command_functions
+    expected = {
+        "curated": [],
+        "url": [],
+        "gamebanana": [],
+        "moddb": [],
+    }
+    if hasattr(module, "workshop_app_id"):
+        expected["workshop"] = []
+    assert server.data["mods"]["desired"] == expected

@@ -1,0 +1,44 @@
+{
+  "description": "American Truck Simulator client exports",
+  "requirements": [
+    {
+      "path": "{configdir}/server_packages.sii",
+      "kind": "file"
+    },
+    {
+      "path": "{configdir}/server_packages.dat",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "client-export",
+      "instructions": "In an owned American Truck Simulator client, enable g_console, load the intended map and run export_server_packages. Supply the generated server_packages.sii and server_packages.dat from the client home. Authentication or dedicated-server downloads cannot generate these exports.",
+      "live_validated": false,
+      "url": "https://modding.scssoft.com/wiki/Documentation/Tools/Dedicated_Server"
+    }
+  ],
+  "defaults": {
+    "configdir": ".local/share/American Truck Simulator"
+  },
+  "managed_import": true,
+  "validation": "declared-files-and-content-sentinels",
+  "manual_reason": "Import requires a complete compatible distribution and manual staging. See assets requirements for this game.",
+  "roots": [
+    ""
+  ],
+  "target": "{configdir}",
+  "include": [
+    "server_packages.sii",
+    "server_packages.dat"
+  ],
+  "required": [
+    "server_packages.sii",
+    "server_packages.dat"
+  ],
+  "module": "atsserver",
+  "guide": "docs/servers/atsserver.md",
+  "schema_version": 1,
+  "config_home_setting": "configdir"
+}

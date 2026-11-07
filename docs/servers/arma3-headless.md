@@ -1,0 +1,102 @@
+# arma3.headless
+
+This guide covers the `arma3.headless` module in AlphaGSM.
+
+## Status
+
+`arma3.headless` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Arma 3 dedicated server app `233780`.
+
+## Requirements
+
+- `screen`
+- Python packages from `requirements.txt`
+
+## Quick Start
+
+Create the server:
+
+```bash
+alphagsm myheadless create arma3.headless
+```
+
+Run setup:
+
+```bash
+alphagsm myheadless setup
+```
+
+Start it:
+
+```bash
+alphagsm myheadless start
+```
+
+Check it:
+
+```bash
+alphagsm myheadless status
+```
+
+Stop it:
+
+```bash
+alphagsm myheadless stop
+```
+
+## Setup Details
+
+Setup configures:
+
+- the game port (default 27015)
+- the install directory
+
+## Useful Commands
+
+```bash
+alphagsm myheadless update
+alphagsm myheadless backup
+```
+
+## Notes
+
+- Module name: `arma3.headless`
+- Default port: 27015
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create arma3.headless`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `password` | — | string | Password required to connect to the Arma 3 server. Stored as a secret. |
+
+<!-- alphagsm-server-variables:end -->
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: See game module source
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/arma3-headless/](../server-templates/arma3-headless/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

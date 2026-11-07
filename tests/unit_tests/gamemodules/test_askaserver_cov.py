@@ -1,0 +1,317 @@
+"""Full coverage tests for askaserver."""
+
+import os
+import sys
+from unittest.mock import patch, MagicMock
+
+import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
+sys.modules.pop('gamemodules.askaserver', None)
+_proton_mock = MagicMock()
+_proton_mock.wrap_command.side_effect = lambda cmd, wineprefix=None, prefer_proton=False: list(cmd)
+with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock(), 'utils.proton': _proton_mock}):
+    import gamemodules.askaserver as mod
+    from server import ServerError
+
+
+def test_configure_basic(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    assert server.data['port'] == 27015
+
+
+def test_configure_ask_defaults(tmp_path, monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda prompt: "")
+    server = DummyServer()
+    server.data["port"] = 27015
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = "test"
+    server.data["Steam_anonymous_login_possible"] = "test"
+    server.data["displayname"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["password"] = "test"
+    server.data["queryport"] = 27015
+    server.data["servername"] = "test"
+    mod.configure(server, ask=True)
+
+
+def test_configure_ask_custom(tmp_path, monkeypatch):
+    inputs = iter(["27016", str(tmp_path / 'custom')])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+    server = DummyServer()
+    mod.configure(server, ask=True)
+
+
+def test_install(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "AskaServer.exe"
+    server.data["Steam_AppID"] = 3246670
+    server.data["Steam_anonymous_login_possible"] = True
+    mod.install(server)
+
+
+def test_update_with_restart(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = 3246670
+    server.data["Steam_anonymous_login_possible"] = True
+    mod.update(server, validate=True, restart=True)
+    assert server._stopped
+    assert server._started
+
+
+def test_update_no_restart(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = 3246670
+    server.data["Steam_anonymous_login_possible"] = True
+    mod.update(server, validate=False, restart=False)
+    assert server._stopped
+    assert not server._started
+
+
+def test_update_stop_exception(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = 3246670
+    server.data["Steam_anonymous_login_possible"] = True
+    server.stop = MagicMock(side_effect=Exception('already stopped'))
+    mod.update(server, validate=False, restart=False)
+
+
+def test_restart():
+    server = DummyServer()
+    mod.restart(server)
+    assert server._stopped
+    assert server._started
+
+
+def test_get_start_command(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "AskaServer.exe"
+    (tmp_path / "AskaServer.exe").write_text("")
+    server.data["displayname"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["password"] = "test"
+    server.data["port"] = 27015
+    server.data["queryport"] = 27015
+    server.data["servername"] = "test"
+    server.data["authenticationtoken"] = "token"
+    cmd, cwd = mod.get_start_command(server)
+    assert cmd == [
+        "AskaServer.exe",
+        "-batchmode",
+        "-nographics",
+        "-propertiesPath",
+        "server properties.txt",
+    ]
+    assert cwd == server.data["dir"]
+
+
+def test_sync_server_config_uses_current_properties_contract(tmp_path):
+    config_path = tmp_path / "server properties.txt"
+    config_path.write_text(
+        "// managed by the upstream template\n"
+        "display name = old\n"
+        "server name = old\n"
+        "password =\n"
+        "steam game port = 7777\n"
+        "steam query port = 27015\n"
+        "authentication token =\n"
+        "region = default\n",
+        encoding="utf-8",
+    )
+    server = DummyServer("aska")
+    server.data.update(
+        {
+            "dir": str(tmp_path),
+            "displayname": "Alpha ASKA",
+            "servername": "alpha-aska",
+            "password": "join-secret",
+            "port": 7788,
+            "queryport": 27016,
+            "authenticationtoken": "gslt-secret",
+            "region": "europe",
+        }
+    )
+
+    mod.sync_server_config(server)
+
+    contents = config_path.read_text(encoding="utf-8")
+    assert "// managed by the upstream template" in contents
+    assert "display name = Alpha ASKA" in contents
+    assert "server name = alpha-aska" in contents
+    assert "password = join-secret" in contents
+    assert "steam game port = 7788" in contents
+    assert "steam query port = 27016" in contents
+    assert "authentication token = gslt-secret" in contents
+    assert "region = europe" in contents
+
+
+def test_get_start_command_requires_steam_server_token(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "IS_LINUX", False)
+    server = DummyServer("aska")
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+    (tmp_path / server.data["exe_name"]).touch()
+
+    with pytest.raises(ServerError, match="authenticationtoken"):
+        mod.get_start_command(server)
+
+
+def test_provider_requirement_declares_steam_gslt():
+    requirements = mod.get_provider_requirements(DummyServer("aska"))
+
+    assert requirements[0]["keys"] == ("authenticationtoken",)
+    assert requirements[0]["support_category"] == "provider-token"
+
+
+def test_get_start_command_missing_exe(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "nonexistent"
+    server.data["displayname"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["password"] = "test"
+    server.data["port"] = 27015
+    server.data["queryport"] = 27015
+    server.data["servername"] = "test"
+    with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+
+def test_do_stop():
+    server = DummyServer()
+    mod.runtime_module.send_to_server = MagicMock()
+    mod.do_stop(server, 0)
+    mod.runtime_module.send_to_server.assert_called_once_with(server, "\003")
+
+
+def test_status():
+    server = DummyServer()
+    mod.status(server, verbose=True)
+
+
+def test_message():
+    server = DummyServer()
+    mod.message(server, "hello")
+
+
+def test_backup():
+    server = DummyServer()
+    server.data["dir"] = "/tmp/test/"
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.backup(server)
+
+
+def test_checkvalue_empty_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ())
+
+
+def test_checkvalue_unsupported_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("totally_invalid_key_xyz",), "val")
+
+
+def test_checkvalue_no_value():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("port",))
+
+
+def test_checkvalue_port():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("port",), "12345")
+    assert result == 12345
+
+
+def test_checkvalue_queryport():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("queryport",), "12345")
+    assert result == 12345
+
+
+def test_checkvalue_maxplayers():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("maxplayers",), "12345")
+    assert result == 12345
+
+
+def test_checkvalue_servername():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("servername",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_displayname():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("displayname",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_password():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("password",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_exe_name():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("exe_name",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_dir():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("dir",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_backup():
+    server = DummyServer()
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")
+
+
+@pytest.mark.parametrize("value", ["DISPLAY=secret", "WINEDLLOVERRIDES=literal"])
+def test_linux_launch_enables_virtual_display(tmp_path, monkeypatch, value):
+    import importlib
+    real_proton = importlib.import_module("utils.proton")
+    monkeypatch.setattr(mod, "IS_LINUX", True)
+    monkeypatch.setattr(mod.proton, "prepend_env_assignments", real_proton.prepend_env_assignments)
+    monkeypatch.setenv("WINEDLLOVERRIDES", "winex11.drv=")
+    monkeypatch.setenv("SDL_VIDEODRIVER", "offscreen")
+    monkeypatch.setattr(mod.proton, "wrap_command", lambda command, **kwargs: [
+        "env", "DISPLAY=", "WINEDLLOVERRIDES=winex11.drv=", "wine", *command,
+    ])
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    (tmp_path / server.data["exe_name"]).touch()
+    server.data["servername"] = value
+    server.data["password"] = value
+    server.data["authenticationtoken"] = "token"
+
+    command, _cwd = mod.get_start_command(server)
+
+    assert command[:2] == ["xvfb-run", "-a"]
+    assert "DISPLAY=" not in command
+    assert "WINEDLLOVERRIDES=" in command
+    assert "SDL_VIDEODRIVER=x11" in command
+    assert "SDL_AUDIODRIVER=dummy" in command
+    assert "WINEDLLOVERRIDES=winex11.drv=" not in command
+    assert server.data["exe_name"] in command
+    assert value not in command
+
+
+def test_docker_runtime_enables_virtual_display():
+    server = DummyServer()
+    requirements = mod.get_runtime_requirements(server)
+
+    assert requirements["env"]["ALPHAGSM_XVFB"] == "1"
+    assert requirements["env"]["WINEDLLOVERRIDES"] == ""

@@ -1,0 +1,297 @@
+"""Xonotic dedicated server lifecycle helpers."""
+
+import os
+import re
+import urllib.request
+
+from server import ServerError
+from utils.archive_install import detect_compression, install_archive
+from utils.backups import backups as backup_utils
+from utils.cmdparse.cmdspec import ArgSpec, CmdSpec, OptSpec
+
+import server.runtime as runtime_module
+from utils.gamemodules import common as gamemodule_common
+
+XONOTIC_DOWNLOAD_PAGE = "https://xonotic.org/download/"
+XONOTIC_DOWNLOAD_TEMPLATE = "https://dl.xonotic.org/xonotic-%s.zip"
+
+commands = ()
+command_args = gamemodule_common.build_setup_version_download_command_args(
+    "The port for the server to listen on",
+    "The directory to install Xonotic in",
+)
+command_descriptions = {}
+command_functions = {}
+max_stop_wait = 1
+
+
+def _get_managed_server_cfg_paths(server):
+    """Return the candidate server.cfg paths Xonotic may require."""
+
+    content_root = _resolve_content_root(server)
+    install_root_cfg = os.path.join(content_root, "data", "server.cfg")
+    userdir = server.data.get("userdir", "")
+    if userdir in ("", "."):
+        return [install_root_cfg]
+    userdir_cfg = os.path.join(content_root, userdir, "data", "server.cfg")
+    if os.path.normpath(userdir_cfg) == os.path.normpath(install_root_cfg):
+        return [install_root_cfg]
+    return [install_root_cfg, userdir_cfg]
+
+
+def _write_managed_server_cfg(server):
+    """Write a minimal dedicated config where Xonotic expects it."""
+
+    cfg_lines = [
+        f'hostname "{server.data["hostname"]}"',
+        f'g_gametype "{server.data["gametype"]}"',
+        "",
+    ]
+    cfg_body = "\n".join(cfg_lines)
+    for server_cfg in _get_managed_server_cfg_paths(server):
+        os.makedirs(os.path.dirname(server_cfg), exist_ok=True)
+        with open(server_cfg, "w", encoding="utf-8") as fh:
+            fh.write(cfg_body)
+
+
+def _candidate_content_roots(server):
+    """Return plausible archive content roots for Xonotic."""
+
+    install_root = server.data["dir"]
+    candidates = []
+    try:
+        entries = sorted(os.listdir(install_root))
+    except FileNotFoundError:
+        return [install_root]
+    for entry in entries:
+        candidate = os.path.join(install_root, entry)
+        if os.path.isdir(candidate):
+            candidates.append(candidate)
+    candidates.append(install_root)
+    return candidates
+
+
+def _resolve_content_root(server):
+    """Return the directory that actually contains the extracted Xonotic tree."""
+
+    marker_names = (
+        "xonotic-linux64-dedicated",
+        "xonotic-linux-dedicated.sh",
+        os.path.join("server", "server_linux.sh"),
+        server.data.get("exe_name", ""),
+        os.path.join("data", "xonotic-20230620-data.pk3"),
+    )
+    for candidate in _candidate_content_roots(server):
+        for marker in marker_names:
+            if marker and os.path.exists(os.path.join(candidate, marker)):
+                return candidate
+    return server.data["dir"]
+
+
+def _resolve_container_working_dir(server):
+    """Map the resolved host content root into the container workdir."""
+
+    content_root = os.path.normpath(_resolve_content_root(server))
+    install_root = os.path.normpath(server.data["dir"])
+    rel_root = os.path.relpath(content_root, install_root)
+    if rel_root == ".":
+        return runtime_module.DEFAULT_CONTAINER_WORKDIR
+    return os.path.join(runtime_module.DEFAULT_CONTAINER_WORKDIR, rel_root)
+
+
+def resolve_download(version=None):
+    """Resolve an official Xonotic release zip URL."""
+
+    if version not in (None, "", "latest"):
+        return version, XONOTIC_DOWNLOAD_TEMPLATE % (version,)
+    with urllib.request.urlopen(XONOTIC_DOWNLOAD_PAGE) as response:
+        page = response.read().decode("utf-8")
+    match = re.search(r"Download Xonotic ([0-9]+(?:\.[0-9]+)+)", page)
+    if match is None:
+        raise ServerError("Unable to locate the latest Xonotic release version")
+    version = match.group(1)
+    return version, XONOTIC_DOWNLOAD_TEMPLATE % (version,)
+
+
+def configure(
+    server,
+    ask,
+    port=None,
+    dir=None,
+    *,
+    version=None,
+    url=None,
+    download_name=None,
+    exe_name="server/server_linux.sh",
+):
+    """Collect and store configuration values for a Xonotic server."""
+
+    server.data.setdefault("hostname", "AlphaGSM %s" % (server.name,))
+    server.data.setdefault("gametype", "dm")
+    server.data.setdefault("userdir", "server")
+    server.data.setdefault("backupfiles", ["server", "data"])
+    if "backup" not in server.data:
+        server.data["backup"] = {
+            "profiles": {"default": {"targets": ["server", "data"]}},
+            "schedule": [("default", 0, "days")],
+        }
+
+    if port is None:
+        port = server.data.get("port", 26000)
+    if ask:
+        inp = input("Please specify the port to use for this server: [%s] " % (port,)).strip()
+        if inp:
+            port = int(inp)
+    server.data["port"] = int(port)
+
+    if dir is None:
+        dir = server.data.get("dir") or os.path.expanduser(os.path.join("~", server.name))
+        if ask:
+            inp = input("Where would you like to install the Xonotic server: [%s] " % (dir,)).strip()
+            if inp:
+                dir = inp
+    server.data["dir"] = os.path.join(dir, "")
+    if url is not None:
+        server.data["url"] = url
+    elif "url" not in server.data:
+        resolved_version, resolved_url = resolve_download(version=version or server.data.get("version"))
+        server.data["version"] = resolved_version
+        server.data["url"] = resolved_url
+    if ask and url is None:
+        inp = input("Direct archive URL for the Xonotic server: [%s] " % (server.data["url"],)).strip()
+        if inp:
+            server.data["url"] = inp
+    if download_name is not None:
+        server.data["download_name"] = download_name
+    elif "download_name" not in server.data:
+        server.data["download_name"] = os.path.basename(server.data.get("url", "")) or "xonotic-server.zip"
+    server.data["exe_name"] = server.data.get("exe_name", exe_name)
+    server.data.save()
+    return (), {}
+
+
+def install(server):
+    """Download and install the Xonotic server archive."""
+
+    if "url" not in server.data or not server.data["url"]:
+        resolved_version, resolved_url = resolve_download(version=server.data.get("version"))
+        server.data["version"] = resolved_version
+        server.data["url"] = resolved_url
+        server.data.setdefault("download_name", os.path.basename(resolved_url))
+    install_archive(server, detect_compression(server.data["download_name"]))
+    _write_managed_server_cfg(server)
+
+
+def prestart(server):
+    """Refresh the managed server.cfg before each launch."""
+
+    _write_managed_server_cfg(server)
+
+
+def get_start_command(server):
+    """Build the command used to launch a Xonotic dedicated server."""
+
+    content_root = _resolve_content_root(server)
+    exe_name = server.data.get("exe_name")
+    candidate_paths = [
+        os.path.join(content_root, "server", "server_linux.sh"),
+        os.path.join(content_root, "xonotic-linux-dedicated.sh"),
+        os.path.join(content_root, "xonotic-linux64-dedicated"),
+    ]
+    if exe_name and exe_name not in {"server/server_linux.sh", "xonotic-linux-dedicated.sh", "xonotic-linux64-dedicated"}:
+        exe_candidate = os.path.join(content_root, exe_name)
+        if exe_candidate not in candidate_paths:
+            candidate_paths.insert(0, exe_candidate)
+    launcher_path = next((path for path in candidate_paths if os.path.isfile(path)), None)
+    if launcher_path is None:
+        raise ServerError("Dedicated launcher not found")
+    launcher_relpath = os.path.relpath(launcher_path, content_root)
+    return (
+        [
+            "./" + launcher_relpath,
+            "+sv_public",
+            "1",
+            "+port",
+            str(server.data["port"]),
+            "+g_gametype",
+            server.data["gametype"],
+            "+hostname",
+            server.data["hostname"],
+        ],
+        content_root,
+    )
+
+
+def do_stop(server, j):
+    """Stop Xonotic using the standard quit command."""
+
+    runtime_module.send_to_server(server, "\nquit\n")
+
+
+def status(server, verbose):
+    """Detailed Xonotic status is not implemented yet."""
+
+
+def message(server, msg):
+    """Xonotic has no simple generic message console support here."""
+
+    gamemodule_common.print_unsupported_message()
+
+
+def backup(server, profile=None):
+    """Run the shared backup implementation for a Xonotic server."""
+
+    gamemodule_common.run_backup(server, profile, backup_module=backup_utils)
+
+
+def checkvalue(server, key, *value):
+    """Validate supported Xonotic datastore edits."""
+
+    return gamemodule_common.handle_basic_checkvalue(
+        server,
+        key,
+        *value,
+        int_keys=("port",),
+        str_keys=(
+            "url",
+            "download_name",
+            "exe_name",
+            "dir",
+            "userdir",
+            "gametype",
+            "hostname",
+            "version",
+        ),
+        backup_module=backup_utils,
+    )
+
+
+def get_query_address(server):
+    """Return the Quake UDP query address for Xonotic (DarkPlaces engine).
+
+    Xonotic uses the Quake III / DarkPlaces getstatus UDP protocol,
+    not the Source Engine A2S protocol.
+    """
+    return runtime_module.resolve_query_host(server), server.data["port"], "quake"
+
+
+def get_info_address(server):
+    """Return the Quake UDP info address for Xonotic (same as query address)."""
+    return get_query_address(server)
+
+get_runtime_requirements = gamemodule_common.make_runtime_requirements_builder(
+        family='quake-linux',
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+)
+
+def get_container_spec(server):
+    """Build a Docker spec that preserves nested extracted Xonotic roots."""
+
+    return runtime_module.build_container_spec(
+        server,
+        family='quake-linux',
+        get_start_command=get_start_command,
+        port_definitions=({'key': 'port', 'protocol': 'udp'}, {'key': 'port', 'protocol': 'tcp'}),
+        stdin_open=True,
+        working_dir=_resolve_container_working_dir(server),
+    )

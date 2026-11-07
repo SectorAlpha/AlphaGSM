@@ -1,0 +1,156 @@
+# Call of Duty: World at War
+
+This guide covers the `codwawserver` module in AlphaGSM.
+
+Status: PASSED on 2026-05-30
+
+## Requirements
+
+- Docker recommended on Linux: branch-local or published `alphagsm-steamcmd-linux-runtime`
+- Host/process fallback: `screen`
+- Python packages from `requirements.txt`
+
+New AlphaGSM servers default to Internet dedicated mode (`dedicated=2`). Existing
+servers without this setting retain their prior native launch behavior. The server
+uses DemonWare authentication in this mode, so its DNS and service availability
+can prevent startup before a playable map exists. For a local LAN server, select
+the engine's supported LAN mode explicitly:
+
+```bash
+alphagsm mycodwawse set dedicated 1
+```
+
+Use `set dedicated 2` to restore Internet mode. These native mode values follow
+[GameServerManagers' CoDWaW configuration](https://github.com/GameServerManagers/Game-Server-Configs/blob/main/codwaw/server.cfg).
+The disposable smoke and integration cases select LAN mode and still require
+real Quake status on the exact managed port, `mp_airfield`, positive capacity,
+and complete shutdown. These checks do not validate Internet authentication,
+public listing, or remote-player joining. The LAN smoke passed in
+[run 38812335342](https://github.com/SectorAlpha/AlphaGSM/actions/runs/38812335342/job/116691510049),
+after run `38775144746` reported a DemonWare DNS/authentication failure in the
+implicit Internet mode.
+
+## Quick Start
+
+Create the server:
+
+```bash
+alphagsm mycodwawse create codwawserver
+```
+
+Run setup:
+
+```bash
+alphagsm mycodwawse setup
+```
+
+Start it:
+
+```bash
+alphagsm mycodwawse start
+```
+
+Check it:
+
+```bash
+alphagsm mycodwawse status
+```
+
+Stop it:
+
+```bash
+alphagsm mycodwawse stop
+```
+
+## Setup Details
+
+Setup configures:
+
+- the game port (default 28960)
+- the install directory
+- downloads and extracts the server archive
+- the current validated Linux lane runs through the Docker-backed `steamcmd-linux` runtime
+
+## Useful Commands
+
+```bash
+alphagsm mycodwawse update
+alphagsm mycodwawse backup
+```
+
+## Notes
+
+- Module name: `codwawserver`
+- Default port: 28960
+- Current supported validation lane on Linux: Docker-backed `steamcmd-linux`
+- `query`, `info`, and `info --json` use the native Quake-style UDP status
+  protocol on the managed game port.
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create codwawserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+| Key | Aliases | Type | What it does |
+| --- | --- | --- | --- |
+| `dedicated` | — | integer | Dedicated mode: `1` for LAN, `2` for Internet (default). Applied at launch. |
+| `dir` | — | string | Install directory for the server. |
+| `download_name` | — | string | Cached archive filename. |
+| `exe_name` | — | string | Server executable filename. |
+| `hostname` | servername, name | string | The advertised server name. |
+| `moddir` | — | string | The active Call of Duty: World at War mod directory. Example: `baseq3`. |
+| `port` | gameport | integer | The game port for the server. Example: `27960`. |
+| `startmap` | map, gamemap, level, world | string | The startup map. |
+| `url` | — | string | Download URL for the server archive. |
+
+<!-- alphagsm-server-variables:end -->
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `codwaw_lnxded`
+- **Location**: `<install_dir>/codwaw_lnxded`
+- **Engine**: Custom
+
+### Server Configuration
+
+- **Config file**: `<moddir>/server.cfg` (default `main/server.cfg`)
+- `set servername`, `set moddir`, and `set map` rewrite `<moddir>/server.cfg` immediately through the schema-backed config-sync path.
+- **Runtime note**: CI requires a native UDP status response for both process
+  and Docker launches; a TCP listener does not establish game readiness.
+- **Template**: See [server-templates/codwawserver/](../server-templates/codwawserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: `<install_dir>/<moddir>/`
+- **Mod directory**: `<install_dir>/<moddir>/`
+- **Workshop support**: No
+
+## Mod Sources
+
+Call of Duty: World at War supports AlphaGSM-managed direct `url` mod sources for content-only `.pk3` payloads.
+
+Supported payload shapes:
+
+- a direct `.pk3` URL
+- an archive containing bare `.pk3` files at the archive root
+- an archive containing `<moddir>/<name>.pk3`
+
+AlphaGSM installs approved `.pk3` content into the active `moddir` directory, tracks only the files it owns, and adds that active content directory to the managed backup targets.
+
+Examples:
+
+```bash
+alphagsm mycodwawse mod add url https://example.com/mappack.pk3
+alphagsm mycodwawse mod add url https://example.com/custom-content.zip
+alphagsm mycodwawse mod apply
+alphagsm mycodwawse mod cleanup
+```

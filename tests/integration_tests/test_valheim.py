@@ -1,0 +1,131 @@
+"""Integration test for valheim."""
+
+import os
+
+import pytest
+
+from conftest import (
+    default_runtime_backend,
+    effective_runtime_backend,
+    require_integration_opt_in,
+    require_steamcmd_opt_in,
+    require_command,
+    require_command_for_runtime,
+    pick_free_tcp_port_group,
+    write_config,
+    alphagsm_env,
+    run_and_assert_ok,
+    run_alphagsm,
+    log_command_result,
+    skip_for_known_steamcmd_issue,
+    wait_for_runtime_log_marker,
+    wait_for_info_protocol,
+    resolve_steamcmd_linux_runtime_image,
+)
+from gamemodules.valheim import steam_app_id
+
+pytestmark = pytest.mark.integration
+
+START_TIMEOUT = 1800
+LOCAL_DOCKER_IMAGE = "alphagsm-steamcmd-linux-runtime:test"
+PUBLISHED_DOCKER_IMAGE = "ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
+
+
+@pytest.mark.timeout(3600)  # 60 min: large download + world load + Steam relay init + A2S on port+1
+def test_valheim_lifecycle(tmp_path):
+    require_integration_opt_in()
+    require_steamcmd_opt_in()
+
+    home_dir = tmp_path / "home"
+    home_dir.mkdir()
+    install_dir = tmp_path / "server"
+    config_path = tmp_path / "alphagsm.conf"
+    server_name = "itvalheim"
+    module_name = "valheim"
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    selected_runtime_backend = effective_runtime_backend(
+        runtime_backend,
+        module_name=module_name,
+    )
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
+    image = None
+    if selected_runtime_backend == "docker":
+        require_command("docker")
+        image = resolve_steamcmd_linux_runtime_image()
+
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name=module_name,
+    )
+    env = alphagsm_env(config_path)
+    port = pick_free_tcp_port_group(2)
+
+    # create
+    run_and_assert_ok(env, server_name, "create", module_name)
+    if image is not None:
+        run_and_assert_ok(env, server_name, "set", "image", image)
+
+    # setup
+    result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+    log_command_result(
+        "alphagsm " + " ".join((server_name, "setup", "-n", str(port), str(install_dir))),
+        result,
+    )
+    if result.returncode != 0:
+        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    assert result.returncode == 0, f"setup failed: {result.stderr or result.stdout}"
+
+    # start
+    run_and_assert_ok(env, server_name, "start")
+
+    try:
+        # wait for readiness
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
+            ["Game server connected"],
+            START_TIMEOUT,
+        )
+
+        # status
+        run_and_assert_ok(env, server_name, "status")
+
+        # Wait on AlphaGSM's declared info surface rather than a raw guessed socket.
+        wait_for_info_protocol(env, server_name, "udp", 900)
+
+        # query
+        query_result = run_and_assert_ok(env, server_name, "query")
+        assert (
+            "UDP ping on port" in query_result.stdout
+        ), f"Unexpected query output: {query_result.stdout!r}"
+
+        # info
+        info_result = run_and_assert_ok(env, server_name, "info")
+        assert (
+            "No further details available." in info_result.stdout
+        ), f"Unexpected info output: {info_result.stdout!r}"
+
+        # info --json
+        import json as _info_json
+        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        assert _info_data["protocol"] == "udp", (
+            f"Expected udp protocol in info JSON: {_info_data!r}"
+        )
+        assert _info_data.get("port") == port, (
+            f"Expected game port {port} in info JSON: {_info_data!r}"
+        )
+    finally:
+        # stop
+        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+        final_status = run_and_assert_ok(env, server_name, "status")
+        assert "isn't running" in final_status.stdout

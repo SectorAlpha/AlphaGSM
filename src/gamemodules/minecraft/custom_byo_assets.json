@@ -1,0 +1,26 @@
+{
+  "description": "Operator-selected Minecraft server distribution",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Obtain the server JAR and all companion libraries/mods/config from your chosen upstream project release. Place the real JAR at the configured exe_name. There is no universal custom-server download; preserve the EULA workflow.",
+      "live_validated": false
+    }
+  ],
+  "defaults": {
+    "exe_name": "minecraft_server.jar"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "minecraft.custom",
+  "guide": "docs/servers/minecraft-custom.md",
+  "schema_version": 1
+}

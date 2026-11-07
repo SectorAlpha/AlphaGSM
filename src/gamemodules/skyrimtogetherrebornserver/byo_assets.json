@@ -1,0 +1,27 @@
+{
+  "description": "Skyrim Together Reborn complete compatible server tree",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Obtain the complete matching official TiltedEvolution server release and config. The current documentation names Windows SkyrimTogetherServer.exe; native Linux artifact availability is unverified.",
+      "live_validated": false,
+      "url": "https://wiki.tiltedphoques.com/tilted-online/guides/server-guide"
+    }
+  ],
+  "defaults": {
+    "exe_name": "SkyrimTogetherServer"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "skyrimtogetherrebornserver",
+  "guide": "docs/servers/skyrimtogetherrebornserver.md",
+  "schema_version": 1
+}

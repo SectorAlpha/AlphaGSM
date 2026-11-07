@@ -1,7 +1,0 @@
-@ShutdownOnFailedCommand 1
-@NoPromptForPassword 1
-@sSteamCmdForcePlatformType linux
-force_install_dir %s
-login anonymous
-app_update %s
-exit

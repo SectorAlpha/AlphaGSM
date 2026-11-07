@@ -1,0 +1,5 @@
+<settings>
+  <gamemode>Sandbox</gamemode>
+  <maxplayers>16</maxplayers>
+  <queryport>27016</queryport>
+</settings>

@@ -1,0 +1,17 @@
+{
+  "NewOptions": {
+    "WorldName": "<server name>"
+  },
+  "ServerSettings": {
+    "ServerName": "AlphaGSM <server name>",
+    "ServerPassword": "",
+    "ServerIP": "0.0.0.0",
+    "ServerGamePort": 27005,
+    "ServerQueryPort": 27004,
+    "UseVAC": false,
+    "MaxPlayerCount": 16,
+    "MaxDrawDistance": 1024,
+    "NetworkType": "SteamOnline",
+    "RCONPassword": ""
+  }
+}

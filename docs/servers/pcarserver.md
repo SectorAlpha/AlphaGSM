@@ -1,0 +1,110 @@
+# Project CARS
+
+This guide covers the `pcarserver` module in AlphaGSM.
+
+`pcarserver` is currently `PASSED` on the documented Ubuntu 24.04 Linux baseline. The current GitHub integration lane still exercises both process and Docker runtime selection, and the validated Linux lifecycle stays aligned across both backends while local runs remain process-backed by default unless you opt into the Docker backend.
+
+## Requirements
+
+- `screen`
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Python packages from `requirements.txt`
+
+## Quick Start
+
+Create the server:
+
+```bash
+alphagsm mypcarserv create pcarserver
+```
+
+Run setup:
+
+```bash
+alphagsm mypcarserv setup
+```
+
+Start it:
+
+```bash
+alphagsm mypcarserv start
+```
+
+Check it:
+
+```bash
+alphagsm mypcarserv status
+```
+
+Stop it:
+
+```bash
+alphagsm mypcarserv stop
+```
+
+## Setup Details
+
+Setup configures:
+
+- the game port (default 27015)
+- the install directory
+- SteamCMD downloads the server files
+
+## Useful Commands
+
+```bash
+alphagsm mypcarserv update
+alphagsm mypcarserv backup
+```
+
+## Notes
+
+- Docker publishes the native Steam query port as well as the game port.
+  The query port defaults to game port + 1; `set queryport` updates both native
+  configuration and port claims. This correction awaits replacement CI.
+- `steamport` controls the native Steam authentication port (default UDP 8766),
+  which is also claimed and published. Older server records retain that default.
+- Module name: `pcarserver`
+- Default port: 27015
+- Validated support: PASSED 2026-05-23 via the standard smoke runner and focused integration lifecycle, both using `info --json` protocol `a2s` on the derived query port (`port + 1`).
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create pcarserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `DedicatedServerCmd`
+- **Location**: `<install_dir>/DedicatedServerCmd`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `332670`
+
+Smoke and integration validation track readiness through `alphagsm info --json`
+returning protocol `a2s` instead of waiting for screen-log markers.
+
+### Server Configuration
+
+- **Config file**: `server.cfg`
+- **Template**: See [server-templates/pcarserver/](../server-templates/pcarserver/) if available
+- AlphaGSM writes a managed `server.cfg` during install/update using `hostPort = <port>` and `queryPort = <port + 1>`.
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

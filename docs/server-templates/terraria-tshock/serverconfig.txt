@@ -1,0 +1,11 @@
+# Terraria TShock serverconfig.txt template
+world=world.wld
+port=7777
+maxplayers=8
+worldpath=Worlds
+autocreate=2
+password=
+
+# AlphaGSM module-known defaults:
+# worldname=world
+# worldsize=2

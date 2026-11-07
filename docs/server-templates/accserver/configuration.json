@@ -1,0 +1,3 @@
+{
+	"note": "Use the game's generated ACC cfg JSON files as the authoritative base; AlphaGSM tracks configuration.json under cfg/ and defaults the game port to 9231."
+}

@@ -1,0 +1,26 @@
+{
+  "description": "Battlefield Vietnam complete compatible server tree",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Supply a compatible complete Linux dedicated-server archive/tree. The historical download page is not a validated direct artifact.",
+      "live_validated": false
+    }
+  ],
+  "defaults": {
+    "exe_name": "bfvietnam_lnxded"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "bfvserver",
+  "guide": "docs/servers/bfvserver.md",
+  "schema_version": 1
+}

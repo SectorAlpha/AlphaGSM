@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings version="20">
+  <misc>
+    <min_log_severity>Important</min_log_severity>
+    <language></language>
+  </misc>
+  <network>
+    <port>6000</port>
+    <is_public_server>0</is_public_server>
+    <server_private_guid></server_private_guid>
+    <server_public_guid></server_public_guid>
+    <ip>0.0.0.0</ip>
+    <master_server_client_port>0</master_server_client_port>
+    <public_server_host_name></public_server_host_name>
+  </network>
+  <server>
+    <name>New game server</name>
+    <description>New server description.</description>
+    <welcome_message>Welcome to your new server!</welcome_message>
+    <fps>40</fps>
+    <fps_network_physics_update>20</fps_network_physics_update>
+    <players_max_count>100</players_max_count>
+    <no_client_mods>0</no_client_mods>
+    <autosave_interval>60</autosave_interval>
+    <save_backups_count>25</save_backups_count>
+    <savegame_slot_id>0</savegame_slot_id>
+    <server_operators_list></server_operators_list>
+    <server_moderators_list></server_moderators_list>
+    <access_whitelist></access_whitelist>
+    <access_whitelist_enabled>0</access_whitelist_enabled>
+    <access_blacklist></access_blacklist>
+  </server>
+</settings>

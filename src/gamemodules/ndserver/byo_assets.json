@@ -1,0 +1,52 @@
+{
+  "description": "Nuclear Dawn dedicated server content",
+  "requirements": [
+    {
+      "path": "nucleardawn/maps/hydro.bsp",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Stage a complete owned Nuclear Dawn dedicated server tree so nucleardawn/maps/hydro.bsp exists. Anonymous SteamCMD app 111710 installs only a partial tree. Do not use an unofficial archive.",
+      "live_validated": false
+    },
+    {
+      "id": "steam-owned",
+      "kind": "steamcmd",
+      "instructions": "Steam app 111710 is the Nuclear Dawn dedicated server. Anonymous SteamCMD installs a partial tree without nucleardawn/maps/hydro.bsp. Setup with an entitled profile downloads that app for Linux and does not fall back to anonymous. Do not use an unofficial archive.",
+      "live_validated": true,
+      "app_id": 111710,
+      "platform": "linux",
+      "authentication": "required",
+      "url": "https://store.steampowered.com/app/17710/"
+    }
+  ],
+  "defaults": {},
+  "managed_import": true,
+  "validation": "declared-files-and-content-sentinels",
+  "manual_reason": "Import requires a complete compatible distribution and manual staging. See assets requirements for this game.",
+  "roots": [
+    ""
+  ],
+  "target": "",
+  "include": [
+    "srcds_run",
+    "srcds_linux",
+    "bin/*.so",
+    "nucleardawn/bin/*.so",
+    "nucleardawn/gameinfo.txt",
+    "nucleardawn/maps/*.bsp",
+    "nucleardawn/cfg/*.cfg",
+    "nucleardawn/scripts/*.txt",
+    "nucleardawn/resource/*.res"
+  ],
+  "required": [
+    "nucleardawn/maps/hydro.bsp"
+  ],
+  "module": "ndserver",
+  "guide": "docs/servers/ndserver.md",
+  "schema_version": 1
+}

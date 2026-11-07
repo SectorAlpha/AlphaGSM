@@ -1,0 +1,299 @@
+"""Wreckfest Workshop proof requires a bounded native track-registry response."""
+
+from pathlib import Path
+import subprocess
+import sys
+from types import SimpleNamespace
+
+import pytest
+
+from tests.smoke_tests import wreckfestserver_workshop as module
+from tests.smoke_tests.wreckfestserver_workshop import (
+    assert_workshop_loaded, capture_workshop_registry, wait_for_workshop_loaded,
+)
+
+
+def test_capture_excludes_previous_registry_and_unrelated_startup_errors():
+    stale = "Failed to read /etc/machine-id, error Invalid argument.\nTracks:\n  crazy_2000_classic (OLD)\n"
+    fresh = "Tracks:\n  crazy_2000_classic (CRAZY 2000)\n"
+    outputs = iter([stale, stale + fresh])
+    commands = []
+    evidence = capture_workshop_registry(lambda _remaining: next(outputs),
+                                        lambda: commands.append("tracks"), timeout_seconds=2)
+    assert evidence == fresh
+    assert commands == ["tracks"]
+
+
+def test_fresh_workshop_profile_has_one_ordered_initialization_lifecycle(tmp_path):
+    """Only the engine may create its modlist; final registry proof is separate."""
+    save = tmp_path / "savegame"
+    save.mkdir()
+    stale_log = tmp_path / "log.txt"
+    stale_log.write_text("Server connected. stale startup")
+    actions = []
+    def launch():
+        assert not stale_log.exists()
+        actions.append("start")
+    def ready():
+        actions.append("fresh startup")
+        (save / "modlist.mods").write_bytes(b"native engine profile")
+    result = module.warm_up_workshop_profile(
+        tmp_path, launch, ready, lambda: actions.append("stop"),
+        lambda: actions.append("all listeners closed"))
+    assert result is True
+    assert actions == ["start", "fresh startup", "stop", "all listeners closed"]
+    assert (save / "modlist.mods").read_bytes() == b"native engine profile"
+
+
+def test_existing_workshop_profile_is_never_reset_or_warmed_up(tmp_path):
+    profile = tmp_path / "savegame/modlist.mods"
+    profile.parent.mkdir()
+    profile.write_bytes(b"operator native profile")
+    def forbidden():
+        pytest.fail("Existing native profile must not trigger lifecycle commands")
+    assert module.warm_up_workshop_profile(tmp_path, forbidden, forbidden, forbidden, forbidden) is False
+    assert profile.read_bytes() == b"operator native profile"
+
+
+def test_profile_warmup_requires_native_persistence_and_does_not_retry(tmp_path):
+    actions = []
+    with pytest.raises(AssertionError, match="did not persist"):
+        module.warm_up_workshop_profile(
+            tmp_path, lambda: actions.append("start"), lambda: actions.append("ready"),
+            lambda: actions.append("stop"), lambda: actions.append("closed"))
+    assert actions == ["start", "ready", "stop", "closed"]
+
+
+def test_profile_warmup_propagates_failed_initialization_without_retry(tmp_path):
+    actions = []
+    def failed_ready():
+        raise RuntimeError("native startup failed")
+    with pytest.raises(RuntimeError, match="native startup failed"):
+        module.warm_up_workshop_profile(
+            tmp_path, lambda: actions.append("start"), failed_ready,
+            lambda: actions.append("stop"), lambda: actions.append("closed"))
+    assert actions == ["start"]
+
+
+def test_profile_warmup_refuses_operator_symlinks(tmp_path):
+    operator = tmp_path / "operator"
+    operator.mkdir()
+    (tmp_path / "savegame").symlink_to(operator, target_is_directory=True)
+    with pytest.raises(AssertionError, match="symlink"):
+        module.warm_up_workshop_profile(tmp_path, lambda: None, lambda: None, lambda: None, lambda: None)
+
+
+def test_capture_does_not_accept_stale_registry_without_new_native_output():
+    stale = "Tracks:\n  crazy_2000_classic (OLD)\n"
+    elapsed = [0.0]
+    def fetch(_remaining):
+        elapsed[0] += 0.6
+        return stale
+    with pytest.raises(AssertionError, match="Timed out"):
+        capture_workshop_registry(fetch, lambda: None, timeout_seconds=1,
+                                  clock=lambda: elapsed[0], sleep=lambda _: None)
+
+
+def test_native_tracks_section_accepts_ansi_terminal_formatting():
+    assert_workshop_loaded("\x1b[0mTracks:\r\n\x1b[32m  crazy_2000_classic (CRAZY 2000)\x1b[0m\r\n")
+
+
+@pytest.mark.parametrize('header,stock', [
+    ('>Tracks:', '    stock_event (STOCK EVENT)'),
+    ('Tracks:', '>    stock_event (STOCK EVENT)'),
+    ('Tracks:', '    stock_event (STOCK > EVENT)'),
+    ('Tracks:', '    bigstadium_figure_8 (MADMAN STADIUM - FIGURE 8>)'),
+    ('Tracks:', '    bigstadium_>figure_8 (MADMAN STADIUM - FIGURE 8)'),
+    ('Tracks:', '    bigstadium_figure_8> (MADMAN STADIUM - FIGURE 8)'),
+])
+def test_native_prompt_redraw_does_not_hide_later_exact_registry_row(header, stock):
+    assert_workshop_loaded(f' tracks\n{header}\n{stock}\n    crazy_2000_classic (CRAZY 2000)\n')
+
+
+def test_prompted_stock_registry_still_requires_the_actual_workshop_event():
+    with pytest.raises(AssertionError, match='exact Workshop event'):
+        assert_workshop_loaded('>Tracks:\n>    stock_event (STOCK EVENT)\n')
+
+
+@pytest.mark.parametrize('identifier', ['crazy_>2000_classic', 'crazy_2000_classic>'])
+def test_prompt_corruption_cannot_reconstruct_the_required_native_event(identifier):
+    with pytest.raises(AssertionError, match='exact Workshop event'):
+        assert_workshop_loaded(f'Tracks:\n    {identifier} (CRAZY 2000)\n')
+
+
+def test_prompt_tolerance_does_not_cross_a_non_registry_response_boundary():
+    with pytest.raises(AssertionError, match='exact Workshop event'):
+        assert_workshop_loaded('Tracks:\n    stock>_event (STOCK EVENT)\n'
+                               'Unrelated output\n    crazy_2000_classic (CRAZY 2000)\n')
+
+
+def test_failed_capture_reports_bounded_terminal_bytes_without_changing_failure(capsys):
+    before = "Wine startup\n"
+    elapsed = [0.0]
+    calls = []
+    def fetch(_remaining):
+        calls.append(True)
+        elapsed[0] += 0.6
+        return before if len(calls) == 1 else before + "\x1b[2Ktracks\r\n"
+    with pytest.raises(AssertionError, match="Timed out.*Tracks: registry section is missing"):
+        capture_workshop_registry(fetch, lambda: None, timeout_seconds=1,
+                                  clock=lambda: elapsed[0], sleep=lambda _: None)
+    diagnostic = capsys.readouterr().out
+    assert "[diagnostic] Wreckfest console before tracks:" in diagnostic
+    assert "Wine startup" in diagnostic
+    assert r"\x1b[2Ktracks\r\n" in diagnostic
+
+
+def test_native_tracks_section_accepts_exact_event_with_display_name():
+    assert_workshop_loaded(
+        "Server connected.\r\nTracks:\r\n"
+        "  bigstadium_demolition_arena (MADMAN STADIUM - DEMOLITION ARENA)\r\n"
+        "  crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\r\n"
+        "  crazy_2000_reversed (CRAZY 2000 - CRAZY 2000 REVERSED)\r\n"
+        "Server running.\r\n")
+
+
+@pytest.mark.parametrize("text", [
+    "tracks\nconfig track=crazy_2000_classic",
+    "  crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\n",
+    "command line: Tracks: crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\n",
+    "Tracks:\n  track=crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\n",
+    "Tracks:\n  crazy_2000_classic\n",
+    "Tracks:\n  crazy_2000_classic ()\n",
+    "Tracks:\n  crazy_2000_classic_extra (CRAZY 2000 - CRAZY 2000)\n",
+    "Tracks:\n  crazy_2000_classic (CRAZY 2000 - CRAZY 2000) config echo\n",
+    "Tracks:\n  bigstadium_figure_8 (MADMAN STADIUM - FIGURE 8)\n"
+    "Configuration:\n  crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\n",
+    "Tracks:\n  bigstadium_figure_8 (MADMAN STADIUM - FIGURE 8)\n\n"
+    "  crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\n",
+])
+def test_non_registry_echo_or_unsectioned_event_is_not_load_proof(text):
+    with pytest.raises(AssertionError):
+        assert_workshop_loaded(text)
+
+
+def test_previous_registry_cannot_satisfy_latest_tracks_response():
+    with pytest.raises(AssertionError):
+        assert_workshop_loaded(
+            "Tracks:\n  crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\n"
+            "Server restarted.\nTracks:\n  bigstadium_figure_8 (MADMAN STADIUM - FIGURE 8)\n")
+
+
+@pytest.mark.parametrize("failure", ["Unknown command: tracks", "Error: tracks unavailable",
+                                      "Failed to load crazy_2000_classic", "crazy_2000_classic not found"])
+def test_engine_command_or_load_error_invalidates_registry_evidence(failure):
+    with pytest.raises(AssertionError):
+        assert_workshop_loaded(
+            "Tracks:\n  crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\n" + failure)
+
+
+def test_oversized_capture_cannot_satisfy_bounded_response_contract():
+    with pytest.raises(AssertionError):
+        assert_workshop_loaded("x" * (1024 * 1024) +
+                               "\nTracks:\n  crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\n")
+
+
+def test_event_after_registry_row_bound_is_not_load_proof():
+    with pytest.raises(AssertionError):
+        assert_workshop_loaded("Tracks:\n" + "  stock_track (STOCK TRACK)\n" * 1024 +
+                               "  crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\n")
+
+
+def test_poller_waits_for_complete_registry_instead_of_config_substring():
+    outputs = iter(["tracks\nconfig track=crazy_2000_classic",
+                    "Tracks:\n  crazy_2000_classic",
+                    "Tracks:\n  crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\n"])
+    elapsed = [0.0]
+    budgets = []
+
+    def fetch(remaining):
+        budgets.append(remaining)
+        elapsed[0] += 0.25
+        return next(outputs)
+
+    def pause(seconds):
+        elapsed[0] += seconds
+
+    result = wait_for_workshop_loaded(fetch, timeout_seconds=5,
+                                      clock=lambda: elapsed[0], sleep=pause)
+    assert result == "Tracks:\n  crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\n"
+    assert budgets == [5, 3.75, 2.5]
+
+
+def test_poller_times_out_with_last_parser_reason_and_remaining_fetch_budget():
+    elapsed = [0.0]
+    budgets = []
+
+    def fetch(remaining):
+        budgets.append(remaining)
+        elapsed[0] += min(0.5, remaining)
+        return "tracks\nconfig track=crazy_2000_classic"
+
+    def pause(seconds):
+        elapsed[0] += seconds
+
+    with pytest.raises(AssertionError, match="Timed out.*Tracks: registry section is missing"):
+        wait_for_workshop_loaded(fetch, timeout_seconds=2,
+                                 clock=lambda: elapsed[0], sleep=pause)
+    assert budgets == [2, 0.5]
+    assert elapsed[0] == 2
+
+
+def test_poller_does_not_accept_valid_output_returned_after_deadline():
+    elapsed = [0.0]
+
+    def fetch(remaining):
+        assert remaining == 1
+        elapsed[0] += 2
+        return "Tracks:\n  crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\n"
+
+    with pytest.raises(AssertionError, match="Timed out"):
+        wait_for_workshop_loaded(fetch, timeout_seconds=1,
+                                 clock=lambda: elapsed[0], sleep=lambda _seconds: None)
+
+
+def test_cli_server_mode_fetches_bounded_alphagsm_logs_then_writes_evidence(tmp_path, monkeypatch):
+    evidence = tmp_path / "fresh-native-registry.log"
+    calls = []
+    native = "Tracks:\n  crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\n"
+
+    def run(command, **kwargs):
+        calls.append((command, kwargs))
+        return SimpleNamespace(stdout="startup\n" + (native if len(calls) > 2 else ""))
+
+    monkeypatch.setattr(sys, "argv", ["workshop", str(evidence), "--server", "itwreck", "--timeout", "4"])
+    monkeypatch.setattr(module.subprocess, "run", run)
+    module.main()
+    command, options = calls[0]
+    assert command == [sys.executable, str(Path(module.__file__).resolve().parents[2] / "alphagsm"),
+                       "itwreck", "logs", "-n", "2000"]
+    assert 0 < options["timeout"] <= 4
+    assert options["capture_output"] and options["text"] and options["check"]
+    assert calls[1][0][-3:] == ["itwreck", "send", "tracks"]
+    assert evidence.read_text(encoding="utf-8") == native
+
+
+def test_cli_failed_log_command_does_not_replace_evidence(tmp_path, monkeypatch):
+    evidence = tmp_path / "native-registry.log"
+    evidence.write_text("previous evidence", encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", ["workshop", str(evidence), "--server", "itwreck"])
+
+    def fail(command, **_kwargs):
+        raise subprocess.CalledProcessError(1, command)
+
+    monkeypatch.setattr(module.subprocess, "run", fail)
+    with pytest.raises(subprocess.CalledProcessError):
+        module.main()
+    assert evidence.read_text(encoding="utf-8") == "previous evidence"
+
+
+def test_cli_plain_log_mode_retains_parser_without_fetching(tmp_path, monkeypatch):
+    evidence = tmp_path / "native-registry.log"
+    evidence.write_text("Tracks:\n  crazy_2000_classic (CRAZY 2000 - CRAZY 2000)\n", encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", ["workshop", str(evidence)])
+
+    def unexpected_fetch(*_args, **_kwargs):
+        raise AssertionError("Plain log mode must not execute AlphaGSM")
+
+    monkeypatch.setattr(module.subprocess, "run", unexpected_fetch)
+    module.main()

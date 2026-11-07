@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+set -x
+
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || (cd "$_SCRIPT_DIR/../.." && pwd))"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+ALPHAGSM_SCRIPT="$REPO_ROOT/alphagsm"
+
+SETUP_TIMEOUT_SECONDS="${SETUP_TIMEOUT_SECONDS:-3600}"
+START_TIMEOUT_SECONDS="${START_TIMEOUT_SECONDS:-1800}"
+STOP_TIMEOUT_SECONDS="${STOP_TIMEOUT_SECONDS:-90}"
+SERVER_NAME="${SERVER_NAME:-itark}"
+SERVER_STARTED=0
+LOCAL_DOCKER_IMAGE="alphagsm-steamcmd-linux-runtime:test"
+PUBLISHED_DOCKER_IMAGE="ghcr.io/sectoralpha/alphagsm-steamcmd-linux-runtime:latest"
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "Required command not found: $1" >&2
+    exit 1
+  }
+}
+
+run_alphagsm() {
+  echo
+  echo "=== alphagsm $* ==="
+  ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$@"
+}
+
+resolve_docker_image() {
+  if [[ -n "${ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX:-}" ]]; then
+    printf '%s\n' "$ALPHAGSM_BACKEND_DOCKER_IMAGE_STEAMCMD_LINUX"
+    return 0
+  fi
+
+  if docker image inspect "$LOCAL_DOCKER_IMAGE" >/dev/null 2>&1; then
+    printf '%s\n' "$LOCAL_DOCKER_IMAGE"
+    return 0
+  fi
+
+  printf '%s\n' "$PUBLISHED_DOCKER_IMAGE"
+}
+
+# shellcheck source=smoke_tests/steamcmd_helpers.sh
+source "$REPO_ROOT/tests/smoke_tests/steamcmd_helpers.sh"
+
+cleanup() {
+  set +e
+  if [[ "${SERVER_STARTED:-0}" == "1" ]] && [[ -n "${CONFIG_PATH:-}" && -f "${CONFIG_PATH:-}" ]]; then
+    ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" "$PYTHON_BIN" "$ALPHAGSM_SCRIPT" "$SERVER_NAME" stop
+  fi
+}
+
+trap cleanup EXIT
+
+require_cmd "$PYTHON_BIN"
+require_cmd docker
+
+DOCKER_IMAGE="$(resolve_docker_image)"
+WORK_ROOT="$(resolve_work_root)"
+WORK_DIR="$(mktemp -d -p "$WORK_ROOT" ark-smoke.XXXXXX)"
+HOME_DIR="$WORK_DIR/alphagsm-home"
+INSTALL_DIR="$WORK_DIR/ark-server"
+CONFIG_PATH="$WORK_DIR/alphagsm-ark.conf"
+
+mkdir -p "$HOME_DIR"
+PORT="$(pick_free_port)"
+QUERY_PORT="$(pick_free_port)"
+while [[ "$QUERY_PORT" == "$PORT" ]]; do
+  QUERY_PORT="$(pick_free_port)"
+done
+
+cat > "$CONFIG_PATH" <<EOF
+[core]
+alphagsm_path = $HOME_DIR
+userconf = $HOME_DIR
+
+[downloader]
+db_path = $HOME_DIR/downloads/downloads.txt
+target_path = $HOME_DIR/downloads/downloads
+
+[server]
+datapath = $HOME_DIR/conf
+
+[runtime]
+backend = docker
+
+[process]
+backend = subprocess
+
+[docker]
+backend = subprocess
+
+[screen]
+screenlog_path = $HOME_DIR/logs
+sessiontag = AlphaGSM-IT#
+keeplogs = 1
+EOF
+
+echo "Using install dir: $INSTALL_DIR"
+echo "Using port: $PORT"
+echo "Using query port: $QUERY_PORT"
+echo "Using image: $DOCKER_IMAGE"
+
+run_create_or_skip_disabled "$SERVER_NAME" create ark
+run_alphagsm "$SERVER_NAME" set image "$DOCKER_IMAGE"
+run_alphagsm "$SERVER_NAME" set queryport "$QUERY_PORT"
+run_setup_or_skip_steamcmd "$SERVER_NAME" setup -n "$PORT" "$INSTALL_DIR"
+if [[ "${ALPHAGSM_RUN_ARK_WORKSHOP:-0}" == "1" ]]; then
+  run_alphagsm "$SERVER_NAME" mod add workshop https://steamcommunity.com/sharedfiles/filedetails/?id=2041231763
+  run_alphagsm "$SERVER_NAME" mod apply
+  ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
+    "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/ark_workshop.py" prepare "$SERVER_NAME"
+fi
+run_alphagsm "$SERVER_NAME" start
+SERVER_STARTED=1
+wait_for_info_protocol "$SERVER_NAME" "a2s" "$START_TIMEOUT_SECONDS"
+"$PYTHON_BIN" - "$ALPHAGSM_SCRIPT" "$CONFIG_PATH" "$SERVER_NAME" "$START_TIMEOUT_SECONDS" <<'PY'
+import json
+import os
+import subprocess
+import sys
+import time
+env = dict(os.environ, ALPHAGSM_CONFIG_LOCATION=sys.argv[2])
+deadline = time.monotonic() + int(sys.argv[4])
+while time.monotonic() < deadline:
+    result = subprocess.run([sys.executable, sys.argv[1], sys.argv[3], "info", "--json"],
+                            env=env, text=True, capture_output=True, timeout=min(30, deadline-time.monotonic()),
+                            check=False)
+    if result.returncode == 0:
+        info = json.loads(result.stdout)
+        if info.get("protocol") == "a2s" and info.get("map") and info.get("max_players", 0) > 0:
+            break
+    time.sleep(2)
+else:
+    raise SystemExit("ARK never confirmed a loaded native world with positive capacity")
+PY
+if [[ "${ALPHAGSM_RUN_ARK_WORKSHOP:-0}" == "1" ]]; then
+  ALPHAGSM_CONFIG_LOCATION="$CONFIG_PATH" PYTHONPATH="$REPO_ROOT/src" \
+    "$PYTHON_BIN" "$REPO_ROOT/tests/smoke_tests/ark_workshop.py" check "$SERVER_NAME"
+fi
+run_alphagsm "$SERVER_NAME" status
+run_alphagsm "$SERVER_NAME" query
+run_alphagsm "$SERVER_NAME" info
+run_alphagsm "$SERVER_NAME" info --json
+run_stop_or_skip "$SERVER_NAME"
+SERVER_STARTED=0
+if [[ "${ALPHAGSM_RUN_ARK_WORKSHOP:-0}" == "1" ]]; then
+  run_alphagsm "$SERVER_NAME" mod cleanup
+fi
+run_alphagsm "$SERVER_NAME" status

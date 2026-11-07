@@ -1,0 +1,228 @@
+"""Full coverage tests for jc3server."""
+
+import json
+import os
+import sys
+from unittest.mock import patch, MagicMock
+
+import pytest
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
+sys.modules.pop('gamemodules.jc3server', None)
+with patch.dict('sys.modules', {'screen': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock(), 'utils.steamcmd': MagicMock()}):
+    import gamemodules.jc3server as mod
+    from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
+
+
+def test_configure_basic(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path))
+    assert server.data['port'] == 7777
+    assert server.data["exe_name"] == "Server"
+
+
+def test_configure_ask_defaults(tmp_path, monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda prompt: "")
+    server = DummyServer()
+    server.data["port"] = 7777
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = "test"
+    server.data["Steam_anonymous_login_possible"] = "test"
+    server.data["gamemode"] = "test"
+    server.data["maxplayers"] = 27015
+    mod.configure(server, ask=True)
+
+
+def test_configure_ask_custom(tmp_path, monkeypatch):
+    inputs = iter(["7778", str(tmp_path / 'custom')])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+    server = DummyServer()
+    mod.configure(server, ask=True)
+
+
+def test_install(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "openjc3-server"
+    server.data["Steam_AppID"] = 619960
+    server.data["Steam_anonymous_login_possible"] = True
+    mod.install(server)
+
+
+def test_update_with_restart(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = 619960
+    server.data["Steam_anonymous_login_possible"] = True
+    mod.update(server, validate=True, restart=True)
+    assert server._stopped
+    assert server._started
+
+
+def test_update_no_restart(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = 619960
+    server.data["Steam_anonymous_login_possible"] = True
+    mod.update(server, validate=False, restart=False)
+    assert server._stopped
+    assert not server._started
+
+
+def test_update_stop_exception(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["Steam_AppID"] = 619960
+    server.data["Steam_anonymous_login_possible"] = True
+    server.stop = MagicMock(side_effect=Exception('already stopped'))
+    mod.update(server, validate=False, restart=False)
+
+
+def test_restart():
+    server = DummyServer()
+    mod.restart(server)
+    assert server._stopped
+    assert server._started
+
+
+def test_get_start_command(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "Server"
+    (tmp_path / "Server").write_text("")
+    server.data["maxplayers"] = 27015
+    server.data["port"] = 27015
+    cmd, cwd = mod.get_start_command(server)
+    assert isinstance(cmd, list)
+    config = json.loads((tmp_path / "config.json").read_text())
+    assert config["port"] == 27015
+    assert config["queryPort"] == 27016
+    assert config["steamPort"] == 27017
+    assert config["httpPort"] == 27018
+
+
+def test_sync_derived_ports_updates_defaults_when_base_port_changes():
+    server = DummyServer()
+    server.data["port"] = 4200
+    mod._sync_derived_ports(server)
+
+    server.data["port"] = 4300
+    mod._sync_derived_ports(server)
+
+    assert server.data["queryport"] == 4301
+    assert server.data["steamport"] == 4302
+    assert server.data["httpport"] == 4303
+
+
+def test_get_runtime_requirements_mounts_and_ports(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    server.data["port"] = 7777
+    requirements = mod.get_runtime_requirements(server)
+    mounts = requirements["mounts"]
+    ports = requirements["ports"]
+    assert any(mount["target"] == "/srv/server" for mount in mounts)
+    assert any(mount["target"] == "/opt/alphagsm-steamcmd" for mount in mounts)
+    assert any(port["protocol"] == "tcp" and port["host"] == 7780 for port in ports)
+    assert any(port["protocol"] == "udp" and port["host"] == 7778 for port in ports)
+    assert any(port["protocol"] == "udp" and port["host"] == 7779 for port in ports)
+    assert any(port["protocol"] == "udp" and port["host"] == 7777 for port in ports)
+
+
+def test_get_query_address_uses_http_port(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path)
+    server.data["port"] = 4200
+    host, port, protocol = mod.get_query_address(server)
+    assert host == "127.0.0.1"
+    assert port == 4203
+    assert protocol == "tcp"
+
+
+def test_get_start_command_missing_exe(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "nonexistent"
+    server.data["gamemode"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["port"] = 27015
+    with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+
+def test_do_stop():
+    server = DummyServer()
+    mod.do_stop(server, 0)
+    mod.runtime_module.send_to_server.assert_called()
+
+
+def test_status():
+    server = DummyServer()
+    mod.status(server, verbose=True)
+
+
+def test_message():
+    server = DummyServer()
+    mod.message(server, "hello")
+
+
+def test_backup():
+    server = DummyServer()
+    server.data["dir"] = "/tmp/test/"
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.backup(server)
+
+
+def test_checkvalue_empty_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ())
+
+
+def test_checkvalue_unsupported_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("totally_invalid_key_xyz",), "val")
+
+
+def test_checkvalue_no_value():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("port",))
+
+
+def test_checkvalue_port():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("port",), "12345")
+    assert result == 12345
+
+
+def test_checkvalue_maxplayers():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("maxplayers",), "12345")
+    assert result == 12345
+
+
+def test_checkvalue_gamemode():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("servername",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_exe_name():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("exe_name",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_dir():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("dir",), "/test/value")
+    assert result == "/test/value"
+
+
+def test_checkvalue_backup():
+    server = DummyServer()
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")

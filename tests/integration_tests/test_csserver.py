@@ -1,0 +1,150 @@
+"""Integration test for csserver."""
+
+import os
+
+import pytest
+
+from conftest import (
+    default_runtime_backend,
+    require_integration_opt_in,
+    require_steamcmd_opt_in,
+    require_command_for_runtime,
+    pick_free_udp_port,
+    write_config,
+    alphagsm_env,
+    run_and_assert_ok,
+    run_alphagsm,
+    log_command_result,
+    skip_for_known_steamcmd_issue,
+    wait_for_runtime_log_marker,
+    wait_for_info_protocol,
+    wait_for_tcp_closed,
+    wait_for_udp_closed,
+)
+from gamemodules.csserver import steam_app_id
+
+pytestmark = pytest.mark.integration
+
+START_TIMEOUT = 600
+STOP_TIMEOUT = 90
+
+
+def _run_setup_with_start_retry(env, server_name, install_dir, initial_port):
+    """Retry setup/start once when a transient listener steals the chosen port."""
+
+    port = initial_port
+    result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+    log_command_result("alphagsm setup", result)
+    if result.returncode != 0:
+        skip_for_known_steamcmd_issue(result, app_id=steam_app_id)
+    assert result.returncode == 0, (
+        f"Unexpected csserver setup failure: rc={result.returncode}\n"
+        f"stdout={result.stdout}\n"
+        f"stderr={result.stderr}"
+    )
+
+    start_result = run_alphagsm(env, server_name, "start")
+    log_command_result("alphagsm " + " ".join((server_name, "start")), start_result)
+    if start_result.returncode == 0:
+        return port
+
+    combined = "\n".join(part for part in (start_result.stdout, start_result.stderr) if part)
+    if "claimed ports are not free" not in combined:
+        skip_for_known_steamcmd_issue(start_result)
+        assert start_result.returncode == 0, start_result.stderr or start_result.stdout
+
+    port = pick_free_udp_port()
+    rerun_result = run_alphagsm(env, server_name, "setup", "-n", str(port), str(install_dir))
+    log_command_result("alphagsm setup [retry]", rerun_result)
+    if rerun_result.returncode != 0:
+        skip_for_known_steamcmd_issue(rerun_result, app_id=steam_app_id)
+    assert rerun_result.returncode == 0, (
+        f"Unexpected csserver setup retry failure: rc={rerun_result.returncode}\n"
+        f"stdout={rerun_result.stdout}\n"
+        f"stderr={rerun_result.stderr}"
+    )
+
+    retry_result = run_alphagsm(env, server_name, "start")
+    log_command_result("alphagsm " + " ".join((server_name, "start", "[retry]")), retry_result)
+    skip_for_known_steamcmd_issue(retry_result)
+    assert retry_result.returncode == 0, retry_result.stderr or retry_result.stdout
+    return port
+
+
+def test_csserver_lifecycle(tmp_path):
+    require_integration_opt_in()
+    require_steamcmd_opt_in()
+    runtime_backend = os.environ.get(
+        "ALPHAGSM_TEST_RUNTIME_BACKEND", default_runtime_backend()
+    )
+    require_command_for_runtime(
+        "screen",
+        runtime_backend=runtime_backend,
+        module_name="csserver",
+    )
+
+    home_dir = tmp_path / "home"
+    home_dir.mkdir()
+    install_dir = tmp_path / "server"
+    config_path = tmp_path / "alphagsm.conf"
+    server_name = "itcsserver"
+
+    write_config(
+        config_path,
+        home_dir,
+        session_tag="AlphaGSM-IT#",
+        runtime_backend=runtime_backend,
+        module_name="csserver",
+    )
+    env = alphagsm_env(config_path)
+    port = pick_free_udp_port()
+
+    # create
+    run_and_assert_ok(env, server_name, "create", "csserver")
+
+    # setup + start
+    port = _run_setup_with_start_retry(env, server_name, install_dir, port)
+
+    try:
+        # wait for readiness
+        wait_for_runtime_log_marker(
+            env,
+            server_name,
+            ["SV_ActivateServer", "Server is hibernating", "Connection to Steam servers successful", "VAC secure mode"],
+            START_TIMEOUT,
+        )
+        wait_for_info_protocol(
+            env, server_name, "a2s", START_TIMEOUT, expected_port=port
+        )
+
+        # status
+        run_and_assert_ok(env, server_name, "status")
+
+        # query
+        query_result = run_and_assert_ok(env, server_name, "query")
+        assert (
+            "Server is responding" in query_result.stdout
+        ), f"Unexpected query output: {query_result.stdout!r}"
+
+        # info
+        info_result = run_and_assert_ok(env, server_name, "info")
+        assert (
+            "Players     : 0/" in info_result.stdout
+        ), f"Unexpected info output: {info_result.stdout!r}"
+
+        # info --json
+        import json as _info_json
+        info_json_result = run_and_assert_ok(env, server_name, "info", "--json")
+        _info_data = _info_json.loads(info_json_result.stdout.strip())
+        assert _info_data["protocol"] == "a2s", (
+            f"Expected a2s protocol in info JSON: {_info_data!r}"
+        )
+        assert _info_data.get("players") == 0, (
+            f"Expected 0 players on fresh server: {_info_data!r}"
+        )
+    finally:
+        # stop
+        log_command_result("alphagsm stop", run_alphagsm(env, server_name, "stop"))
+
+    # verify stopped
+    wait_for_udp_closed("127.0.0.1", port, STOP_TIMEOUT)

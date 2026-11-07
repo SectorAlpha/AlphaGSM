@@ -1,0 +1,48 @@
+{
+  "families": {
+    "cp_granary_pro_rc8": {
+      "default": "current",
+      "releases": {
+        "current": {
+          "url": "https://fastdl.serveme.tf/maps/cp_granary_pro_rc8.bsp",
+          "hosts": ["fastdl.serveme.tf"],
+          "archive_type": "bsp",
+          "destinations": ["tf/maps"]
+        }
+      }
+    },
+    "koth_product_rcx": {
+      "default": "current",
+      "releases": {
+        "current": {
+          "url": "https://fastdl.serveme.tf/maps/koth_product_rcx.bsp",
+          "hosts": ["fastdl.serveme.tf"],
+          "archive_type": "bsp",
+          "destinations": ["tf/maps"]
+        }
+      }
+    },
+    "pl_vigil_rc10": {
+      "default": "current",
+      "releases": {
+        "current": {
+          "url": "https://fastdl.serveme.tf/maps/pl_vigil_rc10.bsp",
+          "hosts": ["fastdl.serveme.tf"],
+          "archive_type": "bsp",
+          "destinations": ["tf/maps"]
+        }
+      }
+    },
+    "koth_clearcut_b15d": {
+      "default": "current",
+      "releases": {
+        "current": {
+          "url": "https://fastdl.serveme.tf/maps/koth_clearcut_b15d.bsp",
+          "hosts": ["fastdl.serveme.tf"],
+          "archive_type": "bsp",
+          "destinations": ["tf/maps"]
+        }
+      }
+    }
+  }
+}

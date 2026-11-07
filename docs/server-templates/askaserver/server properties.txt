@@ -1,0 +1,9 @@
+// ASKA reads this file through -propertiesPath.
+display name = AlphaGSM <server name>
+server name = <server name>
+password =
+steam game port = 7777
+steam query port = 27015
+authentication token =
+region = default
+keep server world alive = false

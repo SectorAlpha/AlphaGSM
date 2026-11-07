@@ -1,0 +1,7 @@
+{
+  "SessionName": "AlphaGSM World",
+  "SaveGameInterval": "300",
+  "StartNewGame": "true",
+  "LoadSavedGame": "false",
+  "SaveGameName": "AutoSave0.sav"
+}

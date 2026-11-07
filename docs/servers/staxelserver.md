@@ -1,0 +1,105 @@
+# Staxel
+
+This guide covers the `staxelserver` module in AlphaGSM.
+
+## Status
+
+`staxelserver` is currently `ENABLED (AUTH)`.
+
+Before `setup`, authenticate Steam or SteamCMD with an account entitled to
+Staxel dedicated server app `755170`.
+
+## Requirements
+
+- `screen`
+- SteamCMD runtime libraries (`lib32gcc-s1`, `lib32stdc++6`)
+- Python packages from `requirements.txt`
+
+## Quick Start
+
+Create the server:
+
+```bash
+alphagsm mystaxelse create staxelserver
+```
+
+Run setup:
+
+```bash
+alphagsm mystaxelse setup
+```
+
+Start it:
+
+```bash
+alphagsm mystaxelse start
+```
+
+Check it:
+
+```bash
+alphagsm mystaxelse status
+```
+
+Stop it:
+
+```bash
+alphagsm mystaxelse stop
+```
+
+## Setup Details
+
+Setup configures:
+
+- the game port (default 25565)
+- the install directory
+- SteamCMD downloads the server files
+
+## Useful Commands
+
+```bash
+alphagsm mystaxelse update
+alphagsm mystaxelse backup
+```
+
+## Notes
+
+- Module name: `staxelserver`
+- Default port: 25565
+
+<!-- alphagsm-server-variables:start -->
+
+## Server variables
+
+After `create staxelserver`, inspect or change these with `set`:
+
+```bash
+alphagsm myserver set --list
+alphagsm myserver set KEY --describe
+alphagsm myserver set KEY VALUE
+```
+
+This module does not declare schema-backed keys. `set --list` after
+create is still the live source of truth.
+
+<!-- alphagsm-server-variables:end -->
+
+## Developer Notes
+
+### Run File
+
+- **Executable**: `bin/Staxel.ServerWizard.exe`
+- **Location**: `<install_dir>/bin/Staxel.ServerWizard.exe`
+- **Engine**: Custom (SteamCMD)
+- **SteamCMD App ID**: `755170`
+
+### Server Configuration
+
+- **Config file**: See game module source
+- **Template**: See [server-templates/staxelserver/](../server-templates/staxelserver/) if available
+
+### Maps and Mods
+
+- **Map directory**: Check game documentation
+- **Mod directory**: Check game documentation
+- **Workshop support**: No

@@ -1,8 +1,12 @@
-#!/usr/bin/python3
-import core
+#!/usr/bin/env python3
+import os
 import sys
 
-if int(sys.argv[1]):
-    print("#%AlphaGSM-INTERNAL%#",flush=True)
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
-sys.exit(core.main(sys.argv[2],sys.argv[3:]))
+import core  # pylint: disable=wrong-import-position
+
+if int(sys.argv[1]):
+    print("#%AlphaGSM-INTERNAL%#", flush=True)
+
+sys.exit(core.main(sys.argv[2], sys.argv[3:]))

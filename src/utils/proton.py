@@ -1,0 +1,570 @@
+"""Wine/Proton integration helpers for running Windows-binary game servers on Linux.
+
+On Linux hosts, Windows-only game server binaries can be run through Wine or
+Proton-GE.  This module provides helpers to locate the available tool and to
+construct a wrapped command that the screen/subprocess backend can launch
+without any modifications.
+
+Usage example in a game module::
+
+    from utils.platform_info import IS_LINUX
+    import utils.proton as proton
+
+    def get_start_command(server):
+        cmd = [server.data["exe_name"]]
+        if IS_LINUX:
+            cmd = proton.wrap_command(cmd, wineprefix=server.data.get("wineprefix"))
+        return cmd, server.data["dir"]
+"""
+
+import os
+import shlex
+import shutil
+from pathlib import Path
+
+CONTAINER_SERVER_DIR = "/srv/server"
+CONTAINER_WINEPREFIX_DIR = "/srv/wineprefix"
+HEADLESS_ENV = {
+    "DISPLAY": "",
+    "WINEDLLOVERRIDES": "winex11.drv=",
+}
+PROTON_HEADLESS_ENV = {
+    # Proton-GE's optional controller UI helper requires a display and can
+    # abort otherwise-valid dedicated-server launches before the game binds.
+    "PROTON_USE_XALIA": "0",
+}
+SANITIZED_TEMP_VARS = ("TMPDIR", "TMP", "TEMP")
+
+# ---------------------------------------------------------------------------
+# Proton-GE search directories (checked in order; first match wins)
+# ---------------------------------------------------------------------------
+
+_PROTON_SEARCH_DIRS = [
+    os.path.expanduser("~/.local/share/proton-ge"),
+    os.path.expanduser("~/.steam/root/compatibilitytools.d"),
+    os.path.expanduser("~/.local/share/Steam/compatibilitytools.d"),
+    "/opt/proton-ge",
+]
+
+XVFB_RUN_HOST_DEPENDENCY = {
+    "id": "xvfb-run",
+    "display_name": "xvfb-run",
+    "command": "xvfb-run",
+    "platforms": ("linux",),
+    "install_hints": {
+        "linux": "Install the host package 'xvfb' before launching this server locally.",
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# Detection helpers
+# ---------------------------------------------------------------------------
+
+def find_wine():
+    """Return the absolute path of the ``wine`` executable, or ``None``."""
+    return shutil.which("wine")
+
+
+def find_proton():
+    """Return the absolute path of a Proton ``proton`` script, or ``None``.
+
+    Searches *_PROTON_SEARCH_DIRS* for sub-directories that contain a
+    ``proton`` script.  When multiple versions are present the
+    lexicographically last directory name is preferred (e.g. ``GE-Proton9-27``
+    is chosen over ``GE-Proton9-10``).
+    """
+    for search_dir in _PROTON_SEARCH_DIRS:
+        if not os.path.isdir(search_dir):
+            continue
+        entries = sorted(
+            (
+                e
+                for e in os.listdir(search_dir)
+                if os.path.isdir(os.path.join(search_dir, e))
+            ),
+            reverse=True,
+        )
+        for entry in entries:
+            proton_exe = os.path.join(search_dir, entry, "proton")
+            if os.path.isfile(proton_exe):
+                return proton_exe
+    return None
+
+
+def is_available():
+    """Return ``True`` if Wine or Proton-GE is available on this system."""
+    return find_wine() is not None or find_proton() is not None
+
+
+def xvfb_host_dependency():
+    """Return the shared Linux xvfb-run host dependency metadata."""
+
+    return dict(XVFB_RUN_HOST_DEPENDENCY)
+
+
+def console_host_dependency():
+    """Declare the Unix PTY relay used by Windows interactive consoles."""
+    return {
+        "id": "script", "display_name": "script", "command": "script",
+        "platforms": ("linux",),
+        "install_hints": {"linux": "Install 'bsdutils' (util-linux script) for native console I/O."},
+    }
+
+
+def wrap_console_command(command):
+    """Relay native Windows console I/O through a real Unix pseudoterminal.
+
+    Wine only connects its console to the terminal when the launcher has a
+    terminal. The process supervisor and Docker console FIFO otherwise supply
+    pipes, causing native console output to disappear into a GUI conhost.
+    script invokes a shell, so quote each argument rather than joining raw text.
+    """
+    return ["script", "-qefc", shlex.join(command), "/dev/null"]
+
+
+def prepare_wineprefix(wineprefix, *, template=None):
+    """Seed a fresh Wine prefix with image-installed runtime prerequisites.
+
+    Existing prefixes, including Proton compatibility directories, belong to
+    the operator and are never overlaid. Docker's entrypoint prepares its own
+    prefix; process modules can opt into this same prepared Wine template.
+    """
+    source = Path(template or os.environ.get("ALPHAGSM_WINEPREFIX_TEMPLATE", "/opt/wine"))
+    target = Path(wineprefix)
+    if target.is_symlink():
+        raise RuntimeError("Refusing to seed a symlink Wine prefix")
+    if target.exists() and (not target.is_dir() or any(target.iterdir())):
+        return False
+    if not (source / "system.reg").is_file():
+        return False
+    shutil.copytree(source, target, symlinks=True, dirs_exist_ok=True)
+    # Wine's wineboot skips profile and shell-folder initialization when this
+    # image-build timestamp matches wine.inf (or contains "disable"). A fresh
+    # copy may run as a different user, whose LocalLow folder does not exist.
+    # Let Wine initialize that account while retaining installed prerequisites.
+    (target / ".update-timestamp").unlink(missing_ok=True)
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Command wrapping
+# ---------------------------------------------------------------------------
+
+def wrap_command(command, wineprefix=None, prefer_proton=False):
+    """Wrap *command* so that a Windows executable runs on Linux.
+
+    Prefers Wine when both Wine and Proton-GE are installed unless
+    *prefer_proton* is ``True``.  When
+    *wineprefix* is provided it is forwarded via the ``WINEPREFIX`` (Wine) or
+    ``STEAM_COMPAT_DATA_PATH`` (Proton) environment variable using the
+    ``env(1)`` utility, so the existing screen/subprocess backends need no
+    changes.
+
+    Args:
+        command: The original command as a sequence of strings.  The first
+            element must be the Windows executable name or relative path.
+        wineprefix: Optional path to a Wine prefix directory or Proton
+            compatibility data directory.
+        prefer_proton: When ``True`` choose Proton-GE before Wine if both are
+            available. Use this for Windows servers known to require Proton.
+
+    Returns:
+        A new list of strings representing the wrapped command.
+
+    Raises:
+        RuntimeError: If neither Wine nor Proton-GE is available.
+    """
+    # Headless Wine env vars applied to every launch:
+    #   DISPLAY=             — no display; Wine uses its built-in null renderer
+    #   WINEDLLOVERRIDES=winex11.drv=
+    #                        — override the X11 driver with nothing, forcing the
+    #                          null/headless renderer even if DISPLAY is set in
+    #                          the outer environment
+    # Dedicated game servers never need a display; these vars ensure Wine never
+    # tries to open one regardless of the host environment.
+    _HEADLESS = ["%s=%s" % (key, value) for key, value in HEADLESS_ENV.items()]
+
+    proton = find_proton()
+    wine = find_wine()
+
+    if prefer_proton and proton is not None:
+        compat_dir = wineprefix or os.path.expanduser("~/.proton")
+        os.makedirs(compat_dir, exist_ok=True)
+        return prepend_env_unsets([
+            "env",
+            *_HEADLESS,
+            *["%s=%s" % item for item in PROTON_HEADLESS_ENV.items()],
+            f"STEAM_COMPAT_DATA_PATH={compat_dir}",
+            "STEAM_COMPAT_CLIENT_INSTALL_PATH=",
+            proton,
+            "run",
+        ] + list(command), *SANITIZED_TEMP_VARS)
+
+    if wine is not None:
+        env_vars = list(_HEADLESS)
+        if wineprefix:
+            env_vars.append(f"WINEPREFIX={wineprefix}")
+        return prepend_env_unsets(["env"] + env_vars + [wine] + list(command), *SANITIZED_TEMP_VARS)
+
+    if proton is not None:
+        compat_dir = wineprefix or os.path.expanduser("~/.proton")
+        os.makedirs(compat_dir, exist_ok=True)
+        return prepend_env_unsets([
+            "env",
+            *_HEADLESS,
+            *["%s=%s" % item for item in PROTON_HEADLESS_ENV.items()],
+            f"STEAM_COMPAT_DATA_PATH={compat_dir}",
+            "STEAM_COMPAT_CLIENT_INSTALL_PATH=",
+            proton,
+            "run",
+        ] + list(command), *SANITIZED_TEMP_VARS)
+
+    raise RuntimeError(
+        "Neither Wine nor Proton-GE is available on this system.  "
+        "Run  scripts/install_proton.sh  to install one of them."
+    )
+
+
+def wrap_xvfb_command(command, wineprefix=None, prefer_proton=False):
+    """Launch a Windows server with X11 drivers matching the container runtime.
+
+    Only replace the launcher's environment assignments. A native argument that
+    happens to contain the same variable name remains part of the game command.
+    DISPLAY is inherited from xvfb-run instead of the generic headless wrapper.
+    """
+    wrapped = wrap_command(command, wineprefix=wineprefix, prefer_proton=prefer_proton)
+    if wrapped and wrapped[0] == "env":
+        index = 1
+        prefix = ["env"]
+        while index + 1 < len(wrapped) and wrapped[index] == "-u":
+            prefix.extend(wrapped[index:index + 2])
+            index += 2
+        while index < len(wrapped) and _is_env_assignment(wrapped[index]):
+            if wrapped[index].split("=", 1)[0] not in {"DISPLAY", "WINEDLLOVERRIDES"}:
+                prefix.append(wrapped[index])
+            index += 1
+        wrapped = prefix + wrapped[index:]
+    wrapped = prepend_env_assignments(
+        wrapped, WINEDLLOVERRIDES="", SDL_VIDEODRIVER="x11", SDL_AUDIODRIVER="dummy",
+    )
+    return ["xvfb-run", "-a", "--server-args=-screen 0 1024x768x24 -nolisten tcp", *wrapped]
+
+
+def prepend_env_assignments(command, **env_vars):
+    """Return *command* with extra ``env`` assignments prepended."""
+
+    assignments = [
+        "%s=%s" % (key, value)
+        for key, value in env_vars.items()
+        if value is not None
+    ]
+    command = list(command)
+    if not assignments:
+        return command
+    if command and command[0] == "env":
+        prefix = ["env"]
+        index = 1
+        while index + 1 < len(command) and command[index] == "-u":
+            prefix.extend(command[index:index + 2])
+            index += 2
+        return prefix + assignments + command[index:]
+    return ["env"] + assignments + command
+
+
+def prepend_env_unsets(command, *env_names):
+    """Return *command* with leading ``env -u`` unsets inserted."""
+
+    command = list(command)
+    names = [name for name in env_names if name]
+    if not names:
+        return command
+    unset_tokens = []
+    for name in names:
+        unset_tokens.extend(["-u", name])
+    if command and command[0] == "env":
+        return ["env"] + unset_tokens + command[1:]
+    return ["env"] + unset_tokens + command
+
+
+def _is_env_assignment(token):
+    """Return whether *token* looks like an ``env`` variable assignment."""
+
+    if "=" not in token:
+        return False
+    key, _value = token.split("=", 1)
+    return key.isidentifier()
+
+
+def unwrap_runtime_command(command):
+    """Strip display, env, Wine, and Proton wrappers from *command*."""
+
+    command = list(command)
+    if not command:
+        return []
+    index = 0
+    if command[index] == "env":
+        index += 1
+        while index + 1 < len(command) and command[index] == "-u":
+            index += 2
+        while index < len(command) and _is_env_assignment(command[index]):
+            index += 1
+    if index >= len(command):
+        return command
+    if os.path.basename(command[index]) == "xvfb-run":
+        index += 1
+        while index < len(command) and command[index].startswith("-"):
+            index += 1
+        if index >= len(command):
+            return command
+        return unwrap_runtime_command(command[index:])
+    launcher = os.path.basename(command[index])
+    if launcher in ("wine", "wine64"):
+        return command[index + 1 :]
+    if index + 1 < len(command) and command[index + 1] == "run":
+        return command[index + 2 :]
+    return command[index:]
+
+
+def _build_port_specs(server, port_definitions):
+    """Return Docker port mappings for the requested server data keys."""
+
+    ports = []
+    for definition in port_definitions or ():
+        if isinstance(definition, dict):
+            key = definition.get("key")
+            value = server.data.get(key, definition.get("default"))
+            if value is None:
+                continue
+            base_port = int(value)
+            offset = int(definition.get("offset", 0))
+            host_port = base_port + offset
+            container_port = int(definition.get("container", host_port))
+            for port in (host_port, container_port):
+                if port < 1 or port > 65535:
+                    raise ValueError(
+                        "Invalid derived port {} for server {}".format(
+                            port,
+                            getattr(server, "name", "<unknown>"),
+                        )
+                    )
+            ports.append(
+                {
+                    "host": host_port,
+                    "container": container_port,
+                    "protocol": definition.get("protocol", "udp"),
+                }
+            )
+            continue
+        if isinstance(definition, tuple):
+            key, protocol = definition
+        else:
+            key, protocol = definition, "udp"
+        if key not in server.data or server.data[key] is None:
+            continue
+        ports.append(
+            {
+                "host": int(server.data[key]),
+                "container": int(server.data[key]),
+                "protocol": protocol,
+            }
+        )
+    return ports
+
+
+def _map_host_path_into_container(mounts, host_path):
+    """Return the container path for *host_path* when it is mounted."""
+
+    if not host_path:
+        return None
+
+    host_path_abs = os.path.abspath(host_path)
+    for mount in mounts or ():
+        source = mount.get("source")
+        target = mount.get("target")
+        if not source or not target:
+            continue
+        source_abs = os.path.abspath(source)
+        try:
+            if os.path.commonpath([source_abs, host_path_abs]) != source_abs:
+                continue
+        except ValueError:
+            continue
+        relative_path = os.path.relpath(host_path_abs, source_abs)
+        if relative_path == ".":
+            return str(target)
+        return os.path.join(str(target), relative_path).replace("\\", "/")
+    return None
+
+
+def _resolve_container_wineprefix(server):
+    """Return ``(mounts, container_wineprefix)`` for a Docker-backed server."""
+
+    mounts = []
+    server_dir = server.data.get("dir")
+    if server_dir:
+        mounts.append(
+            {
+                "source": server_dir,
+                "target": CONTAINER_SERVER_DIR,
+                "mode": "rw",
+            }
+        )
+    wineprefix = server.data.get("wineprefix")
+    if not wineprefix:
+        return mounts, os.path.join(CONTAINER_SERVER_DIR, ".alphagsm-wineprefix")
+
+    server_dir_abs = os.path.abspath(server_dir or "")
+    wineprefix_abs = os.path.abspath(wineprefix)
+    if server_dir_abs and (
+        wineprefix_abs == server_dir_abs
+        or wineprefix_abs.startswith(server_dir_abs.rstrip(os.sep) + os.sep)
+    ):
+        rel_path = os.path.relpath(wineprefix_abs, server_dir_abs)
+        if rel_path == ".":
+            return mounts, CONTAINER_SERVER_DIR
+        return mounts, os.path.join(CONTAINER_SERVER_DIR, rel_path)
+
+    mounts.append(
+        {
+            "source": wineprefix,
+            "target": CONTAINER_WINEPREFIX_DIR,
+            "mode": "rw",
+        }
+    )
+    return mounts, CONTAINER_WINEPREFIX_DIR
+
+
+def get_runtime_requirements(
+    server,
+    *,
+    port_definitions=(),
+    prefer_proton=False,
+    extra_env=None,
+    extra_host_dependencies=None,
+    stop_mode=None,
+    stdin_open=False,
+):
+    """Return Docker metadata for Windows servers run through Wine/Proton."""
+
+    mounts, wineprefix = _resolve_container_wineprefix(server)
+    env = dict(HEADLESS_ENV)
+    env["ALPHAGSM_WINEPREFIX"] = wineprefix
+    env["ALPHAGSM_PREFER_PROTON"] = "1" if prefer_proton else "0"
+    if prefer_proton:
+        env.update(PROTON_HEADLESS_ENV)
+    if extra_env:
+        env.update({key: str(value) for key, value in extra_env.items()})
+
+    requirements = {
+        "engine": "docker",
+        "family": "wine-proton",
+        "mounts": mounts,
+        "env": env,
+        "host_dependencies": [
+            {
+                "id": "wine-proton",
+                "display_name": "Wine or Proton-GE",
+                "platforms": ("linux",),
+                "command": (
+                    {"label": "wine", "command": "wine"},
+                    {"label": "proton", "command": find_proton() or "proton"},
+                ),
+            }
+        ],
+    }
+    if extra_host_dependencies:
+        requirements["host_dependencies"].extend(list(extra_host_dependencies))
+    ports = _build_port_specs(server, port_definitions)
+    if ports:
+        requirements["ports"] = ports
+    if stop_mode is not None:
+        requirements["stop_mode"] = stop_mode
+    if stdin_open:
+        requirements["stdin_open"] = True
+    return requirements
+
+
+def get_container_spec(
+    server,
+    get_start_command,
+    *,
+    port_definitions=(),
+    prefer_proton=False,
+    extra_env=None,
+    stop_mode=None,
+    stdin_open=False,
+    tty=False,
+    working_dir=CONTAINER_SERVER_DIR,
+):
+    """Return the Docker launch spec for a Wine/Proton-backed server."""
+
+    command, cwd = _get_container_start_command(server, get_start_command)
+    requirements = get_runtime_requirements(
+        server,
+        port_definitions=port_definitions,
+        prefer_proton=prefer_proton,
+        extra_env=extra_env,
+    )
+    resolved_working_dir = working_dir
+    mapped_cwd = _map_host_path_into_container(requirements.get("mounts", []), cwd)
+    if mapped_cwd and working_dir == CONTAINER_SERVER_DIR:
+        resolved_working_dir = mapped_cwd
+    native_command = unwrap_runtime_command(command)
+    if (
+        native_command
+        and not os.path.isabs(native_command[0])
+        and not native_command[0].startswith("./")
+        # Wine resolves the command processor from its Windows system directory.
+        # Prefixing it with ./ instead requests a file in the game installation.
+        and native_command[0].casefold() != "cmd.exe"
+    ):
+        native_command[0] = "./" + native_command[0].lstrip("./")
+    spec = {
+        "working_dir": resolved_working_dir,
+        "mounts": requirements.get("mounts", []),
+        "ports": requirements.get("ports", []),
+        "env": requirements.get("env", {}),
+        "command": native_command,
+    }
+    if tty:
+        spec["tty"] = True
+    if stop_mode is not None:
+        spec["stop_mode"] = stop_mode
+    if stdin_open:
+        spec["stdin_open"] = True
+    return spec
+
+
+def host_independent_start_command(server, get_start_command):
+    """Return a Docker start command without a local Wine or Proton install.
+
+    Process launches still fail when neither runtime is installed. Manifest
+    generation only needs the underlying dedicated-server command.
+    """
+
+    return _get_container_start_command(server, get_start_command)
+
+
+def _get_container_start_command(server, get_start_command):
+    """Return a start command suitable for Docker manifest generation.
+
+    Some Windows modules build their process-runtime command by calling
+    ``wrap_command`` directly, which requires Wine or Proton to be installed on
+    the host. Docker manifest generation should stay host-independent, so when
+    the only failure is a missing local Wine/Proton install, temporarily bypass
+    the wrapper and recover the underlying executable command.
+    """
+
+    try:
+        return get_start_command(server)
+    except RuntimeError as exc:
+        if "Neither Wine nor Proton-GE is available" not in str(exc):
+            raise
+
+    original_wrap_command = wrap_command
+    try:
+        globals()["wrap_command"] = lambda command, **_kwargs: list(command)
+        return get_start_command(server)
+    finally:
+        globals()["wrap_command"] = original_wrap_command

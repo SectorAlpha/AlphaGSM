@@ -1,0 +1,92 @@
+"""Focused unit coverage for tf2cserver."""
+
+import sys
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
+sys.modules.pop("gamemodules.tf2cserver", None)
+sys.modules.pop("gamemodules.tf2cserver.main", None)
+with patch.dict(
+    "sys.modules",
+    {
+        "screen": MagicMock(),
+        "utils.backups": MagicMock(),
+        "utils.backups.backups": MagicMock(),
+        "utils.fileutils": MagicMock(),
+        "utils.steamcmd": MagicMock(),
+    },
+):
+    import gamemodules.tf2cserver as mod
+    from server import ServerError
+
+
+def test_configure_sets_tf2_support_dir(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
+
+    assert server.data["port"] == 27015
+    assert server.data["supportdir"] == str(tmp_path / "tf")
+    assert server.data["startmap"] == "4koth_frigid"
+
+
+def test_install_downloads_base_app_and_tf2c(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    (tmp_path / "srcds.sh").write_text("#!/bin/sh\n", encoding="utf-8")
+
+    with patch.object(mod.steamcmd, "download") as download:
+        mod.install(server)
+
+    assert download.call_count == 2
+    first_call = download.call_args_list[0]
+    second_call = download.call_args_list[1]
+    assert first_call.args[:3] == (str(tmp_path / "tf"), mod.base_steam_app_id, True)
+    assert second_call.args[:3] == (str(tmp_path) + "/", mod.steam_app_id, True)
+
+
+def test_get_start_command_includes_tf_path(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    server.data["clientport"] = 27005
+    server.data["sourcetvport"] = 27020
+    (tmp_path / "srcds.sh").write_text("#!/bin/sh\n", encoding="utf-8")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[:5] == ["./srcds.sh", "-game", "tf2classified", "-tf_path", str(tmp_path / "tf")]
+    assert "+map" in cmd
+    assert "4koth_frigid" in cmd
+    assert cwd == str(tmp_path) + "/"
+
+
+def test_get_start_command_uses_relative_tf_path_for_docker(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
+    server.data["runtime"] = "docker"
+    server.data["clientport"] = 27005
+    server.data["sourcetvport"] = 27020
+    (tmp_path / "srcds.sh").write_text("#!/bin/sh\n", encoding="utf-8")
+
+    cmd, cwd = mod.get_start_command(server)
+
+    assert cmd[:5] == ["./srcds.sh", "-game", "tf2classified", "-tf_path", "tf"]
+    assert "+map" in cmd
+    assert "4koth_frigid" in cmd
+    assert cwd == str(tmp_path) + "/"
+
+
+def test_checkvalue_supportdir_accepts_string():
+    server = DummyServer()
+
+    assert mod.checkvalue(server, ("supportdir",), "/srv/tf") == "/srv/tf"
+
+
+def test_get_start_command_requires_launcher(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=27015, dir=str(tmp_path))
+
+    with pytest.raises(ServerError):
+        mod.get_start_command(server)

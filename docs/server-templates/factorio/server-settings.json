@@ -1,0 +1,10 @@
+{
+  "name": "AlphaGSM <server name>",
+  "description": "AlphaGSM-managed Factorio server",
+  "max_players": 0,
+  "visibility": {
+    "public": false,
+    "lan": true
+  },
+  "game_password": ""
+}

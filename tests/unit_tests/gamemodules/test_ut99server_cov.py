@@ -1,0 +1,304 @@
+"""Full coverage tests for ut99server."""
+
+import sys
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from tests.unit_tests.gamemodules.helpers import DummyServer
+
+sys.modules.pop('gamemodules.ut99server', None)
+with patch.dict('sys.modules', {'downloader': MagicMock(), 'screen': MagicMock(), 'utils.archive_install': MagicMock(), 'utils.backups': MagicMock(), 'utils.backups.backups': MagicMock()}):
+    import gamemodules.ut99server as mod
+    from server import ServerError
+    mod.runtime_module.send_to_server = MagicMock()
+
+def test_configure_basic(tmp_path):
+    server = DummyServer()
+    mod.configure(server, ask=False, port=7777, dir=str(tmp_path), url="https://example.com/test.zip", download_name="test.zip")
+    assert server.data['port'] == 7777
+
+def test_configure_ask_defaults(tmp_path, monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda prompt: "")
+    server = DummyServer()
+    server.data["port"] = 7777
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["url"] = "https://example.com/test.zip"
+    server.data["download_name"] = "test.zip"
+    server.data["configfile"] = "test"
+    server.data["download_mode"] = "test"
+    server.data["gametype"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["startmap"] = "test"
+    mod.configure(server, ask=True)
+
+def test_configure_ask_custom(tmp_path, monkeypatch):
+    inputs = iter(["7778", str(tmp_path / 'custom'), "https://example.com/new.tar.gz"])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(inputs))
+    server = DummyServer()
+    server.data["url"] = "https://example.com/test.zip"
+    server.data["download_name"] = "test.zip"
+    mod.configure(server, ask=True)
+
+def test_install(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    server.data["url"] = "https://example.com/test.zip"
+    server.data["download_name"] = "test.zip"
+    server.data["current_url"] = "test"
+    server.data["download_mode"] = "test"
+    mod.install(server)
+
+def test_install_installer_requires_7z(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    server.data["url"] = mod.UT99_INSTALLER_URL
+    server.data["download_name"] = mod.UT99_INSTALLER_NAME
+    server.data["download_mode"] = "installer"
+
+    monkeypatch.setattr(mod.shutil, "which", lambda name: None)
+
+    with pytest.raises(ServerError, match="7z"):
+        mod.install(server)
+
+def test_install_installer_accepts_terms_non_interactively(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    server.data["url"] = mod.UT99_INSTALLER_URL
+    server.data["download_name"] = mod.UT99_INSTALLER_NAME
+    server.data["download_mode"] = "installer"
+
+    installer_root = tmp_path / "downloads"
+    installer_root.mkdir()
+    installer_path = installer_root / mod.UT99_INSTALLER_NAME
+    installer_path.write_text("#!/bin/sh\n")
+
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/7z")
+    monkeypatch.setattr(mod.downloader, "getpath", lambda *_args: str(installer_root))
+    monkeypatch.setattr(mod.os, "chmod", lambda *_args, **_kwargs: None)
+    monkeypatch.setenv("ALPHAGSM_GITHUB_TOKEN", "ci-token")
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+
+    calls = []
+
+    def _fake_run(argv, **kwargs):
+        calls.append((argv, kwargs))
+        return None
+
+    monkeypatch.setattr(mod.sp, "run", _fake_run)
+
+    mod.install(server)
+
+    assert calls, "Expected installer subprocess to run"
+    _argv, kwargs = calls[0]
+    assert kwargs["check"] is True
+    assert kwargs["input"] == "y\n"
+    assert kwargs["text"] is True
+    assert kwargs["env"]["GITHUB_TOKEN"] == "ci-token"
+
+def test_install_installer_updates_exe_name_to_installed_binary(tmp_path, monkeypatch):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    server.data["configfile"] = "System/UnrealTournament.ini"
+    server.data["url"] = mod.UT99_INSTALLER_URL
+    server.data["download_name"] = mod.UT99_INSTALLER_NAME
+    server.data["download_mode"] = "installer"
+
+    installer_root = tmp_path / "downloads"
+    installer_root.mkdir()
+    installer_path = installer_root / mod.UT99_INSTALLER_NAME
+    installer_path.write_text("#!/bin/sh\n")
+
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/7z")
+    monkeypatch.setattr(mod.downloader, "getpath", lambda *_args: str(installer_root))
+    monkeypatch.setattr(mod.os, "chmod", lambda *_args, **_kwargs: None)
+
+    def _fake_run(_argv, **_kwargs):
+        installed = tmp_path / "System64" / "ucc-bin-amd64"
+        installed.parent.mkdir(parents=True, exist_ok=True)
+        installed.write_text("")
+        (tmp_path / "System64" / "UnrealTournament.ini").write_text("")
+        return None
+
+    monkeypatch.setattr(mod.sp, "run", _fake_run)
+
+    mod.install(server)
+
+    assert server.data["exe_name"] == "System64/ucc-bin-amd64"
+    assert server.data["configfile"] == "System64/UnrealTournament.ini"
+
+
+def test_get_runtime_requirements_declares_7z_host_dependency_for_installer(tmp_path):
+    server = DummyServer()
+    server.data.update(
+        {
+            "dir": str(tmp_path) + "/",
+            "port": 7777,
+            "download_mode": "installer",
+            "exe_name": "System/ucc-bin",
+        }
+    )
+
+    requirements = mod.get_runtime_requirements(server)
+    dependency = requirements["host_dependencies"][0]
+
+    assert dependency["id"] == "7z"
+    assert dependency["display_name"] == "7z-compatible extractor"
+    assert dependency["command"] == (
+        {"label": "7zz", "command": "7zz"},
+        {"label": "7z", "command": "7z"},
+    )
+    assert "p7zip-full" in dependency["install_hints"]["linux"]
+
+
+def test_get_start_command(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    exe_path = tmp_path / "System/ucc-bin"
+    exe_path.parent.mkdir(parents=True, exist_ok=True)
+    exe_path.write_text("")
+    server.data["configfile"] = "test"
+    server.data["gametype"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["port"] = 27015
+    server.data["startmap"] = "test"
+    cmd, cwd = mod.get_start_command(server)
+    assert isinstance(cmd, list)
+
+def test_get_start_command_missing_exe(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "nonexistent"
+    server.data["configfile"] = "test"
+    server.data["gametype"] = "test"
+    server.data["maxplayers"] = 27015
+    server.data["port"] = 27015
+    server.data["startmap"] = "test"
+    with pytest.raises(ServerError):
+        mod.get_start_command(server)
+
+def test_get_container_spec_does_not_require_installed_executable(tmp_path):
+    server = DummyServer()
+    server.data["dir"] = str(tmp_path) + "/"
+    server.data["exe_name"] = "System/ucc-bin"
+    server.data["configfile"] = "System/UnrealTournament.ini"
+    server.data["gametype"] = "Botpack.DeathMatchPlus"
+    server.data["maxplayers"] = "16"
+    server.data["port"] = 7777
+    server.data["startmap"] = "DM-Deck16]["
+
+    spec = mod.get_container_spec(server)
+
+    assert spec["working_dir"] == mod.runtime_module.DEFAULT_CONTAINER_WORKDIR
+    assert spec["command"][0] == "./System/ucc-bin"
+    assert spec["ports"] == [
+        {"host": 7777, "container": 7777, "protocol": "udp"},
+        {"host": 7777, "container": 7777, "protocol": "tcp"},
+    ]
+
+def test_do_stop():
+    server = DummyServer()
+    mod.do_stop(server, 0)
+    mod.runtime_module.send_to_server.assert_called()
+
+def test_get_query_address_uses_udp_protocol():
+    server = DummyServer()
+    server.data["port"] = 7777
+
+    assert mod.get_query_address(server) == ("127.0.0.1", 7777, "udp")
+
+def test_get_info_address_uses_udp_protocol():
+    server = DummyServer()
+    server.data["port"] = 7777
+
+    assert mod.get_info_address(server) == ("127.0.0.1", 7777, "udp")
+
+def test_status():
+    server = DummyServer()
+    mod.status(server, verbose=True)
+
+def test_message():
+    server = DummyServer()
+    mod.message(server, "hello")
+
+def test_backup():
+    server = DummyServer()
+    server.data["dir"] = "/tmp/test/"
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.backup(server)
+
+def test_checkvalue_empty_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ())
+
+def test_checkvalue_unsupported_key():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("totally_invalid_key_xyz",), "val")
+
+def test_checkvalue_no_value():
+    server = DummyServer()
+    with pytest.raises(ServerError):
+        mod.checkvalue(server, ("port",))
+
+def test_checkvalue_port():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("port",), "12345")
+    assert result == 12345
+
+def test_checkvalue_url():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("url",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_download_name():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("download_name",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_exe_name():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("exe_name",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_dir():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("dir",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_startmap():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("startmap",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_gametype():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("gametype",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_maxplayers():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("maxplayers",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_configfile():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("configfile",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_download_mode():
+    server = DummyServer()
+    result = mod.checkvalue(server, ("download_mode",), "/test/value")
+    assert result == "/test/value"
+
+def test_checkvalue_backup():
+    server = DummyServer()
+    server.data["backup"] = {"profiles": {"default": {"targets": ["saves"]}}, "schedule": [("default", 0, "days")]}
+    mod.checkvalue(server, ("backup", "profiles", "default", "targets"), "newsave")

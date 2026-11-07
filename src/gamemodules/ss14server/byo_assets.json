@@ -1,0 +1,27 @@
+{
+  "description": "Space Station 14 complete compatible server tree",
+  "requirements": [
+    {
+      "path": "{exe_name}",
+      "kind": "file"
+    }
+  ],
+  "sources": [
+    {
+      "id": "manual",
+      "kind": "operator-files",
+      "instructions": "Supply a full compatible Linux x64 server build from the selected fork, including content assemblies/resources and matching client build. A fork release page is not a direct server artifact; the Wizard feed may be unavailable.",
+      "live_validated": false,
+      "url": "https://docs.spacestation14.com/en/general-development/setup/server-hosting-tutorial.html"
+    }
+  ],
+  "defaults": {
+    "exe_name": "Robust.Server"
+  },
+  "managed_import": false,
+  "validation": "sentinel-only",
+  "manual_reason": "Manual full-distribution staging is required. These known file sentinels do not establish completeness; inspect the game-specific source instructions.",
+  "module": "ss14server",
+  "guide": "docs/servers/ss14server.md",
+  "schema_version": 1
+}
