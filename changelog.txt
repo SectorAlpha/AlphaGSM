@@ -7,6 +7,13 @@ server support, CI, packaging, or workflow defaults.
 Historical detail lives in git history. Keep this file focused on release-facing notes and
  high-level milestones.
 
+2026-11-07
+- Install: Linux local and system-wide scripts copy AlphaGSM into place and
+  link `alphagsm`. The command link resolves to the real program so Python
+  can find `src`. A system install reads `/etc/alphagsm.conf`, shares the
+  download cache as the `alphagsm` account, and leaves each operator's
+  servers in that operator's home. A container test checks that layout.
+
 2026-11-05
 - ET: Legacy: setup finds the Linux x86_64 tar.gz on the current etlegacy.com
   download page. Release numbers are read from the version label.

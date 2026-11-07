@@ -22,6 +22,8 @@ with `update`.
 | I want to… | Read |
 | --- | --- |
 | Get AlphaGSM installed | [Getting Started](../README.md) |
+| Install AlphaGSM for one Linux account | [Local User Install](install/local-user.md) |
+| Install AlphaGSM once on a shared Linux host | [System-Wide Install](install/system-wide.md) |
 | Take or skip the guided setup tour | [First-run setup](first-run-setup.md) |
 | Run or maintain AlphaGSM with an AI agent | [Agent Operations](agent-operations.md) |
 | See every command (`restore`, `kill`, `activate`, `send`, …) | [Everyday Commands](commands.md) |

@@ -946,6 +946,9 @@ merge groups, manual dispatch and reusable release validation. Its current gates
 - representative Minecraft backend integration on Windows and macOS
 - four native Windows unit cases, with exact passing JUnit evidence required
   by the final summary; Linux unit and coverage jobs deselect those cases
+- `system-install-test`, which runs
+  [system_install_tests/run_system_install_in_container.sh](system_install_tests/run_system_install_in_container.sh)
+  and checks the Linux system install layout without changing the runner host
 
 Smoke, integration and isolated recheck commands run through
 `scripts/run_ci_workshop_tests.py`. It enables every public anonymous Workshop
@@ -997,6 +1000,28 @@ Important environment variables:
 - `ALPHAGSM_DEBUG`
 
 The smoke tests rely on temporary config files and `ALPHAGSM_CONFIG_LOCATION` to isolate state per run.
+
+Linux install layouts:
+
+- [docs/install/local-user.md](docs/install/local-user.md)
+- [docs/install/system-wide.md](docs/install/system-wide.md)
+
+`src/utils/settings/_settings.py` selects the default config from the program
+path. A frozen binary reads `alphagsm.conf` beside the executable. A source
+tree whose file path starts with `/usr/` reads `/etc/alphagsm.conf`. Every
+other source tree reads `alphagsm.conf` four directories above that settings
+module, which is the repository or install root. `ALPHAGSM_CONFIG_LOCATION`
+replaces that choice.
+
+[scripts/install-system-wide.sh](scripts/install-system-wide.sh) copies the
+tree under `/usr/local/lib/alphagsm`, so the program uses `/etc/alphagsm.conf`.
+On a new config it sets `[downloader] user` to the `alphagsm` account and
+points `db_path` and `target_path` at `/home/alphagsm/downloads`. Server data
+still follows each operator's `~/.alphagsm` user settings. The download helper
+re-executes through `sudo -Hu alphagsm`, and
+`/etc/sudoers.d/gameservers` allows only `alphagsm-downloads` for the
+`alphagsm` group.
+
 GitHub Actions supplies `ALPHAGSM_GITHUB_TOKEN` to smoke and integration jobs
 using the workflow's read-only `GITHUB_TOKEN`; local runs can omit it unless
 they encounter GitHub's anonymous API rate limit.
