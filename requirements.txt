@@ -3,5 +3,5 @@ pytest==9.0.2
 pytest-cov==7.0.0
 pytest-timeout==2.4.0
 pytest-xdist==3.5.0
-pylint==4.0.5
+pylint==4.0.9
 PyYAML==6.0.3
